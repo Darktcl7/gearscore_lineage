@@ -1,0 +1,83 @@
+document.addEventListener('DOMContentLoaded', function() {
+    // Проверяем, авторизован ли пользователь и не был ли уже показан экран загрузки в этой сессии
+    const isAuthenticated = document.body.getAttribute('data-authenticated') === 'true';
+    const hasLoadingBeenShown = sessionStorage.getItem('loadingShown');
+    
+    // Показываем загрузочный экран только если:
+    // 1. Пользователь авторизован
+    // 2. Загрузочный экран еще не был показан в этой сессии
+    // 3. Это первая загрузка страницы (не переход по ссылкам)
+    if (isAuthenticated && !hasLoadingBeenShown && !document.referrer.includes(window.location.hostname)) {
+        // Отмечаем, что загрузочный экран был показан
+        sessionStorage.setItem('loadingShown', 'true');
+        
+        const loadingScreen = document.getElementById('loading-screen');
+        const siteContent = document.getElementById('site-content');
+        const loadingBar = document.getElementById('loading-progress');
+        
+        // Показываем загрузочный экран
+        if (loadingScreen) {
+            loadingScreen.style.display = 'flex';
+        }
+        
+        // Скрываем содержимое сайта
+        if (siteContent) {
+            siteContent.style.opacity = '0';
+            siteContent.style.transition = 'opacity 1s ease-in';
+        }
+        
+        // Эмулируем загрузку
+        let progress = 0;
+        const interval = setInterval(function() {
+            progress += Math.random() * 12;
+            if (progress > 100) progress = 100;
+            
+            if (loadingBar) {
+                loadingBar.style.width = progress + '%';
+            }
+            
+            if (progress === 100) {
+                clearInterval(interval);
+                
+                // Задержка для показа полной загрузки
+                setTimeout(function() {
+                    if (loadingScreen) {
+                        loadingScreen.style.opacity = '0';
+                    }
+                    
+                    // Плавно показываем содержимое сайта
+                    if (siteContent) {
+                        siteContent.style.opacity = '1';
+                    }
+                    
+                    // Удаляем загрузочный экран после завершения анимации
+                    setTimeout(function() {
+                        if (loadingScreen) {
+                            loadingScreen.style.display = 'none';
+                        }
+                    }, 1000);
+                }, 500);
+            }
+        }, 100);
+    } else {
+        // Если пользователь не авторизован или загрузочный экран уже был показан, скрываем его
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+            loadingScreen.style.display = 'none';
+        }
+        
+        // Показываем содержимое сайта
+        const siteContent = document.getElementById('site-content');
+        if (siteContent) {
+            siteContent.style.opacity = '1';
+        }
+    }
+    
+    // Сбрасываем сессию при выходе
+    const logoutForm = document.querySelector('form[action*="logout"]');
+    if (logoutForm) {
+        logoutForm.addEventListener('submit', function() {
+            sessionStorage.removeItem('loadingShown');
+        });
+    }
+}); 

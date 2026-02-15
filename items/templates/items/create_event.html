@@ -1,0 +1,291 @@
+{% extends 'items/base.html' %}
+{% load static %}
+
+{% block title %}Create Event{% endblock %}
+
+{% block extra_body_attributes %}class="fullscreen-page"{% endblock %}
+
+{% block extra_head %}
+<style>
+    html,
+    body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: #0c0c0c;
+    }
+
+    #site-content {
+        height: calc(100vh - var(--header-height));
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    main {
+        flex: 1;
+        overflow: hidden;
+    }
+
+    .form-container {
+        height: calc(100% - 20px);
+        margin-top: 0;
+        display: flex;
+        flex-direction: column;
+        background: rgba(18, 18, 18, 0.85);
+        border-radius: 20px;
+        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        margin-left: 10px;
+        margin-right: 10px;
+        margin-bottom: 10px;
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .form-header {
+        padding: 25px;
+        background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .form-header h1 {
+        margin: 0;
+        color: #ffffff;
+        font-size: 1.6rem;
+    }
+
+    .form-content {
+        flex: 1;
+        padding: 30px;
+        overflow-y: auto;
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #DAA520;
+        font-weight: 600;
+    }
+
+    .form-group input,
+    .form-group select {
+        width: 100%;
+        padding: 12px 15px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        color: #fff;
+        font-size: 1rem;
+        box-sizing: border-box;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #DAA520;
+        box-shadow: 0 0 0 3px rgba(218, 165, 32, 0.2);
+    }
+
+    .form-group select option {
+        background: #222;
+        color: #fff;
+    }
+
+    .checkbox-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 20px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .checkbox-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .checkbox-item input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        accent-color: #DAA520;
+    }
+
+    .invasion-bosses {
+        display: none;
+        margin-top: 15px;
+        padding: 20px;
+        background: rgba(231, 76, 60, 0.1);
+        border: 1px solid rgba(231, 76, 60, 0.3);
+        border-radius: 10px;
+    }
+
+    .invasion-bosses.active {
+        display: block;
+    }
+
+    .boss-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 15px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+
+    .boss-checkbox:last-child {
+        margin-bottom: 0;
+    }
+
+    .boss-checkbox label {
+        margin: 0;
+        color: #fff;
+    }
+
+    .win-section {
+        display: none;
+        margin-top: 15px;
+    }
+
+    .win-section.active {
+        display: block;
+    }
+
+    .btn-submit {
+        width: 100%;
+        padding: 15px;
+        background: linear-gradient(145deg, #2ecc71, #27ae60);
+        border: none;
+        border-radius: 10px;
+        color: #fff;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(46, 204, 113, 0.4);
+    }
+
+    .btn-back {
+        display: inline-block;
+        margin-top: 15px;
+        color: #888;
+        text-decoration: none;
+    }
+
+    .btn-back:hover {
+        color: #DAA520;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-header">
+        <h1><i class="fas fa-calendar-plus"></i> Create New Event</h1>
+    </div>
+
+    <div class="form-content">
+        <form method="post" id="event-form">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="event_type">Event Type</label>
+                <select name="event_type" id="event_type" required>
+                    <option value="">-- Select Type --</option>
+                    {% for value, label in event_types %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group" id="custom-name-group" style="display:none;">
+                <label for="custom_name">Custom Event Name</label>
+                <input type="text" name="custom_name" id="custom_name" placeholder="Enter custom event name...">
+            </div>
+
+            <div class="form-group" id="custom-points-group" style="display:none;">
+                <label for="custom_points">Attendance Points</label>
+                <input type="number" name="custom_points" id="custom_points" value="10" min="1" max="100"
+                    placeholder="Points for attending">
+            </div>
+
+            <div class="form-group">
+                <label for="name">Event Name (Optional)</label>
+                <input type="text" name="name" id="name" placeholder="e.g., Weekly Invasion #12">
+            </div>
+
+            <div class="form-group">
+                <label for="date">Event Date & Time</label>
+                <input type="datetime-local" name="date" id="date" required>
+            </div>
+
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" name="is_completed" style="width: 20px; height: 20px;">
+                    Event Completed (Closed)
+                </label>
+            </div>
+
+            <div class="form-group" style="margin-top: 30px;">
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-check"></i> Create Event
+                </button>
+            </div>
+
+            <a href="{% url 'manage-events' %}" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Back to Events
+            </a>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Set default datetime to now
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('date').value = now.toISOString().slice(0, 16);
+
+    // Toggle custom event fields
+    document.getElementById('event_type').addEventListener('change', function () {
+        var customNameGroup = document.getElementById('custom-name-group');
+        var customNameInput = document.getElementById('custom_name');
+        var customPointsGroup = document.getElementById('custom-points-group');
+        if (this.value === 'CUSTOM') {
+            customNameGroup.style.display = 'block';
+            customNameInput.required = true;
+            customPointsGroup.style.display = 'block';
+            document.querySelector('label[for="name"]').textContent = 'Reward';
+            document.getElementById('name').placeholder = 'e.g. 1,000,000 Adena';
+        } else {
+            customNameGroup.style.display = 'none';
+            customNameInput.required = false;
+            customNameInput.value = '';
+            customPointsGroup.style.display = 'none';
+            document.querySelector('label[for="name"]').textContent = 'Event Name (Optional)';
+            document.getElementById('name').placeholder = 'e.g., Weekly Invasion #12';
+        }
+    });
+</script>
+{% endblock %}

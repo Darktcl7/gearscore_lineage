@@ -1,0 +1,693 @@
+{% extends 'items/base.html' %}
+{% load static %}
+
+{% block title %}Character List{% endblock %}
+
+{% block extra_body_attributes %}class="fullscreen-page"{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Global Page Clean Up */
+    html,
+    body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+    }
+
+    #site-content {
+        height: calc(100vh - var(--header-height));
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* =========================================
+       ADMIN VIEW STYLES
+       ========================================= */
+    .admin-container {
+        padding: 40px;
+        max-width: 1400px;
+        margin: 80px auto 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .admin-panel {
+        background: rgba(18, 18, 18, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .admin-header {
+        background: linear-gradient(to right, #2c2c2c, #1a1a1a);
+        padding: 15px 25px;
+        border-bottom: 2px solid var(--gold-primary);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .admin-header h1 {
+        margin: 0;
+        font-family: 'Cinzel', serif;
+        color: var(--gold-light);
+        font-size: 1.5rem;
+    }
+
+    .admin-content {
+        padding: 30px;
+    }
+
+    /* =========================================
+       USER LANDING PAGE STYLES (PREMIUM CARD)
+       ========================================= */
+    /* =========================================
+       USER LANDING PAGE STYLES (PREMIUM CARD)
+       ========================================= */
+    .user-landing-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex: 1;
+        padding: 20px;
+        box-sizing: border-box;
+        margin-top: 0;
+        width: 100%;
+        overflow: auto;
+    }
+
+    .cards-grid {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        /* Force grid to be full width */
+        max-width: 100%;
+    }
+
+    .profile-card {
+        width: 100%;
+        max-width: 750px;
+        /* Dikecilkan lagi sedikit */
+        min-width: 250px;
+        background: rgba(10, 10, 12, 0.9);
+        /* Slightly more opaque */
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        backdrop-filter: blur(15px);
+        box-shadow: 0 0 50px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 0, 0, 0.5);
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        display: flex;
+        /* Use Flex for internal layout on wide screens */
+        flex-direction: column;
+    }
+
+    .profile-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 60px rgba(212, 175, 55, 0.15);
+        border-color: rgba(212, 175, 55, 0.6);
+    }
+
+    /* Gold corner accents */
+    .profile-card::before,
+    .profile-card::after {
+        content: '';
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        border: 2px solid transparent;
+        transition: all 0.3s;
+        pointer-events: none;
+    }
+
+    .profile-card::before {
+        top: 0;
+        left: 0;
+        border-top-color: var(--gold-primary);
+        border-left-color: var(--gold-primary);
+    }
+
+    .profile-card::after {
+        bottom: 0;
+        right: 0;
+        border-bottom-color: var(--gold-primary);
+        border-right-color: var(--gold-primary);
+    }
+
+    .card-header {
+        text-align: center;
+        padding: 15px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        position: relative;
+        background: linear-gradient(to bottom, rgba(255, 255, 255, 0.02), transparent);
+    }
+
+    /* Class Icon Circle */
+    .class-icon-circle {
+        width: 50px;
+        height: 50px;
+        margin: 0 auto 10px;
+        border-radius: 50%;
+        border: 2px solid var(--gold-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle, rgba(212, 175, 55, 0.2) 0%, rgba(0, 0, 0, 0.6) 70%);
+        box-shadow: 0 0 25px rgba(212, 175, 55, 0.3);
+    }
+
+    .class-icon-circle i {
+        font-size: 2rem;
+        color: var(--gold-light);
+    }
+
+    .char-name {
+        font-family: 'Cinzel', serif;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0 0 8px;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        text-shadow: 0 2px 15px rgba(0, 0, 0, 0.8);
+    }
+
+    .char-details-grid {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+    }
+
+    .detail-row {
+        display: flex;
+        flex-direction: column;
+        /* Stack label and value vertically */
+        align-items: center;
+    }
+
+    .d-label {
+        font-family: 'Cinzel', serif;
+        font-size: 0.9rem;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 5px;
+    }
+
+    .d-value {
+        font-family: 'Cinzel', serif;
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #fff;
+    }
+
+    .level-value {
+        font-family: 'Cinzel', serif;
+        font-size: 1.6rem;
+        color: var(--gold-light);
+        text-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+    }
+
+    .card-body {
+        padding: 15px 25px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    @media (max-width: 900px) {
+        .card-body {
+            grid-template-columns: 1fr;
+            /* Stack on smaller screens */
+        }
+    }
+
+    .info-group {
+        text-align: left;
+    }
+
+    .info-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .info-label {
+        font-family: 'Cinzel', serif;
+        font-size: 0.95rem;
+        color: var(--gold-primary);
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 6px;
+        display: block;
+    }
+
+    .info-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .info-list li {
+        font-family: 'Roboto', sans-serif;
+        font-size: 0.95rem;
+        color: #d0d0d0;
+        padding: 4px 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .info-list li::before {
+        content: none;
+    }
+
+    .legend-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+        border: 1px solid var(--gold-primary);
+        box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
+        object-fit: cover;
+        background: #000;
+        margin-right: 10px;
+    }
+
+    .legend-icon-placeholder {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #444;
+        border: 1px dashed #444;
+        border-radius: 4px;
+        margin-right: 10px;
+        font-size: 1rem;
+    }
+
+    .empty-list {
+        color: #555;
+        font-style: italic;
+        font-size: 1rem;
+    }
+
+    .card-footer {
+        padding: 12px;
+        text-align: center;
+        background: rgba(0, 0, 0, 0.3);
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* META DATA STYLES */
+
+
+    /* META DATA STYLES - HORIZONTAL LAYOUT */
+    .char-details-grid {
+        display: flex;
+        flex-direction: row;
+        gap: 30px;
+        margin-top: 15px;
+        justify-content: center;
+        align-items: center;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 10px 20px;
+        border-radius: 50px;
+        border: 1px solid rgba(212, 175, 55, 0.2);
+        display: flex;
+        flex-wrap: wrap;
+        /* Shrink to fit content */
+    }
+
+    .detail-row {
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+        align-items: center;
+        padding: 0;
+        margin: 0;
+    }
+
+    .d-label {
+        font-family: 'Cinzel', serif;
+        font-size: 0.9rem;
+        color: var(--gold-primary);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin: 0;
+        /* Reset margin */
+        font-weight: 600;
+    }
+
+    .d-label::after {
+        content: ":";
+        margin-left: 2px;
+    }
+
+    .d-value {
+        font-family: 'Roboto', sans-serif;
+        font-size: 1rem;
+        font-weight: 500;
+        color: #fff;
+    }
+
+    /* Level Row overrides */
+    .level-row {
+        margin: 0;
+        padding: 0;
+        border: none;
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+    }
+
+    .level-row .d-label {
+        width: auto;
+        text-align: left;
+    }
+
+    .level-value {
+        font-size: 1.2rem;
+        /* Normal size for horizontal layout */
+        color: #fff;
+        font-weight: 700;
+        text-shadow: none;
+        display: inline;
+    }
+
+    .btn-view-detail {
+        display: inline-block;
+        padding: 15px 50px;
+        border: 1px solid var(--gold-primary);
+        background: rgba(212, 175, 55, 0.1);
+        color: var(--gold-light);
+        font-family: 'Cinzel', serif;
+        font-weight: 700;
+        font-size: 1rem;
+        text-decoration: none;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-view-detail:hover {
+        background: var(--gold-primary);
+        color: #000;
+        box-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
+    }
+
+    /* Grid for multiple characters if user has more than one */
+    .cards-grid {
+        display: flex;
+        gap: 30px;
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 100%;
+        /* Force grid to take full width */
+    }
+
+    .no-chars-msg {
+        text-align: center;
+        color: #f0f0f0;
+        font-size: 1.2rem;
+        background: rgba(0, 0, 0, 0.6);
+        padding: 40px;
+        border-radius: 10px;
+        margin-top: 50px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .no-chars-msg h2 {
+        color: var(--gold-primary);
+        font-size: 2.5rem;
+        margin-bottom: 20px;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+    }
+
+    .no-chars-msg p {
+        font-size: 1.5rem;
+        margin-bottom: 40px;
+        opacity: 1;
+        font-weight: 300;
+        color: #fff;
+    }
+
+    .create-first-btn {
+        margin-top: 20px;
+        display: inline-block;
+        color: var(--gold-primary);
+        text-decoration: none;
+        border: 1px solid var(--gold-primary);
+        padding: 10px 20px;
+    }
+
+    /* --- Custom Scrollbar for list content --- */
+    .admin-content::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .admin-content::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.3);
+    }
+
+    .admin-content::-webkit-scrollbar-thumb {
+        background: #444;
+        border-radius: 4px;
+    }
+
+    /* MOBILE RESPONSIVE FIXES */
+    @media (max-width: 600px) {
+        .user-landing-container {
+            padding: 10px !important;
+            align-items: flex-start !important;
+            /* Allow growing down */
+        }
+
+        .profile-card {
+            margin: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .char-details-grid {
+            flex-direction: column !important;
+            gap: 10px !important;
+            border-radius: 15px !important;
+            padding: 15px !important;
+            width: 90% !important;
+            box-sizing: border-box;
+        }
+
+        .detail-row {
+            width: 100%;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .card-body {
+            grid-template-columns: 1fr !important;
+            padding: 15px !important;
+        }
+
+        .class-icon-circle {
+            margin-top: -10px;
+        }
+
+        .card-header {
+            padding-top: 20px;
+        }
+
+        .char-name {
+            font-size: 1.2rem !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- LOGIC SPLIT: ADMIN VS USER -->
+<!-- 
+    PREVIOUSLY: Admin Table View. 
+    CURRENTLY: Disabled as per request to show Cards for Admin too.
+    Will be moved to a separate Management Page later.
+-->
+{% comment %}
+{% if is_admin %}
+<!-- ADMIN VIEW: Table & Management -->
+<div class="admin-container">
+    <div class="admin-panel">
+        <div class="admin-header">
+            <h1><i class="fas fa-users-cog"></i> Character Management</h1>
+            <a href="{% url 'create-character' %}" class="btn-gold-outline"><i class="fas fa-plus"></i> Add New</a>
+        </div>
+
+        <div class="admin-content">
+            {% if characters %}
+            <table style="width: 100%; border-collapse: collapse; color: #ccc;">
+                <thead>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left;">
+                        <th style="padding: 12px; color: var(--gold-light);">Name</th>
+                        <th style="padding: 12px; color: var(--gold-light);">Owner</th>
+                        <th style="padding: 12px; color: var(--gold-light);">Class</th>
+                        <th style="padding: 12px; color: var(--gold-light);">Level</th>
+                        <th style="padding: 12px; color: var(--gold-light);">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for character in characters %}
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 12px;">
+                            <a href="{% url 'character-profile' character.pk %}"
+                                style="color: #fff; font-weight: bold; text-decoration: none;">
+                                {{ character.name }}
+                            </a>
+                        </td>
+                        <td style="padding: 12px;">{{ character.owner.username }}</td>
+                        <td style="padding: 12px;">{{ character.character_class }}</td>
+                        <td style="padding: 12px;">{{ character.level }}</td>
+                        <td style="padding: 12px;">
+                            <a href="{% url 'edit-character' character.pk %}"
+                                style="color: #aaa; margin-right: 10px;"><i class="fas fa-edit"></i></a>
+                            <a href="{% url 'delete-character' character.pk %}" style="color: #E74C3C;"><i
+                                    class="fas fa-trash"></i></a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p style="text-align: center; padding: 40px;">No characters found in database.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% else %}
+{% endcomment %}
+
+<!-- USER VIEW: Premium Landing Page -->
+<div class="user-landing-container">
+    {% if characters %}
+    <div class="cards-grid">
+        {% for character in characters %}
+        <div class="profile-card">
+
+            <!-- META DATA (HORIZONTAL) -->
+            <div class="card-header">
+                <!-- Restored Class Icons -->
+                <div class="class-icon-circle">
+                    {% with class_slug=character.character_class|slugify %}
+                    <img src="{% static 'items/images/class_icons/' %}{{ class_slug }}.png"
+                        alt="{{ character.character_class }}"
+                        style="width: 100%; height: 100%; object-fit: contain; border-radius: 50%; padding: 5px;">
+                    {% endwith %}
+                </div>
+
+                <h2 class="char-name">{{ character.name }}</h2>
+
+                <!-- HORIZONTAL META LAYOUT -->
+                <div class="char-details-grid">
+                    <div class="detail-row">
+                        <span class="d-label">Clan</span>
+                        <span class="d-value">{{ character.clan }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="d-label">Class</span>
+                        <span class="d-value">{{ character.character_class }}</span>
+                    </div>
+                    <div class="detail-row level-row">
+                        <span class="d-label">Level</span>
+                        <span class="level-value">{{ character.level }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <!-- Legendary Classes -->
+                <div class="info-group">
+                    <span class="info-label">Legendary Classes</span>
+                    <ul class="info-list">
+                        {% for lc in character.legendary_classes.all %}
+                        <li>
+                            {% if lc.icon_file %}
+                            <img src="{% static 'items/images/choices/' %}{{ lc.icon_file }}" class="legend-icon"
+                                alt="{{ lc.name }}">
+                            {% else %}
+                            <i class="fas fa-chess-king legend-icon-placeholder"></i>
+                            {% endif %}
+                            {{ lc.name }}
+                        </li>
+                        {% empty %}
+                        <li class="empty-list">No Legendary Classes recorded</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Legendary Agathions -->
+                <div class="info-group">
+                    <span class="info-label">Legendary Agathions</span>
+                    <ul class="info-list">
+                        {% for la in character.legendary_agathions.all %}
+                        <li>
+                            {% if la.icon_file %}
+                            <img src="{% static 'items/images/choices/' %}{{ la.icon_file }}" class="legend-icon"
+                                alt="{{ la.name }}">
+                            {% else %}
+                            <i class="fas fa-dragon legend-icon-placeholder"></i>
+                            {% endif %}
+                            {{ la.name }}
+                        </li>
+                        {% empty %}
+                        <li class="empty-list">No Legendary Agathions recorded</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card-footer">
+                <a href="{% url 'character-profile' character.pk %}" class="btn-view-detail">
+                    View Detail
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- No Character: Prompt to Create -->
+    <div class="no-chars-msg">
+        <h2>Welcome to Valkyrie</h2>
+        <p>Your journey has not yet begun.</p>
+        <a href="{% url 'create-character' %}" class="create-first-btn">Create Your Character</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- REMOVED ENDIF for IS_ADMIN (since we removed the opening IF) -->
+{% comment %} {% endif %} {% endcomment %}
+
+{% endblock %}

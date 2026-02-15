@@ -1,0 +1,15 @@
+ Volume in drive D is New Volume
+ Volume Serial Number is EE40-03A1
+
+ Directory of D:\Django Project\Alto Project
+
+10/17/2025  01:46 AM    <DIR>          .
+10/17/2025  01:46 AM    <DIR>          ..
+10/17/2025  01:00 AM    <DIR>          alto files
+10/17/2025  01:46 AM                 0 altoproject.txt
+10/17/2025  01:18 AM    <DIR>          items
+10/16/2025  07:31 PM               687 manage.py
+10/16/2025  07:34 PM    <DIR>          myproject
+10/16/2025  07:27 PM    <DIR>          venv
+               2 File(s)            687 bytes
+               6 Dir(s)  71,138,607,104 bytes free

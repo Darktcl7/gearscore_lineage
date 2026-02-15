@@ -1,0 +1,88 @@
+{% extends "items/base.html" %}
+
+{% block title %}Kelola Karakter{% endblock %}
+
+{% block content %}
+<p><a href="{% url 'character-list' %}">← Kembali ke Daftar Karakter</a></p>
+
+{% if is_edit %}
+<h1>Edit Karakter: {{ form.instance.name }}</h1>
+<p>Ubah detail level atau perlengkapan karakter ini.</p>
+{% else %}
+<h1>Buat Karakter Baru</h1>
+<p>Isi data dasar dan pilih perlengkapan yang saat ini dipakai.</p>
+{% endif %}
+
+<form method="post" novalidate>
+    {% csrf_token %}
+
+    <h2>Data Dasar</h2>
+    <table class="form-table">
+        <tr>
+            <th>{{ form.name.label_tag }}</th>
+            <td>{{ form.name }}</td>
+        </tr>
+        <tr>
+            <th>{{ form.level.label_tag }}</th>
+            <td>{{ form.level }}</td>
+        </tr>
+        <tr>
+            <th>{{ form.character_class.label_tag }}</th>
+            <td>{{ form.character_class }}</td>
+        </tr>
+    </table>
+
+    <h2>Pilih Perlengkapan (Gear)</h2>
+    <table class="form-table">
+        <tr>
+            <th>{{ form.main_weapon.label_tag }}</th>
+            <td>{{ form.main_weapon }}</td>
+        </tr>
+        <tr>
+            <th>{{ form.helmet.label_tag }}</th>
+            <td>{{ form.helmet }}</td>
+        </tr>
+        <tr>
+            <th>{{ form.armor.label_tag }}</th>
+            <td>{{ form.armor }}</td>
+        </tr>
+        <tr>
+            <th>{{ form.gloves.label_tag }}</th>
+            <td>{{ form.gloves }}</td>
+        </tr>
+        <tr>
+            <th>{{ form.boots.label_tag }}</th>
+            <td>{{ form.boots }}</td>
+        </tr>
+    </table>
+
+    <hr>
+
+    <h3>Aksesoris</h3>
+    <table class="form-table">
+        <tr>
+            <th>{{ form.necklace.label_tag }}</th>
+            <td>{{ form.necklace }}</td>
+        </tr>
+        <tr>
+            <th>{{ form.ring_left.label_tag }}</th>
+            <td>{{ form.ring_left }}</td>
+        </tr>
+        <tr>
+            <th>{{ form.ring_right.label_tag }}</th>
+            <td>{{ form.ring_right }}</td>
+        </tr>
+        <tr>
+            <th>{{ form.earring_left.label_tag }}</th>
+            <td>{{ form.earring_left }}</td>
+        </tr>
+        <tr>
+            <th>{{ form.earring_right.label_tag }}</th>
+            <td>{{ form.earring_right }}</td>
+        </tr>
+    </table>
+
+    <br>
+    <button type="submit" class="btn-submit">Simpan Karakter</button>
+</form>
+{% endblock %}

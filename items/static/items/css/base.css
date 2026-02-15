@@ -1,0 +1,579 @@
+/* Стили для шрифтов */
+body {
+    font-family: "Spectral", serif;
+    font-weight: 500;
+    font-style: normal;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: "Spectral", serif;
+    font-weight: 400;
+    font-style: normal;
+}
+
+#fog-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+} 
+
+.background-video-profile {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -1;
+    filter: brightness(40%);
+}
+
+/* Гарантируем, что html и body занимают всю высоту */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    padding-top: 80px; /* Чтобы контент не перекрывался шапкой */
+}
+
+/* Стили для шапки */
+header {
+    border-radius: 15px;
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    background-color: #00000086;
+    color: white;
+    padding: 20px;
+    z-index: 1000;
+}
+
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Бургер - скрыт по умолчанию на десктопе */
+.burger {
+    display: none;
+    font-size: 26px;
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.burger:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.burger.active {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Стили для ссылок - видно на десктопе */
+header nav {
+    display: flex;
+    gap: 15px;
+    max-width: 600px;
+    justify-content: center;
+}
+
+header nav a {
+    position: relative;
+    color: white;
+    text-decoration: none;
+    margin: 0 10px;
+    display: inline-block;
+    padding: 5px 10px;
+}
+
+header nav a::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+header nav a:hover::after {
+    opacity: 1;
+}
+
+/* Основной контейнер для контента */
+#site-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    max-width: 100%;
+}
+
+/* Стили для основной части страницы */
+main {
+    padding: 20px;
+    margin: 0 auto;
+    max-width: 1400px;
+    width: 100%;
+    box-sizing: border-box;
+    flex-grow: 1;
+}
+
+/* Стили для подвала */
+footer a.footer-link,
+footer a.footer-link:visited,
+footer a.footer-link:hover,
+footer a.footer-link:active {
+    color: #fff !important;
+    text-decoration: none !important;
+}
+
+footer a.footer-link:hover {
+    color: #ccc !important;
+    text-decoration: underline !important;
+}
+
+footer {
+    text-align: center;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0);
+    color: white;
+    font-size: 14px;
+    margin-top: auto;
+}
+
+/* Стили для уведомлений */
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.alert-warning {
+    color: #856404;
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+}
+
+.alert-info {
+    color: #0c5460;
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+}
+
+.alert strong {
+    font-size: 18px;
+    display: block;
+    margin-bottom: 5px;
+}
+
+/* Анимация появления уведомления */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Адаптивность для планшетов и мобильных устройств */
+@media (max-width: 1024px) {
+    .header-container {
+        gap: 20px;
+    }
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .alert {
+        padding: 12px 15px;
+        font-size: 14px;
+    }
+    
+    .alert strong {
+        font-size: 16px;
+    }
+    
+    /* Показываем бургер на мобильных */
+    .burger {
+        display: block;
+    }
+
+    /* Прячем навигационное меню на мобильных */
+    header nav {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 70px;
+        left: 10px;
+        right: 10px;
+        background: rgba(0,0,0,0.95);
+        padding: 15px;
+        border-radius: 10px;
+        z-index: 1001;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        align-items: center;
+        text-align: center;
+    }
+
+    /* Открытое меню на мобильных */
+    header nav.open {
+        display: flex;
+        animation: slideDown 0.3s ease-out;
+    }
+    
+    /* Анимация появления меню */
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    header nav a {
+        margin: 10px 0;
+        font-size: 16px;
+        padding: 12px 20px;
+        border-radius: 8px;
+        transition: background-color 0.3s ease;
+        width: 100%;
+        text-align: center;
+        border: 1px solid transparent;
+    }
+    
+    header nav a:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Изменяем layout шапки для мобильных */
+    .header-container {
+        justify-content: flex-start;
+        gap: 15px;
+    }
+    
+    /* Правая часть шапки на мобильных */
+    .header-right {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    main {
+        margin: 0 auto;
+        padding: 15px;
+        max-width: 100%;
+    }
+    
+    h1 {
+        font-size: 22px;
+    }
+    
+    h2 {
+        font-size: 18px;
+    }
+    
+    body {
+        padding-top: 120px;
+    }
+    
+    .progress-container {
+        height: 18px;
+    }
+    
+    .progress-text {
+        font-size: 0.75rem;
+    }
+}
+
+/* Для средних экранов */
+@media (max-width: 600px) {
+    .header-container {
+        justify-content: flex-start;
+        gap: 12px;
+    }
+    
+    .header-right {
+        margin-left: auto;
+        gap: 8px;
+    }
+    
+    .telegram-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 19px;
+        margin-right: 12px;
+    }
+}
+
+/* Для очень маленьких экранов */
+@media (max-width: 480px) {
+    header {
+        padding: 10px 5px;
+    }
+    
+    body {
+        padding-top: 140px;
+    }
+    
+    header nav a {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+    
+    .burger {
+        font-size: 22px;
+        padding: 3px;
+    }
+    
+    /* Улучшаем layout для очень маленьких экранов */
+    .header-container {
+        gap: 10px;
+    }
+    
+    .header-right {
+        gap: 8px;
+    }
+    
+    /* Уменьшаем размеры элементов на очень маленьких экранах */
+    .telegram-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 18px;
+        margin-right: 10px;
+    }
+    
+    h1 {
+        font-size: 20px;
+    }
+    
+    h2 {
+        font-size: 16px;
+    }
+    
+    .progress-container {
+        height: 16px;
+    }
+    
+    .progress-text {
+        font-size: 0.7rem;
+    }
+    
+    main {
+        padding: 10px;
+    }
+}
+
+/* Стили для landscape ориентации на мобильных */
+@media (max-width: 768px) and (orientation: landscape) {
+    header {
+        padding: 15px 20px;
+    }
+    
+    .header-container {
+        gap: 20px;
+    }
+    
+    .burger {
+        font-size: 24px;
+    }
+    
+    body {
+        padding-top: 100px;
+    }
+}
+
+/* Стили для уведомлений в контексте формы */
+.form-container .alert {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+/* Исправление для уведомлений в шапке */
+header .alert {
+    display: none;
+}
+
+/* Стили для контейнера уведомлений */
+#notifications-container {
+    margin: 20px 0;
+    width: 100%;
+}
+
+/* Стили для прогресс-баров в профиле */
+.progress-container {
+    width: 100%;
+    height: 20px;
+    background-color: #e9ecef;
+    border-radius: 10px;
+    margin: 10px 0;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #6a8cbe 0%, #4a6d9d 100%);
+    border-radius: 10px;
+    transition: width 0.5s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.progress-bar.clan-progress {
+    background: linear-gradient(90deg, #5c9d6a 0%, #3a7d4a 100%);
+}
+
+.progress-bar.alliance-progress {
+    background: linear-gradient(90deg, #9d6a8c 0%, #7d4a6d 100%);
+}
+
+.progress-text {
+    color: white;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Стили для фонового эффекта */
+#fog-background {
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -1;
+}
+
+/* Стили для прогресс-бара активности */
+.activity-percentage {
+    margin-bottom: 15px;
+}
+
+.activity-info {
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+.activity-button {
+    display: inline-block;
+    background-color: #4a6fa5;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background-color 0.3s;
+    margin-top: 10px;
+}
+
+.activity-button:hover {
+    background-color: #6a8cbe;
+}
+
+.activity-section h2 {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.activity-section h2 i {
+    margin-right: 10px;
+    color: #ffffff;
+}
+
+.activity-stats {
+    margin-top: 15px;
+}
+
+.activity-stats p {
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+}
+
+.activity-stats p i, 
+.activity-percentage p i,
+.no-activity-data i {
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
+    color: #ffffff;
+}
+
+.warning {
+    color: #ffc107;
+}
+
+.warning i {
+    color: #ffc107 !important;
+}
+
+.no-activity-data {
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+}
+
+.activity-button i {
+    margin-right: 5px;
+}
+

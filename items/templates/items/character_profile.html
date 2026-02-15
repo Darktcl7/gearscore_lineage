@@ -1,0 +1,895 @@
+{% extends 'items/base.html' %}
+{% load static %}
+
+{% block title %}{{ character.name }} - Detailed Profile{% endblock %}
+
+{% block extra_body_attributes %}class="fullscreen-page"{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Reset & Base - l2mgearscore.com style */
+    html,
+    body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: auto;
+        background: #0c0c0c;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: #ffffff;
+    }
+
+    #fog-background {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -2;
+    }
+
+    #site-content {
+        min-height: 100vh;
+        height: auto;
+        display: flex;
+        flex-direction: column;
+        overflow: auto;
+    }
+
+    main {
+        flex: 1;
+        overflow: auto;
+    }
+
+    /* Main Container - scrollable */
+    .character-profile-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        padding-top: 100px;
+        /* Space for fixed top bar */
+        height: 100%;
+        overflow: visible;
+    }
+
+    /* Profile Header - like l2mgearscore */
+    .profile-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 10px;
+    }
+
+    .profile-header h1 {
+        margin: 0;
+        color: #ffffff;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    .profile-header h1 i {
+        margin-right: 10px;
+        color: #ffd700;
+    }
+
+    .profile-navigation {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .nav-btn {
+        padding: 10px 15px;
+        background: #505050;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .nav-btn:hover {
+        background: #2b2b2b;
+        transform: translateY(-2px);
+    }
+
+    /* Profile Content */
+    .profile-content {
+        display: flex;
+        flex-direction: column;
+        gap: 25px;
+    }
+
+    /* Glass Card - section wrapper */
+    .glass-card {
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 10px;
+    }
+
+    .glass-card h2 {
+        margin: 0 0 20px 0;
+        color: #ffffff;
+        font-size: 1.2rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .glass-card h2 i {
+        color: #ffd700;
+    }
+
+    /* User Card */
+    .user-card {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .user-avatar {
+        width: 70px;
+        height: 70px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: #ffffff;
+    }
+
+    .user-details h2 {
+        margin: 0 0 10px 0;
+        font-size: 1.3rem;
+    }
+
+    .user-details p {
+        margin: 5px 0;
+        color: #cccccc;
+        font-size: 0.95rem;
+    }
+
+    .user-details p strong {
+        color: #ffd700;
+    }
+
+    /* Gear Score Section */
+    .gs-overview {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 20px;
+    }
+
+    .gs-card {
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        text-align: center;
+    }
+
+    .gs-card h3 {
+        margin: 0 0 10px 0;
+        color: #cccccc;
+        font-size: 0.9rem;
+    }
+
+    .gs-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #ffd700;
+        margin: 10px 0;
+    }
+
+    .gs-rank {
+        color: #cccccc;
+        font-size: 0.85rem;
+    }
+
+    .gs-breakdown {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+    }
+
+    .gs-component {
+        padding: 15px 10px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .gs-component:hover {
+        background: rgba(255, 255, 255, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .gs-component h4 {
+        margin: 0 0 8px 0;
+        color: #ffffff;
+        font-size: 0.75rem;
+    }
+
+    .gs-component .gs-value {
+        font-size: 1.2rem;
+        margin: 0;
+    }
+
+    /* Avatar Grid */
+    .avatar-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+    }
+
+    .avatar-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .avatar-card:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .avatar-card img {
+        width: 100px;
+        height: 100px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+        object-fit: cover;
+    }
+
+    .avatar-name {
+        text-align: center;
+        font-size: 0.8rem;
+        color: #ffffff;
+    }
+
+    /* Equipment Grid */
+    .equipment-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 12px;
+    }
+
+    .equipment-card {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border-left: 4px solid #ffd700;
+        transition: all 0.3s ease;
+    }
+
+    .equipment-card:hover {
+        background: rgba(0, 0, 0, 0.5);
+    }
+
+    .item-icon img {
+        width: 45px;
+        height: 45px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 5px;
+    }
+
+    .item-details {
+        flex: 1;
+    }
+
+    .item-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: #ffffff;
+        margin: 0;
+    }
+
+    .item-grade {
+        font-size: 0.8rem;
+        color: #cccccc;
+        margin: 2px 0 0 0;
+    }
+
+    .item-stats {
+        font-size: 0.75rem;
+        color: #aaaaaa;
+        margin-top: 4px;
+    }
+
+    .empty-slot {
+        color: #666;
+        font-style: italic;
+    }
+
+    /* History Section */
+    .history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        height: auto;
+        overflow: visible;
+        padding-right: 8px;
+    }
+
+    .history-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        border-left: 4px solid #ffd700;
+    }
+
+    .history-date {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 70px;
+    }
+
+    .history-date .date {
+        font-weight: bold;
+        color: #ffffff;
+        font-size: 0.85rem;
+    }
+
+    .history-date .time {
+        color: #cccccc;
+        font-size: 0.75rem;
+    }
+
+    .history-values {
+        flex: 1;
+        margin-left: 15px;
+    }
+
+    .history-total {
+        margin-bottom: 8px;
+    }
+
+    .history-total .label {
+        color: #cccccc;
+        font-size: 0.85rem;
+    }
+
+    .history-total .value {
+        font-weight: bold;
+        color: #ffd700;
+        font-size: 1rem;
+        margin-left: 8px;
+    }
+
+    .history-breakdown {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 6px;
+    }
+
+    .history-breakdown span {
+        color: #cccccc;
+        font-size: 0.75rem;
+        padding: 2px 6px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+    }
+
+    .change-reason {
+        margin-top: 6px;
+    }
+
+    .change-reason .reason {
+        color: #4CAF50;
+        font-style: italic;
+        font-size: 0.8rem;
+    }
+
+    /* Scrollbar */
+    .character-profile-container::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .character-profile-container::-webkit-scrollbar-track,
+    .history-list::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 3px;
+    }
+
+    .character-profile-container::-webkit-scrollbar-thumb,
+    .history-list::-webkit-scrollbar-thumb {
+        background: #ffd700;
+        border-radius: 3px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .gs-overview {
+            grid-template-columns: 1fr;
+        }
+
+        .gs-breakdown {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .profile-header {
+            flex-direction: column;
+            gap: 15px;
+            text-align: center;
+        }
+
+        .gs-breakdown {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .user-card {
+            flex-direction: column;
+            text-align: center;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .character-profile-container {
+            padding: 10px;
+            padding-top: 90px;
+        }
+
+        .profile-header {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .profile-navigation {
+            justify-content: center;
+            width: 100%;
+        }
+
+        .nav-btn {
+            flex: 1 1 100%;
+            text-align: center;
+            justify-content: center;
+        }
+
+        .user-card {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .user-details {
+            margin-top: 10px;
+        }
+
+        .gs-overview {
+            grid-template-columns: 1fr;
+        }
+
+        .gs-breakdown {
+            grid-template-columns: 1fr;
+            /* Stack GS stats */
+        }
+
+        .equipment-grid {
+            grid-template-columns: 1fr 1fr;
+            /* 2 cols for equipment on mobile */
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="character-profile-container">
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <h1><i class="fas fa-user-circle"></i> Detailed Profile</h1>
+        {% if can_edit %}
+        <div class="profile-navigation">
+            <a href="{% url 'edit-character' character.pk %}" class="nav-btn"><i class="fas fa-edit"></i> Edit Main
+                Class</a>
+            <a href="{% url 'edit-subclass-stats' character.pk %}" class="nav-btn"><i class="fas fa-university"></i>
+                Edit Subclass Stats</a>
+            <a href="{% url 'edit-characteristics-stats' character.pk %}" class="nav-btn"><i
+                    class="fas fa-chart-bar"></i> Edit Characteristics</a>
+            <a href="{% url 'link-discord' character.pk %}" class="nav-btn" style="background: #7289da;"><i
+                    class="fab fa-discord"></i> Link Discord</a>
+            <a href="{% url 'delete-character' character.pk %}" class="nav-btn" style="background: #ce1717;"><i
+                    class="fas fa-trash-alt"></i> Delete</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Profile Content with Scroll -->
+    <div class="profile-content">
+        <!-- Basic Info -->
+        <div class="glass-card user-card">
+            <div class="user-avatar">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div class="user-details">
+                <h2>{{ character.name }}</h2>
+                <p><strong>Clan:</strong> {{ character.clan }}</p>
+                <p><strong>Class:</strong> {{ character.character_class }}</p>
+                <p><strong>Level:</strong> {{ character.level }}</p>
+                <p>
+                    <strong><i class="fab fa-discord" style="color: #7289da;"></i> Discord:</strong>
+                    {% if character.discord_id %}
+                    <span style="color: #2ecc71;">Linked ✓</span>
+                    {% else %}
+                    <span style="color: #888;">Not Linked</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <!-- Legendary Classes (Avatars) Section -->
+        <div class="glass-card">
+            <h2><i class="fas fa-dragon"></i> Legendary Classes</h2>
+            <div class="avatar-grid">
+                {% for class in character.legendary_classes.all %}
+                <div class="avatar-card">
+                    <img src="{% static 'items/img/'|add:class.icon_file %}" alt="{{ class.name }}">
+                    <div class="avatar-name">{{ class.name }}</div>
+                </div>
+                {% empty %}
+                <p>No legendary classes assigned.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Legendary Agathions Section -->
+        <div class="glass-card">
+            <h2><i class="fas fa-paw"></i> Legendary Agathions</h2>
+            <div class="avatar-grid">
+                {% for agathion in character.legendary_agathions.all %}
+                <div class="avatar-card">
+                    <img src="{% static 'items/img/'|add:agathion.icon_file %}" alt="{{ agathion.name }}">
+                    <div class="avatar-name">{{ agathion.name }}</div>
+                </div>
+                {% empty %}
+                <p>No legendary agathions assigned.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Gear Score Section -->
+        <div class="glass-card">
+            <h2><i class="fas fa-chart-line"></i> Gear Score Analytics</h2>
+            <div class="gs-overview">
+                <div class="gs-card total-gs">
+                    <h3>Overall Gear Score</h3>
+                    {% with character.calculate_gear_score_breakdown as breakdown %}
+                    <div class="gs-value">{{ breakdown.total_score|floatformat:1 }}</div>
+                    <div class="gs-rank">Place in the ranking: {{ rank }}</div>
+                </div>
+                <div class="gs-breakdown">
+                    <div class="gs-component">
+                        <h4>Characteristics</h4>
+                        <div class="gs-value">{{ breakdown.characteristics|floatformat:1 }}</div>
+                    </div>
+                    <div class="gs-component">
+                        <h4>Sub-class</h4>
+                        <div class="gs-value">{{ breakdown.subclass|floatformat:1 }}</div>
+                    </div>
+                    <div class="gs-component">
+                        <h4>Main class</h4>
+                        <div class="gs-value">{{ breakdown.mainclass|floatformat:1 }}</div>
+                    </div>
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Other Attributes Section -->
+        <div class="glass-card">
+            <h2><i class="fas fa-star"></i> Other Attributes</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px;">
+                {% with character.attributes as attrs %}
+                <p><strong>Epic Classes:</strong> {{ attrs.epic_classes_count|default:"-" }}</p>
+                <p><strong>Epic Agathions:</strong> {{ attrs.epic_agathions_count|default:"-" }}</p>
+                <p><strong>Soulshot Level:</strong> {{ attrs.soulshot_level|default:"-" }}</p>
+                <p><strong>Valor Level:</strong> {{ attrs.valor_level|default:"-" }}</p>
+                <p><strong>Soul Attack:</strong> {{ attrs.get_soul_prog_attack_display|default:"-" }}</p>
+                <p><strong>Soul Defense:</strong> {{ attrs.get_soul_prog_defense_display|default:"-" }}</p>
+                <p><strong>Soul Blessing:</strong> {{ attrs.get_soul_prog_blessing_display|default:"-" }}</p>
+                <p><strong>Holy Bracelet:</strong> {{ attrs.get_enchant_bracelet_holy_prot_display|default:"-" }}</p>
+                <p><strong>Influence Bracelet:</strong> {{ attrs.get_enchant_bracelet_influence_display|default:"-" }}
+                </p>
+                <p><strong>Earth Earring:</strong> {{ attrs.get_enchant_earring_earth_display|default:"-" }}</p>
+                <p><strong>Fire Earring:</strong> {{ attrs.get_enchant_earring_fire_display|default:"-" }}</p>
+                <p><strong>Eva's Seal:</strong> {{ character.attributes.get_enchant_seal_eva_display|default:"-" }}</p>
+                {% endwith %}
+            </div>
+            <h3 style="margin-top: 25px; color: #ffffff;"><i class="fas fa-book" style="color: #ffd700;"></i>
+                Inheritor's Books</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; margin-top: 10px;">
+                {% for book in character.attributes.inheritor_books.all %}
+                <p style="margin: 0;">- {{ book.name }}</p>
+                {% empty %}
+                <p>No books assigned.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- PvP Equipment Section -->
+        <div class="glass-card">
+            <h2><i class="fas fa-shield-alt"></i> PvP Equipment</h2>
+            {% load item_extras %}
+            {% with character.attributes as attrs %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+                <div class="equipment-card">
+                    <div class="item-icon">
+                        {% with attrs.pvp_helmet|get_image_for_choice as img %}
+                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Helmet"
+                            style="width:50px;height:50px;">{% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="item-details">
+                        <p class="item-name">PvP Helmet</p>
+                        <p class="item-grade">
+                            {{ attrs.pvp_helmet|default:"-" }}
+                            {% if attrs.pvp_helmet_enchant and attrs.pvp_helmet_enchant > 0 %}
+                            <span style="color: #795548; font-weight: 700;"> +{{ attrs.pvp_helmet_enchant }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="equipment-card">
+                    <div class="item-icon">
+                        {% with attrs.pvp_gloves|get_image_for_choice as img %}
+                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Gloves"
+                            style="width:50px;height:50px;">{% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="item-details">
+                        <p class="item-name">PvP Gloves</p>
+                        <p class="item-grade">
+                            {{ attrs.pvp_gloves|default:"-" }}
+                            {% if attrs.pvp_gloves_enchant and attrs.pvp_gloves_enchant > 0 %}
+                            <span style="color: #FF5722; font-weight: 700;"> +{{ attrs.pvp_gloves_enchant }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="equipment-card">
+                    <div class="item-icon">
+                        {% with attrs.pvp_boots|get_image_for_choice as img %}
+                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Boots"
+                            style="width:50px;height:50px;">{% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="item-details">
+                        <p class="item-name">PvP Boots</p>
+                        <p class="item-grade">
+                            {{ attrs.pvp_boots|default:"-" }}
+                            {% if attrs.pvp_boots_enchant and attrs.pvp_boots_enchant > 0 %}
+                            <span style="color: #8BC34A; font-weight: 700;"> +{{ attrs.pvp_boots_enchant }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="equipment-card">
+                    <div class="item-icon">
+                        {% with attrs.pvp_gaiters|get_image_for_choice as img %}
+                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Gaiters"
+                            style="width:50px;height:50px;">{% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="item-details">
+                        <p class="item-name">PvP Gaiters</p>
+                        <p class="item-grade">
+                            {{ attrs.pvp_gaiters|default:"-" }}
+                            {% if attrs.pvp_gaiters_enchant and attrs.pvp_gaiters_enchant > 0 %}
+                            <span style="color: #3F51B5; font-weight: 700;"> +{{ attrs.pvp_gaiters_enchant }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="equipment-card">
+                    <div class="item-icon">
+                        {% with attrs.pvp_top_armor|get_image_for_choice as img %}
+                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Armor"
+                            style="width:50px;height:50px;">{% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="item-details">
+                        <p class="item-name">PvP Top Armor</p>
+                        <p class="item-grade">
+                            {{ attrs.pvp_top_armor|default:"-" }}
+                            {% if attrs.pvp_top_armor_enchant and attrs.pvp_top_armor_enchant > 0 %}
+                            <span style="color: #9E9E9E; font-weight: 700;"> +{{ attrs.pvp_top_armor_enchant }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="equipment-card">
+                    <div class="item-icon">
+                        {% with attrs.pvp_cloak|get_image_for_choice as img %}
+                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Cloak"
+                            style="width:50px;height:50px;">{% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="item-details">
+                        <p class="item-name">PvP Cloak</p>
+                        <p class="item-grade">
+                            {{ attrs.pvp_cloak|default:"-" }}
+                            {% if attrs.pvp_cloak_enchant and attrs.pvp_cloak_enchant > 0 %}
+                            <span style="color: #FFEB3B; font-weight: 700;"> +{{ attrs.pvp_cloak_enchant }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="equipment-card">
+                    <div class="item-icon">
+                        {% with attrs.pvp_sigil|get_image_for_choice as img %}
+                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Sigil"
+                            style="width:50px;height:50px;">{% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="item-details">
+                        <p class="item-name">PvP Sigil</p>
+                        <p class="item-grade">
+                            {{ attrs.pvp_sigil|default:"-" }}
+                            {% if attrs.pvp_sigil_enchant and attrs.pvp_sigil_enchant > 0 %}
+                            <span style="color: #607D8B; font-weight: 700;"> +{{ attrs.pvp_sigil_enchant }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="equipment-card">
+                    <div class="item-icon">
+                        {% with attrs.pvp_necklace|get_image_for_choice as img %}
+                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Necklace"
+                            style="width:50px;height:50px;">{% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="item-details">
+                        <p class="item-name">PvP Necklace</p>
+                        <p class="item-grade">
+                            {{ attrs.pvp_necklace|default:"-" }}
+                            {% if attrs.pvp_necklace_enchant and attrs.pvp_necklace_enchant > 0 %}
+                            <span style="color: #F48FB1; font-weight: 700;"> +{{ attrs.pvp_necklace_enchant }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="equipment-card">
+                    <div class="item-icon">
+                        {% with attrs.pvp_ring_left|get_image_for_choice as img %}
+                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Ring Left"
+                            style="width:50px;height:50px;">{% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="item-details">
+                        <p class="item-name">PvP Ring (Left)</p>
+                        <p class="item-grade">
+                            {{ attrs.pvp_ring_left|default:"-" }}
+                            {% if attrs.pvp_ring_left_enchant and attrs.pvp_ring_left_enchant > 0 %}
+                            <span style="color: #80DEEA; font-weight: 700;"> +{{ attrs.pvp_ring_left_enchant }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="equipment-card">
+                    <div class="item-icon">
+                        {% with attrs.pvp_ring_right|get_image_for_choice as img %}
+                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Ring Right"
+                            style="width:50px;height:50px;">{% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="item-details">
+                        <p class="item-name">PvP Ring (Right)</p>
+                        <p class="item-grade">
+                            {{ attrs.pvp_ring_right|default:"-" }}
+                            {% if attrs.pvp_ring_right_enchant and attrs.pvp_ring_right_enchant > 0 %}
+                            <span style="color: #80DEEA; font-weight: 700;"> +{{ attrs.pvp_ring_right_enchant }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="equipment-card">
+                    <div class="item-icon">
+                        {% with attrs.pvp_belt|get_image_for_choice as img %}
+                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Belt"
+                            style="width:50px;height:50px;">{% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="item-details">
+                        <p class="item-name">PvP Belt</p>
+                        <p class="item-grade">
+                            {{ attrs.pvp_belt|default:"-" }}
+                            {% if attrs.pvp_belt_enchant and attrs.pvp_belt_enchant > 0 %}
+                            <span style="color: #CE93D8; font-weight: 700;"> +{{ attrs.pvp_belt_enchant }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="equipment-card">
+                    <div class="item-icon">
+                        {% with weapon_val=attrs.weapon %}
+                        {% with media_url=weapon_val|get_weapon_media_url %}
+                        {% if media_url %}
+                        <!-- New weapon system (from Media) -->
+                        <img src="/media/{{ media_url }}" alt="Weapon"
+                            style="width:50px;height:50px; object-fit: contain;">
+                        {% else %}
+                        <!-- Fallback to old system (Static) -->
+                        {% with weapon_val|get_image_for_choice as img %}
+                        {% if img %}
+                        <img src="{% static 'items/images/choices/'|add:img %}" alt="Weapon"
+                            style="width:50px;height:50px;">
+                        {% endif %}
+                        {% endwith %}
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="item-details">
+                        <p class="item-name">Weapon</p>
+                        <p class="item-grade">
+                            {{ weapon_val|get_weapon_display_name|default:"-" }}
+                            {% if attrs.weapon_enchant and attrs.weapon_enchant > 0 %}
+                            <span style="color: #FF9800; font-weight: 700;"> +{{ attrs.weapon_enchant }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% endwith %}
+                </div>
+            </div>
+            {% endwith %}
+        </div>
+
+        <!-- GS History Section -->
+        <div class="glass-card">
+            <h2><i class="fas fa-history"></i> History of Changes</h2>
+            <div class="history-list">
+                {% for log in gs_logs %}
+                <div class="history-item">
+                    <div class="history-date">
+                        <span class="date">{{ log.timestamp|date:"d.m.Y" }}</span>
+                        <span class="time">{{ log.timestamp|time:"H:i" }}</span>
+                    </div>
+                    <div class="history-values">
+                        <div class="history-total">
+                            <span class="label">Total GS:</span>
+                            <span class="value">{{ log.total_score|floatformat:1 }}</span>
+                        </div>
+                        <div class="history-breakdown">
+                            <span>DMG: {{ log.dmg }}</span>
+                            <span>ACC: {{ log.acc }}</span>
+                            <span>DEF: {{ log.def_stat }}</span>
+                            <span>REDUC: {{ log.reduc }}</span>
+                            <span>RESIST: {{ log.resist }}</span>
+                            <span>Skill: {{ log.skill_dmg_boost }}</span>
+                            <span>Wpn: {{ log.wpn_dmg_boost }}</span>
+                            <span>SS: {{ log.soulshot }}</span>
+                            <span>Valor: {{ log.valor }}</span>
+                            <span>Guard: {{ log.guardian }}</span>
+                        </div>
+                        <div class="change-reason">
+                            <span class="reason">{{ log.reason }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <p>No Gear Score history found for this character. Try updating the character to generate the first log.
+                </p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

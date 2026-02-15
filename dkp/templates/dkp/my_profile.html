@@ -1,0 +1,187 @@
+{% extends 'items/base.html' %}
+{% load static %}
+{% block title %}My DKP{% endblock %}
+{% block extra_body_attributes %}class="fullscreen-page"{% endblock %}
+
+{% block extra_head %}
+<style>
+    html,
+    body {
+        height: 100%;
+        margin: 0;
+        background: #0c0c0c;
+        font-family: 'Outfit', sans-serif;
+        color: white;
+    }
+
+    .activity-container {
+        min-height: calc(100vh - 200px);
+        margin-top: 100px;
+        display: flex;
+        flex-direction: column;
+        background: rgba(10, 10, 10, 0.9);
+        border-radius: 20px;
+        padding: 30px;
+        margin-left: max(20px, 10%);
+        margin-right: max(20px, 10%);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(10px);
+        border: 1px solid #222;
+        /* create spacing at bottom for footer */
+        margin-bottom: 50px;
+    }
+
+    h1 {
+        font-family: 'Cinzel', serif;
+        color: #FFD700;
+        margin-bottom: 20px;
+    }
+
+    .profile-card {
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+        border: 1px solid rgba(255, 215, 0, 0.1);
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .log-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        font-size: 0.95rem;
+    }
+
+    .log-table th {
+        text-align: left;
+        color: #888;
+        padding: 8px;
+        border-bottom: 1px solid #333;
+    }
+
+    .log-table td {
+        padding: 12px 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        color: #ccc;
+    }
+
+    .plus {
+        color: #4CAF50;
+        font-weight: bold;
+    }
+
+    .minus {
+        color: #FF5252;
+        font-weight: bold;
+    }
+
+    @media (max-width: 768px) {
+        .profile-card {
+            padding: 15px !important;
+        }
+        
+        .log-table th, .log-table td {
+            padding: 8px 4px !important;
+            font-size: 0.8rem;
+        }
+        
+        h2 {
+            font-size: 1.4rem !important;
+        }
+
+        .profile-card > div:first-child {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .profile-card > div:first-child > div:last-child {
+            text-align: left !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="activity-container">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h1>My DKP Wallet</h1>
+        <a href="{% url 'web-dkp-leaderboard' %}" class="btn-gold-outline"
+            style="text-decoration:none; color:#FFD700; border:1px solid #FFD700; padding:5px 15px; border-radius:5px;">View
+            Leaderboard</a>
+    </div>
+
+    {% if not profiles %}
+    <div style="text-align:center; padding: 50px; background: rgba(255,255,255,0.02); border-radius: 10px;">
+        <h2 style="color: #888;">No Heroes Found</h2>
+        <p>You don't have any characters linked to this account yet.</p>
+        <a href="{% url 'character-management' %}" style="color: #FFD700;">Manage Characters</a>
+    </div>
+    {% else %}
+    {% for p in profiles %}
+    <div class="profile-card">
+        <div
+            style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
+            <div>
+                <h2 style="margin:0; font-family: 'Cinzel', serif; color: white; font-size: 1.8rem;">{{ p.character.name }}</h2>
+                <span style="color: #888; font-size: 0.9rem;">{{ p.character.character_class }} - Lv. {{ p.character.level }}</span>
+            </div>
+            <div style="text-align:right;">
+                <div
+                    style="font-size:2.2rem; font-weight:bold; color: #FFD700; text-shadow: 0 0 15px rgba(255, 215, 0, 0.2);">
+                    {{ p.current_dkp }}</div>
+                <div style="font-size:0.9rem; color:#aaa; text-transform: uppercase; letter-spacing: 1px;">Current DKP
+                </div>
+            </div>
+        </div>
+
+        <h4 style="margin:0 0 10px 0; color:#666; text-transform:uppercase; font-size:0.85rem; letter-spacing:1px;">
+            Transaction History</h4>
+        <table class="log-table">
+            <thead>
+                <tr>
+                    <th width="20%">Date</th>
+                    <th width="35%">Description</th>
+                    <th width="25%">Source</th>
+                    <th width="20%" style="text-align:right;">Change</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in p.recent_logs %}
+                <tr>
+                    <td style="color:#666;">{{ log.created_at|date:"d M Y, H:i" }}</td>
+                    <td>{{ log.reason }}</td>
+                    <td style="color:#888;">
+                        {% if 'Decay' in log.reason or 'decay' in log.reason %}
+                            {% if log.amount > 0 %}
+                                Decay Reversal
+                            {% else %}
+                                Decay
+                            {% endif %}
+                        {% elif log.amount > 0 %}
+                            Give DKP
+                        {% else %}
+                            Remove DKP
+                        {% endif %}
+                    </td>
+                    <td class="{% if log.amount >= 0 %}plus{% else %}minus{% endif %}" style="text-align:right;">
+                        {% if log.amount > 0 %}+{% endif %}{{ log.amount }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align:center; padding:20px; color:#555; font-style:italic;">No
+                        transactions recorded.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="margin-top: 15px; text-align: right; color: #555; font-size: 0.8rem;">
+            Lifetime Earned: {{ p.total_earned }} DKP
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,144 @@
+/* Фиксируем контейнер по центру экрана */
+.selection-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    max-width: 600px;
+    padding: 20px;
+    text-align: center;
+}
+
+/* Заголовок */
+.selection-container h1 {
+    margin-bottom: 30px;
+    font-size: 26px;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+/* Блок с кнопками */
+.selection-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Кнопка Основной информации */
+.main-btn {
+    display: block;
+    width: 100%;
+    max-width: 500px;
+    padding: 20px;
+    background: #000000;
+    color: white;
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+    border-radius: 15px;
+    text-decoration: none;
+    transition: background 0.3s, transform 0.1s;
+    box-shadow: 0 2px 4px rgba(255, 255, 255, 0.1);
+}
+
+.main-btn:hover {
+    background: #23272b;
+    transform: scale(1.05);
+}
+
+/* Блок с нижними кнопками */
+.bottom-buttons {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 500px;
+    gap: 15px;
+}
+
+/* Кнопки Характеристики и Саб-класс */
+.secondary-btn {
+    flex: 1;
+    padding: 18px;
+    background: #000000;
+    color: white;
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+    border-radius: 15px;
+    text-decoration: none;
+    transition: background 0.3s, transform 0.1s;
+    box-shadow: 0 2px 4px rgba(255, 255, 255, 0.1);
+}
+
+.secondary-btn:hover {
+    background: #23272b;
+    transform: scale(1.05);
+}
+
+/* Стили для уведомления */
+.alert {
+    padding: 15px 20px;
+    margin-bottom: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    font-size: 16px;
+    text-align: left;
+    position: relative;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.alert-warning {
+    background-color: rgba(255, 193, 7, 0.9);
+    color: #212529;
+    border-radius: 10px;
+    border-left: 5px solid #e0a800;
+    position: relative;
+    padding-left: 45px;
+}
+
+.alert-warning:before {
+    content: "⚠️";
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+}
+
+.alert-warning strong {
+    font-size: 18px;
+    display: block;
+    margin-bottom: 5px;
+    color: #856404;
+}
+
+/* Анимация появления уведомления */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .alert-warning {
+        padding: 12px 15px 12px 40px;
+        font-size: 14px;
+    }
+    
+    .alert-warning:before {
+        left: 10px;
+        font-size: 18px;
+    }
+    
+    .alert-warning strong {
+        font-size: 16px;
+    }
+}

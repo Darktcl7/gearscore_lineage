@@ -1,0 +1,577 @@
+{% extends 'items/base.html' %}
+{% load static %}
+{% block title %}DKP Leaderboard{% endblock %}
+{% block extra_body_attributes %}class="fullscreen-page"{% endblock %}
+
+{% block extra_head %}
+<style>
+    html,
+    body {
+        height: 100%;
+        margin: 0;
+        background: #0c0c0c;
+        font-family: 'Outfit', sans-serif;
+        /* overflow: hidden; */
+    }
+
+    .activity-container {
+        min-height: 80vh;
+        margin-bottom: 60px;
+        margin-top: 100px;
+        display: flex;
+        flex-direction: column;
+        background: rgba(10, 10, 10, 0.8);
+        border-radius: 20px;
+        padding: 30px;
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        margin-left: max(20px, 5%);
+        margin-right: max(20px, 5%);
+        color: white;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        margin-bottom: 50px;
+    }
+
+    h1 {
+        margin: 0;
+        font-family: 'Cinzel', serif;
+        font-size: 2rem;
+        color: #FFD700;
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    }
+
+    .table-wrapper {
+        margin-top: 20px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th {
+        text-align: left;
+        padding: 15px;
+        border-bottom: 2px solid rgba(255, 215, 0, 0.2);
+        color: #888;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.9rem;
+        position: sticky;
+        top: 0;
+        background: #0c0c0c;
+        background: rgba(12, 12, 12, 0.95);
+        z-index: 10;
+    }
+
+    td {
+        padding: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        font-size: 1.0rem;
+    }
+
+    tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .gold-text {
+        color: #FFD700;
+        font-weight: bold;
+        font-family: 'Cinzel', serif;
+        font-size: 1.2rem;
+    }
+
+    .rank-cell {
+        font-family: 'Cinzel', serif;
+        color: #666;
+        width: 60px;
+    }
+
+    .top-1 {
+        color: #FFD700;
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        font-size: 1.2rem;
+    }
+
+    .top-2 {
+        color: #C0C0C0;
+        text-shadow: 0 0 10px rgba(192, 192, 192, 0.5);
+        font-size: 1.2rem;
+    }
+
+    .top-3 {
+        color: #CD7F32;
+        text-shadow: 0 0 10px rgba(205, 127, 50, 0.5);
+        font-size: 1.2rem;
+    }
+
+    .btn-decay {
+        padding: 8px 18px;
+        background: rgba(231, 76, 60, 0.2);
+        border: 1px solid rgba(231, 76, 60, 0.5);
+        border-radius: 8px;
+        color: #e74c3c;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-decay:hover {
+        background: rgba(231, 76, 60, 0.4);
+        transform: translateY(-1px);
+    }
+
+    .decay-modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .decay-modal-overlay.active {
+        display: flex;
+    }
+
+    .decay-modal {
+        background: #1a1a1a;
+        border: 1px solid rgba(231, 76, 60, 0.3);
+        border-radius: 15px;
+        padding: 30px;
+        width: 400px;
+        max-width: 90%;
+    }
+
+    .decay-modal h2 {
+        margin: 0 0 10px;
+        color: #e74c3c;
+        font-size: 1.3rem;
+    }
+
+    .decay-modal p {
+        color: #999;
+        font-size: 0.9rem;
+        margin: 0 0 20px;
+    }
+
+    .decay-modal input[type="number"] {
+        width: 100%;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        color: #fff;
+        font-size: 1.1rem;
+        box-sizing: border-box;
+        margin-bottom: 20px;
+    }
+
+    .decay-modal input[type="number"]:focus {
+        outline: none;
+        border-color: #e74c3c;
+    }
+
+    .decay-modal-btns {
+        display: flex;
+        gap: 10px;
+    }
+
+    .decay-modal-btns button {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 0.95rem;
+    }
+
+    .btn-confirm-decay {
+        background: #e74c3c;
+        color: #fff;
+    }
+
+    .btn-cancel-decay {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    }
+
+    .last-decay-info {
+        margin-top: 4px;
+        font-size: 0.75rem;
+        color: #e74c3c;
+        opacity: 0.7;
+    }
+
+    .btn-adjust {
+        padding: 6px 14px;
+        background: rgba(52, 152, 219, 0.2);
+        border: 1px solid rgba(52, 152, 219, 0.5);
+        border-radius: 6px;
+        color: #3498db;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .btn-adjust:hover {
+        background: rgba(52, 152, 219, 0.4);
+    }
+
+    .adjust-dropdown {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #1a1a1a;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        overflow: hidden;
+        z-index: 50;
+        min-width: 120px;
+        margin-top: 4px;
+    }
+
+    .adjust-dropdown.show {
+        display: block;
+    }
+
+    .adjust-dropdown-item {
+        display: block;
+        width: 100%;
+        padding: 8px 14px;
+        background: none;
+        border: none;
+        color: #ccc;
+        font-size: 0.85rem;
+        cursor: pointer;
+        text-align: left;
+        transition: background 0.2s;
+    }
+
+    .adjust-dropdown-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .adjust-dropdown-item.give-item {
+        color: #2ecc71;
+    }
+
+    .adjust-dropdown-item.remove-item {
+        color: #f39c12;
+    }
+
+    .btn-confirm-give {
+        background: #2ecc71;
+        color: #fff;
+    }
+
+    .btn-confirm-remove {
+        background: #f39c12;
+        color: #fff;
+    }
+
+    .action-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+    .bulk-actions {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .btn-bulk {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-bulk-give {
+        background: rgba(46, 204, 113, 0.2);
+        border: 1px solid rgba(46, 204, 113, 0.5);
+        color: #2ecc71;
+    }
+
+    .btn-bulk-give:hover {
+        background: rgba(46, 204, 113, 0.4);
+    }
+
+    .btn-bulk-remove {
+        background: rgba(243, 156, 18, 0.2);
+        border: 1px solid rgba(243, 156, 18, 0.5);
+        color: #f39c12;
+    }
+
+    .btn-bulk-remove:hover {
+        background: rgba(243, 156, 18, 0.4);
+    }
+
+    .btn-bulk-decay {
+        background: rgba(231, 76, 60, 0.2);
+        border: 1px solid rgba(231, 76, 60, 0.5);
+        color: #e74c3c;
+    }
+
+    .btn-bulk-decay:hover {
+        background: rgba(231, 76, 60, 0.4);
+    }
+
+    .reason-input {
+        width: 100%;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        color: #fff;
+        font-size: 0.95rem;
+        box-sizing: border-box;
+        margin-bottom: 15px;
+    }
+
+    .reason-input:focus {
+        outline: none;
+        border-color: #3498db;
+    }
+
+    .reason-input::placeholder {
+        color: #666;
+    }
+
+    .bulk-modal-label {
+        color: #ccc;
+        font-size: 0.85rem;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .bulk-result-info {
+        margin-bottom: 15px;
+        padding: 10px;
+        background: rgba(255, 215, 0, 0.1);
+        border-radius: 6px;
+        color: #FFD700;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if is_admin %}
+<div class="bulk-actions">
+    <div style="display:flex;align-items:center;gap:10px;">
+        <input type="checkbox" id="select-all" onchange="toggleSelectAll()"
+            style="width:18px;height:18px;cursor:pointer;">
+        <label for="select-all" style="cursor:pointer;color:#ccc;font-size:0.9rem;">Select All</label>
+    </div>
+    <div style="border-left:1px solid rgba(255,255,255,0.2);padding-left:10px;display:flex;gap:10px;">
+        <button class="btn-bulk btn-bulk-give" onclick="openBulkGiveSelected()">
+            <i class="fas fa-plus-circle"></i> Give DKP
+        </button>
+        <button class="btn-bulk btn-bulk-remove" onclick="openBulkRemoveSelected()">
+            <i class="fas fa-minus-circle"></i> Remove DKP
+        </button>
+        <button class="btn-bulk btn-bulk-decay" onclick="openBulkDecaySelected()">
+            <i class="fas fa-percentage"></i> Decay
+        </button>
+    </div>
+</div>
+{% endif %}
+<div class="activity-container">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+        <div>
+            <h1>DKP Leaderboard</h1>
+            <p style="color:#666; margin:5px 0 0 0;">Dragon Kill Points System • Raid Distribution Currency</p>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <span
+                style="background:rgba(255,215,0,0.1); border:1px solid rgba(255,215,0,0.3); padding:5px 15px; border-radius:20px; color:#FFD700; font-size:0.9rem;">
+                System Status: Active
+            </span>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    {% if is_admin %}<th style="width:40px;"></th>{% endif %}
+                    <th>Rank</th>
+                    <th>Guardian Name</th>
+                    <th>Current DKP</th>
+                    <th>Lifetime Earned</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for profile in profiles %}
+                <tr>
+                    {% if is_admin %}
+                    <td style="text-align:center;">
+                        <input type="checkbox" class="player-checkbox" value="{{ profile.id }}"
+                            style="width:16px;height:16px;cursor:pointer;">
+                    </td>
+                    {% endif %}
+                    <td
+                        class="rank-cell {% if forloop.counter == 1 %}top-1{% elif forloop.counter == 2 %}top-2{% elif forloop.counter == 3 %}top-3{% endif %}">
+                        #{{ forloop.counter }}
+                    </td>
+                    <td style="font-weight:bold; font-size:1.1rem; color:#eee;">
+                        {{ profile.character.name }}
+                    </td>
+                    <td class="gold-text">{{ profile.current_dkp }}</td>
+                    <td style="color:#555;">{{ profile.total_earned }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{% if is_admin %}5{% else %}4{% endif %}"
+                        style="text-align:center; padding:50px; color:#666;">No DKP data found. Start checking in!</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if is_admin %}
+<script>
+    function toggleSelectAll() {
+        var selectAll = document.getElementById('select-all');
+        var checkboxes = document.querySelectorAll('.player-checkbox');
+        checkboxes.forEach(function (cb) {
+            cb.checked = selectAll.checked;
+        });
+    }
+    function getSelectedPlayers() {
+        var checkboxes = document.querySelectorAll('.player-checkbox:checked');
+        var ids = [];
+        checkboxes.forEach(function (cb) {
+            ids.push(cb.value);
+        });
+        return ids;
+    }
+    function openBulkGiveSelected() {
+        var selected = getSelectedPlayers();
+        if (selected.length === 0) {
+            alert('Please select at least one player using the checkboxes.');
+            return;
+        }
+        document.getElementById('give-profile-ids').value = selected.join(',');
+        document.getElementById('give-selected-info').textContent = 'Selected players: ' + selected.length;
+        document.getElementById('bulk-give-modal').classList.add('active');
+    }
+    function openBulkRemoveSelected() {
+        var selected = getSelectedPlayers();
+        if (selected.length === 0) {
+            alert('Please select at least one player using the checkboxes.');
+            return;
+        }
+        document.getElementById('remove-profile-ids').value = selected.join(',');
+        document.getElementById('remove-selected-info').textContent = 'Selected players: ' + selected.length;
+        document.getElementById('bulk-remove-modal').classList.add('active');
+    }
+    function openBulkDecaySelected() {
+        var selected = getSelectedPlayers();
+        if (selected.length === 0) {
+            alert('Please select at least one player using the checkboxes.');
+            return;
+        }
+        document.getElementById('decay-profile-ids').value = selected.join(',');
+        document.getElementById('decay-selected-info').textContent = 'Selected players: ' + selected.length;
+        document.getElementById('bulk-decay-modal').classList.add('active');
+    }
+</script>
+
+<div class="decay-modal-overlay" id="bulk-give-modal">
+    <div class="decay-modal">
+        <h2 style="color:#2ecc71;"><i class="fas fa-plus-circle"></i> Give DKP to Selected Players</h2>
+        <div class="bulk-result-info" id="give-selected-info">
+            Select players using the checkboxes first.
+        </div>
+        <form method="post" action="{% url 'dkp-give-selected' %}">
+            {% csrf_token %}
+            <input type="hidden" name="profile_ids" id="give-profile-ids">
+            <label class="bulk-modal-label">Amount (DKP Points)</label>
+            <input type="number" name="amount" min="1" placeholder="Enter DKP amount..." required>
+            <label class="bulk-modal-label">Reason</label>
+            <input type="text" name="reason" class="reason-input" placeholder="e.g., Raid bonus, Event reward..."
+                required>
+            <div class="decay-modal-btns">
+                <button type="button" class="btn-cancel-decay"
+                    onclick="document.getElementById('bulk-give-modal').classList.remove('active')">Cancel</button>
+                <button type="submit" class="btn-confirm-give"><i class="fas fa-plus"></i> Give to Selected</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="decay-modal-overlay" id="bulk-remove-modal">
+    <div class="decay-modal">
+        <h2 style="color:#f39c12;"><i class="fas fa-minus-circle"></i> Remove DKP from Selected Players</h2>
+        <div class="bulk-result-info" id="remove-selected-info">
+            Select players using the checkboxes first.
+        </div>
+        <form method="post" action="{% url 'dkp-remove-selected' %}">
+            {% csrf_token %}
+            <input type="hidden" name="profile_ids" id="remove-profile-ids">
+            <label class="bulk-modal-label">Amount (DKP Points)</label>
+            <input type="number" name="amount" min="1" placeholder="Enter DKP amount..." required>
+            <label class="bulk-modal-label">Reason</label>
+            <input type="text" name="reason" class="reason-input" placeholder="e.g., Penalty, DKP adjustment..."
+                required>
+            <div class="decay-modal-btns">
+                <button type="button" class="btn-cancel-decay"
+                    onclick="document.getElementById('bulk-remove-modal').classList.remove('active')">Cancel</button>
+                <button type="submit" class="btn-confirm-remove"><i class="fas fa-minus"></i> Remove from
+                    Selected</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="decay-modal-overlay" id="bulk-decay-modal">
+    <div class="decay-modal">
+        <h2 style="color:#e74c3c;"><i class="fas fa-percentage"></i> Decay Selected Players</h2>
+        <div class="bulk-result-info" id="decay-selected-info">
+            Select players using the checkboxes first.
+        </div>
+        <form method="post" action="{% url 'dkp-decay-selected' %}">
+            {% csrf_token %}
+            <input type="hidden" name="profile_ids" id="decay-profile-ids">
+            <label class="bulk-modal-label">Decay Percentage (max 5%)</label>
+            <input type="number" name="decay_percent" value="1" min="0.1" max="5" step="0.1" required>
+            <label class="bulk-modal-label">Reason</label>
+            <input type="text" name="reason" class="reason-input"
+                placeholder="e.g., Monthly decay, Inactivity period..." required>
+            <div class="decay-modal-btns">
+                <button type="button" class="btn-cancel-decay"
+                    onclick="document.getElementById('bulk-decay-modal').classList.remove('active')">Cancel</button>
+                <button type="submit" class="btn-confirm-decay"><i class="fas fa-skull-crossbones"></i> Apply
+                    Decay</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

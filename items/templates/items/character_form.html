@@ -1,0 +1,2070 @@
+{% extends 'items/base.html' %}
+{% load static %}
+{% load item_extras %}
+
+{% block title %}
+{% if is_edit %}Edit Character{% else %}Create Character{% endif %}
+{% endblock %}
+
+{% block extra_body_attributes %}class="fullscreen-page"{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* CSS Styles for the form */
+    html,
+    body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: #0c0c0c;
+    }
+
+    #fog-background {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -2;
+    }
+
+    #site-content {
+        height: calc(100vh - var(--header-height));
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: transparent;
+    }
+
+    main {
+        flex: 1;
+        overflow: hidden;
+        padding: 0;
+    }
+
+    .character-form-container {
+        height: calc(100% - 20px);
+        margin-top: 0;
+        display: flex;
+        flex-direction: column;
+        background: rgba(18, 18, 18, 0.85);
+        border-radius: 20px;
+        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
+        overflow: hidden;
+        position: relative;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        margin-left: 10px;
+        margin-right: 10px;
+        margin-bottom: 10px;
+    }
+
+    .form-header {
+        padding: 25px;
+        text-align: center;
+        background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .form-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background: linear-gradient(90deg, #c5a800, #e6d14c, #c5a800);
+        background-size: 200% 200%;
+        animation: gradientShift 3s ease infinite;
+    }
+
+    @keyframes gradientShift {
+        0% {
+            background-position: 0% 50%;
+        }
+
+        50% {
+            background-position: 100% 50%;
+        }
+
+        100% {
+            background-position: 0% 50%;
+        }
+    }
+
+    .form-header h1 {
+        margin: 0;
+        color: #ffffff;
+        font-size: 2rem;
+        text-shadow: 0 0 10px rgba(197, 168, 0, 0.5);
+        position: relative;
+        z-index: 1;
+    }
+
+    .form-content-wrapper {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+    }
+
+    .form-section {
+        display: flex;
+        flex-direction: column;
+        gap: 25px;
+        overflow-y: auto;
+        padding: 15px;
+        border-radius: 15px;
+        background: rgba(30, 30, 30, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        height: 100%;
+    }
+
+    .form-group {
+        margin-bottom: 0;
+        padding: 20px;
+        background: linear-gradient(160deg, #3a3a3a, #2a2a2a);
+        border-radius: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        transition: all 0.4s ease;
+        flex: 0 0 auto;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .form-group:hover {
+        transform: translateY(-5px) scale(1.01);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(197, 168, 0, 0.3);
+    }
+
+    .form-label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #ffffff;
+        font-size: 1.1rem;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 12px;
+        font-size: 16px;
+        border: 1px solid rgba(197, 168, 0, 0.5);
+        border-radius: 8px;
+        background: rgba(20, 20, 20, 0.8);
+        color: white;
+        box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
+        box-sizing: border-box;
+        transition: all 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border: 1px solid #c5a800;
+        box-shadow: 0 0 10px rgba(197, 168, 0, 0.5);
+    }
+
+    .checkbox-group,
+    .radio-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 12px;
+        padding: 5px 0;
+    }
+
+    .checkbox-label,
+    .radio-label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: rgba(40, 40, 40, 0.7);
+        padding: 15px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        text-align: center;
+    }
+
+    .checkbox-label:hover,
+    .radio-label:hover {
+        background: rgba(60, 60, 60, 0.8);
+        border: 1px solid rgba(197, 168, 0, 0.3);
+    }
+
+    .choice-label-text {
+        margin-bottom: 10px;
+        font-weight: 500;
+    }
+
+    .choice-image {
+        width: 120px;
+        height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 10px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
+        padding: 5px;
+        border: 2px solid rgba(197, 168, 0, 0.3);
+        transition: all 0.3s ease;
+    }
+
+    .choice-image:hover {
+        border-color: rgba(197, 168, 0, 0.8);
+        box-shadow: 0 0 20px rgba(197, 168, 0, 0.4);
+        transform: scale(1.05);
+    }
+
+    .choice-image img,
+    .choice-image video {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 8px;
+        object-fit: contain;
+    }
+
+    .question-image {
+        margin-bottom: 15px;
+        max-width: 100px;
+    }
+
+    .question-image img,
+    .question-image video {
+        width: 100%;
+        border-radius: 8px;
+    }
+
+    .form-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 25px;
+        padding: 25px;
+        background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .form-buttons .btn {
+        padding: 14px 30px;
+        border-radius: 12px;
+        text-decoration: none;
+        color: white;
+        font-size: 1.1rem;
+        min-width: 140px;
+        text-align: center;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-primary {
+        background: linear-gradient(145deg, #4CAF50, #3a8a3f);
+    }
+
+    .btn-secondary {
+        background: linear-gradient(145deg, #000000, #2c2c2c);
+    }
+
+    .btn-primary:hover,
+    .btn-secondary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+    }
+
+    .form-tabs {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .tab-buttons {
+        display: flex;
+        background: rgba(20, 20, 20, 0.7);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 0 20px;
+    }
+
+    .tab-btn {
+        padding: 15px 25px;
+        border: none;
+        background: transparent;
+        color: #aaa;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-bottom: 3px solid transparent;
+    }
+
+    .tab-btn:hover {
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tab-btn.active {
+        color: #c5a800;
+        border-bottom: 3px solid #c5a800;
+    }
+
+    .tab-content {
+        display: none;
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .form-section::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .form-section::-webkit-scrollbar-track {
+        background: rgba(20, 20, 20, 0.5);
+        border-radius: 4px;
+    }
+
+    .form-section::-webkit-scrollbar-thumb {
+        background: linear-gradient(#c5a800, #8a7800);
+        border-radius: 4px;
+    }
+
+    /* Gear Score Stats styling */
+    .stat-input-group {
+        background: rgba(30, 30, 30, 0.7);
+        padding: 15px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .stat-input-group:hover {
+        transform: translateY(-3px);
+        border: 1px solid rgba(197, 168, 0, 0.4);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+    }
+
+    .stat-input-group .form-label {
+        font-size: 0.95rem;
+        margin-bottom: 8px;
+        color: #ddd;
+    }
+
+    .stat-input-group input[type="number"] {
+        background: rgba(15, 15, 15, 0.9);
+        font-size: 1.2rem;
+        text-align: center;
+        font-weight: 600;
+        padding: 10px;
+    }
+
+    .stat-input-group select,
+    .stat-input-group ul {
+        background: rgba(15, 15, 15, 0.9);
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(197, 168, 0, 0.3);
+        color: white;
+        width: 100%;
+    }
+
+    /* Fix for radio/checkbox lists - make them horizontal and aligned */
+    .stat-input-group ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .stat-input-group ul li {
+        padding: 8px 16px;
+        border-radius: 6px;
+        margin-bottom: 0;
+        background: rgba(40, 40, 40, 0.6);
+        transition: all 0.2s ease;
+        flex: 0 0 auto;
+    }
+
+    .stat-input-group ul li:hover {
+        background: rgba(60, 60, 60, 0.8);
+    }
+
+    .stat-input-group ul li label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        color: #ddd;
+        white-space: nowrap;
+    }
+
+    /* Ensure radio inputs are properly aligned */
+    .stat-input-group ul li label input[type="radio"],
+    .stat-input-group ul li label input[type="checkbox"] {
+        margin: 0;
+        width: auto;
+        min-width: auto;
+    }
+
+    /* Custom Popup Notification */
+    .custom-popup {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 10000;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(5px);
+    }
+
+    .custom-popup.show {
+        display: flex;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .custom-popup-content {
+        background: linear-gradient(145deg, #1a1a2e, #16213e);
+        border: 2px solid #e94560;
+        border-radius: 16px;
+        padding: 30px 40px;
+        text-align: center;
+        box-shadow: 0 10px 40px rgba(233, 69, 96, 0.4);
+        max-width: 400px;
+        animation: slideIn 0.4s ease;
+    }
+
+    .custom-popup-icon {
+        font-size: 50px;
+        margin-bottom: 15px;
+        display: block;
+    }
+
+    .custom-popup-title {
+        color: #e94560;
+        font-size: 22px;
+        font-weight: bold;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .custom-popup-message {
+        color: #fff;
+        font-size: 16px;
+        margin-bottom: 25px;
+        line-height: 1.5;
+    }
+
+    .custom-popup-btn {
+        background: linear-gradient(145deg, #e94560, #c73e54);
+        color: white;
+        border: none;
+        padding: 12px 35px;
+        font-size: 16px;
+        font-weight: bold;
+        border-radius: 25px;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .custom-popup-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 5px 20px rgba(233, 69, 96, 0.5);
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Custom Popup Notification -->
+<div id="customPopup" class="custom-popup">
+    <div class="custom-popup-content">
+        <span class="custom-popup-icon">⚠️</span>
+        <div class="custom-popup-title">Peringatan!</div>
+        <div class="custom-popup-message" id="popupMessage"></div>
+        <button class="custom-popup-btn" onclick="closePopup()">Mengerti</button>
+    </div>
+</div>
+
+<div class="character-form-container">
+    <div class="form-header">
+        <h1>
+            {% if is_edit %}
+            Edit {{ character_form.instance.name }}
+            {% else %}
+            Create New Character
+            {% endif %}
+        </h1>
+    </div>
+
+    <form method="post" style="display:contents;" novalidate>
+        {% csrf_token %}
+        <div class="form-content-wrapper">
+            <div class="form-tabs">
+                <div class="tab-buttons">
+                    <button type="button" class="tab-btn active" data-tab="basic">Basic Info</button>
+                    <button type="button" class="tab-btn" data-tab="gearscore">Gear Score Stats</button>
+                    <button type="button" class="tab-btn" data-tab="attributes">Attributes</button>
+                </div>
+
+                <div class="tab-content active" id="basic-tab">
+                    <div class="form-section">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div class="form-group">
+                                <label for="{{ character_form.name.id_for_label }}" class="form-label">Your
+                                    Nickname</label>
+                                {{ character_form.name }}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ character_form.clan.id_for_label }}" class="form-label">Your Clan</label>
+                                {{ character_form.clan }}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ character_form.character_class.id_for_label }}" class="form-label">Your
+                                    Class</label>
+                                {{ character_form.character_class }}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ character_form.level.id_for_label }}" class="form-label">Your LvL</label>
+                                {{ character_form.level }}
+                            </div>
+                        </div>
+
+                        {% for field in character_form %}
+                        {% if field.name == 'legendary_classes' or field.name == 'legendary_agathions' %}
+                        <div class="form-group">
+                            <label class="form-label"><strong>{{ field.label }}</strong></label>
+
+                            {% with field_img=field.label|get_field_image %}
+                            {% if field_img %}
+                            <div class="question-image">
+                                {% if field_img|is_video %}
+                                <video src="{% static 'items/images/choices/'|add:field_img %}" autoplay muted loop
+                                    class="img-fluid"></video>
+                                {% else %}
+                                <img src="{% static 'items/images/choices/'|add:field_img %}" alt="Question Image"
+                                    class="img-fluid">
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            {% endwith %}
+
+                            <div class="checkbox-group">
+                                {% for choice in field %}
+                                <label class="checkbox-label">
+                                    {{ choice.tag }}
+                                    <span class="choice-label-text">{{ choice.choice_label }}</span>
+                                    {% with img_name=choice.choice_label|get_image_for_choice %}
+                                    {% if img_name %}
+                                    <div class="choice-image">
+                                        {% if img_name|is_video %}
+                                        <video src="{% static 'items/images/choices/'|add:img_name %}" autoplay muted
+                                            loop></video>
+                                        {% else %}
+                                        <img src="{% static 'items/images/choices/'|add:img_name %}"
+                                            alt="{{ choice.choice_label }}">
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                    {% endwith %}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="tab-content" id="gearscore-tab">
+                    <div class="form-section">
+                        <div class="form-group"
+                            style="background: linear-gradient(145deg, #1a3a1a, #0d1f0d); border: 1px solid rgba(76, 175, 80, 0.3);">
+                            <h3
+                                style="color: #4CAF50; margin-bottom: 20px; font-size: 1.4rem; display: flex; align-items: center; gap: 10px;">
+                                <img src="{% static 'items/images/choices/Icon_WP_Sword_G3_001.png' %}" alt="Combat"
+                                    style="width: 40px; height: 40px;">
+                                Base Combat Stats
+                            </h3>
+                            <div
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+                                <div class="stat-input-group">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                        <img src="{% static 'items/images/choices/Icon_WP_Sword_G3_002.png' %}"
+                                            alt="DMG" style="width: 32px; height: 32px;">
+                                        <label class="form-label" style="margin: 0;">DMG (Damage)</label>
+                                    </div>
+                                    {{ attributes_form.stat_dmg }}
+                                </div>
+                                <div class="stat-input-group">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                        <img src="{% static 'items/images/choices/Icon_WP_Bow_G3_001.png' %}" alt="ACC"
+                                            style="width: 32px; height: 32px;">
+                                        <label class="form-label" style="margin: 0;">ACC (Accuracy)</label>
+                                    </div>
+                                    {{ attributes_form.stat_acc }}
+                                </div>
+                                <div class="stat-input-group">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                        <img src="{% static 'items/images/choices/Icon_AR_Torso_G3_001.png' %}"
+                                            alt="DEF" style="width: 32px; height: 32px;">
+                                        <label class="form-label" style="margin: 0;">DEF (Defense)</label>
+                                    </div>
+                                    {{ attributes_form.stat_def }}
+                                </div>
+                                <div class="stat-input-group">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                        <img src="{% static 'items/images/choices/Icon_AR_Sigil_G3_001.png' %}"
+                                            alt="RESIST" style="width: 32px; height: 32px;">
+                                        <label class="form-label" style="margin: 0;">SKILL RESIST</label>
+                                    </div>
+                                    {{ attributes_form.stat_resist }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group"
+                            style="background: linear-gradient(145deg, #3a2a1a, #1f150d); border: 1px solid rgba(255, 152, 0, 0.3);">
+                            <h3
+                                style="color: #FF9800; margin-bottom: 20px; font-size: 1.4rem; display: flex; align-items: center; gap: 10px;">
+                                <img src="{% static 'items/images/choices/Icon_WP_Staff_G3_001.png' %}" alt="Multiplied"
+                                    style="width: 40px; height: 40px;">
+                                Multiplied Stats (Higher Score Impact)
+                            </h3>
+                            <div
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+                                <div class="stat-input-group">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                        <img src="{% static 'items/images/choices/Icon_AR_Cape_G3_001.png' %}"
+                                            alt="REDUC" style="width: 32px; height: 32px;">
+                                        <label class="form-label" style="margin: 0;">DMG REDUCT (×3)</label>
+                                    </div>
+                                    {{ attributes_form.stat_reduc }}
+                                </div>
+                                <div class="stat-input-group">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                        <img src="{% static 'items/images/choices/Icon_WP_Staff_G3_003.png' %}"
+                                            alt="SKILL" style="width: 32px; height: 32px;">
+                                        <label class="form-label" style="margin: 0;">SKILL DMG BOOST (×2)</label>
+                                    </div>
+                                    {{ attributes_form.stat_skill_dmg_boost }}
+                                </div>
+                                <div class="stat-input-group">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                        <img src="{% static 'items/images/choices/Icon_WP_Spear_G3_001.png' %}"
+                                            alt="WPN" style="width: 32px; height: 32px;">
+                                        <label class="form-label" style="margin: 0;">WPN DMG BOOST</label>
+                                    </div>
+                                    {{ attributes_form.stat_wpn_dmg_boost }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group"
+                            style="background: linear-gradient(145deg, #1a1a3a, #0d0d1f); border: 1px solid rgba(103, 58, 183, 0.3);">
+                            <h3
+                                style="color: #9C27B0; margin-bottom: 20px; font-size: 1.4rem; display: flex; align-items: center; gap: 10px;">
+                                <img src="{% static 'items/images/choices/Icon_SoulStone_Option_Icon_01.png' %}"
+                                    alt="Progression" style="width: 40px; height: 40px;">
+                                Progression Stats (×10)
+                            </h3>
+                            <div
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+                                <div class="stat-input-group">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                        <img src="{% static 'items/images/choices/Icon_SoulStone_Option_Icon_01.png' %}"
+                                            alt="SOULSHOT" style="width: 32px; height: 32px;">
+                                        <label class="form-label" style="margin: 0;">SOULSHOT Level</label>
+                                    </div>
+                                    {{ attributes_form.soulshot_level }}
+                                </div>
+                                <div class="stat-input-group">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                        <img src="{% static 'items/images/choices/Icon_SoulStone_Option_Icon_04.png' %}"
+                                            alt="VALOR" style="width: 32px; height: 32px;">
+                                        <label class="form-label" style="margin: 0;">VALOR Level</label>
+                                    </div>
+                                    {{ attributes_form.valor_level }}
+                                </div>
+                                <div class="stat-input-group">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                        <img src="{% static 'items/images/choices/Icon_SoulStone_Option_Icon_07.png' %}"
+                                            alt="GUARDIAN" style="width: 32px; height: 32px;">
+                                        <label class="form-label" style="margin: 0;">GUARDIAN</label>
+                                    </div>
+                                    {{ attributes_form.stat_guardian }}
+                                </div>
+                                <div class="stat-input-group">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                        <img src="{% static 'items/images/choices/Icon_AR_Helmet_G4_003.png' %}"
+                                            alt="CONQUER" style="width: 32px; height: 32px;">
+                                        <label class="form-label" style="margin: 0;">CONQUER</label>
+                                    </div>
+                                    {{ attributes_form.stat_conquer }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group"
+                            style="background: linear-gradient(145deg, #3a1a3a, #1f0d1f); border: 1px solid rgba(233, 30, 99, 0.3);">
+                            <h3
+                                style="color: #E91E63; margin-bottom: 20px; font-size: 1.4rem; display: flex; align-items: center; gap: 10px;">
+                                <img src="{% static 'items/images/choices/Icon_Classcard_Aria.png' %}" alt="Legend"
+                                    style="width: 40px; height: 40px;">
+                                Legend Points
+                            </h3>
+                            <div
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+                                <div class="stat-input-group">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                        <img src="{% static 'items/images/choices/Icon_Classcard_Scryde.png' %}"
+                                            alt="Epic Classes" style="width: 32px; height: 32px;">
+                                        <label class="form-label" style="margin: 0;">Epic Classes Count (×20)</label>
+                                    </div>
+                                    {{ attributes_form.epic_classes_count }}
+                                </div>
+                                <div class="stat-input-group">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                        <img src="{% static 'items/images/choices/Icon_Agathion_Baium.png' %}"
+                                            alt="Epic Agathions" style="width: 32px; height: 32px;">
+                                        <label class="form-label" style="margin: 0;">Epic Agathions Count (×20)</label>
+                                    </div>
+                                    {{ attributes_form.epic_agathions_count }}
+                                </div>
+                                <div class="stat-input-group">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                        <img src="{% static 'items/images/choices/Icon_Item_Usable_SkillBook_04.png' %}"
+                                            alt="Codex" style="width: 32px; height: 32px;">
+                                        <label class="form-label" style="margin: 0;">Total Legend Codex (×3)</label>
+                                    </div>
+                                    {{ attributes_form.total_legend_codex }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="attributes-tab">
+                    <div class="form-section">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            {% for field in attributes_form %}
+                            {% with n=field.name %}
+                            {% if not n|is_gearscore_field and not n|is_skill_field and not n|is_weapon_field %}
+                            <div class="form-group">
+                                <label class="form-label"><strong>{{ field.label }}</strong></label>
+
+                                {% with field_img=field.label|get_field_image %}
+                                {% if field_img %}
+                                <div class="question-image">
+                                    {% if field_img|is_video %}
+                                    <video src="{% static 'items/images/choices/'|add:field_img %}" autoplay muted loop
+                                        class="img-fluid"></video>
+                                    {% else %}
+                                    <img src="{% static 'items/images/choices/'|add:field_img %}" alt="Question Image"
+                                        class="img-fluid">
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                                {% endwith %}
+
+                                {% with widget_class=field.field.widget|class_name %}
+                                {% if widget_class == 'CheckboxSelectMultiple' %}
+                                <div class="checkbox-group">
+                                    {% for choice in field %}
+                                    <label class="checkbox-label">
+                                        {{ choice.tag }}
+                                        <span class="choice-label-text">{{ choice.choice_label }}</span>
+                                        {% with img_name=choice.choice_label|get_image_for_choice %}
+                                        {% if img_name and field.name != 'inheritor_books' %}
+                                        <div class="choice-image">
+                                            {% if img_name|is_video %}
+                                            <video src="{% static 'items/images/choices/'|add:img_name %}" autoplay
+                                                muted loop></video>
+                                            {% else %}
+                                            <img src="{% static 'items/images/choices/'|add:img_name %}"
+                                                alt="{{ choice.choice_label }}">
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                        {% endwith %}
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                                {% elif widget_class == 'RadioSelect' %}
+                                <div class="radio-group">
+                                    {% for choice in field %}
+                                    <label class="radio-label">
+                                        {{ choice.tag }}
+                                        <span class="choice-label-text">{{ choice.choice_label }}</span>
+                                        {% with img_name=choice.choice_label|get_image_for_choice %}
+                                        {% if img_name and field.name != 'inheritor_books' %}
+                                        <div class="choice-image">
+                                            {% if img_name|is_video %}
+                                            <video src="{% static 'items/images/choices/'|add:img_name %}" autoplay
+                                                muted loop></video>
+                                            {% else %}
+                                            <img src="{% static 'items/images/choices/'|add:img_name %}"
+                                                alt="{{ choice.choice_label }}">
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                        {% endwith %}
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                {{ field }}
+                                {% endif %}
+                                {% endwith %}
+                            </div>
+                            {% endif %}
+                            {% endwith %}
+                            {% endfor %}
+                        </div>
+
+                        <!-- Weapon Selection Section -->
+                        <div class="form-group" id="weapon-section"
+                            style="background: linear-gradient(145deg, #2a1a0a, #1a0d05); border: 1px solid rgba(255, 152, 0, 0.3);">
+                            <label class="form-label"><strong>⚔️ Your Main Weapon</strong></label>
+                            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Select the weapon you
+                                currently use (filtered by your class)</p>
+
+                            <!-- Hidden original select fields -->
+                            <div style="display: none;">
+                                {{ attributes_form.weapon }}
+                                {{ attributes_form.weapon_enchant }}
+                            </div>
+
+                            <div class="weapon-grid" id="weapon-grid"
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
+                                <!-- Weapon cards will be populated by JavaScript -->
+                            </div>
+                            <p id="no-weapons-msg"
+                                style="color: #888; text-align: center; padding: 20px; display: none;">
+                                Please select your class in "Basic Info" tab first to see available weapons.
+                            </p>
+
+                            <!-- Enchant Level Section (muncul setelah weapon dipilih) -->
+                            <div id="enchant-section"
+                                style="display: none; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255, 152, 0, 0.2);">
+                                <label class="form-label" style="color: #FF9800; margin-bottom: 10px;">
+                                    <strong>✨ Enchant Level</strong>
+                                    <span id="selected-weapon-name"
+                                        style="color: #ccc; font-weight: normal; margin-left: 8px;"></span>
+                                </label>
+                                <div id="enchant-grid" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                    <!-- Enchant buttons +0 to +11 -->
+                                </div>
+                            </div>
+                        </div>
+                        <!-- PVP Necklace Selection Section -->
+                        <div class="form-group" id="necklace-section"
+                            style="background: linear-gradient(145deg, #2a0a1a, #1a0510); border: 1px solid rgba(233, 30, 99, 0.3);">
+                            <label class="form-label"><strong>📿 PvP Necklace</strong></label>
+                            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Select your PvP Necklace</p>
+
+                            <div style="display: none;">
+                                {{ attributes_form.pvp_necklace }}
+                                {{ attributes_form.pvp_necklace_enchant }}
+                            </div>
+
+                            <div class="necklace-grid" id="necklace-grid"
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
+                            </div>
+
+                            <div id="necklace-enchant-section"
+                                style="display: none; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(233, 30, 99, 0.2);">
+                                <label class="form-label" style="color: #F48FB1; margin-bottom: 10px;">
+                                    <strong>✨ Enchant Level</strong>
+                                    <span id="selected-necklace-name"
+                                        style="color: #ccc; font-weight: normal; margin-left: 8px;"></span>
+                                </label>
+                                <div id="necklace-enchant-grid" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- PVP Belt Selection Section -->
+                        <div class="form-group" id="belt-section"
+                            style="background: linear-gradient(145deg, #1a0a2a, #0d051a); border: 1px solid rgba(156, 39, 176, 0.3);">
+                            <label class="form-label"><strong>🛡️ PvP Belt</strong></label>
+                            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Select your PvP Belt</p>
+
+                            <!-- Hidden original select fields -->
+                            <div style="display: none;">
+                                {{ attributes_form.pvp_belt }}
+                                {{ attributes_form.pvp_belt_enchant }}
+                            </div>
+
+                            <div class="belt-grid" id="belt-grid"
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
+                                <!-- Belt cards will be populated by JavaScript -->
+                            </div>
+
+                            <!-- Belt Enchant Level Section -->
+                            <div id="belt-enchant-section"
+                                style="display: none; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(156, 39, 176, 0.2);">
+                                <label class="form-label" style="color: #CE93D8; margin-bottom: 10px;">
+                                    <strong>✨ Enchant Level</strong>
+                                    <span id="selected-belt-name"
+                                        style="color: #ccc; font-weight: normal; margin-left: 8px;"></span>
+                                </label>
+                                <div id="belt-enchant-grid" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                    <!-- Belt enchant buttons +0 to +11 -->
+                                </div>
+                            </div>
+                        </div>
+                        <!-- PVP Ring (Left) Selection Section -->
+                        <div class="form-group" id="ring-left-section"
+                            style="background: linear-gradient(145deg, #0a1a2a, #051a0d); border: 1px solid rgba(0, 188, 212, 0.3);">
+                            <label class="form-label"><strong>💍 PvP Ring (Left)</strong></label>
+                            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Select your Left Ring</p>
+
+                            <div style="display: none;">
+                                {{ attributes_form.pvp_ring_left }}
+                                {{ attributes_form.pvp_ring_left_enchant }}
+                            </div>
+
+                            <div class="ring-grid" id="ring-left-grid"
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
+                            </div>
+
+                            <div id="ring-left-enchant-section"
+                                style="display: none; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(0, 188, 212, 0.2);">
+                                <label class="form-label" style="color: #80DEEA; margin-bottom: 10px;">
+                                    <strong>✨ Enchant Level</strong>
+                                    <span id="selected-ring-left-name"
+                                        style="color: #ccc; font-weight: normal; margin-left: 8px;"></span>
+                                </label>
+                                <div id="ring-left-enchant-grid" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PVP Ring (Right) Selection Section -->
+                        <div class="form-group" id="ring-right-section"
+                            style="background: linear-gradient(145deg, #0a1a2a, #051a0d); border: 1px solid rgba(0, 188, 212, 0.3);">
+                            <label class="form-label"><strong>💍 PvP Ring (Right)</strong></label>
+                            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Select your Right Ring</p>
+
+                            <div style="display: none;">
+                                {{ attributes_form.pvp_ring_right }}
+                                {{ attributes_form.pvp_ring_right_enchant }}
+                            </div>
+
+                            <div class="ring-grid" id="ring-right-grid"
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
+                            </div>
+
+                            <div id="ring-right-enchant-section"
+                                style="display: none; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(0, 188, 212, 0.2);">
+                                <label class="form-label" style="color: #80DEEA; margin-bottom: 10px;">
+                                    <strong>✨ Enchant Level</strong>
+                                    <span id="selected-ring-right-name"
+                                        style="color: #ccc; font-weight: normal; margin-left: 8px;"></span>
+                                </label>
+                                <div id="ring-right-enchant-grid" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <!-- 🛡️ PvP Sigil Selection Section -->
+                        <div class="form-group" id="sigil-section"
+                            style="background: linear-gradient(145deg, #1a2a3a, #0d151d); border: 1px solid rgba(96, 125, 139, 0.3);">
+                            <label class="form-label"><strong>🛡️ PvP Sigil</strong></label>
+                            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Select your 🛡️ Sigil</p>
+
+                            <div style="display: none;">
+                                {{ attributes_form.pvp_sigil }}
+                                {{ attributes_form.pvp_sigil_enchant }}
+                            </div>
+
+                            <div class="sigil-grid" id="sigil-grid"
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
+                            </div>
+
+                            <div id="sigil-enchant-section"
+                                style="display: none; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(96, 125, 139, 0.2);">
+                                <label class="form-label" style="color: #607D8B; margin-bottom: 10px;">
+                                    <strong>✨ Enchant Level</strong>
+                                    <span id="selected-sigil-name"
+                                        style="color: #ccc; font-weight: normal; margin-left: 8px;"></span>
+                                </label>
+                                <div id="sigil-enchant-grid" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- 🪖 PvP Helmet Selection Section -->
+                        <div class="form-group" id="helmet-section"
+                            style="background: linear-gradient(145deg, #3a2a1a, #1d150d); border: 1px solid rgba(121, 85, 72, 0.3);">
+                            <label class="form-label"><strong>🪖 PvP Helmet</strong></label>
+                            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Select your 🪖 Helmet</p>
+
+                            <div style="display: none;">
+                                {{ attributes_form.pvp_helmet }}
+                                {{ attributes_form.pvp_helmet_enchant }}
+                            </div>
+
+                            <div class="helmet-grid" id="helmet-grid"
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
+                            </div>
+
+                            <div id="helmet-enchant-section"
+                                style="display: none; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(121, 85, 72, 0.2);">
+                                <label class="form-label" style="color: #795548; margin-bottom: 10px;">
+                                    <strong>✨ Enchant Level</strong>
+                                    <span id="selected-helmet-name"
+                                        style="color: #ccc; font-weight: normal; margin-left: 8px;"></span>
+                                </label>
+                                <div id="helmet-enchant-grid" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- 👕 PvP Armor (Top/Full) Selection Section -->
+                        <div class="form-group" id="top_armor-section"
+                            style="background: linear-gradient(145deg, #2a2a2a, #151515); border: 1px solid rgba(158, 158, 158, 0.3);">
+                            <label class="form-label"><strong>👕 PvP Armor (Top/Full)</strong></label>
+                            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Select your 👕 Armor
+                                (Top/Full)</p>
+
+                            <div style="display: none;">
+                                {{ attributes_form.pvp_top_armor }}
+                                {{ attributes_form.pvp_top_armor_enchant }}
+                            </div>
+
+                            <div class="top_armor-grid" id="top_armor-grid"
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
+                            </div>
+
+                            <div id="top_armor-enchant-section"
+                                style="display: none; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(158, 158, 158, 0.2);">
+                                <label class="form-label" style="color: #9E9E9E; margin-bottom: 10px;">
+                                    <strong>✨ Enchant Level</strong>
+                                    <span id="selected-top_armor-name"
+                                        style="color: #ccc; font-weight: normal; margin-left: 8px;"></span>
+                                </label>
+                                <div id="top_armor-enchant-grid" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 🧤 PvP Gloves Selection Section -->
+                        <div class="form-group" id="gloves-section"
+                            style="background: linear-gradient(145deg, #3a1a0a, #1d0d05); border: 1px solid rgba(255, 87, 34, 0.3);">
+                            <label class="form-label"><strong>🧤 PvP Gloves</strong></label>
+                            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Select your 🧤 Gloves</p>
+
+                            <div style="display: none;">
+                                {{ attributes_form.pvp_gloves }}
+                                {{ attributes_form.pvp_gloves_enchant }}
+                            </div>
+
+                            <div class="gloves-grid" id="gloves-grid"
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
+                            </div>
+
+                            <div id="gloves-enchant-section"
+                                style="display: none; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255, 87, 34, 0.2);">
+                                <label class="form-label" style="color: #FF5722; margin-bottom: 10px;">
+                                    <strong>✨ Enchant Level</strong>
+                                    <span id="selected-gloves-name"
+                                        style="color: #ccc; font-weight: normal; margin-left: 8px;"></span>
+                                </label>
+                                <div id="gloves-enchant-grid" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- 👢 PvP Boots Selection Section -->
+                        <div class="form-group" id="boots-section"
+                            style="background: linear-gradient(145deg, #1a3a0a, #0d1d05); border: 1px solid rgba(139, 195, 74, 0.3);">
+                            <label class="form-label"><strong>👢 PvP Boots</strong></label>
+                            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Select your 👢 Boots</p>
+
+                            <div style="display: none;">
+                                {{ attributes_form.pvp_boots }}
+                                {{ attributes_form.pvp_boots_enchant }}
+                            </div>
+
+                            <div class="boots-grid" id="boots-grid"
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
+                            </div>
+
+                            <div id="boots-enchant-section"
+                                style="display: none; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(139, 195, 74, 0.2);">
+                                <label class="form-label" style="color: #8BC34A; margin-bottom: 10px;">
+                                    <strong>✨ Enchant Level</strong>
+                                    <span id="selected-boots-name"
+                                        style="color: #ccc; font-weight: normal; margin-left: 8px;"></span>
+                                </label>
+                                <div id="boots-enchant-grid" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- 👖 PvP Gaiters (Pants) Selection Section -->
+                        <div class="form-group" id="gaiters-section"
+                            style="background: linear-gradient(145deg, #0a1a3a, #050d1d); border: 1px solid rgba(63, 81, 181, 0.3);">
+                            <label class="form-label"><strong>👖 PvP Gaiters (Pants)</strong></label>
+                            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Select your 👖 Gaiters
+                                (Pants)</p>
+
+                            <div style="display: none;">
+                                {{ attributes_form.pvp_gaiters }}
+                                {{ attributes_form.pvp_gaiters_enchant }}
+                            </div>
+
+                            <div class="gaiters-grid" id="gaiters-grid"
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
+                            </div>
+
+                            <div id="gaiters-enchant-section"
+                                style="display: none; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(63, 81, 181, 0.2);">
+                                <label class="form-label" style="color: #3F51B5; margin-bottom: 10px;">
+                                    <strong>✨ Enchant Level</strong>
+                                    <span id="selected-gaiters-name"
+                                        style="color: #ccc; font-weight: normal; margin-left: 8px;"></span>
+                                </label>
+                                <div id="gaiters-enchant-grid" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- 🧥 PvP Cloak Selection Section -->
+                        <div class="form-group" id="cloak-section"
+                            style="background: linear-gradient(145deg, #3a3a0a, #1d1d05); border: 1px solid rgba(255, 235, 59, 0.3);">
+                            <label class="form-label"><strong>🧥 PvP Cloak</strong></label>
+                            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Select your 🧥 Cloak</p>
+
+                            <div style="display: none;">
+                                {{ attributes_form.pvp_cloak }}
+                                {{ attributes_form.pvp_cloak_enchant }}
+                            </div>
+
+                            <div class="cloak-grid" id="cloak-grid"
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
+                            </div>
+
+                            <div id="cloak-enchant-section"
+                                style="display: none; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255, 235, 59, 0.2);">
+                                <label class="form-label" style="color: #FFEB3B; margin-bottom: 10px;">
+                                    <strong>✨ Enchant Level</strong>
+                                    <span id="selected-cloak-name"
+                                        style="color: #ccc; font-weight: normal; margin-left: 8px;"></span>
+                                </label>
+                                <div id="cloak-enchant-grid" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                            </div>
+                        </div>
+
+
+                        <!-- Skills Section -->
+                        <div class="form-group">
+                            <label class="form-label"><strong>What are your skills?</strong></label>
+                            <div class="question-image">
+                                <img src="{% static 'items/images/choices/Icon_Item_Usable_SkillBook_Spear_04.png' %}"
+                                    alt="Skills" class="img-fluid">
+                            </div>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    {{ attributes_form.skill_frenzy }} Frenzy
+                                </label>
+                                <label class="checkbox-label">
+                                    {{ attributes_form.skill_vital_destruction }} Vital Destruction
+                                </label>
+                                <label class="checkbox-label">
+                                    {{ attributes_form.skill_infinity_strike }} Infinity Strike
+                                </label>
+                                <label class="checkbox-label">
+                                    {{ attributes_form.skill_disarm }} Disarm
+                                </label>
+                                <label class="checkbox-label">
+                                    {{ attributes_form.skill_giant_stomp }} Giant Stomp
+                                </label>
+                                <label class="checkbox-label">
+                                    {{ attributes_form.skill_absolute_spear }} Absolute Spear
+                                </label>
+                                <label class="checkbox-label">
+                                    {{ attributes_form.skill_rolling_thunder }} Rolling Thunder
+                                </label>
+                                <label class="checkbox-label">
+                                    {{ attributes_form.skill_earthquake_stomp }} Earthquake Stomp
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-buttons">
+            <button type="submit" class="btn btn-primary">
+                {% if is_edit %}
+                Save Changes
+                {% else %}
+                Create Character
+                {% endif %}
+            </button>
+            <a href="{% if is_edit %}{% url 'character-profile' character_form.instance.pk %}{% else %}{% url 'character-list' %}{% endif %}"
+                class="btn btn-secondary">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+    // === VALIDASI MAX 13 UNTUK SOULSHOT, VALOR, GUARDIAN, CONQUER ===
+    const maxLimitFields = ['id_soulshot_level', 'id_valor_level', 'id_stat_guardian', 'id_stat_conquer'];
+    const maxValue = 13;
+
+    const fieldNames = {
+        'id_soulshot_level': 'Soulshot Level',
+        'id_valor_level': 'Valor Level',
+        'id_stat_guardian': 'Guardian',
+        'id_stat_conquer': 'Conquer'
+    };
+
+    function showPopup(message) {
+        const popup = document.getElementById('customPopup');
+        const popupMessage = document.getElementById('popupMessage');
+        popupMessage.textContent = message;
+        popup.classList.add('show');
+    }
+
+    function closePopup() {
+        const popup = document.getElementById('customPopup');
+        popup.classList.remove('show');
+    }
+
+    function validateMaxValue(input) {
+        const value = parseInt(input.value);
+        if (value > maxValue) {
+            const fieldName = fieldNames[input.id] || input.name;
+            showPopup(fieldName + ' tidak boleh lebih dari ' + maxValue + '! Nilai akan disesuaikan ke ' + maxValue + '.');
+            input.value = maxValue;
+            setTimeout(function () {
+                input.focus();
+            }, 400);
+        }
+    }
+
+    maxLimitFields.forEach(function (fieldId) {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('change', function () {
+                validateMaxValue(this);
+            });
+            field.addEventListener('blur', function () {
+                validateMaxValue(this);
+            });
+        }
+    });
+
+    document.querySelectorAll('.tab-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const tabId = this.getAttribute('data-tab');
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById(tabId + '-tab').classList.add('active');
+        });
+    });
+
+    // === WEAPON FILTERING BY CLASS ===
+    const classToWeaponType = {{ class_to_weapon_type| safe }};
+    const weaponImages = {{ weapon_images| safe }};
+    const weaponSelect = document.getElementById('id_weapon');
+    const weaponEnchantInput = document.getElementById('id_weapon_enchant');
+    const weaponGrid = document.getElementById('weapon-grid');
+    const noWeaponsMsg = document.getElementById('no-weapons-msg');
+    const classSelect = document.getElementById('id_character_class');
+    const enchantSection = document.getElementById('enchant-section');
+    const enchantGrid = document.getElementById('enchant-grid');
+    const selectedWeaponNameSpan = document.getElementById('selected-weapon-name');
+
+    function getWeaponImageUrl(weaponValue) {
+        const imgPath = weaponImages[weaponValue];
+        if (imgPath) {
+            return '/media/' + imgPath;
+        }
+        return null;
+    }
+
+    function buildEnchantGrid(weaponName) {
+        if (!enchantSection || !enchantGrid || !weaponEnchantInput) return;
+
+        if (!weaponName) {
+            enchantSection.style.display = 'none';
+            return;
+        }
+
+        enchantSection.style.display = 'block';
+        selectedWeaponNameSpan.textContent = '— ' + weaponName;
+        enchantGrid.innerHTML = '';
+
+        const currentEnchant = parseInt(weaponEnchantInput.value) || 0;
+
+        for (let i = 0; i <= 11; i++) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'enchant-btn' + (currentEnchant === i ? ' selected' : '');
+            btn.textContent = i === 0 ? '+0' : '+' + i;
+            btn.dataset.level = i;
+
+            btn.addEventListener('click', function () {
+                weaponEnchantInput.value = i;
+                document.querySelectorAll('.enchant-btn').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+
+            enchantGrid.appendChild(btn);
+        }
+    }
+
+    function selectWeapon(weaponValue, weaponName) {
+        weaponSelect.value = weaponValue;
+        document.querySelectorAll('.weapon-card').forEach(c => c.classList.remove('selected'));
+        // Find and highlight the clicked card
+        const cards = document.querySelectorAll('.weapon-card');
+        cards.forEach(c => {
+            const radio = c.querySelector('input[name="weapon_visual"]');
+            if (radio && radio.value === weaponValue) {
+                c.classList.add('selected');
+            }
+        });
+
+        // Show/hide enchant section
+        if (weaponValue) {
+            buildEnchantGrid(weaponName);
+        } else {
+            // No weapon selected - reset enchant
+            if (weaponEnchantInput) weaponEnchantInput.value = 0;
+            if (enchantSection) enchantSection.style.display = 'none';
+        }
+    }
+
+    function buildWeaponGrid() {
+        if (!classSelect || !weaponSelect || !weaponGrid) return;
+
+        const selectedClass = classSelect.value;
+        const weaponType = classToWeaponType[selectedClass] || '';
+        const currentWeaponValue = weaponSelect.value;
+
+        weaponGrid.innerHTML = '';
+        let count = 0;
+
+        // Add "No weapon" option
+        const noWeaponCard = document.createElement('label');
+        noWeaponCard.className = 'weapon-card' + (currentWeaponValue === '' ? ' selected' : '');
+        noWeaponCard.innerHTML = `
+            <input type="radio" name="weapon_visual" value="" ${currentWeaponValue === '' ? 'checked' : ''} style="display:none;">
+            <div class="weapon-card-inner">
+                <div class="weapon-card-img" style="display:flex;align-items:center;justify-content:center;font-size:2rem;color:#666;">✕</div>
+                <div class="weapon-card-name">No weapon</div>
+            </div>
+        `;
+        noWeaponCard.addEventListener('click', function () {
+            selectWeapon('', '');
+        });
+        weaponGrid.appendChild(noWeaponCard);
+
+        // Filter and show weapons for selected class
+        for (let i = 0; i < weaponSelect.options.length; i++) {
+            const opt = weaponSelect.options[i];
+            if (!opt.value || !opt.value.includes('|')) continue;
+
+            const [wType, wName] = opt.value.split('|', 2);
+            if (weaponType && wType !== weaponType) continue;
+
+            count++;
+            const imgUrl = getWeaponImageUrl(opt.value);
+            const isSelected = currentWeaponValue === opt.value;
+
+            const card = document.createElement('label');
+            card.className = 'weapon-card' + (isSelected ? ' selected' : '');
+            card.dataset.weaponType = wType;
+            card.innerHTML = `
+                <input type="radio" name="weapon_visual" value="${opt.value}" ${isSelected ? 'checked' : ''} style="display:none;">
+                <div class="weapon-card-inner">
+                    ${imgUrl ? `<img src="${imgUrl}" alt="${wName}" class="weapon-card-img" onerror="this.style.display='none'">` : '<div class="weapon-card-img" style="display:flex;align-items:center;justify-content:center;color:#666;">⚔️</div>'}
+                    <div class="weapon-card-name">${wName}</div>
+                </div>
+            `;
+            card.addEventListener('click', function () {
+                selectWeapon(opt.value, wName);
+            });
+            weaponGrid.appendChild(card);
+        }
+
+        if (count === 0 && !weaponType) {
+            noWeaponsMsg.style.display = 'block';
+        } else {
+            noWeaponsMsg.style.display = 'none';
+        }
+
+        // If a weapon is already selected, show enchant grid
+        if (currentWeaponValue && currentWeaponValue.includes('|')) {
+            const [, currentWName] = currentWeaponValue.split('|', 2);
+            buildEnchantGrid(currentWName);
+        } else {
+            if (enchantSection) enchantSection.style.display = 'none';
+        }
+    }
+
+    // Listen for class changes
+    if (classSelect) {
+        classSelect.addEventListener('change', function () {
+            // Reset weapon selection when class changes
+            if (weaponSelect) weaponSelect.value = '';
+            if (weaponEnchantInput) weaponEnchantInput.value = 0;
+            buildWeaponGrid();
+        });
+    }
+
+    // Build initial weapon grid
+    buildWeaponGrid();
+
+    // === PVP BELT SELECTION ===
+    const beltSelect = document.getElementById('id_pvp_belt');
+    const beltEnchantInput = document.getElementById('id_pvp_belt_enchant');
+    const beltGrid = document.getElementById('belt-grid');
+    const beltEnchantSection = document.getElementById('belt-enchant-section');
+    const beltEnchantGrid = document.getElementById('belt-enchant-grid');
+    const selectedBeltNameSpan = document.getElementById('selected-belt-name');
+
+    function buildBeltEnchantGrid(beltName) {
+        if (!beltEnchantSection || !beltEnchantGrid || !beltEnchantInput) return;
+
+        if (!beltName) {
+            beltEnchantSection.style.display = 'none';
+            return;
+        }
+
+        beltEnchantSection.style.display = 'block';
+        selectedBeltNameSpan.textContent = '— ' + beltName;
+        beltEnchantGrid.innerHTML = '';
+
+        const currentEnchant = parseInt(beltEnchantInput.value) || 0;
+
+        for (let i = 0; i <= 11; i++) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'enchant-btn belt-enchant' + (currentEnchant === i ? ' selected' : '');
+            btn.textContent = i === 0 ? '+0' : '+' + i;
+            btn.dataset.level = i;
+
+            btn.addEventListener('click', function () {
+                beltEnchantInput.value = i;
+                document.querySelectorAll('.belt-enchant').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+
+            beltEnchantGrid.appendChild(btn);
+        }
+    }
+
+    function selectBelt(beltValue, beltName) {
+        if (beltSelect) beltSelect.value = beltValue;
+        document.querySelectorAll('.belt-card').forEach(c => c.classList.remove('selected'));
+        const cards = document.querySelectorAll('.belt-card');
+        cards.forEach(c => {
+            const radio = c.querySelector('input[name="belt_visual"]');
+            if (radio && radio.value === beltValue) {
+                c.classList.add('selected');
+            }
+        });
+
+        if (beltValue) {
+            buildBeltEnchantGrid(beltName);
+        } else {
+            if (beltEnchantInput) beltEnchantInput.value = 0;
+            if (beltEnchantSection) beltEnchantSection.style.display = 'none';
+        }
+    }
+
+    function buildBeltGrid() {
+        if (!beltSelect || !beltGrid) return;
+
+        const currentBeltValue = beltSelect.value;
+        beltGrid.innerHTML = '';
+
+        // Add "No belt" option
+        const noBeltCard = document.createElement('label');
+        noBeltCard.className = 'belt-card weapon-card' + (currentBeltValue === '' ? ' selected' : '');
+        noBeltCard.innerHTML = `
+            <input type="radio" name="belt_visual" value="" ${currentBeltValue === '' ? 'checked' : ''} style="display:none;">
+            <div class="weapon-card-inner">
+                <div class="weapon-card-img" style="display:flex;align-items:center;justify-content:center;font-size:2rem;color:#666;">✕</div>
+                <div class="weapon-card-name">No belt</div>
+            </div>
+        `;
+        noBeltCard.addEventListener('click', function () {
+            selectBelt('', '');
+        });
+        beltGrid.appendChild(noBeltCard);
+
+        // Show all belt options
+        for (let i = 0; i < beltSelect.options.length; i++) {
+            const opt = beltSelect.options[i];
+            if (!opt.value) continue;
+
+            const beltName = opt.value;
+            const isSelected = currentBeltValue === opt.value;
+
+            // Try to find image from static choices
+            const imgName = getBeltImage(beltName);
+
+            const card = document.createElement('label');
+            card.className = 'belt-card weapon-card' + (isSelected ? ' selected' : '');
+            card.innerHTML = `
+                <input type="radio" name="belt_visual" value="${opt.value}" ${isSelected ? 'checked' : ''} style="display:none;">
+                <div class="weapon-card-inner">
+                    ${imgName ? `<img src="/static/items/images/choices/${imgName}" alt="${beltName}" class="weapon-card-img" onerror="this.style.display='none'">` : '<div class="weapon-card-img" style="display:flex;align-items:center;justify-content:center;color:#666;">🛡️</div>'}
+                    <div class="weapon-card-name">${beltName}</div>
+                </div>
+            `;
+            card.addEventListener('click', function () {
+                selectBelt(opt.value, beltName);
+            });
+            beltGrid.appendChild(card);
+        }
+
+        // If belt already selected, show enchant grid
+        if (currentBeltValue) {
+            buildBeltEnchantGrid(currentBeltValue);
+        } else {
+            if (beltEnchantSection) beltEnchantSection.style.display = 'none';
+        }
+    }
+
+    // Belt image mapping (based on existing static images)
+    function getBeltImage(beltName) {
+        const beltImages = {
+            'Blue': 'Icon_ACC_Belt_G3_004.png',
+            "Ekimus' Belt": 'Icon_ACC_Belt_G3_003.png',
+            'Dragon Belt': 'Icon_ACC_Belt_G3_001.png',
+            "Tiat's Belt": 'Icon_ACC_Belt_G3_002.png',
+            "Eratone's Belt": 'Icon_ACC_Belt_G3_003_UHLGN0X.png',
+            "Lord's Authority": 'Icon_ACC_Belt_G2_001.png',
+            "Maphr's Belt": 'Icon_ACC_Belt_G2_002.png',
+        };
+        return beltImages[beltName] || null;
+    }
+
+    // Build initial belt grid
+    buildBeltGrid();
+
+    // === GENERIC EQUIPMENT GRID BUILDER (for rings and future items) ===
+    function getRingImage(ringName) {
+        const ringImages = {
+            'Ring of Blessing': 'Icon_ACC_Ring_G4_010.png',
+            "Lilith's Ring": 'Icon_ACC_Ring_G3_003.png',
+            "Anakeem's Ring": 'Icon_ACC_Ring_G3_003.png',
+            "Baium's Ring": 'Icon_ACC_Ring_G3_001.png',
+            "Vereth's Ring": 'Icon_ACC_Ring_G3_006.png',
+            'Core Ring': 'Icon_ACC_Ring_G3_005.png',
+            "Queen Ant's Ring": 'Icon_ACC_Ring_G3_004.png',
+            'Ring of Passion': 'Icon_ACC_Ring_G3_008.png',
+            'Majestic Ring': 'Icon_ACC_Ring_G3_001.png',
+            "Forgotten Hero's Ring": 'Icon_ACC_Ring_G3_009.png',
+            "Desperion's Ring": 'Icon_ACC_Ring_G2_001.png',
+        };
+        return ringImages[ringName] || null;
+    }
+
+    function buildEquipGrid(config) {
+        const { selectEl, enchantInput, gridEl, enchantSection, enchantGridEl, nameSpan, getImageFn, cardClass, enchantClass, radioName } = config;
+        if (!selectEl || !gridEl) return;
+
+        const currentValue = selectEl.value;
+        gridEl.innerHTML = '';
+
+        // "No item" option
+        const noCard = document.createElement('label');
+        noCard.className = cardClass + ' weapon-card' + (currentValue === '' ? ' selected' : '');
+        noCard.innerHTML = `
+            <input type="radio" name="${radioName}" value="" ${currentValue === '' ? 'checked' : ''} style="display:none;">
+            <div class="weapon-card-inner">
+                <div class="weapon-card-img" style="display:flex;align-items:center;justify-content:center;font-size:2rem;color:#666;">✕</div>
+                <div class="weapon-card-name">None</div>
+            </div>
+        `;
+        noCard.addEventListener('click', function () {
+            selectEl.value = '';
+            document.querySelectorAll('.' + cardClass).forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+            if (enchantInput) enchantInput.value = 0;
+            if (enchantSection) enchantSection.style.display = 'none';
+        });
+        gridEl.appendChild(noCard);
+
+        for (let i = 0; i < selectEl.options.length; i++) {
+            const opt = selectEl.options[i];
+            if (!opt.value) continue;
+
+            const itemName = opt.value;
+            const isSelected = currentValue === opt.value;
+            const imgName = getImageFn(itemName);
+
+            const card = document.createElement('label');
+            card.className = cardClass + ' weapon-card' + (isSelected ? ' selected' : '');
+            card.innerHTML = `
+                <input type="radio" name="${radioName}" value="${opt.value}" ${isSelected ? 'checked' : ''} style="display:none;">
+                <div class="weapon-card-inner">
+                    ${imgName ? `<img src="/static/items/images/choices/${imgName}" alt="${itemName}" class="weapon-card-img" onerror="this.style.display='none'">` : '<div class="weapon-card-img" style="display:flex;align-items:center;justify-content:center;color:#666;">💍</div>'}
+                    <div class="weapon-card-name">${itemName}</div>
+                </div>
+            `;
+            card.addEventListener('click', function () {
+                selectEl.value = opt.value;
+                document.querySelectorAll('.' + cardClass).forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
+                if (itemName && enchantSection) {
+                    buildEquipEnchant(enchantInput, enchantSection, enchantGridEl, nameSpan, itemName, enchantClass);
+                }
+            });
+            gridEl.appendChild(card);
+        }
+
+        if (currentValue && enchantSection) {
+            buildEquipEnchant(enchantInput, enchantSection, enchantGridEl, nameSpan, currentValue, enchantClass);
+        } else if (enchantSection) {
+            enchantSection.style.display = 'none';
+        }
+    }
+
+    function buildEquipEnchant(enchantInput, enchantSection, enchantGridEl, nameSpan, itemName, enchantClass) {
+        if (!enchantSection || !enchantGridEl || !enchantInput) return;
+        enchantSection.style.display = 'block';
+        if (nameSpan) nameSpan.textContent = '— ' + itemName;
+        enchantGridEl.innerHTML = '';
+
+        const currentEnchant = parseInt(enchantInput.value) || 0;
+        for (let i = 0; i <= 11; i++) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'enchant-btn ' + enchantClass + (currentEnchant === i ? ' selected' : '');
+            btn.textContent = i === 0 ? '+0' : '+' + i;
+            btn.addEventListener('click', function () {
+                enchantInput.value = i;
+                document.querySelectorAll('.' + enchantClass).forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+            enchantGridEl.appendChild(btn);
+        }
+    }
+
+    // === PVP RING LEFT ===
+    buildEquipGrid({
+        selectEl: document.getElementById('id_pvp_ring_left'),
+        enchantInput: document.getElementById('id_pvp_ring_left_enchant'),
+        gridEl: document.getElementById('ring-left-grid'),
+        enchantSection: document.getElementById('ring-left-enchant-section'),
+        enchantGridEl: document.getElementById('ring-left-enchant-grid'),
+        nameSpan: document.getElementById('selected-ring-left-name'),
+        getImageFn: getRingImage,
+        cardClass: 'ring-left-card',
+        enchantClass: 'ring-left-enchant',
+        radioName: 'ring_left_visual'
+    });
+
+    // === PVP RING RIGHT ===
+    buildEquipGrid({
+        selectEl: document.getElementById('id_pvp_ring_right'),
+        enchantInput: document.getElementById('id_pvp_ring_right_enchant'),
+        gridEl: document.getElementById('ring-right-grid'),
+        enchantSection: document.getElementById('ring-right-enchant-section'),
+        enchantGridEl: document.getElementById('ring-right-enchant-grid'),
+        nameSpan: document.getElementById('selected-ring-right-name'),
+        getImageFn: getRingImage,
+        cardClass: 'ring-right-card',
+        enchantClass: 'ring-right-enchant',
+        radioName: 'ring_right_visual'
+    });
+
+    // === PVP NECKLACE ===
+    function getNecklaceImage(itemName) {
+        const images = {
+            "Blue necklace": "Icon_ACC_Necklace_G4_007.png",
+            "Necklace of Immortality": "Icon_ACC_Necklace_G3_001.png",
+            "Lilith's Soul Necklace": "Icon_ACC_Necklace_G3_002.png",
+            "Anakeem's Soul Necklace": "Icon_ACC_Necklace_G3_002.png",
+            "Baium's Necklace": "Icon_ACC_Necklace_G3_001.png",
+            "Zaken's Necklace": "Icon_ACC_Necklace_G3_004.png",
+            "Orfen's Necklace": "Icon_ACC_Necklace_G2_002.png",
+            "Majestic Necklace": "Icon_ACC_Necklace_G3_001.png",
+            "Apella Necklace": "Icon_ACC_Necklace_G3_001.png",
+            "Valakas' Necklace": "Icon_ACC_Necklace_G3_003.png",
+            "Antharas Necklace": "Icon_ACC_Necklace_G3_006.png",
+            "Lindvior's Necklace": "Icon_ACC_Necklace_G3_006.png",
+            "Archmage Necklace": "Icon_ACC_Necklace_G3_001.png",
+        };
+        return images[itemName] || null;
+    }
+
+    buildEquipGrid({
+        selectEl: document.getElementById('id_pvp_necklace'),
+        enchantInput: document.getElementById('id_pvp_necklace_enchant'),
+        gridEl: document.getElementById('necklace-grid'),
+        enchantSection: document.getElementById('necklace-enchant-section'),
+        enchantGridEl: document.getElementById('necklace-enchant-grid'),
+        nameSpan: document.getElementById('selected-necklace-name'),
+        getImageFn: getNecklaceImage,
+        cardClass: 'necklace-card',
+        enchantClass: 'necklace-enchant',
+        radioName: 'necklace_visual'
+    });
+
+    // === PVP SIGIL ===
+    function getSigilImage(itemName) {
+        const images = {
+            "Dream Sigil": "Icon_AR_Sigil_G4_001.png",
+            "Blue": "вопрос_PiWb3ob.png",
+            "Susceptor's Heart": "Icon_AR_Sigil_G3_001.png",
+            "Paradia's Sigil": "Icon_AR_Sigil_G3_002.png",
+            "Cruma's Shell": "Icon_AR_Sigil_G3_003.png",
+            "Sigil of Flames": "Icon_AR_Sigil_G3_004.png",
+            "Jaeger's Sigil": "Icon_AR_Sigil_G3_005.png",
+            "Selihoden's Horn": "Icon_AR_Sigil_G3_006.png",
+            "Tear of Darkness": "Icon_AR_Sigil_G2_001.png",
+            "Draconic Sigil": "Icon_AR_Sigil_G2_002.png",
+            "Arcana Sigil": "Icon_AR_Sigil_G2_003.png"
+        };
+        return images[itemName] || null;
+    }
+
+    buildEquipGrid({
+        selectEl: document.getElementById('id_pvp_sigil'),
+        enchantInput: document.getElementById('id_pvp_sigil_enchant'),
+        gridEl: document.getElementById('sigil-grid'),
+        enchantSection: document.getElementById('sigil-enchant-section'),
+        enchantGridEl: document.getElementById('sigil-enchant-grid'),
+        nameSpan: document.getElementById('selected-sigil-name'),
+        getImageFn: getSigilImage,
+        cardClass: 'sigil-card',
+        enchantClass: 'sigil-enchant',
+        radioName: 'sigil_visual'
+    });
+
+    // === PVP HELMET ===
+    function getHelmetImage(itemName) {
+        const images = {
+            "Blue Wolf Helmet": "Icon_AR_Helmet_G3_006.png",
+            "Majestic Circlet": "Icon_AR_Helmet_G3_001.png",
+            "Helm of Nightmares": "Icon_AR_Helmet_G3_002.png",
+            "Dark Crystal Helmet": "Icon_AR_Helmet_G3_003.png",
+            "Medusa's Helm": "Icon_AR_Helmet_G3_004.png",
+            "Paulina's Helmet": "Icon_AR_Helmet_G3_005.png",
+            "Nevit's Helmet": "Icon_AR_Helmet_G3_007.png",
+            "Tersi's Circlet": "Icon_AR_Helmet_G3_009.png",
+            "Ancient Elven Helm": "Icon_AR_Helmet_G2_002.png",
+            "Imperial Crusader Helmet": "Icon_AR_Helmet_G3_009.png",
+            "Major Arcana Circlet": "Icon_AR_Helmet_G3_009.png",
+            "Draconic Helmet": "Icon_AR_Helmet_G3_009.png"
+        };
+        return images[itemName] || null;
+    }
+
+    buildEquipGrid({
+        selectEl: document.getElementById('id_pvp_helmet'),
+        enchantInput: document.getElementById('id_pvp_helmet_enchant'),
+        gridEl: document.getElementById('helmet-grid'),
+        enchantSection: document.getElementById('helmet-enchant-section'),
+        enchantGridEl: document.getElementById('helmet-enchant-grid'),
+        nameSpan: document.getElementById('selected-helmet-name'),
+        getImageFn: getHelmetImage,
+        cardClass: 'helmet-card',
+        enchantClass: 'helmet-enchant',
+        radioName: 'helmet_visual'
+    });
+
+    // === PVP TOP ARMOR ===
+    function getTopArmorImage(itemName) {
+        const images = {
+            "Blue Wolf Breastplate": "Icon_AR_Torso_G3_006.png",
+            "Majestic Robe": "Icon_AR_Torso_G3_001.png",
+            "Armor of Nightmares": "Icon_AR_Torso_G3_002.png",
+            "Dark Crystal Breastplate": "Icon_AR_Torso_G3_003.png",
+            "Tersi's Robe": "Icon_AR_Torso_G3_008.png",
+            "Paulina's Breastplate": "Icon_AR_Torso_G3_005.png",
+            "Nevit's Armor": "Icon_AR_Torso_G3_007.png",
+            "Savan's Robe": "Icon_AR_Torso_G3_004.png",
+            "Absolute Tunic": "Icon_AR_Torso_G2_003.png",
+            "Apella Plate Armor": "Icon_AR_Torso_G2_004.png",
+            "Forgotten Hero's Breastplate": "Icon_AR_Torso_G3_009.png",
+            "Ancient Elven Armor": "Icon_AR_Torso_G2_002.png",
+            "Demon's Armor": "Icon_AR_Torso_G2_001.png",
+            "Draconic Leather Armor": "Icon_AR_Torso_G3_011.png",
+            "Major Arcana Robe": "Icon_AR_Torso_G3_012.png",
+            "Imperial Crusader Breastplate": "Icon_AR_Torso_G3_010.png"
+        };
+        return images[itemName] || null;
+    }
+
+    buildEquipGrid({
+        selectEl: document.getElementById('id_pvp_top_armor'),
+        enchantInput: document.getElementById('id_pvp_top_armor_enchant'),
+        gridEl: document.getElementById('top_armor-grid'),
+        enchantSection: document.getElementById('top_armor-enchant-section'),
+        enchantGridEl: document.getElementById('top_armor-enchant-grid'),
+        nameSpan: document.getElementById('selected-top_armor-name'),
+        getImageFn: getTopArmorImage,
+        cardClass: 'top_armor-card',
+        enchantClass: 'top_armor-enchant',
+        radioName: 'top_armor_visual'
+    });
+
+    // === PVP GLOVES ===
+    function getGlovesImage(itemName) {
+        const images = {
+            "Blue Wolf Gloves": "Icon_AR_Gloves_G3_006.png",
+            "Majestic Gloves": "Icon_AR_Gloves_G3_001.png",
+            "Gauntlets of Nightmare": "Icon_AR_Gloves_G3_002.png",
+            "Dark Crystal Gloves": "Icon_AR_Gloves_G3_003.png",
+            "Tersi's Gloves": "Icon_AR_Gloves_G3_008.png",
+            "Paulina's Gauntlets": "Icon_AR_Gloves_G3_005.png",
+            "Nevit's Gloves": "Icon_AR_Gloves_G3_007.png",
+            "Jarngreipr": "Icon_AR_Gloves_G3_004.png",
+            "Vision Guardian": "Icon_AR_Gloves_G3_009.png",
+            "Gloves of Blessing": "Icon_AR_Gloves_G2_003.png",
+            "Forgotten Hero Gloves": "Icon_AR_Gloves_G3_010.png",
+            "Demon's Gauntlets": "Icon_AR_Gloves_G2_001.png",
+            "Ancient Elven Gauntlet": "Icon_AR_Gloves_G2_002.png",
+            "Draconic Leather Gloves": "Icon_AR_Gloves_G3_011.png",
+            "Pa'agrio's Flames": "Icon_AR_Gloves_G3_012.png"
+        };
+        return images[itemName] || null;
+    }
+
+    buildEquipGrid({
+        selectEl: document.getElementById('id_pvp_gloves'),
+        enchantInput: document.getElementById('id_pvp_gloves_enchant'),
+        gridEl: document.getElementById('gloves-grid'),
+        enchantSection: document.getElementById('gloves-enchant-section'),
+        enchantGridEl: document.getElementById('gloves-enchant-grid'),
+        nameSpan: document.getElementById('selected-gloves-name'),
+        getImageFn: getGlovesImage,
+        cardClass: 'gloves-card',
+        enchantClass: 'gloves-enchant',
+        radioName: 'gloves_visual'
+    });
+
+    // === PVP BOOTS ===
+    function getBootsImage(itemName) {
+        const images = {
+            "Blue Wolf Boots": "Icon_AR_Boots_G3_006.png",
+            "Majestic Boots": "Icon_AR_Boots_G3_001.png",
+            "Boots of Nightmares": "Icon_AR_Boots_G3_002.png",
+            "Dark Crystal Boots": "Icon_AR_Boots_G3_003.png",
+            "Tersi's Boots": "Icon_AR_Boots_G3_008.png",
+            "Paulina's Boots": "Icon_AR_Boots_G3_005.png",
+            "Nevit's Boots": "Icon_AR_Boots_G3_007.png",
+            "Demon's Boots": "Icon_AR_Boots_G2_001.png",
+            "Kaliel's Boots": "Icon_AR_Boots_G2_004.png",
+            "Forgotten Hero's Boots": "Icon_AR_Boots_G3_009.png",
+            "Ancient Elven Boots": "Icon_AR_Boots_G2_002.png",
+            "Draconic": "Icon_AR_Boots_G3_010.png",
+            "Sayha's Wind": "Icon_AR_Boots_G3_011.png"
+        };
+        return images[itemName] || null;
+    }
+
+    buildEquipGrid({
+        selectEl: document.getElementById('id_pvp_boots'),
+        enchantInput: document.getElementById('id_pvp_boots_enchant'),
+        gridEl: document.getElementById('boots-grid'),
+        enchantSection: document.getElementById('boots-enchant-section'),
+        enchantGridEl: document.getElementById('boots-enchant-grid'),
+        nameSpan: document.getElementById('selected-boots-name'),
+        getImageFn: getBootsImage,
+        cardClass: 'boots-card',
+        enchantClass: 'boots-enchant',
+        radioName: 'boots_visual'
+    });
+
+    // === PVP GAITERS ===
+    function getGaitersImage(itemName) {
+        const images = {
+            "Blue Wolf Gaiters": "Icon_AR_Pants_G3_006.png",
+            "Basila Skin": "Icon_AR_Pants_G3_008.png",
+            "Blood Gaiters": "Icon_AR_Pants_G3_001.png",
+            "Gaiters of Light": "Icon_AR_Pants_G3_002.png",
+            "Gaiters of Ice": "Icon_AR_Pants_G3_003.png",
+            "Shilen's Breath": "Icon_AR_Pants_G3_004.png",
+            "Crystal Gaiters": "Icon_AR_Pants_G3_005.png",
+            "Forgotten Hero's Gaiters": "Icon_AR_Pants_G3_007.png",
+            "Imperial Crusader Gaiters": "Icon_AR_Pants_G3_009.png"
+        };
+        return images[itemName] || null;
+    }
+
+    buildEquipGrid({
+        selectEl: document.getElementById('id_pvp_gaiters'),
+        enchantInput: document.getElementById('id_pvp_gaiters_enchant'),
+        gridEl: document.getElementById('gaiters-grid'),
+        enchantSection: document.getElementById('gaiters-enchant-section'),
+        enchantGridEl: document.getElementById('gaiters-enchant-grid'),
+        nameSpan: document.getElementById('selected-gaiters-name'),
+        getImageFn: getGaitersImage,
+        cardClass: 'gaiters-card',
+        enchantClass: 'gaiters-enchant',
+        radioName: 'gaiters_visual'
+    });
+
+    // === PVP CLOAK ===
+    function getCloakImage(itemName) {
+        const images = {
+            "Silver Cloak": "Icon_AR_Cape_G3_001.png",
+            "Cranigg's Cloak": "Icon_AR_Cape_G3_002.png",
+            "Dragon's Scale": "Icon_AR_Cape_G3_003.png",
+            "Zaken's Cloak": "Icon_AR_Cape_G3_004.png",
+            "Cloak of Freya": "Icon_AR_Cape_G3_005.png",
+            "Queen Ant's Wing": "Icon_AR_Cape_G3_006.png",
+            "Cloak of Silence": "Icon_AR_Cape_G3_007.png",
+            "Eigis Cloak": "Icon_AR_Cape_G3_008.png",
+            "Cloak of Authority": "Icon_AR_Cape_G3_007.png",
+            "Selihoden's Wing": "Icon_AR_Cape_G3_008.png",
+            "Nevit's Cloak of Light": "Icon_AR_Cape_G2_001.png",
+            "Nailop's Cloak": "Icon_AR_Cape_G2_002.png"
+        };
+        return images[itemName] || null;
+    }
+
+    buildEquipGrid({
+        selectEl: document.getElementById('id_pvp_cloak'),
+        enchantInput: document.getElementById('id_pvp_cloak_enchant'),
+        gridEl: document.getElementById('cloak-grid'),
+        enchantSection: document.getElementById('cloak-enchant-section'),
+        enchantGridEl: document.getElementById('cloak-enchant-grid'),
+        nameSpan: document.getElementById('selected-cloak-name'),
+        getImageFn: getCloakImage,
+        cardClass: 'cloak-card',
+        enchantClass: 'cloak-enchant',
+        radioName: 'cloak_visual'
+    });
+</script>
+
+<style>
+    .weapon-card {
+        cursor: pointer;
+        border-radius: 12px;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        background: rgba(30, 30, 30, 0.7);
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+    .weapon-card:hover {
+        border-color: rgba(255, 152, 0, 0.5);
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(255, 152, 0, 0.2);
+    }
+
+    .weapon-card.selected {
+        border-color: #FF9800;
+        background: rgba(255, 152, 0, 0.15);
+        box-shadow: 0 0 20px rgba(255, 152, 0, 0.3);
+    }
+
+    .weapon-card-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 12px 8px;
+        gap: 8px;
+    }
+
+    .weapon-card-img {
+        width: 80px;
+        height: 80px;
+        object-fit: contain;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.3);
+    }
+
+    .weapon-card-name {
+        color: #ddd;
+        font-size: 0.8rem;
+        text-align: center;
+        font-weight: 500;
+        line-height: 1.2;
+        word-break: break-word;
+    }
+
+    .weapon-card.selected .weapon-card-name {
+        color: #FF9800;
+        font-weight: 700;
+    }
+
+    /* Enchant Level Buttons */
+    .enchant-btn {
+        width: 52px;
+        height: 42px;
+        border: 2px solid rgba(255, 152, 0, 0.3);
+        border-radius: 8px;
+        background: rgba(30, 30, 30, 0.8);
+        color: #ccc;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .enchant-btn:hover {
+        border-color: rgba(255, 152, 0, 0.7);
+        background: rgba(255, 152, 0, 0.1);
+        color: #FF9800;
+        transform: translateY(-2px);
+        box-shadow: 0 3px 10px rgba(255, 152, 0, 0.2);
+    }
+
+    .enchant-btn.selected {
+        border-color: #FF9800;
+        background: linear-gradient(145deg, rgba(255, 152, 0, 0.3), rgba(255, 120, 0, 0.15));
+        color: #FF9800;
+        box-shadow: 0 0 15px rgba(255, 152, 0, 0.35);
+        text-shadow: 0 0 8px rgba(255, 152, 0, 0.5);
+    }
+</style>
+{% endblock %}

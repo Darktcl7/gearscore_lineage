@@ -1,0 +1,335 @@
+/* ==============================================
+   ALTO PROJECT - GLOBAL MOBILE RESPONSIVE CSS
+   Applied via base.html to fix all pages
+   ============================================== */
+
+/* ---- TABLET (max-width: 768px) ---- */
+@media (max-width: 768px) {
+
+    /* Allow scrolling on mobile - many pages set overflow:hidden */
+    html,
+    body {
+        overflow: auto !important;
+        overflow-x: auto !important;
+        height: auto !important;
+        min-height: 100vh;
+    }
+
+    #site-content {
+        height: auto !important;
+        min-height: 100vh;
+        overflow: visible !important;
+    }
+
+    main {
+        overflow: visible !important;
+    }
+
+    /* Common containers: reduce margins */
+    .activity-container,
+    .admin-container {
+        margin-left: 5px !important;
+        margin-right: 5px !important;
+        margin-top: 65px !important;
+        border-radius: 12px !important;
+        height: auto !important;
+        min-height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* Headers: smaller text, flex-wrap */
+    .activity-header,
+    .admin-header {
+        padding: 15px !important;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .activity-header h1,
+    .admin-header h1 {
+        font-size: 1.2rem !important;
+    }
+
+    /* Content sections: allow natural flow */
+    .activity-content,
+    .admin-content {
+        padding: 10px !important;
+        overflow: visible !important;
+    }
+
+    /* Flex layouts should stack on mobile */
+    .activity-content {
+        flex-direction: column !important;
+    }
+
+    .stats-section,
+    .history-section {
+        flex: none !important;
+        width: 100% !important;
+    }
+
+    /* Stat grids: 2 columns still fine, reduce padding */
+    .stat-grid {
+        gap: 8px !important;
+    }
+
+    .stat-item {
+        padding: 12px !important;
+    }
+
+    .stat-value {
+        font-size: 1.5rem !important;
+    }
+
+    /* Glass cards: reduce padding */
+    .glass-card,
+    .admin-panel {
+        padding: 12px !important;
+    }
+
+    /* Tables: enable horizontal scroll */
+    .events-table,
+    .activity-table,
+    .leaderboard-table,
+    table {
+        display: block !important;
+        width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+    }
+
+    /* Removed display: table on rows to preserve column alignment */
+
+    .events-table th,
+    .events-table td,
+    .activity-table th,
+    .activity-table td,
+    .leaderboard-table th,
+    .leaderboard-table td,
+    table th,
+    table td {
+        padding: 6px 8px !important;
+        font-size: 0.8rem !important;
+    }
+
+    /* Leaderboard specific font reductions */
+    .gold-text,
+    .top-1,
+    .top-2 {
+        font-size: 0.9rem !important;
+    }
+
+    .rank-cell {
+        width: 40px !important;
+    }
+
+    /* Buttons: slightly smaller */
+    .btn-create {
+        padding: 8px 15px !important;
+        font-size: 0.85rem !important;
+    }
+
+    /* Tier badge: smaller */
+    .tier-badge {
+        font-size: 0.9rem !important;
+        padding: 6px 14px !important;
+    }
+
+    /* Base nav: make sure it works on mobile */
+    .navbar {
+        padding: 0 10px !important;
+    }
+
+    .navbar .brand-font {
+        font-size: 1rem !important;
+    }
+
+    /* DKP pages: leaderboard & profile cards */
+    .lb-container,
+    .profile-container {
+        margin-left: 5px !important;
+        margin-right: 5px !important;
+        margin-top: 65px !important;
+        border-radius: 12px !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    .lb-header,
+    .profile-header {
+        padding: 15px !important;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .lb-header h1,
+    .profile-header h1 {
+        font-size: 1.2rem !important;
+    }
+
+    .lb-content,
+    .profile-content {
+        padding: 10px !important;
+        overflow: visible !important;
+        flex-direction: column !important;
+    }
+
+    /* DKP manage page */
+    .dkp-manage-container {
+        margin-left: 5px !important;
+        margin-right: 5px !important;
+        margin-top: 65px !important;
+        border-radius: 12px !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* Character management page */
+    .manage-container {
+        margin-left: 5px !important;
+        margin-right: 5px !important;
+        margin-top: 65px !important;
+        border-radius: 12px !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    .manage-header {
+        padding: 15px !important;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .manage-header h1 {
+        font-size: 1.2rem !important;
+    }
+
+    .manage-content {
+        padding: 10px !important;
+        overflow: visible !important;
+    }
+
+    /* Discord dashboard */
+    .discord-container {
+        margin-left: 5px !important;
+        margin-right: 5px !important;
+        margin-top: 65px !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* Form inputs on mobile */
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="password"],
+    input[type="date"],
+    input[type="datetime-local"],
+    select,
+    textarea {
+        font-size: 16px !important;
+        /* Prevents iOS zoom */
+    }
+
+    /* Modal fixes for mobile */
+    .modal-content,
+    .custom-modal .modal-content {
+        max-width: 90vw !important;
+        margin: 10px !important;
+    }
+
+    /* Card grids: single column */
+    .card-grid,
+    .user-grid,
+    .event-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Section titles */
+    .section-title {
+        font-size: 1rem !important;
+    }
+
+    /* Fix generic H1 inside containers */
+    .activity-container h1,
+    .admin-container h1 {
+        font-size: 1.2rem !important;
+    }
+
+    /* Force flex wrap on direct children divs that are flex (simple heuristic) */
+    .activity-container>div[style*="display:flex"],
+    .admin-container>div[style*="display:flex"] {
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+    }
+
+    /* Fix bulk actions */
+    .bulk-actions,
+    .bulk-actions>div {
+        flex-wrap: wrap !important;
+        width: 100% !important;
+    }
+}
+
+/* ---- SMALL PHONE (max-width: 480px) ---- */
+@media (max-width: 480px) {
+
+    .activity-container,
+    .admin-container,
+    .lb-container,
+    .profile-container,
+    .manage-container,
+    .discord-container,
+    .dkp-manage-container {
+        margin-left: 3px !important;
+        margin-right: 3px !important;
+        margin-top: 60px !important;
+        border-radius: 8px !important;
+    }
+
+    .activity-header h1,
+    .admin-header h1,
+    .lb-header h1,
+    .profile-header h1,
+    .manage-header h1 {
+        font-size: 1rem !important;
+    }
+
+    .stat-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 5px !important;
+    }
+
+    .stat-item {
+        padding: 8px !important;
+    }
+
+    .stat-value {
+        font-size: 1.2rem !important;
+    }
+
+    .stat-label {
+        font-size: 0.7rem !important;
+    }
+
+    .glass-card {
+        padding: 8px !important;
+        border-radius: 8px !important;
+    }
+
+    .glass-card h3 {
+        font-size: 0.9rem !important;
+    }
+
+    /* Even smaller table cells */
+    .events-table th,
+    .events-table td,
+    .activity-table th,
+    .activity-table td,
+    .leaderboard-table th,
+    .leaderboard-table td {
+        padding: 6px 8px !important;
+        font-size: 0.75rem !important;
+    }
+}

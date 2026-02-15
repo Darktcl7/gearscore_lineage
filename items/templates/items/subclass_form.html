@@ -1,0 +1,604 @@
+{% extends 'items/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_body_attributes %}class="fullscreen-page"{% endblock %}
+
+{% block extra_head %}
+<style>
+    html,
+    body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: auto;
+        background: #0c0c0c;
+    }
+
+    #site-content {
+        min-height: 100vh;
+    }
+
+    main {
+        padding: 20px;
+    }
+
+    .subclass-form-container {
+        max-width: 1400px;
+        margin: 80px auto 30px auto;
+        padding: 30px;
+        background: rgba(18, 18, 18, 0.85);
+        border-radius: 20px;
+        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .form-header {
+        padding: 20px 0;
+        border-bottom: 2px solid rgba(197, 168, 0, 0.5);
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    .form-header h1 {
+        margin: 0;
+        color: #ffffff;
+        font-size: 2rem;
+        text-shadow: 0 0 10px rgba(197, 168, 0, 0.5);
+    }
+
+    .form-description {
+        color: #ccc;
+        font-size: 1rem;
+        margin-top: 10px;
+    }
+
+    /* Subclass Section */
+    .subclass-section {
+        margin-bottom: 30px;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .subclass-section h3 {
+        color: #ffd700;
+        margin: 0 0 20px 0;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(197, 168, 0, 0.3);
+        font-size: 1.4rem;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .subclass-section h3 img {
+        width: 48px;
+        height: 48px;
+    }
+
+    /* Skills Grid */
+    .skills-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .skill-item {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+
+    .skill-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .skill-item input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        margin-right: 10px;
+        cursor: pointer;
+    }
+
+    .skill-item label {
+        color: #ffffff;
+        cursor: pointer;
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    /* Weapon Selection */
+    .weapon-section h4 {
+        color: #aaaaaa;
+        margin: 15px 0 10px 0;
+        font-size: 1rem;
+    }
+
+    .weapon-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 15px;
+    }
+
+    .weapon-choice {
+        position: relative;
+        cursor: pointer;
+        border-radius: 10px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.05);
+        transition: all 0.3s;
+        padding: 10px;
+        text-align: center;
+    }
+
+    .weapon-choice:hover {
+        background: rgba(197, 168, 0, 0.2);
+        transform: translateY(-3px);
+    }
+
+    .weapon-choice input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+    }
+
+    .weapon-choice input[type="radio"]:checked+.weapon-content {
+        border: 2px solid #ffd700;
+        background: rgba(197, 168, 0, 0.15);
+    }
+
+    .weapon-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 10px;
+        border: 2px solid transparent;
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+
+    .weapon-content img {
+        width: 64px;
+        height: 64px;
+        object-fit: contain;
+    }
+
+    .weapon-caption {
+        color: #ffffff;
+        font-size: 0.85rem;
+        text-align: center;
+        line-height: 1.2;
+    }
+
+    .weapon-choice input[type="radio"]:checked~.weapon-caption {
+        color: #ffd700;
+        font-weight: bold;
+    }
+
+    /* Form Buttons */
+    .form-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .form-buttons .btn {
+        padding: 15px 40px;
+        border-radius: 10px;
+        text-decoration: none;
+        color: white;
+        font-size: 1.1rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .btn-primary {
+        background: linear-gradient(145deg, #4CAF50, #3a8a3f);
+    }
+
+    .btn-secondary {
+        background: linear-gradient(145deg, #333333, #222222);
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+        .skills-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @media (max-width: 900px) {
+        .skills-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 600px) {
+        .skills-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .weapon-options {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<form method="post">
+    {% csrf_token %}
+    <div class="subclass-form-container">
+        <div class="form-header">
+            <h1>{{ title }}</h1>
+            <p class="form-description">{{ form_description }}</p>
+        </div>
+
+        <!-- Dualblade Subclass -->
+        <div class="subclass-section">
+            <h3>
+                <img src="{% static 'items/img/subclass/Icon_Item_Usable_SkillBook_Dual_04.png' %}" alt="Dualblade">
+                <span>What skills do you have for dualblade subclass?</span>
+            </h3>
+            <div class="skills-grid">
+                <div class="skill-item">{{ form.dualblade_triple_slash }}<label for="id_dualblade_triple_slash">Triple
+                        Slash</label></div>
+                <div class="skill-item">{{ form.dualblade_sonic_blaster }}<label for="id_dualblade_sonic_blaster">Sonic
+                        Blaster</label></div>
+                <div class="skill-item">{{ form.dualblade_detect_weakness }}<label
+                        for="id_dualblade_detect_weakness">Detect Weakness</label></div>
+                <div class="skill-item">{{ form.dualblade_dance_of_fury }}<label for="id_dualblade_dance_of_fury">Dance
+                        of Fury</label></div>
+                <div class="skill-item">{{ form.dualblade_dual_parrying }}<label for="id_dualblade_dual_parrying">Dual
+                        Parrying</label></div>
+                <div class="skill-item">{{ form.dualblade_dual_impact }}<label for="id_dualblade_dual_impact">Dual
+                        Impact</label></div>
+                <div class="skill-item">{{ form.dualblade_berserker }}<label
+                        for="id_dualblade_berserker">Berserker</label></div>
+                <div class="skill-item">{{ form.dualblade_breaking_armor }}<label
+                        for="id_dualblade_breaking_armor">Breaking Armor</label></div>
+            </div>
+            <div class="weapon-section">
+                <h4><strong>What weapon do you have for dualblade subclass?</strong></h4>
+                <div class="weapon-options">
+                    {% for choice in form.dualblade_weapon %}
+                    <label class="weapon-choice">
+                        {{ choice.tag }}
+                        <div class="weapon-content">
+                            {% if 'tallum' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_DualWeapon_G3_003.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'archangel' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_DualWeapon_G3_002.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'dark legion' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_DualWeapon_G3_001.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'mardil' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_DualWeapon_G3_004.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'astaroth' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_DualWeapon_G2_001.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% else %}
+                            <img src="{% static 'items/img/subclass/вопрос.png' %}" alt="{{ choice.choice_label }}">
+                            {% endif %}
+                        </div>
+                        <div class="weapon-caption">{{ choice.choice_label }}</div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Dagger Subclass -->
+        <div class="subclass-section">
+            <h3>
+                <img src="{% static 'items/img/subclass/Icon_Item_Usable_SkillBook_Dagger_04.png' %}" alt="Dagger">
+                <span>What skills do you have for dagger subclass?</span>
+            </h3>
+            <div class="skills-grid">
+                <div class="skill-item">{{ form.dagger_assassin_vision }}<label
+                        for="id_dagger_assassin_vision">Assassin's Vision</label></div>
+                <div class="skill-item">{{ form.dagger_shadow_blade }}<label for="id_dagger_shadow_blade">Shadow
+                        Blade</label></div>
+                <div class="skill-item">{{ form.dagger_hide }}<label for="id_dagger_hide">Hide</label></div>
+                <div class="skill-item">{{ form.dagger_venom }}<label for="id_dagger_venom">Venom</label></div>
+                <div class="skill-item">{{ form.dagger_reset_movement }}<label for="id_dagger_reset_movement">Reset
+                        Movement</label></div>
+                <div class="skill-item">{{ form.dagger_phantom_blade }}<label for="id_dagger_phantom_blade">Phantom
+                        Blade</label></div>
+                <div class="skill-item">{{ form.dagger_shadow_step }}<label for="id_dagger_shadow_step">Shadow
+                        Step</label></div>
+                <div class="skill-item">{{ form.dagger_marionette }}<label for="id_dagger_marionette">Marionette</label>
+                </div>
+            </div>
+            <div class="weapon-section">
+                <h4><strong>What weapon do you have for dagger subclass?</strong></h4>
+                <div class="weapon-options">
+                    {% for choice in form.dagger_weapon %}
+                    <label class="weapon-choice">
+                        {{ choice.tag }}
+                        <div class="weapon-content">
+                            {% if 'demon' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Dagger_G3_001.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'archangel' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Dagger_G3_002.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'cruma' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Dagger_G3_003.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'soul' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Dagger_G3_004.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'naga' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Dagger_G2_001.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% else %}
+                            <img src="{% static 'items/img/subclass/вопрос_yzjC1wM.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% endif %}
+                        </div>
+                        <div class="weapon-caption">{{ choice.choice_label }}</div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Staff Subclass -->
+        <div class="subclass-section">
+            <h3>
+                <img src="{% static 'items/img/subclass/Icon_Item_Usable_SkillBook_Staff_04.png' %}" alt="Staff">
+                <span>What skills do you have for staff subclass?</span>
+            </h3>
+            <div class="skills-grid">
+                <div class="skill-item">{{ form.staff_snow_storm }}<label for="id_staff_snow_storm">Snow Storm</label>
+                </div>
+                <div class="skill-item">{{ form.staff_cancellation }}<label
+                        for="id_staff_cancellation">Cancellation</label></div>
+                <div class="skill-item">{{ form.staff_confuse }}<label for="id_staff_confuse">Confuse</label></div>
+                <div class="skill-item">{{ form.staff_restore_casting }}<label for="id_staff_restore_casting">Restore
+                        Casting</label></div>
+                <div class="skill-item">{{ form.staff_frozen_crystal }}<label for="id_staff_frozen_crystal">Frozen
+                        Crystal</label></div>
+                <div class="skill-item">{{ form.staff_meteor }}<label for="id_staff_meteor">Meteor</label></div>
+                <div class="skill-item">{{ form.staff_chaos }}<label for="id_staff_chaos">Chaos</label></div>
+                <div class="skill-item">{{ form.staff_gravity }}<label for="id_staff_gravity">Gravity</label></div>
+            </div>
+            <div class="weapon-section">
+                <h4><strong>What weapon do you have for staff subclass?</strong></h4>
+                <div class="weapon-options">
+                    {% for choice in form.staff_weapon %}
+                    <label class="weapon-choice">
+                        {{ choice.tag }}
+                        <div class="weapon-content">
+                            {% if 'daimon' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Staff_G3_003.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'stakato' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Staff_G3_004.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'archangel' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Staff_G3_002.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'mother' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Staff_G3_001.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'spirits' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Staff_G3_005.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'imperial' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Staff_G2_001.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% else %}
+                            <img src="{% static 'items/img/subclass/вопрос_d264zio.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% endif %}
+                        </div>
+                        <div class="weapon-caption">{{ choice.choice_label }}</div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Bow Subclass -->
+        <div class="subclass-section">
+            <h3>
+                <img src="{% static 'items/img/subclass/Icon_Item_Usable_SkillBook_Bow_04.png' %}" alt="Bow">
+                <span>What skills do you have for bow subclass?</span>
+            </h3>
+            <div class="skills-grid">
+                <div class="skill-item">{{ form.bow_death_sting }}<label for="id_bow_death_sting">Death Sting</label>
+                </div>
+                <div class="skill-item">{{ form.bow_mana_seeker }}<label for="id_bow_mana_seeker">Mana Seeker</label>
+                </div>
+                <div class="skill-item">{{ form.bow_real_target }}<label for="id_bow_real_target">Real Target</label>
+                </div>
+                <div class="skill-item">{{ form.bow_entangle }}<label for="id_bow_entangle">Entangle</label></div>
+                <div class="skill-item">{{ form.bow_impact_shot }}<label for="id_bow_impact_shot">Impact Shot</label>
+                </div>
+                <div class="skill-item">{{ form.bow_absolute_piercing }}<label for="id_bow_absolute_piercing">Absolute
+                        Piercing</label></div>
+                <div class="skill-item">{{ form.bow_elimination }}<label for="id_bow_elimination">Elimination</label>
+                </div>
+                <div class="skill-item">{{ form.bow_pinpoint_shot }}<label for="id_bow_pinpoint_shot">Pinpoint
+                        Shot</label></div>
+            </div>
+            <div class="weapon-section">
+                <h4><strong>What weapon do you have for bow subclass?</strong></h4>
+                <div class="weapon-options">
+                    {% for choice in form.bow_weapon %}
+                    <label class="weapon-choice">
+                        {{ choice.tag }}
+                        <div class="weapon-content">
+                            {% if 'peril' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Bow_G3_001.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'archangel' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Bow_G3_003.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'carnium' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Bow_G3_002.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'soul' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Bow_G3_004.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'shyeed' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Bow_G2_001.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% else %}
+                            <img src="{% static 'items/img/subclass/вопрос_SCnjSWT.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% endif %}
+                        </div>
+                        <div class="weapon-caption">{{ choice.choice_label }}</div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tank Subclass -->
+        <div class="subclass-section">
+            <h3>
+                <img src="{% static 'items/img/subclass/Icon_Item_Usable_SkillBook_Sword_04.png' %}" alt="Tank">
+                <span>What skills do you have for tank subclass?</span>
+            </h3>
+            <div class="skills-grid">
+                <div class="skill-item">{{ form.tank_double_shock }}<label for="id_tank_double_shock">Double
+                        Shock</label></div>
+                <div class="skill-item">{{ form.tank_iron_will }}<label for="id_tank_iron_will">Iron Will</label></div>
+                <div class="skill-item">{{ form.tank_vex }}<label for="id_tank_vex">Vex</label></div>
+                <div class="skill-item">{{ form.tank_touch_of_life }}<label for="id_tank_touch_of_life">Touch of
+                        Life</label></div>
+                <div class="skill-item">{{ form.tank_holy_strike }}<label for="id_tank_holy_strike">Holy Strike</label>
+                </div>
+                <div class="skill-item">{{ form.tank_brutal_attack }}<label for="id_tank_brutal_attack">Brutal
+                        Attack</label></div>
+                <div class="skill-item">{{ form.tank_vengeance }}<label for="id_tank_vengeance">Vengeance</label></div>
+                <div class="skill-item">{{ form.tank_chain_strike }}<label for="id_tank_chain_strike">Chain
+                        Strike</label></div>
+            </div>
+            <div class="weapon-section">
+                <h4><strong>What weapon do you have for tank subclass?</strong></h4>
+                <div class="weapon-options">
+                    {% for choice in form.tank_weapon %}
+                    <label class="weapon-choice">
+                        {{ choice.tag }}
+                        <div class="weapon-content">
+                            {% if 'ssaurabi' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Sword_G4_003.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'sirra' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Sword_G3_001.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'archangel' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Sword_G3_002.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'valhalla' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Sword_G3_004.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'miracles' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Sword_G3_003.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'caladbolg' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Sword_G2_001.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% else %}
+                            <img src="{% static 'items/img/subclass/вопрос_HOw7o0d.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% endif %}
+                        </div>
+                        <div class="weapon-caption">{{ choice.choice_label }}</div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Spear Subclass -->
+        <div class="subclass-section">
+            <h3>
+                <img src="{% static 'items/img/subclass/Icon_Item_Usable_SkillBook_Spear_04.png' %}" alt="Spear">
+                <span>What skills do you have for spear subclass?</span>
+            </h3>
+            <div class="skills-grid">
+                <div class="skill-item">{{ form.spear_frenzy }}<label for="id_spear_frenzy">Frenzy</label></div>
+                <div class="skill-item">{{ form.spear_vital_destruction }}<label for="id_spear_vital_destruction">Vital
+                        Destruction</label></div>
+                <div class="skill-item">{{ form.spear_infinity_strike }}<label for="id_spear_infinity_strike">Infinity
+                        Strike</label></div>
+                <div class="skill-item">{{ form.spear_disarm }}<label for="id_spear_disarm">Disarm</label></div>
+                <div class="skill-item">{{ form.spear_giant_stomp }}<label for="id_spear_giant_stomp">Giant
+                        Stomp</label></div>
+                <div class="skill-item">{{ form.spear_absolute_spear }}<label for="id_spear_absolute_spear">Absolute
+                        Spear</label></div>
+                <div class="skill-item">{{ form.spear_rolling_thunder }}<label for="id_spear_rolling_thunder">Rolling
+                        Thunder</label></div>
+                <div class="skill-item">{{ form.spear_earthquake_stomp }}<label
+                        for="id_spear_earthquake_stomp">Earthquake Stomp</label></div>
+            </div>
+            <div class="weapon-section">
+                <h4><strong>What weapon do you have for spear subclass?</strong></h4>
+                <div class="weapon-options">
+                    {% for choice in form.spear_weapon %}
+                    <label class="weapon-choice">
+                        {{ choice.tag }}
+                        <div class="weapon-content">
+                            {% if 'body slasher' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Spear_G4_002.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'lance' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Spear_G3_002.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'archangel' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Spear_G3_003.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'tallum' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Spear_G3_001.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'halberd' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Spear_G3_004.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% elif 'saint' in choice.choice_label|lower %}
+                            <img src="{% static 'items/img/subclass/Icon_WP_Spear_G2_001.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% else %}
+                            <img src="{% static 'items/img/subclass/вопрос_apiILan.png' %}"
+                                alt="{{ choice.choice_label }}">
+                            {% endif %}
+                        </div>
+                        <div class="weapon-caption">{{ choice.choice_label }}</div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="form-buttons">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a href="{% url 'character-profile' character.pk %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </div>
+</form>
+{% endblock %}

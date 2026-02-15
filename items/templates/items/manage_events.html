@@ -1,0 +1,679 @@
+{% extends 'items/base.html' %}
+{% load static %}
+
+{% block title %}Manage Events{% endblock %}
+
+{% block extra_body_attributes %}class="fullscreen-page"{% endblock %}
+
+{% block extra_head %}
+<style>
+    html,
+    body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: #0c0c0c;
+    }
+
+    #site-content {
+        height: calc(100vh - var(--header-height));
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    main {
+        flex: 1;
+        overflow: hidden;
+    }
+
+    .admin-container {
+        height: calc(100% - 20px);
+        margin-top: 0;
+        display: flex;
+        flex-direction: column;
+        background: rgba(18, 18, 18, 0.85);
+        border-radius: 20px;
+        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
+        overflow: hidden;
+        position: relative;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        margin-left: 10px;
+        margin-right: 10px;
+        margin-bottom: 10px;
+    }
+
+    .admin-header {
+        padding: 25px;
+        background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .admin-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background: linear-gradient(90deg, #e74c3c, #9b59b6, #e74c3c);
+        background-size: 200% 200%;
+        animation: gradientShift 3s ease infinite;
+    }
+
+    @keyframes gradientShift {
+        0% {
+            background-position: 0% 50%;
+        }
+
+        50% {
+            background-position: 100% 50%;
+        }
+
+        100% {
+            background-position: 0% 50%;
+        }
+    }
+
+    .admin-header h1 {
+        margin: 0;
+        color: #ffffff;
+        font-size: 1.8rem;
+    }
+
+    .btn-create {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 25px;
+        background: linear-gradient(145deg, #2ecc71, #27ae60);
+        color: #fff;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-create:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
+    }
+
+    .admin-content {
+        flex: 1;
+        padding: 25px;
+        overflow-y: auto;
+    }
+
+    .events-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .events-table th,
+    .events-table td {
+        padding: 15px 20px;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .events-table th {
+        background: rgba(255, 255, 255, 0.1);
+        color: #DAA520;
+        font-weight: 600;
+    }
+
+    .events-table tr:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .event-type-badge {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .event-invasion {
+        background: #e74c3c;
+        color: #fff;
+    }
+
+    .event-boss_rush {
+        background: #9b59b6;
+        color: #fff;
+    }
+
+    .event-catacombs {
+        background: #3498db;
+        color: #fff;
+    }
+
+    .status-badge {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+    }
+
+    .status-completed {
+        background: #2ecc71;
+        color: #fff;
+    }
+
+    .status-pending {
+        background: #f39c12;
+        color: #fff;
+    }
+
+    .win-badge {
+        color: #2ecc71;
+    }
+
+    .lose-badge {
+        color: #e74c3c;
+    }
+
+    .action-btn {
+        padding: 8px 15px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 0.85rem;
+        margin-right: 5px;
+    }
+
+    .btn-attendance {
+        background: #3498db;
+        color: #fff;
+    }
+
+    .btn-attendance:hover {
+        background: #2980b9;
+    }
+
+    .no-events {
+        text-align: center;
+        padding: 60px;
+        color: #888;
+    }
+
+    .no-events i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.3;
+    }
+
+    /* ACTION ICONS */
+    .action-btn-icon {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 5px 8px;
+        font-size: 1.1rem;
+        transition: transform 0.2s;
+    }
+
+    .action-btn-icon:hover {
+        transform: scale(1.15);
+    }
+
+    /* MODAL STYLES */
+    .custom-modal {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(5px);
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .modal-content {
+        background: linear-gradient(145deg, #1e1e1e, #252525);
+        border: 1px solid #f1c40f;
+        /* Gold primary */
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+        width: 100%;
+        max-width: 420px;
+        border-radius: 12px;
+        position: relative;
+        overflow: hidden;
+        animation: slideUp 0.3s ease;
+    }
+
+    .close-modal {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        color: #888;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: color 0.3s;
+    }
+
+    .close-modal:hover {
+        color: #fff;
+    }
+
+    .modal-header {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 20px 25px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        font-size: 1.3rem;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .modal-body {
+        padding: 25px;
+    }
+
+    .modal-body p {
+        color: #ccc;
+        margin-bottom: 20px;
+        line-height: 1.5;
+    }
+
+    .warning-text {
+        font-size: 0.9rem;
+        color: #e74c3c !important;
+        background: rgba(231, 76, 60, 0.1);
+        padding: 12px;
+        border-radius: 6px;
+        border-left: 3px solid #e74c3c;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .modal-footer {
+        padding: 15px 25px;
+        background: rgba(0, 0, 0, 0.2);
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .btn-cancel {
+        background: transparent;
+        color: #aaa;
+        border: 1px solid #444;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+
+    .btn-cancel:hover {
+        color: #fff;
+        border-color: #666;
+    }
+
+    .btn-confirm {
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        color: #000;
+        background: linear-gradient(135deg, #f1c40f, #b8860b);
+        transition: all 0.3s;
+    }
+
+    .btn-confirm:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(241, 196, 15, 0.3);
+    }
+
+    /* Specific button styles */
+    .btn-confirm.btn-delete {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        color: white;
+        box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+    }
+
+    .btn-confirm.btn-complete {
+        background: linear-gradient(135deg, #2ecc71, #27ae60);
+        color: white;
+        box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+    }
+
+    .btn-confirm.btn-reopen {
+        background: linear-gradient(135deg, #f39c12, #d35400);
+        color: white;
+        box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideUp {
+        from {
+            transform: translateY(20px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1><i class="fas fa-calendar-check"></i> Manage Events</h1>
+        <a href="{% url 'create-event' %}" class="btn-create">
+            <i class="fas fa-plus"></i> Create Event
+        </a>
+    </div>
+
+    <div class="admin-content">
+        {% if events %}
+        <table class="events-table">
+            <thead>
+                <tr>
+                    <th>Event ID</th>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Result</th>
+                    <th>Participants</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in events %}
+                <tr>
+                    <td><code>{{ event.event_id }}</code></td>
+                    <td>
+                        <span class="event-type-badge event-{{ event.event_type|lower }}">
+                            {{ event.get_event_type_display }}
+                        </span>
+                    </td>
+                    <td>{{ event.name }}</td>
+                    <td>{{ event.date|date:"M d, Y H:i" }}</td>
+                    <td>
+                        {% if event.is_completed %}
+                        <span class="status-badge status-completed"><i class="fas fa-check-circle"></i> Completed</span>
+                        {% else %}
+                        <span class="status-badge status-pending"><i class="fas fa-clock"></i> Active</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not event.is_completed %}
+                        <span style="color: #666;">-</span>
+                        {% else %}
+                        <button onclick="toggleEventResult('{{ event.pk }}')"
+                            style="background:none;border:none;cursor:pointer;padding:0;">
+                            {% if event.is_win %}
+                            <span class="win-badge"><i class="fas fa-trophy"></i> Win</span>
+                            {% else %}
+                            <span class="lose-badge"><i class="fas fa-times"></i> Lose</span>
+                            {% endif %}
+                        </button>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>{{ event.participants.count }}</strong> players
+                    </td>
+                    <td>
+                        <a href="{% url 'record-attendance' event.pk %}" class="action-btn-icon"
+                            style="color: #3498db; text-decoration:none; display:inline-block;"
+                            title="Manage Attendance">
+                            <i class="fas fa-user-check"></i>
+                        </a>
+
+                        {% if not event.is_completed %}
+                        <button
+                            onclick="confirmAction('complete', '{{ event.pk }}', '{{ event.event_id }}', '{{ event.name|escapejs }}')"
+                            class="action-btn-icon" title="Mark as Completed" style="color: #2ecc71;">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        {% else %}
+                        <button
+                            onclick="confirmAction('reopen', '{{ event.pk }}', '{{ event.event_id }}', '{{ event.name|escapejs }}')"
+                            class="action-btn-icon" title="Reopen Event" style="color: #f39c12;">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                        {% endif %}
+
+                        <button
+                            onclick="confirmAction('delete', '{{ event.pk }}', '{{ event.event_id }}', '{{ event.name|escapejs }}')"
+                            class="action-btn-icon" title="Delete Event" style="color: #e74c3c;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+
+        <!-- ACTION CONFIRMATION MODAL -->
+        <div id="actionModal" class="custom-modal">
+            <div class="modal-content">
+                <label class="close-modal" onclick="closeActionModal()"><i class="fas fa-times"></i></label>
+
+                <div class="modal-header">
+                    <h2 id="modalTitle"><i class="fas fa-exclamation-circle"></i> Confirm Action</h2>
+                </div>
+
+                <div class="modal-body">
+                    <p id="modalMessage">Are you sure you want to proceed?</p>
+
+                    <p class="warning-text" id="modalWarning" style="display: none;">
+                        <i class="fas fa-exclamation-triangle"></i> <span id="modalWarningText">Warning message</span>
+                    </p>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn-cancel" onclick="closeActionModal()">Cancel</button>
+                    <button id="modalConfirmBtn" class="btn-confirm">Confirm</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function closeActionModal() {
+                document.getElementById('actionModal').style.display = 'none';
+            }
+
+            // Generic Action Confirmation
+            function confirmAction(actionType, pk, eventId, eventName) {
+                const modal = document.getElementById('actionModal');
+                const title = document.getElementById('modalTitle');
+                const message = document.getElementById('modalMessage');
+                const warning = document.getElementById('modalWarning');
+                const confirmBtn = document.getElementById('modalConfirmBtn');
+
+                // Reset classes
+                confirmBtn.className = 'btn-confirm';
+                warning.style.display = 'none';
+                modal.style.display = 'flex';
+
+                if (actionType === 'delete') {
+                    title.innerHTML = '<i class="fas fa-trash-alt"></i> Delete Event';
+                    message.innerHTML = `Are you sure you want to delete event <strong>${eventName}</strong>?`;
+                    warning.style.display = 'flex';
+                    document.getElementById('modalWarningText').innerText = 'This action cannot be undone. All check-in data will be lost.';
+                    confirmBtn.innerText = 'Delete Event';
+                    confirmBtn.classList.add('btn-delete');
+                    // Delete uses EVENT_ID (String)
+                    confirmBtn.onclick = function () { deleteEvent(eventId); };
+                }
+                else if (actionType === 'complete') {
+                    title.innerHTML = '<i class="fas fa-check-circle"></i> Complete Event';
+                    message.innerHTML = `Mark event <strong>${eventName}</strong> as Completed?`;
+                    confirmBtn.innerText = 'Complete Event';
+                    confirmBtn.classList.add('btn-complete');
+                    // Toggle uses PK (Integer)
+                    confirmBtn.onclick = function () { toggleEventStatus(pk); };
+                }
+                else if (actionType === 'reopen') {
+                    title.innerHTML = '<i class="fas fa-undo"></i> Reopen Event';
+                    message.innerHTML = `Reopen event <strong>${eventName}</strong>?`;
+                    message.innerHTML += '<br><small style="color:#aaa">Players can check-in again.</small>';
+                    confirmBtn.innerText = 'Reopen Event';
+                    confirmBtn.classList.add('btn-reopen');
+                    // Toggle uses PK (Integer)
+                    confirmBtn.onclick = function () { toggleEventStatus(pk); };
+                }
+            }
+
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            function deleteEvent(eventId) {
+                fetch('/portal/api/activity/event/delete/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'X-API-Key': 'alto-discord-bot-key-2026'
+                    },
+                    body: JSON.stringify({ event_id: eventId })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            location.reload();
+                        } else {
+                            alert('Error: ' + data.error);
+                            closeActionModal();
+                        }
+                    })
+                    .catch(err => {
+                        alert('Error deleting event');
+                        console.error(err);
+                    });
+            }
+
+            function toggleEventStatus(eventId) {
+                fetch(`/portal/api/activity/event/${eventId}/toggle-status/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'X-API-Key': 'alto-discord-bot-key-2026'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            location.reload();
+                        } else {
+                            alert('Error: ' + data.error);
+                            closeActionModal();
+                        }
+                    })
+                    .catch(err => {
+                        alert('Error updating status');
+                        console.error(err);
+                    });
+            }
+
+            // Existing toggleEventResult (for Win/Lose button)
+            function toggleEventResult(eventPk) {
+                // Use custom ACTION MODAL instead of confirm()
+                const modal = document.getElementById('actionModal');
+                const title = document.getElementById('modalTitle');
+                const message = document.getElementById('modalMessage');
+                const warning = document.getElementById('modalWarning');
+                const confirmBtn = document.getElementById('modalConfirmBtn');
+
+                // Reset classes
+                confirmBtn.className = 'btn-confirm';
+                warning.style.display = 'none';
+                modal.style.display = 'flex';
+
+                title.innerHTML = '<i class="fas fa-trophy"></i> Change Result';
+                message.innerHTML = 'Toggle event result between <strong>Win</strong> and <strong>Lose</strong>?';
+
+                confirmBtn.innerText = 'Change Result';
+                // confirmBtn.classList.add('btn-complete'); // Optional styling
+
+                confirmBtn.onclick = function () {
+                    fetch(`/portal/api/activity/event/${eventPk}/toggle-result/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-API-Key': 'alto-discord-bot-key-2026',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        }
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                window.location.reload();
+                            } else {
+                                alert('Error: ' + data.error);
+                            }
+                        });
+                };
+            }
+
+            // Close modal if clicking outside
+            window.onclick = function (event) {
+                const modal = document.getElementById('actionModal');
+                if (event.target == modal) {
+                    closeActionModal();
+                }
+            }
+        </script>
+        {% else %}
+        <div class="no-events">
+            <i class="fas fa-calendar-plus"></i>
+            <h2>No Events Yet</h2>
+            <p>Create your first event to start tracking guild activity.</p>
+            <a href="{% url 'create-event' %}" class="btn-create" style="margin-top: 20px;">
+                <i class="fas fa-plus"></i> Create First Event
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+<!-- Result Modal -->
+</script>
+{% endblock %}

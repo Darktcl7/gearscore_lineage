@@ -1,0 +1,530 @@
+{% extends 'items/base.html' %}
+{% load static %}
+{% block title %}DKP Management{% endblock %}
+{% block extra_body_attributes %}class="fullscreen-page"{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+<style>
+    html,
+    body {
+        height: 100%;
+        margin: 0;
+        background: #0c0c0c;
+        font-family: 'Outfit', sans-serif;
+        color: white;
+    }
+
+    .activity-container {
+        min-height: 60vh;
+        margin-top: 90px;
+        margin-bottom: 40px;
+        display: flex;
+        flex-direction: column;
+        background: rgba(10, 10, 10, 0.9);
+        border-radius: 20px;
+        padding: 30px;
+        margin-left: max(20px, 10%);
+        margin-right: max(20px, 10%);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(10px);
+        border: 1px solid #222;
+    }
+
+    h1 {
+        font-family: 'Cinzel', serif;
+        color: #FFD700;
+    }
+
+    input {
+        background: #222;
+        border: 1px solid #444;
+        color: white;
+        border-radius: 5px;
+    }
+
+    .btn-gold {
+        background: linear-gradient(45deg, #FFD700, #FFA500);
+        border: none;
+        color: black;
+        padding: 10px 20px;
+        cursor: pointer;
+        font-weight: bold;
+        border-radius: 5px;
+    }
+
+    .leaderboard-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    .leaderboard-table th {
+        text-align: left;
+        padding: 10px;
+        border-bottom: 1px solid #555;
+        color: #888;
+    }
+
+    .leaderboard-table td {
+        padding: 10px;
+        border-bottom: 1px solid #333;
+    }
+
+    /* ===== CUSTOM MODAL STYLES ===== */
+    .custom-modal-overlay {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(8px);
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .custom-modal-overlay.active {
+        display: flex;
+    }
+
+    .custom-modal {
+        background: linear-gradient(145deg, rgba(25, 25, 30, 0.98), rgba(15, 15, 20, 0.98));
+        border: 1px solid rgba(231, 76, 60, 0.5);
+        box-shadow:
+            0 0 80px rgba(231, 76, 60, 0.2),
+            0 30px 60px rgba(0, 0, 0, 0.6),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        width: 100%;
+        max-width: 450px;
+        border-radius: 16px;
+        position: relative;
+        overflow: hidden;
+        animation: modalSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-glow {
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle at center, rgba(231, 76, 60, 0.1) 0%, transparent 50%);
+        pointer-events: none;
+    }
+
+    .modal-close {
+        position: absolute;
+        top: 15px;
+        right: 18px;
+        color: #666;
+        font-size: 1.3rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        z-index: 10;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: none;
+        border: none;
+    }
+
+    .modal-close:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+        transform: rotate(90deg);
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, rgba(231, 76, 60, 0.25), rgba(192, 57, 43, 0.15));
+        padding: 25px 30px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        position: relative;
+    }
+
+    .modal-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: linear-gradient(90deg, #e74c3c, #c0392b, #e74c3c);
+        background-size: 200% 100%;
+        animation: shimmer 2s ease infinite;
+    }
+
+    @keyframes shimmer {
+        0% {
+            background-position: -100% 0;
+        }
+
+        100% {
+            background-position: 100% 0;
+        }
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        font-size: 1.3rem;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-family: 'Cinzel', serif;
+    }
+
+    .modal-header h2 i {
+        color: #e74c3c;
+        font-size: 1.5rem;
+    }
+
+    .modal-body {
+        padding: 30px;
+        position: relative;
+    }
+
+    .modal-body p {
+        color: #bbb;
+        margin: 0 0 20px 0;
+        line-height: 1.6;
+        font-size: 1rem;
+    }
+
+    .event-preview {
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 215, 0, 0.15);
+        border-radius: 12px;
+        padding: 18px 22px;
+        margin-bottom: 20px;
+    }
+
+    .event-preview-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #888;
+        font-size: 0.95rem;
+        margin-bottom: 10px;
+    }
+
+    .event-preview-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .event-preview-item i {
+        color: #FFD700;
+        width: 22px;
+        text-align: center;
+    }
+
+    .event-preview-item strong {
+        color: #fff;
+    }
+
+    .event-points-badge {
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.1));
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        padding: 3px 10px;
+        border-radius: 20px;
+        color: #FFD700;
+        font-weight: bold;
+        font-size: 0.85rem;
+    }
+
+    .warning-box {
+        background: linear-gradient(135deg, rgba(231, 76, 60, 0.15), rgba(192, 57, 43, 0.1));
+        border: 1px solid rgba(231, 76, 60, 0.3);
+        border-radius: 10px;
+        padding: 15px 18px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .warning-box i {
+        color: #e74c3c;
+        font-size: 1.3rem;
+        margin-top: 2px;
+    }
+
+    .warning-box span {
+        color: #e57373;
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    .modal-footer {
+        padding: 20px 30px;
+        background: rgba(0, 0, 0, 0.3);
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+
+    .btn-modal {
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-family: 'Outfit', sans-serif;
+    }
+
+    .btn-modal-cancel {
+        background: transparent;
+        color: #888;
+        border: 1px solid #444;
+    }
+
+    .btn-modal-cancel:hover {
+        color: #fff;
+        border-color: #666;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .btn-modal-delete {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        color: #fff;
+        border: none;
+        box-shadow: 0 4px 15px rgba(231, 76, 60, 0.35);
+    }
+
+    .btn-modal-delete:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(231, 76, 60, 0.5);
+    }
+
+    .btn-modal-delete:active {
+        transform: translateY(0);
+    }
+
+    /* Delete button styling */
+    .delete-event-btn {
+        background: rgba(30, 30, 35, 0.9);
+        border: 1px solid rgba(231, 76, 60, 0.3);
+        color: #e57373;
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 0.85rem;
+    }
+
+    .delete-event-btn:hover {
+        background: rgba(231, 76, 60, 0.15);
+        border-color: #e74c3c;
+        color: #fff;
+        transform: translateY(-1px);
+    }
+
+    /* ===== ANIMATIONS ===== */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-30px) scale(0.95);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="activity-container">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h1>DKP Control Center</h1>
+    </div>
+    <p style="color:#888; margin-bottom:30px;">Manage Raids & Distributed Points</p>
+
+    <div
+        style="background:rgba(255,255,255,0.05); padding:25px; border-radius:15px; margin-bottom:40px; border:1px solid rgba(255,255,255,0.1);">
+        <h3 style="margin-top:0; color:#FFD700;">Start New Event</h3>
+        <form method="POST" style="display:flex; gap:10px; flex-wrap:wrap;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create">
+            <input type="text" name="name" placeholder="Event Name (e.g. Raid Black Dragon)" required
+                style="flex-grow:2; padding:12px;">
+            <input type="text" name="code" placeholder="Code (e.g. BDR1)" required style="width:150px; padding:12px;">
+            <input type="number" name="value" placeholder="Pts" value="10" required style="width:80px; padding:12px;">
+            <button type="submit" class="btn-gold">START EVENT</button>
+        </form>
+    </div>
+
+    <h3 style="color:#FFD700;">Recent Events</h3>
+    <table class="leaderboard-table">
+        <thead>
+            <tr>
+                <th>Event Name</th>
+                <th>Points</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in events %}
+            <tr>
+                <td style="font-weight:bold; color:white;">{{ e.name }}</td>
+                <td style="color:#FFD700;">{{ e.points_to_award }}</td>
+                <td>{{ e.date|date:"d M H:i" }}</td>
+                <td>
+                    {% if e.is_active %}
+                    <span
+                        style="background:rgba(76, 175, 80, 0.2); color:#4CAF50; padding:2px 8px; border-radius:4px; font-size:0.8rem;">ACTIVE</span>
+                    {% else %}
+                    <span
+                        style="background:rgba(255, 255, 255, 0.1); color:#888; padding:2px 8px; border-radius:4px; font-size:0.8rem;">CLOSED</span>
+                    {% endif %}
+                </td>
+                <td style="display: flex; align-items: center; gap: 5px;">
+                    <!-- Toggle -->
+                    <form method="POST" style="display:inline; margin:0;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="toggle">
+                        <input type="hidden" name="event_id" value="{{ e.id }}">
+                        {% if e.is_active %}
+                        <button type="submit"
+                            style="background:#d32f2f; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size: 0.75rem;">END</button>
+                        {% else %}
+                        <button type="submit"
+                            style="background:#4CAF50; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size: 0.75rem;">OPEN</button>
+                        {% endif %}
+                    </form>
+
+                    <!-- Verify -->
+                    <a href="{% url 'web-dkp-attendance' e.id %}"
+                        style="background:#1976D2; color:white; padding:6px 10px; border-radius:4px; text-decoration:none; font-weight:bold; font-size: 0.75rem;">
+                        Check ({{ e.attendances.count }})
+                    </a>
+
+                    <!-- Delete Button -->
+                    <button type="button" class="delete-event-btn"
+                        onclick="showDeleteModal('{{ e.id }}', '{{ e.name|escapejs }}', '{{ e.points_to_award }}', '{{ e.date|date:'d M H:i' }}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" style="text-align:center; padding:20px; color:#555;">No events found. Start one above!
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Hidden form for delete -->
+<form id="deleteEventForm" method="POST" style="display: none;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="delete">
+    <input type="hidden" name="event_id" id="deleteEventId">
+</form>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="custom-modal-overlay">
+    <div class="custom-modal">
+        <div class="modal-glow"></div>
+        <button class="modal-close" onclick="closeDeleteModal()"><i class="fas fa-times"></i></button>
+
+        <div class="modal-header">
+            <h2><i class="fas fa-trash-alt"></i> Delete DKP Event</h2>
+        </div>
+
+        <div class="modal-body">
+            <p>Are you sure you want to permanently delete this event?</p>
+
+            <div class="event-preview">
+                <div class="event-preview-item">
+                    <i class="fas fa-scroll"></i>
+                    <span>Event:</span>
+                    <strong id="previewName">-</strong>
+                </div>
+                <div class="event-preview-item">
+                    <i class="fas fa-coins"></i>
+                    <span>Points:</span>
+                    <span class="event-points-badge" id="previewPoints">-</span>
+                </div>
+                <div class="event-preview-item">
+                    <i class="fas fa-calendar"></i>
+                    <span>Date:</span>
+                    <strong id="previewDate">-</strong>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>This action cannot be undone. All attendance records for this event will also be deleted.</span>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn-modal btn-modal-cancel" onclick="closeDeleteModal()">Cancel</button>
+            <button class="btn-modal btn-modal-delete" onclick="confirmDelete()">
+                <i class="fas fa-trash"></i> Delete Event
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentEventId = null;
+
+    function showDeleteModal(eventId, name, points, date) {
+        currentEventId = eventId;
+        document.getElementById('previewName').textContent = name;
+        document.getElementById('previewPoints').textContent = points + ' pts';
+        document.getElementById('previewDate').textContent = date;
+        document.getElementById('deleteModal').classList.add('active');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.remove('active');
+        currentEventId = null;
+    }
+
+    function confirmDelete() {
+        if (currentEventId) {
+            document.getElementById('deleteEventId').value = currentEventId;
+            document.getElementById('deleteEventForm').submit();
+        }
+    }
+
+    // Close modal on outside click
+    document.getElementById('deleteModal').addEventListener('click', function (e) {
+        if (e.target === this) {
+            closeDeleteModal();
+        }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeDeleteModal();
+        }
+    });
+</script>
+{% endblock %}

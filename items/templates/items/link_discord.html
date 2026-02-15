@@ -1,0 +1,192 @@
+{% extends 'items/base.html' %}
+{% load static %}
+
+{% block title %}Link Discord - {{ character.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .discord-container {
+        max-width: 500px;
+        margin: 100px auto 50px;
+        padding: 30px;
+        background: rgba(18, 18, 18, 0.9);
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+    }
+
+    .discord-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .discord-header h1 {
+        color: #7289da;
+        font-size: 1.8rem;
+        margin-bottom: 10px;
+    }
+
+    .discord-header p {
+        color: #888;
+        font-size: 0.9rem;
+    }
+
+    .discord-icon {
+        font-size: 3rem;
+        color: #7289da;
+        margin-bottom: 15px;
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+    }
+
+    .form-group label {
+        display: block;
+        color: #aaa;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 15px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        color: #fff;
+        font-size: 1.1rem;
+        text-align: center;
+        letter-spacing: 2px;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: #7289da;
+        background: rgba(114, 137, 218, 0.1);
+    }
+
+    .current-id {
+        padding: 15px;
+        background: rgba(46, 204, 113, 0.1);
+        border: 1px solid rgba(46, 204, 113, 0.3);
+        border-radius: 10px;
+        margin-bottom: 25px;
+    }
+
+    .current-id span {
+        color: #2ecc71;
+        font-weight: 600;
+    }
+
+    .error-msg {
+        padding: 15px;
+        background: rgba(231, 76, 60, 0.1);
+        border: 1px solid rgba(231, 76, 60, 0.3);
+        border-radius: 10px;
+        margin-bottom: 25px;
+        color: #e74c3c;
+    }
+
+    .help-text {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 25px;
+    }
+
+    .help-text h4 {
+        color: #DAA520;
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+    }
+
+    .help-text ol {
+        color: #888;
+        font-size: 0.85rem;
+        padding-left: 20px;
+        margin: 0;
+    }
+
+    .help-text li {
+        margin-bottom: 5px;
+    }
+
+    .btn-container {
+        display: flex;
+        gap: 15px;
+    }
+
+    .btn-save {
+        flex: 1;
+        padding: 15px;
+        background: linear-gradient(145deg, #7289da, #5b6eae);
+        border: none;
+        border-radius: 10px;
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(114, 137, 218, 0.4);
+    }
+
+    .btn-cancel {
+        padding: 15px 25px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        color: #fff;
+        text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="discord-container">
+    <div class="discord-header">
+        <i class="fab fa-discord discord-icon"></i>
+        <h1>Link Discord Account</h1>
+        <p>Hubungkan Discord ID ke karakter <strong>{{ character.name }}</strong></p>
+    </div>
+
+    {% if error %}
+    <div class="error-msg">
+        <i class="fas fa-exclamation-circle"></i> {{ error }}
+    </div>
+    {% endif %}
+
+    {% if character.discord_id %}
+    <div class="current-id">
+        <i class="fas fa-check-circle"></i> Discord ID saat ini: <span>{{ character.discord_id }}</span>
+    </div>
+    {% endif %}
+
+    <div class="help-text">
+        <h4><i class="fas fa-info-circle"></i> Cara Mendapatkan Discord ID:</h4>
+        <ol>
+            <li>Buka Discord dan pergi ke Settings</li>
+            <li>Klik "Advanced" di sidebar</li>
+            <li>Aktifkan "Developer Mode"</li>
+            <li>Klik kiri pada username kamu</li>
+            <li>Pilih "Copy User ID"</li>
+        </ol>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label>Discord User ID</label>
+            <input type="text" name="discord_id" placeholder="123456789012345678"
+                value="{{ character.discord_id|default:'' }}" maxlength="19">
+        </div>
+        <div class="btn-container">
+            <a href="{% url 'character-profile' pk=character.pk %}" class="btn-cancel">Cancel</a>
+            <button type="submit" class="btn-save"><i class="fab fa-discord"></i> Save Discord ID</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

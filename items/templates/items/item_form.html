@@ -1,0 +1,373 @@
+{% extends 'items/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .item-form-container {
+        max-width: 800px;
+        margin: 100px auto 40px;
+        padding: 30px;
+        background: rgba(30, 30, 30, 0.95);
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 215, 0, 0.2);
+    }
+
+    .item-form-container h1 {
+        color: #ffd700;
+        margin-bottom: 30px;
+        font-size: 1.8rem;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .form-label {
+        display: block;
+        color: #ccc;
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        background: rgba(50, 50, 50, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        color: #fff;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #ffd700;
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    }
+
+    select.form-control {
+        cursor: pointer;
+    }
+
+    /* Icon Preview Section */
+    .icon-section {
+        grid-column: 1 / -1;
+        background: rgba(40, 40, 40, 0.6);
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .icon-section h3 {
+        color: #ffd700;
+        margin-bottom: 15px;
+        font-size: 1.1rem;
+    }
+
+    .icon-preview-container {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .icon-preview {
+        width: 80px;
+        height: 80px;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px dashed rgba(255, 215, 0, 0.3);
+    }
+
+    .icon-preview img {
+        max-width: 64px;
+        max-height: 64px;
+        object-fit: contain;
+    }
+
+    .icon-preview .placeholder {
+        color: #666;
+        font-size: 0.85rem;
+        text-align: center;
+    }
+
+    .icon-select-wrapper {
+        flex: 1;
+    }
+
+    /* Icon Grid Picker */
+    .icon-grid-toggle {
+        margin-top: 15px;
+    }
+
+    .icon-grid-toggle button {
+        background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+        color: #ffd700;
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .icon-grid-toggle button:hover {
+        background: linear-gradient(145deg, #4a4a4a, #3a3a3a);
+    }
+
+    .icon-grid {
+        display: none;
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        gap: 10px;
+        max-height: 300px;
+        overflow-y: auto;
+        margin-top: 15px;
+        padding: 15px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+    }
+
+    .icon-grid.show {
+        display: grid;
+    }
+
+    .icon-grid-item {
+        width: 60px;
+        height: 60px;
+        background: rgba(50, 50, 50, 0.8);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    .icon-grid-item:hover {
+        border-color: #ffd700;
+        transform: scale(1.05);
+    }
+
+    .icon-grid-item.selected {
+        border-color: #ffd700;
+        background: rgba(255, 215, 0, 0.1);
+    }
+
+    .icon-grid-item img {
+        max-width: 48px;
+        max-height: 48px;
+        object-fit: contain;
+    }
+
+    /* Buttons */
+    .form-buttons {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+        grid-column: 1 / -1;
+    }
+
+    .btn {
+        padding: 14px 30px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary {
+        background: linear-gradient(145deg, #ffd700, #c5a800);
+        color: #1a1a1a;
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(145deg, #ffe033, #d4b700);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+    }
+
+    .btn-secondary {
+        background: rgba(100, 100, 100, 0.5);
+        color: #ccc;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-secondary:hover {
+        background: rgba(120, 120, 120, 0.5);
+    }
+
+    .error-message {
+        color: #ff6b6b;
+        font-size: 0.85rem;
+        margin-top: 5px;
+    }
+
+    /* Scrollbar for icon grid */
+    .icon-grid::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .icon-grid::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 4px;
+    }
+
+    .icon-grid::-webkit-scrollbar-thumb {
+        background: #ffd700;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="item-form-container">
+    <h1><i class="fas fa-gem"></i> {{ title }}</h1>
+
+    <form method="post" id="itemForm">
+        {% csrf_token %}
+
+        <div class="form-grid">
+            <!-- Name -->
+            <div class="form-group">
+                <label class="form-label" for="id_name">Item Name *</label>
+                {{ form.name }}
+                {% for error in form.name.errors %}
+                <p class="error-message">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <!-- Item Type -->
+            <div class="form-group">
+                <label class="form-label" for="id_item_type">Item Type *</label>
+                {{ form.item_type }}
+            </div>
+
+            <!-- Grade -->
+            <div class="form-group">
+                <label class="form-label" for="id_grade">Grade</label>
+                {{ form.grade }}
+            </div>
+
+            <!-- Slot -->
+            <div class="form-group">
+                <label class="form-label" for="id_slot">Slot</label>
+                {{ form.slot }}
+            </div>
+
+            <!-- Enchant Level -->
+            <div class="form-group">
+                <label class="form-label" for="id_enchant_level">Enchant Level</label>
+                {{ form.enchant_level }}
+            </div>
+
+            <!-- Attack Power -->
+            <div class="form-group">
+                <label class="form-label" for="id_attack_power">Attack Power</label>
+                {{ form.attack_power }}
+            </div>
+
+            <!-- Defense Power -->
+            <div class="form-group">
+                <label class="form-label" for="id_defense_power">Defense Power</label>
+                {{ form.defense_power }}
+            </div>
+
+            <!-- Icon File (Text Input) -->
+            <div class="form-group">
+                <label class="form-label" for="id_icon_file">Icon Filename</label>
+                {{ form.icon_file }}
+            </div>
+
+            <!-- Icon Section -->
+            <div class="icon-section">
+                <h3><i class="fas fa-image"></i> Select Item Icon</h3>
+                <div class="icon-preview-container">
+                    <div class="icon-preview" id="iconPreview">
+                        {% if form.icon_file.value %}
+                        <img src="{% static 'items/images/choices/' %}{{ form.icon_file.value }}" alt="Icon">
+                        {% else %}
+                        <span class="placeholder">No icon</span>
+                        {% endif %}
+                    </div>
+                    <div class="icon-select-wrapper">
+                        <p style="color: #aaa; margin: 0;">Click "Browse Icons" to select an icon visually</p>
+                    </div>
+                </div>
+                <div class="icon-grid-toggle">
+                    <button type="button" onclick="toggleIconGrid()">
+                        <i class="fas fa-th"></i> Browse Icons
+                    </button>
+                </div>
+                <div class="icon-grid" id="iconGrid">
+                    {% for icon in available_icons %}
+                    <div class="icon-grid-item" onclick="selectIcon('{{ icon }}')">
+                        <img src="{% static 'items/images/choices/' %}{{ icon }}" alt="{{ icon }}">
+                    </div>
+                    {% empty %}
+                    <p style="color: #999; grid-column: 1/-1;">No icons available in folder</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="form-buttons">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Item
+                </button>
+                <a href="{% url 'item-list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    function toggleIconGrid() {
+        const grid = document.getElementById('iconGrid');
+        grid.classList.toggle('show');
+    }
+
+    function selectIcon(iconFile) {
+        // Update the icon_file input field
+        const iconInput = document.getElementById('id_icon_file');
+        if (iconInput) {
+            iconInput.value = iconFile;
+        }
+
+        // Update preview
+        const preview = document.getElementById('iconPreview');
+        preview.innerHTML = '<img src="{% static 'items / images / choices / ' %}' + iconFile + '" alt="Icon">';
+
+        // Visual feedback
+        document.querySelectorAll('.icon-grid-item').forEach(item => {
+            item.classList.remove('selected');
+        });
+        event.currentTarget.classList.add('selected');
+    }
+</script>
+{% endblock %}

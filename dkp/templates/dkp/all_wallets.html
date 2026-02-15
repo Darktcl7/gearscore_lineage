@@ -1,0 +1,133 @@
+{% extends 'items/base.html' %}
+{% load static %}
+{% block title %}All DKP Wallets{% endblock %}
+{% block extra_body_attributes %}class="fullscreen-page"{% endblock %}
+
+{% block extra_head %}
+<style>
+    html,
+    body {
+        height: 100%;
+        margin: 0;
+        background: #0c0c0c;
+        font-family: 'Outfit', sans-serif;
+        color: white;
+    }
+
+    .activity-container {
+        min-height: calc(100vh - 200px);
+        margin-top: 100px;
+        display: flex;
+        flex-direction: column;
+        background: rgba(10, 10, 10, 0.9);
+        border-radius: 20px;
+        padding: 30px;
+        margin-left: max(20px, 10%);
+        margin-right: max(20px, 10%);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(10px);
+        border: 1px solid #222;
+        margin-bottom: 50px;
+    }
+
+    h1 {
+        font-family: 'Cinzel', serif;
+        color: #FFD700;
+        margin-bottom: 20px;
+    }
+
+    .wallet-card {
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+        border: 1px solid rgba(255, 215, 0, 1);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .log-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        font-size: 0.9rem;
+    }
+
+    .log-table th {
+        text-align: left;
+        color: #888;
+        padding: 8px;
+        border-bottom: 1px solid #333;
+    }
+
+    .log-table td {
+        padding: 10px 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        color: #ccc;
+    }
+
+    .plus {
+        color: #4CAF50;
+        font-weight: bold;
+    }
+
+    .minus {
+        color: #FF5252;
+        font-weight: bold;
+    }
+
+    .btn-gold {
+        background: linear-gradient(45deg, #FFD700, #FFA500);
+        border: none;
+        color: black;
+        padding: 10px 20px;
+        cursor: pointer;
+        font-weight: bold;
+        border-radius: 5px;
+        text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="activity-container">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h1>All DKP Wallets</h1>
+        <a href="{% url 'web-dkp-manage' %}" class="btn-gold" style="text-decoration:none; color:black;">
+            <i class="fas fa-arrow-left"></i> Back to Manage
+        </a>
+    </div>
+
+    {% if not profiles %}
+    <div style="text-align:center; padding: 50px; background: rgba(255,255,255,0.02); border-radius: 10px;">
+        <h2 style="color: #888;">No Wallets Found</h2>
+        <p>No DKP profiles exist yet.</p>
+    </div>
+    {% else %}
+    {% for p in profiles %}
+    <div class="wallet-card">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
+            <div>
+                <h2 style="margin:0; font-family: 'Cinzel', serif; color: white; font-size: 1.5rem;">{{ p.character.name }}</h2>
+                <span style="color: #888; font-size: 0.9rem;">{{ p.character.character_class }} - Lv. {{ p.character.level }}</span>
+                {% if p.character.owner %}
+                <div style="color:#666; font-size:0.85rem; margin-top:5px;">
+                    <i class="fas fa-user"></i> Owner: {{ p.character.owner.username }}
+                </div>
+                {% endif %}
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:2rem; font-weight:bold; color: #FFD700;">
+                    {{ p.current_dkp }}</div>
+                <div style="font-size:0.8rem; color:#aaa; text-transform: uppercase; letter-spacing: 1px;">Current DKP
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 15px; color: #555; font-size: 0.8rem;">
+            Lifetime Earned: {{ p.total_earned }} DKP
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}

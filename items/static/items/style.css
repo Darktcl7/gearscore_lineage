@@ -1,0 +1,43 @@
+/* D:\Django Project\Alto Project\items\static\items\style.css */
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+    padding: 20px;
+}
+
+h1,
+h2,
+h3 {
+    color: #007bff;
+    /* Biru terang */
+}
+
+/* Styling untuk daftar karakter */
+.character-list ul {
+    list-style: none;
+    padding: 0;
+}
+
+.character-list li {
+    background: #fff;
+    margin-bottom: 10px;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.gear-score {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #dc3545;
+    /* Merah untuk skor */
+}
+
+/* Styling untuk detail item */
+.gear-slot {
+    margin-bottom: 10px;
+    border-left: 3px solid #007bff;
+    padding-left: 10px;
+}

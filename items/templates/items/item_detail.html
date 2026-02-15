@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Detail {{ item.name }}</title>
+</head>
+
+<body>
+    <p><a href="{% url 'item-list-mvt' %}">Kembali ke Daftar Item</a></p>
+
+    <h1>{{ item.name }}</h1>
+
+    <p><strong>Tipe:</strong> {{ item.item_type }}</p>
+    <p><strong>Attack Power:</strong> {{ item.attack_power }}</p>
+    <p><strong>Defense Power:</strong> {{ item.defense_power }}</p>
+
+</body>
+
+</html>

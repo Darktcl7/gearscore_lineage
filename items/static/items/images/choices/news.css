@@ -1,0 +1,215 @@
+.news-container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.news-container h2 {
+    color: white;
+}
+
+.news-item {
+    padding: 35px;
+    margin-bottom: 20px;
+    background: #181818;
+    border-radius: 10px;
+    box-shadow: 0px 2px 6px rgba(253, 253, 253, 0.438);
+}
+
+.news-item:last-child {
+    border-bottom: none;
+}
+
+.news-item h3 {
+    margin: 0;
+    font-size: 20px;
+    color: #ffffff;
+}
+
+.news-item p {
+    margin: 10px 0;
+    font-size: 16px;
+    color: #ffffff;
+}
+
+.news-content {
+    margin: 10px 0;
+    font-size: 16px;
+    color: #ffffff;
+}
+
+.news-item small {
+    font-size: 14px;
+    color: #888;
+}
+
+.image.image-style-align-left {
+    width: 90% !important;
+}
+
+.image.image-style-align-left img {
+    width: 95% !important;
+    height: auto !important;
+    object-fit: cover !important;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Стили для видео-контейнеров */
+.video-container {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%; /* Соотношение сторон 16:9 */
+    margin: 20px 0;
+    overflow: hidden;
+    background-color: #000; /* Черный фон для лучшего вида */
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    min-height: auto; /* Убираем фиксированную минимальную высоту */
+}
+
+.video-container::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 40px;
+    background-color: rgba(200, 200, 200, 0.2);
+    border-radius: 10px;
+    z-index: 0;
+    opacity: 0.5;
+}
+
+.video-container iframe,
+.video-container video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 8px;
+    border: none;
+    z-index: 1;
+    max-width: none !important; /* Отменяем любые ограничения максимальной ширины */
+    aspect-ratio: 16 / 9; /* Добавляем правильное соотношение сторон */
+    object-fit: contain; /* Убедимся, что содержимое правильно масштабируется */
+}
+
+/* Фикс для отступа под видео */
+.news-content iframe + br,
+.news-content .video-container + br,
+.news-content .video-container + p:empty {
+    display: none;
+}
+
+/* Предотвращение наследования стиля от родительского элемента */
+.video-container * {
+    margin: 0;
+    padding: 0;
+}
+
+/* Удаляем пустые параграфы, которые могут появиться после вставки видео */
+.news-content p:empty {
+    display: none;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .news-container {
+        padding: 10px;
+    }
+    
+    .news-header {
+        margin-bottom: 15px;
+    }
+    
+    .news-header h1 {
+        font-size: 22px;
+    }
+    
+    .news-list {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .news-item {
+        padding: 15px;
+    }
+    
+    .news-title {
+        font-size: 18px;
+    }
+    
+    .news-meta {
+        font-size: 13px;
+    }
+    
+    .news-content {
+        font-size: 14px;
+        max-height: none;
+    }
+    
+    .news-image {
+        height: 150px;
+    }
+    
+    .news-author {
+        font-size: 13px;
+    }
+    
+    .news-date {
+        font-size: 13px;
+    }
+    
+    .news-read-more {
+        font-size: 14px;
+        padding: 8px 12px;
+    }
+}
+
+/* Для очень маленьких экранов */
+@media (max-width: 480px) {
+    .news-container {
+        padding: 8px;
+    }
+    
+    .news-header h1 {
+        font-size: 20px;
+    }
+    
+    .news-item {
+        padding: 12px;
+    }
+    
+    .news-title {
+        font-size: 16px;
+        margin-bottom: 8px;
+    }
+    
+    .news-meta {
+        font-size: 12px;
+    }
+    
+    .news-content {
+        font-size: 13px;
+        margin: 8px 0;
+    }
+    
+    .news-image {
+        height: 120px;
+    }
+    
+    .news-author,
+    .news-date {
+        font-size: 12px;
+    }
+    
+    .news-read-more {
+        font-size: 13px;
+        padding: 6px 10px;
+    }
+}
+
