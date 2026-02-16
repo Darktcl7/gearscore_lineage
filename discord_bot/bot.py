@@ -69,21 +69,64 @@ class AltoBot(commands.Cog):
     @tasks.loop(minutes=1)
     async def reminder_loop(self):
         try:
-            # 1. Check & Broadcast Announcements
-            ann_result = await self.api_request('GET', '/portal/api/discord/announcements/') 
-            if ann_result.get('success') and ann_result.get('has_new'):
+            # 1. PROCESS ALL PENDING ANNOUNCEMENTS
+            while True:
+                ann_result = await self.api_request('GET', '/portal/api/discord/announcements/') 
+                
+                if not ann_result.get('success') or not ann_result.get('has_new'):
+                    break
+                    
                 channel = self.bot.get_channel(EVENTS_CHANNEL_ID)
                 if channel:
-                    embed = discord.Embed(
-                        description=ann_result['message'],
-                        color=discord.Color.blue()
-                    )
-                    await channel.send("📢 **ANNOUNCEMENT**", embed=embed)
-                    print(f"Broadcast sent: {ann_result['message'][:20]}...")
+                    msg_content = ann_result['message']
+                    
+                    # Check for Direct Message (DM) Request
+                    if msg_content.startswith('[DM:'):
+                        # Format: [DM:123456789] Message
+                        try:
+                            end_bracket = msg_content.find(']')
+                            if end_bracket != -1:
+                                user_id = int(msg_content[4:end_bracket])
+                                dm_msg = msg_content[end_bracket+1:].strip()
+                                
+                                user = self.bot.get_user(user_id)
+                                if not user:
+                                    # Try fetching if not in cache
+                                    try:
+                                        user = await self.bot.fetch_user(user_id)
+                                    except:
+                                        pass
+                                
+                                if user:
+                                    try:
+                                        await user.send(dm_msg)
+                                        print(f"DM sent to {user.name}: {dm_msg[:20]}...")
+                                    except discord.Forbidden:
+                                        print(f"Failed to DM {user.name} (Closed DMs)")
+                                else:
+                                    print(f"User {user_id} not found for DM")
+                        except Exception as e:
+                            print(f"Error parsing DM: {e}")
+                            
+                    # Check if it's a simple notification
+                    elif msg_content.startswith('[NOTIFICATION]'):
+                        clean_msg = msg_content.replace('[NOTIFICATION]', '').strip()
+                        await channel.send(clean_msg)
+                        print(f"Notification sent: {clean_msg[:20]}...")
+                    else:
+                        embed = discord.Embed(
+                            description=msg_content,
+                            color=discord.Color.blue()
+                        )
+                        await channel.send("📢 **ANNOUNCEMENT**", embed=embed)
+                        print(f"Broadcast sent: {msg_content[:20]}...")
+                
+                # Small delay to prevent rate limits
+                import asyncio
+                await asyncio.sleep(1)
 
-            # 2. Sync Alarms 
+            # 2. Sync Alarms (Once per cycle is enough)
             alarm_result = await self.api_request('GET', '/portal/api/discord/alarms/')
-
             alarms = []
             if alarm_result.get('success'):
                 alarms = alarm_result.get('alarms', [])
@@ -295,8 +338,7 @@ class AltoBot(commands.Cog):
         if result.get('success'):
             await interaction.followup.send(
                 f"📊 **DKP Status: {result['character']}**\n"
-                f"💰 Current DKP: **{result['current_dkp']}**\n"
-                f"📈 Total Earned: {result['total_earned']}",
+                f"💰 Current DKP: **{result['current_dkp']}**",
                 ephemeral=True
             )
         elif result.get('error') == 'Discord not linked to any Character':

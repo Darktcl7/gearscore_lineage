@@ -1980,6 +1980,25 @@
         enchantClass: 'cloak-enchant',
         radioName: 'cloak_visual'
     });
+    // === VISUAL ENHANCEMENT: Auto-clear '0' on focus ===
+    document.addEventListener('DOMContentLoaded', function() {
+        // Target numeric inputs in the form, specifically those in stat-card or general numeric inputs
+        const statInputs = document.querySelectorAll('input[type="number"]');
+        
+        statInputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                if (this.value === '0') {
+                    this.value = '';
+                }
+            });
+            
+            input.addEventListener('blur', function() {
+                if (this.value === '') {
+                    this.value = '0';
+                }
+            });
+        });
+    });
 </script>
 
 <style>

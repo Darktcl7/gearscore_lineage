@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-_yo+3e#r6_j9c$p)84#t#oj!*qdr$1_n116_tgf-ocq(t&)xr0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['148.230.97.130', '127.0.0.1', 'localhost']
 
 # Allow authenticating inactive users so we can show "pending approval" message
 AUTHENTICATION_BACKENDS = ['django.contrib.auth.backends.AllowAllUsersModelBackend']

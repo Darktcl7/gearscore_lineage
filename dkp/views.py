@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from .models import DKPEvent, DKPAttendance, DKPProfile, DKPLog
-from items.models import Character
+from items.models import Character, DiscordAnnouncement
 import json
 import os
 
@@ -562,6 +562,8 @@ def dkp_attendance_list(request, event_id):
             pending_list = DKPAttendance.objects.filter(event=event, is_verified=False)
             points = event.points_to_award
             
+            # Note: No bulk public notification, individual DMs sent in loop below
+            
             for att in pending_list:
                 att.is_verified = True
                 att.save()
@@ -572,6 +574,7 @@ def dkp_attendance_list(request, event_id):
                 profile.total_earned += points
                 profile.save()
                 
+                
                 # Log
                 DKPLog.objects.create(
                     profile=profile,
@@ -579,6 +582,12 @@ def dkp_attendance_list(request, event_id):
                     reason=f"Event: {event.name}",
                     created_by=request.user
                 )
+                
+                # Notification (DM if linked)
+                if att.character.discord_id:
+                    DiscordAnnouncement.objects.create(
+                        message=f"[DM:{att.character.discord_id}] ✅ **{att.character.name}**, kehadiran kamu di event **{event.name}** sudah diverifikasi Admin!"
+                    )
                 
         elif action == 'approve':
             att_id = request.POST.get('attendance_id')
@@ -602,6 +611,12 @@ def dkp_attendance_list(request, event_id):
                         reason=f"Event: {event.name}",
                         created_by=request.user
                     )
+                    
+                    # Notification (DM if linked)
+                    if att.character.discord_id:
+                         DiscordAnnouncement.objects.create(
+                            message=f"[DM:{att.character.discord_id}] ✅ **{att.character.name}**, kehadiran kamu di event **{event.name}** sudah diverifikasi Admin!"
+                        )
             except DKPAttendance.DoesNotExist:
                 pass
                 
