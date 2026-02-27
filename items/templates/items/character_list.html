@@ -628,6 +628,26 @@
             </div>
 
             <div class="card-body">
+                <!-- Mythic Classes -->
+                <div class="info-group">
+                    <span class="info-label">Mythic Classes</span>
+                    <ul class="info-list">
+                        {% for mc in character.mythic_classes.all %}
+                        <li>
+                            {% if mc.icon_file %}
+                            <img src="{% static 'items/images/choices/' %}{{ mc.icon_file }}" class="legend-icon"
+                                alt="{{ mc.name }}">
+                            {% else %}
+                            <i class="fas fa-hat-wizard legend-icon-placeholder"></i>
+                            {% endif %}
+                            {{ mc.name }}
+                        </li>
+                        {% empty %}
+                        <li class="empty-list">No Mythic Classes recorded</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
                 <!-- Legendary Classes -->
                 <div class="info-group">
                     <span class="info-label">Legendary Classes</span>
@@ -664,6 +684,26 @@
                         </li>
                         {% empty %}
                         <li class="empty-list">No Legendary Agathions recorded</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Legendary Mounts -->
+                <div class="info-group">
+                    <span class="info-label">Legendary Mounts</span>
+                    <ul class="info-list">
+                        {% for lm in character.legendary_mounts.all %}
+                        <li>
+                            {% if lm.icon_file %}
+                            <img src="{% static 'items/images/choices/' %}{{ lm.icon_file }}" class="legend-icon"
+                                alt="{{ lm.name }}">
+                            {% else %}
+                            <i class="fas fa-horse legend-icon-placeholder"></i>
+                            {% endif %}
+                            {{ lm.name }}
+                        </li>
+                        {% empty %}
+                        <li class="empty-list">No Legendary Mounts recorded</li>
                         {% endfor %}
                     </ul>
                 </div>

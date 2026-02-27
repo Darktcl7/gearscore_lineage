@@ -16,7 +16,7 @@
         height: 100%;
         margin: 0;
         padding: 0;
-        overflow: hidden;
+        overflow: auto;
         background: #0c0c0c;
     }
 
@@ -30,96 +30,51 @@
     }
 
     #site-content {
-        height: calc(100vh - var(--header-height));
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        background: transparent;
+        min-height: 100vh;
     }
 
     main {
-        flex: 1;
-        overflow: hidden;
-        padding: 0;
+        padding: 20px;
     }
 
     .character-form-container {
-        height: calc(100% - 20px);
-        margin-top: 0;
-        display: flex;
-        flex-direction: column;
+        max-width: 1400px;
+        margin: 80px auto 30px auto;
+        padding: 30px;
         background: rgba(18, 18, 18, 0.85);
         border-radius: 20px;
         box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
-        overflow: hidden;
-        position: relative;
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.15);
-        margin-left: 10px;
-        margin-right: 10px;
-        margin-bottom: 10px;
     }
 
     .form-header {
-        padding: 25px;
+        padding: 15px 0;
+        border-bottom: 2px solid rgba(197, 168, 0, 0.5);
+        margin-bottom: 30px;
         text-align: center;
-        background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        position: relative;
-        overflow: hidden;
+        background: transparent;
     }
 
-    .form-header::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 5px;
-        background: linear-gradient(90deg, #c5a800, #e6d14c, #c5a800);
-        background-size: 200% 200%;
-        animation: gradientShift 3s ease infinite;
-    }
 
-    @keyframes gradientShift {
-        0% {
-            background-position: 0% 50%;
-        }
-
-        50% {
-            background-position: 100% 50%;
-        }
-
-        100% {
-            background-position: 0% 50%;
-        }
-    }
 
     .form-header h1 {
         margin: 0;
         color: #ffffff;
-        font-size: 2rem;
+        font-size: 1.25rem;
         text-shadow: 0 0 10px rgba(197, 168, 0, 0.5);
-        position: relative;
-        z-index: 1;
     }
 
     .form-content-wrapper {
-        flex: 1;
         display: flex;
-        overflow: hidden;
+        flex-direction: column;
     }
 
     .form-section {
         display: flex;
         flex-direction: column;
         gap: 25px;
-        overflow-y: auto;
         padding: 15px;
-        border-radius: 15px;
-        background: rgba(30, 30, 30, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        height: 100%;
     }
 
     .form-group {
@@ -144,17 +99,17 @@
     .form-label {
         display: block;
         font-weight: bold;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
         color: #ffffff;
-        font-size: 1.1rem;
+        font-size: 0.85rem;
     }
 
     .form-group input,
     .form-group select,
     .form-group textarea {
         width: 100%;
-        padding: 12px;
-        font-size: 16px;
+        padding: 8px 10px;
+        font-size: 13px;
         border: 1px solid rgba(197, 168, 0, 0.5);
         border-radius: 8px;
         background: rgba(20, 20, 20, 0.8);
@@ -185,7 +140,7 @@
         flex-direction: column;
         align-items: center;
         background: rgba(40, 40, 40, 0.7);
-        padding: 15px;
+        padding: 10px;
         border-radius: 8px;
         cursor: pointer;
         transition: all 0.3s ease;
@@ -200,19 +155,20 @@
     }
 
     .choice-label-text {
-        margin-bottom: 10px;
+        margin-bottom: 5px;
         font-weight: 500;
+        font-size: 0.8rem;
     }
 
     .choice-image {
-        width: 120px;
-        height: 120px;
+        width: 64px;
+        height: 64px;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-top: 10px;
+        margin-top: 5px;
         background: rgba(0, 0, 0, 0.3);
-        border-radius: 10px;
+        border-radius: 8px;
         padding: 5px;
         border: 2px solid rgba(197, 168, 0, 0.3);
         transition: all 0.3s ease;
@@ -233,8 +189,8 @@
     }
 
     .question-image {
-        margin-bottom: 15px;
-        max-width: 100px;
+        margin-bottom: 10px;
+        max-width: 64px;
     }
 
     .question-image img,
@@ -243,22 +199,45 @@
         border-radius: 8px;
     }
 
+    #basic-tab .checkbox-label {
+        padding: 15px;
+        border-radius: 10px;
+    }
+
+    #basic-tab .choice-label-text {
+        font-size: 1rem;
+        margin-bottom: 10px;
+    }
+
+    #basic-tab .choice-image {
+        width: 120px;
+        height: 120px;
+        margin-top: 10px;
+        border-radius: 10px;
+    }
+
+    #basic-tab .question-image {
+        max-width: 100px;
+        margin-bottom: 15px;
+    }
+
     .form-buttons {
         display: flex;
         justify-content: center;
-        gap: 25px;
-        padding: 25px;
-        background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+        gap: 15px;
+        padding-top: 20px;
+        margin-top: 30px;
         border-top: 1px solid rgba(255, 255, 255, 0.1);
+        background: transparent;
     }
 
     .form-buttons .btn {
-        padding: 14px 30px;
-        border-radius: 12px;
+        padding: 8px 18px;
+        border-radius: 8px;
         text-decoration: none;
         color: white;
-        font-size: 1.1rem;
-        min-width: 140px;
+        font-size: 0.9rem;
+        min-width: 100px;
         text-align: center;
         font-weight: 600;
         border: none;
@@ -281,25 +260,25 @@
     }
 
     .form-tabs {
-        flex: 1;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
     }
 
     .tab-buttons {
         display: flex;
         background: rgba(20, 20, 20, 0.7);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 0 20px;
+        border-radius: 8px;
+        padding: 2px 10px;
+        flex-wrap: wrap;
+        margin-bottom: 15px;
     }
 
     .tab-btn {
-        padding: 15px 25px;
+        padding: 10px 15px;
         border: none;
         background: transparent;
         color: #aaa;
-        font-size: 1rem;
+        font-size: 0.85rem;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
@@ -318,9 +297,7 @@
 
     .tab-content {
         display: none;
-        flex: 1;
-        overflow-y: auto;
-        padding: 20px;
+        padding: 0;
     }
 
     .tab-content.active {
@@ -540,6 +517,21 @@
 
     <form method="post" style="display:contents;" novalidate>
         {% csrf_token %}
+        
+        {% if character_form.errors or attributes_form.errors %}
+        <div class="alert alert-danger" style="background: rgba(244, 67, 54, 0.2); border: 1px solid #f44336; color: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <strong>There were some errors saving the form:</strong>
+            <ul style="margin-top: 10px;">
+                {% for field, errors in character_form.errors.items %}
+                    <li>{{ field }}: {{ errors|striptags }}</li>
+                {% endfor %}
+                {% for field, errors in attributes_form.errors.items %}
+                    <li>{{ field }}: {{ errors|striptags }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
         <div class="form-content-wrapper">
             <div class="form-tabs">
                 <div class="tab-buttons">
@@ -572,7 +564,7 @@
                         </div>
 
                         {% for field in character_form %}
-                        {% if field.name == 'legendary_classes' or field.name == 'legendary_agathions' %}
+                        {% if field.name == 'mythic_classes' or field.name == 'legendary_classes' or field.name == 'legendary_agathions' or field.name == 'legendary_mounts' %}
                         <div class="form-group">
                             <label class="form-label"><strong>{{ field.label }}</strong></label>
 
@@ -622,9 +614,9 @@
                         <div class="form-group"
                             style="background: linear-gradient(145deg, #1a3a1a, #0d1f0d); border: 1px solid rgba(76, 175, 80, 0.3);">
                             <h3
-                                style="color: #4CAF50; margin-bottom: 20px; font-size: 1.4rem; display: flex; align-items: center; gap: 10px;">
+                                style="color: #4CAF50; margin-bottom: 20px; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
                                 <img src="{% static 'items/images/choices/Icon_WP_Sword_G3_001.png' %}" alt="Combat"
-                                    style="width: 40px; height: 40px;">
+                                    style="width: 32px; height: 32px;">
                                 Base Combat Stats
                             </h3>
                             <div
@@ -667,9 +659,9 @@
                         <div class="form-group"
                             style="background: linear-gradient(145deg, #3a2a1a, #1f150d); border: 1px solid rgba(255, 152, 0, 0.3);">
                             <h3
-                                style="color: #FF9800; margin-bottom: 20px; font-size: 1.4rem; display: flex; align-items: center; gap: 10px;">
+                                style="color: #FF9800; margin-bottom: 20px; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
                                 <img src="{% static 'items/images/choices/Icon_WP_Staff_G3_001.png' %}" alt="Multiplied"
-                                    style="width: 40px; height: 40px;">
+                                    style="width: 32px; height: 32px;">
                                 Multiplied Stats (Higher Score Impact)
                             </h3>
                             <div
@@ -704,9 +696,9 @@
                         <div class="form-group"
                             style="background: linear-gradient(145deg, #1a1a3a, #0d0d1f); border: 1px solid rgba(103, 58, 183, 0.3);">
                             <h3
-                                style="color: #9C27B0; margin-bottom: 20px; font-size: 1.4rem; display: flex; align-items: center; gap: 10px;">
+                                style="color: #9C27B0; margin-bottom: 20px; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
                                 <img src="{% static 'items/images/choices/Icon_SoulStone_Option_Icon_01.png' %}"
-                                    alt="Progression" style="width: 40px; height: 40px;">
+                                    alt="Progression" style="width: 32px; height: 32px;">
                                 Progression Stats (×10)
                             </h3>
                             <div
@@ -749,9 +741,9 @@
                         <div class="form-group"
                             style="background: linear-gradient(145deg, #3a1a3a, #1f0d1f); border: 1px solid rgba(233, 30, 99, 0.3);">
                             <h3
-                                style="color: #E91E63; margin-bottom: 20px; font-size: 1.4rem; display: flex; align-items: center; gap: 10px;">
+                                style="color: #E91E63; margin-bottom: 20px; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
                                 <img src="{% static 'items/images/choices/Icon_Classcard_Aria.png' %}" alt="Legend"
-                                    style="width: 40px; height: 40px;">
+                                    style="width: 32px; height: 32px;">
                                 Legend Points
                             </h3>
                             <div
@@ -780,6 +772,14 @@
                                     </div>
                                     {{ attributes_form.total_legend_codex }}
                                 </div>
+                                <div class="stat-input-group">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                        <img src="{% static 'items/images/choices/Icon_Item_Usable_SkillBook_04.png' %}"
+                                            alt="Epic Mount" style="width: 32px; height: 32px;">
+                                        <label class="form-label" style="margin: 0;">Total Epic Mount (×10)</label>
+                                    </div>
+                                    {{ attributes_form.total_epic_mount }}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -790,7 +790,7 @@
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                             {% for field in attributes_form %}
                             {% with n=field.name %}
-                            {% if not n|is_gearscore_field and not n|is_skill_field and not n|is_weapon_field %}
+                            {% if not n|is_gearscore_field and not n|is_skill_field and not n|is_weapon_field and not n|is_expertise_field and n != "unlocked_skills" %}
                             <div class="form-group">
                                 <label class="form-label"><strong>{{ field.label }}</strong></label>
 
@@ -863,11 +863,91 @@
                             {% endfor %}
                         </div>
 
+                        <!-- 🗡️ Weapon Expertise Section -->
+                        <div class="form-group" id="expertise-section"
+                            style="background: linear-gradient(145deg, #1a1a2e, #0d0d1a); border: 1px solid rgba(156, 39, 176, 0.3);">
+                            <label class="form-label"><strong>🗡️ Weapon Expertise</strong></label>
+                            <p style="color: #aaa; font-size: 0.8rem; margin-bottom: 15px;">Set your weapon expertise ranks (0-9)</p>
+
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
+                                <!-- One-Handed Sword -->
+                                <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px;">
+                                    <label style="color: #CE93D8; font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">⚔️ One-Handed Sword</label>
+                                    {{ attributes_form.exp_one_handed_sword }}
+                                </div>
+                                <!-- Dual-Wield -->
+                                <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px;">
+                                    <label style="color: #CE93D8; font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">⚔️ Dual-Wield</label>
+                                    {{ attributes_form.exp_dual_wield }}
+                                </div>
+                                <!-- Dagger -->
+                                <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px;">
+                                    <label style="color: #CE93D8; font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">🗡️ Dagger</label>
+                                    {{ attributes_form.exp_dagger }}
+                                </div>
+                                <!-- Bow -->
+                                <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px;">
+                                    <label style="color: #CE93D8; font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">🏹 Bow</label>
+                                    {{ attributes_form.exp_bow }}
+                                </div>
+                                <!-- Staff -->
+                                <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px;">
+                                    <label style="color: #CE93D8; font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">🪄 Staff</label>
+                                    {{ attributes_form.exp_staff }}
+                                </div>
+                                <!-- Greatsword -->
+                                <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px;">
+                                    <label style="color: #CE93D8; font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">⚔️ Greatsword</label>
+                                    {{ attributes_form.exp_greatsword }}
+                                </div>
+                                <!-- Crossbow -->
+                                <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px;">
+                                    <label style="color: #CE93D8; font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">🏹 Crossbow</label>
+                                    {{ attributes_form.exp_crossbow }}
+                                </div>
+                                <!-- Chainsword -->
+                                <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px;">
+                                    <label style="color: #CE93D8; font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">⛓️ Chainsword</label>
+                                    {{ attributes_form.exp_chainsword }}
+                                </div>
+                                <!-- Rapier -->
+                                <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px;">
+                                    <label style="color: #CE93D8; font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">🤺 Rapier</label>
+                                    {{ attributes_form.exp_rapier }}
+                                </div>
+                                <!-- Magic Cannon -->
+                                <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px;">
+                                    <label style="color: #CE93D8; font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">💥 Magic Cannon</label>
+                                    {{ attributes_form.exp_magic_cannon }}
+                                </div>
+                                <!-- Spear -->
+                                <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px;">
+                                    <label style="color: #CE93D8; font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">🔱 Spear</label>
+                                    {{ attributes_form.exp_spear }}
+                                </div>
+                                <!-- Orb -->
+                                <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px;">
+                                    <label style="color: #CE93D8; font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">🔮 Orb</label>
+                                    {{ attributes_form.exp_orb }}
+                                </div>
+                                <!-- Dual Axe -->
+                                <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px;">
+                                    <label style="color: #CE93D8; font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">🪓 Dual Axe</label>
+                                    {{ attributes_form.exp_dual_axe }}
+                                </div>
+                                <!-- Soul Breaker -->
+                                <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px;">
+                                    <label style="color: #CE93D8; font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">💀 Soul Breaker</label>
+                                    {{ attributes_form.exp_soul_breaker }}
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Weapon Selection Section -->
                         <div class="form-group" id="weapon-section"
                             style="background: linear-gradient(145deg, #2a1a0a, #1a0d05); border: 1px solid rgba(255, 152, 0, 0.3);">
                             <label class="form-label"><strong>⚔️ Your Main Weapon</strong></label>
-                            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Select the weapon you
+                            <p style="color: #aaa; font-size: 0.8rem; margin-bottom: 15px;">Select the weapon you
                                 currently use (filtered by your class)</p>
 
                             <!-- Hidden original select fields -->
@@ -902,7 +982,7 @@
                         <div class="form-group" id="necklace-section"
                             style="background: linear-gradient(145deg, #2a0a1a, #1a0510); border: 1px solid rgba(233, 30, 99, 0.3);">
                             <label class="form-label"><strong>📿 PvP Necklace</strong></label>
-                            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Select your PvP Necklace</p>
+                            <p style="color: #aaa; font-size: 0.8rem; margin-bottom: 15px;">Select your PvP Necklace</p>
 
                             <div style="display: none;">
                                 {{ attributes_form.pvp_necklace }}
@@ -1195,38 +1275,45 @@
                         </div>
 
 
-                        <!-- Skills Section -->
-                        <div class="form-group">
-                            <label class="form-label"><strong>What are your skills?</strong></label>
-                            <div class="question-image">
-                                <img src="{% static 'items/images/choices/Icon_Item_Usable_SkillBook_Spear_04.png' %}"
-                                    alt="Skills" class="img-fluid">
+                        <!-- 👕 PvP T-Shirt Selection Section -->
+                        <div class="form-group" id="tshirt-section"
+                            style="background: linear-gradient(145deg, #1a3a2a, #0d1d15); border: 1px solid rgba(76, 175, 80, 0.3);">
+                            <label class="form-label"><strong>👕 PvP T-Shirt</strong></label>
+                            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Select your 👕 T-Shirt</p>
+
+                            <div style="display: none;">
+                                {{ attributes_form.pvp_tshirt }}
+                                {{ attributes_form.pvp_tshirt_enchant }}
                             </div>
-                            <div class="checkbox-group">
-                                <label class="checkbox-label">
-                                    {{ attributes_form.skill_frenzy }} Frenzy
+
+                            <div class="tshirt-grid" id="tshirt-grid"
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
+                            </div>
+
+                            <div id="tshirt-enchant-section"
+                                style="display: none; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(76, 175, 80, 0.2);">
+                                <label class="form-label" style="color: #4CAF50; margin-bottom: 10px;">
+                                    <strong>✨ Enchant Level</strong>
+                                    <span id="selected-tshirt-name"
+                                        style="color: #ccc; font-weight: normal; margin-left: 8px;"></span>
                                 </label>
-                                <label class="checkbox-label">
-                                    {{ attributes_form.skill_vital_destruction }} Vital Destruction
-                                </label>
-                                <label class="checkbox-label">
-                                    {{ attributes_form.skill_infinity_strike }} Infinity Strike
-                                </label>
-                                <label class="checkbox-label">
-                                    {{ attributes_form.skill_disarm }} Disarm
-                                </label>
-                                <label class="checkbox-label">
-                                    {{ attributes_form.skill_giant_stomp }} Giant Stomp
-                                </label>
-                                <label class="checkbox-label">
-                                    {{ attributes_form.skill_absolute_spear }} Absolute Spear
-                                </label>
-                                <label class="checkbox-label">
-                                    {{ attributes_form.skill_rolling_thunder }} Rolling Thunder
-                                </label>
-                                <label class="checkbox-label">
-                                    {{ attributes_form.skill_earthquake_stomp }} Earthquake Stomp
-                                </label>
+                                <div id="tshirt-enchant-grid" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                            </div>
+                        </div>
+
+
+                        <!-- Skills Section -->
+                        <div class="form-group" id="skills-section">
+                            <label class="form-label">
+                                <strong>What are your skills?</strong>
+                                <span id="current-class-skills-label" style="color:#FFA000; margin-left:10px;">Select a class first</span>
+                            </label>
+                            
+                            {{ attributes_form.unlocked_skills }} <!-- hidden input -->
+
+                            <!-- Skills Container where JS will render the Myth/Legend/Hero grids -->
+                            <div id="dynamic-skills-container" style="display: flex; flex-direction: column; gap: 20px; margin-top: 20px;">
+                                <!-- Will be populated by JS -->
                             </div>
                         </div>
                     </div>
@@ -1251,15 +1338,21 @@
 </div>
 
 <script>
-    // === VALIDASI MAX 13 UNTUK SOULSHOT, VALOR, GUARDIAN, CONQUER ===
-    const maxLimitFields = ['id_soulshot_level', 'id_valor_level', 'id_stat_guardian', 'id_stat_conquer'];
-    const maxValue = 13;
+    // === VALIDASI MAX LIMIT ===
+    const maxLimitFields = {
+        'id_soulshot_level': 13, 
+        'id_valor_level': 13, 
+        'id_stat_guardian': 13, 
+        'id_stat_conquer': 13,
+        'id_aster_erafone': 30
+    };
 
     const fieldNames = {
         'id_soulshot_level': 'Soulshot Level',
         'id_valor_level': 'Valor Level',
         'id_stat_guardian': 'Guardian',
-        'id_stat_conquer': 'Conquer'
+        'id_stat_conquer': 'Conquer',
+        'id_aster_erafone': 'Aster (Erafone)'
     };
 
     function showPopup(message) {
@@ -1275,18 +1368,19 @@
     }
 
     function validateMaxValue(input) {
+        const maxVal = maxLimitFields[input.id];
         const value = parseInt(input.value);
-        if (value > maxValue) {
+        if (value > maxVal) {
             const fieldName = fieldNames[input.id] || input.name;
-            showPopup(fieldName + ' tidak boleh lebih dari ' + maxValue + '! Nilai akan disesuaikan ke ' + maxValue + '.');
-            input.value = maxValue;
+            showPopup(fieldName + ' tidak boleh lebih dari ' + maxVal + '! Nilai akan disesuaikan ke ' + maxVal + '.');
+            input.value = maxVal;
             setTimeout(function () {
                 input.focus();
             }, 400);
         }
     }
 
-    maxLimitFields.forEach(function (fieldId) {
+    Object.keys(maxLimitFields).forEach(function (fieldId) {
         const field = document.getElementById(fieldId);
         if (field) {
             field.addEventListener('change', function () {
@@ -1756,17 +1850,21 @@
     // === PVP SIGIL ===
     function getSigilImage(itemName) {
         const images = {
-            "Dream Sigil": "Icon_AR_Sigil_G4_001.png",
-            "Blue": "вопрос_PiWb3ob.png",
-            "Susceptor's Heart": "Icon_AR_Sigil_G3_001.png",
-            "Paradia's Sigil": "Icon_AR_Sigil_G3_002.png",
-            "Cruma's Shell": "Icon_AR_Sigil_G3_003.png",
-            "Sigil of Flames": "Icon_AR_Sigil_G3_004.png",
-            "Jaeger's Sigil": "Icon_AR_Sigil_G3_005.png",
-            "Selihoden's Horn": "Icon_AR_Sigil_G3_006.png",
-            "Tear of Darkness": "Icon_AR_Sigil_G2_001.png",
-            "Draconic Sigil": "Icon_AR_Sigil_G2_002.png",
-            "Arcana Sigil": "Icon_AR_Sigil_G2_003.png"
+            "Arcana Sigil": "armor_sigil_Arcana_Sigil.png",
+            "Blood Crystal": "armor_sigil_Blood_Crystal.png",
+            "Cruma's Shell": "armor_sigil_Cruma's_Shell.png",
+            "Crystal of Oblivion": "armor_sigil_Crystal_of_Oblivion.png",
+            "Draconic Sigil": "armor_sigil_Draconic_Sigil.png",
+            "Dream Sigil": "armor_sigil_Dream_Sigil.png",
+            "Eldarach": "armor_sigil_Eldarach.png",
+            "Holy Sigil": "armor_sigil_Holy_Sigil.png",
+            "Parody Sigil": "armor_sigil_Parody_Sigil.png",
+            "Sally Horden's Horn": "armor_sigil_Sally_Horden's_Horn.png",
+            "Sniper Sigil": "armor_sigil_Sniper_Sigil.png",
+            "Susceptor's Heart": "armor_sigil_Susceptor's_Heart.png",
+            "The Sigil of the Fallen Angel": "armor_sigil_The_Sigil_of_the_Fallen_Angel.png",
+            "The Sigil of Karma": "armor_sigil_The_sigil_of_karma.png",
+            "Tier of Darkness": "armor_sigil_Tier_of_Darkness.png"
         };
         return images[itemName] || null;
     }
@@ -1787,18 +1885,21 @@
     // === PVP HELMET ===
     function getHelmetImage(itemName) {
         const images = {
-            "Blue Wolf Helmet": "Icon_AR_Helmet_G3_006.png",
-            "Majestic Circlet": "Icon_AR_Helmet_G3_001.png",
-            "Helm of Nightmares": "Icon_AR_Helmet_G3_002.png",
-            "Dark Crystal Helmet": "Icon_AR_Helmet_G3_003.png",
-            "Medusa's Helm": "Icon_AR_Helmet_G3_004.png",
-            "Paulina's Helmet": "Icon_AR_Helmet_G3_005.png",
-            "Nevit's Helmet": "Icon_AR_Helmet_G3_007.png",
-            "Tersi's Circlet": "Icon_AR_Helmet_G3_009.png",
-            "Ancient Elven Helm": "Icon_AR_Helmet_G2_002.png",
-            "Imperial Crusader Helmet": "Icon_AR_Helmet_G3_009.png",
-            "Major Arcana Circlet": "Icon_AR_Helmet_G3_009.png",
-            "Draconic Helmet": "Icon_AR_Helmet_G3_009.png"
+            "Ancient Elven Helmet": "armor_helmet_Ancient_Elven_Helmet.png",
+            "Crown of the World Tree": "armor_helmet_Crown_of_the_World_Tree.png",
+            "Dark Crystal Helmet": "armor_helmet_Dark_Crystal_Helmet.png",
+            "Devil's Helmet": "armor_helmet_Devil's_Helmet.png",
+            "Draconic Leather Helmet": "armor_helmet_Draconic_Leather_Helmet.png",
+            "Helmet of the Fallen Angel": "armor_helmet_Helmet_of_the_Fallen_Angel.png",
+            "Hildegrim": "armor_helmet_Hildegrim.png",
+            "Imperial Crusader Helmet": "armor_helmet_Imperial_Crusader_Helmet.png",
+            "Majestic Circlet": "armor_helmet_Majestic_Circlet.png",
+            "Major Arcana Circlet": "armor_helmet_Major_Arcana_Circlet.png",
+            "Medusa's Helmet": "armor_helmet_Medusa's_Helmet.png",
+            "Nebit's Helmet": "armor_helmet_Nebit's_Helmet.png",
+            "Nightmare Helmet": "armor_helmet_Nightmare_Helmet.png",
+            "Pauline's Helmet": "armor_helmet_Pauline's_Helmet.png",
+            "Tersi's Circlet": "armor_helmet_Tersi's_Circlet.png"
         };
         return images[itemName] || null;
     }
@@ -1819,22 +1920,21 @@
     // === PVP TOP ARMOR ===
     function getTopArmorImage(itemName) {
         const images = {
-            "Blue Wolf Breastplate": "Icon_AR_Torso_G3_006.png",
-            "Majestic Robe": "Icon_AR_Torso_G3_001.png",
-            "Armor of Nightmares": "Icon_AR_Torso_G3_002.png",
-            "Dark Crystal Breastplate": "Icon_AR_Torso_G3_003.png",
-            "Tersi's Robe": "Icon_AR_Torso_G3_008.png",
-            "Paulina's Breastplate": "Icon_AR_Torso_G3_005.png",
-            "Nevit's Armor": "Icon_AR_Torso_G3_007.png",
-            "Savan's Robe": "Icon_AR_Torso_G3_004.png",
-            "Absolute Tunic": "Icon_AR_Torso_G2_003.png",
-            "Apella Plate Armor": "Icon_AR_Torso_G2_004.png",
-            "Forgotten Hero's Breastplate": "Icon_AR_Torso_G3_009.png",
-            "Ancient Elven Armor": "Icon_AR_Torso_G2_002.png",
-            "Demon's Armor": "Icon_AR_Torso_G2_001.png",
-            "Draconic Leather Armor": "Icon_AR_Torso_G3_011.png",
-            "Major Arcana Robe": "Icon_AR_Torso_G3_012.png",
-            "Imperial Crusader Breastplate": "Icon_AR_Torso_G3_010.png"
+            "Absolute Tunic": "armor_armor_Absolute_Tunic.png",
+            "Apella's Armor": "armor_armor_Apella's_Armor.png",
+            "Breastplate of the Fallen Angel": "armor_armor_Breastplate_of_the_Fallen_Angel.png",
+            "Breastplate of the Forgotten Hero": "armor_armor_Breastplate_of_the_Forgotten_Hero.png",
+            "Dark Crystal Breastplate": "armor_armor_Dark_Crystal_Breastplate.png",
+            "Devil's Armor": "armor_armor_Devil's_Armor.png",
+            "Draconic Leather Armor": "armor_armor_Draconic_Leather_Armor.png",
+            "Imperial Crusader Breastplate": "armor_armor_Imperial_Crusader_Breastplate.png",
+            "Majestic Robe": "armor_armor_Majestic_Robe.png",
+            "Major Arcana Robe": "armor_armor_Major_Arcana_Robe.png",
+            "Nebit's Armor": "armor_armor_Nebit's_Armor.png",
+            "Nightmare Armor": "armor_armor_Nightmare_Armor.png",
+            "Polyne's Breastplate": "armor_armor_Polyne's_Breastplate.png",
+            "Saban's Robe": "armor_armor_Saban's_Robe.png",
+            "Tersi's Robe": "armor_armor_Tersi's_Robe.png"
         };
         return images[itemName] || null;
     }
@@ -1855,21 +1955,21 @@
     // === PVP GLOVES ===
     function getGlovesImage(itemName) {
         const images = {
-            "Blue Wolf Gloves": "Icon_AR_Gloves_G3_006.png",
-            "Majestic Gloves": "Icon_AR_Gloves_G3_001.png",
-            "Gauntlets of Nightmare": "Icon_AR_Gloves_G3_002.png",
-            "Dark Crystal Gloves": "Icon_AR_Gloves_G3_003.png",
-            "Tersi's Gloves": "Icon_AR_Gloves_G3_008.png",
-            "Paulina's Gauntlets": "Icon_AR_Gloves_G3_005.png",
-            "Nevit's Gloves": "Icon_AR_Gloves_G3_007.png",
-            "Jarngreipr": "Icon_AR_Gloves_G3_004.png",
-            "Vision Guardian": "Icon_AR_Gloves_G3_009.png",
-            "Gloves of Blessing": "Icon_AR_Gloves_G2_003.png",
-            "Forgotten Hero Gloves": "Icon_AR_Gloves_G3_010.png",
-            "Demon's Gauntlets": "Icon_AR_Gloves_G2_001.png",
-            "Ancient Elven Gauntlet": "Icon_AR_Gloves_G2_002.png",
-            "Draconic Leather Gloves": "Icon_AR_Gloves_G3_011.png",
-            "Pa'agrio's Flames": "Icon_AR_Gloves_G3_012.png"
+            "Ancient Elven Gauntlets": "armor_gloves_Ancient_Elven_Gauntlets.png",
+            "Dark Crystal Globe": "armor_gloves_Dark_Crystal_Globe.png",
+            "Devil's Gauntlet": "armor_gloves_Devil's_Gauntlet.png",
+            "Draconic Leather Gloves": "armor_gloves_Draconic_Leather_Gloves.png",
+            "Fallen Angel's Gloves": "armor_gloves_Fallen_Angel's_Gloves.png",
+            "Globe of the Forgotten Hero": "armor_gloves_Globe_of_the_Forgotten_Hero.png",
+            "Gloves of Blessing": "armor_gloves_Gloves_of_Blessing.png",
+            "Guardian of Vision": "armor_gloves_Guardian_of_Vision.png",
+            "Jarngreifr": "armor_gloves_Jarngreifr.png",
+            "Majestic Gloves": "armor_gloves_Majestic_Gloves.png",
+            "Nebit's Globe": "armor_gloves_Nebit's_Globe.png",
+            "Nightmare Gauntlet": "armor_gloves_Nightmare_Gauntlet.png",
+            "Paagrio's Flame": "armor_gloves_Paagrio's_Flame.png",
+            "Pauline's Gauntlet": "armor_gloves_Pauline's_Gauntlet.png",
+            "Tersi's Gloves": "armor_gloves_Tersi's_Gloves.png"
         };
         return images[itemName] || null;
     }
@@ -1890,19 +1990,21 @@
     // === PVP BOOTS ===
     function getBootsImage(itemName) {
         const images = {
-            "Blue Wolf Boots": "Icon_AR_Boots_G3_006.png",
-            "Majestic Boots": "Icon_AR_Boots_G3_001.png",
-            "Boots of Nightmares": "Icon_AR_Boots_G3_002.png",
-            "Dark Crystal Boots": "Icon_AR_Boots_G3_003.png",
-            "Tersi's Boots": "Icon_AR_Boots_G3_008.png",
-            "Paulina's Boots": "Icon_AR_Boots_G3_005.png",
-            "Nevit's Boots": "Icon_AR_Boots_G3_007.png",
-            "Demon's Boots": "Icon_AR_Boots_G2_001.png",
-            "Kaliel's Boots": "Icon_AR_Boots_G2_004.png",
-            "Forgotten Hero's Boots": "Icon_AR_Boots_G3_009.png",
-            "Ancient Elven Boots": "Icon_AR_Boots_G2_002.png",
-            "Draconic": "Icon_AR_Boots_G3_010.png",
-            "Sayha's Wind": "Icon_AR_Boots_G3_011.png"
+            "Ancient Elven Boots": "armor_shoes_Ancient_Elven_Boots.png",
+            "Boots of Eternal Life": "armor_shoes_Boots_of_Eternal_Life.png",
+            "Boots of the Forgotten Hero": "armor_shoes_Boots_of_the_Forgotten_Hero.png",
+            "Calie's Boots": "armor_shoes_Calie's_boots.png",
+            "Dark Crystal Boots": "armor_shoes_Dark_Crystal_Boots.png",
+            "Devil's Boots": "armor_shoes_Devil's_Boots.png",
+            "Draconic Leather Boots": "armor_shoes_Draconic_Leather_Boots.png",
+            "Fallen Angel's Boots": "armor_shoes_Fallen_Angel's_Boots.png",
+            "Majestic Boots": "armor_shoes_Majestic_Boots.png",
+            "Nebit's Boots": "armor_shoes_Nebit's_Boots.png",
+            "Nightmare Boots": "armor_shoes_Nightmare_Boots.png",
+            "Pauline's Boots": "armor_shoes_Pauline's_boots.png",
+            "Reaper's Boots": "armor_shoes_Reaper's_Boots.png",
+            "Saiha's Wind": "armor_shoes_Saiha's_Wind.png",
+            "Tersi's Boots": "armor_shoes_Tersi's_boots.png"
         };
         return images[itemName] || null;
     }
@@ -1923,15 +2025,21 @@
     // === PVP GAITERS ===
     function getGaitersImage(itemName) {
         const images = {
-            "Blue Wolf Gaiters": "Icon_AR_Pants_G3_006.png",
-            "Basila Skin": "Icon_AR_Pants_G3_008.png",
-            "Blood Gaiters": "Icon_AR_Pants_G3_001.png",
-            "Gaiters of Light": "Icon_AR_Pants_G3_002.png",
-            "Gaiters of Ice": "Icon_AR_Pants_G3_003.png",
-            "Shilen's Breath": "Icon_AR_Pants_G3_004.png",
-            "Crystal Gaiters": "Icon_AR_Pants_G3_005.png",
-            "Forgotten Hero's Gaiters": "Icon_AR_Pants_G3_007.png",
-            "Imperial Crusader Gaiters": "Icon_AR_Pants_G3_009.png"
+            "Basil's Shell": "armor_bottoms_Basil's_shell.png",
+            "Blood Greaves": "armor_bottoms_Blood_Greaves.png",
+            "Blue Wolf's Leggings": "armor_bottoms_Blue_Wolf's_Leggings.png",
+            "Breath of Silen": "armor_bottoms_Breath_of_Silen.png",
+            "Crystal Gaiters": "armor_bottoms_Crystal_gaiters.png",
+            "Devil's Pact": "armor_bottoms_Devil's_Pact.png",
+            "Fallen Angel's Legguards": "armor_bottoms_Fallen_Angel's_Legguards.png",
+            "Flame Greaves": "armor_bottoms_Flame_Greaves.png",
+            "Forgotten Hero's Greaves": "armor_bottoms_Forgotten_Hero's_Greaves.png",
+            "Full Plate Gaiters": "armor_bottoms_Full_plate_gaiters.png",
+            "Ice Leggings": "armor_bottoms_Ice_Leggings.png",
+            "Imperial Crusader Legguards": "armor_bottoms_Imperial_Crusader_Legguards.png",
+            "Light's Greaves": "armor_bottoms_Light's_Greaves.png",
+            "Patience Leggings": "armor_bottoms_Patience_Leggings.png",
+            "Spirit's Greaves": "armor_bottoms_Spirit's_Greaves.png"
         };
         return images[itemName] || null;
     }
@@ -1952,18 +2060,21 @@
     // === PVP CLOAK ===
     function getCloakImage(itemName) {
         const images = {
-            "Silver Cloak": "Icon_AR_Cape_G3_001.png",
-            "Cranigg's Cloak": "Icon_AR_Cape_G3_002.png",
-            "Dragon's Scale": "Icon_AR_Cape_G3_003.png",
-            "Zaken's Cloak": "Icon_AR_Cape_G3_004.png",
-            "Cloak of Freya": "Icon_AR_Cape_G3_005.png",
-            "Queen Ant's Wing": "Icon_AR_Cape_G3_006.png",
-            "Cloak of Silence": "Icon_AR_Cape_G3_007.png",
-            "Eigis Cloak": "Icon_AR_Cape_G3_008.png",
-            "Cloak of Authority": "Icon_AR_Cape_G3_007.png",
-            "Selihoden's Wing": "Icon_AR_Cape_G3_008.png",
-            "Nevit's Cloak of Light": "Icon_AR_Cape_G2_001.png",
-            "Nailop's Cloak": "Icon_AR_Cape_G2_002.png"
+            "Aegis Cloak": "armor_cloak_Aegis_Cloak.png",
+            "Cloak of Power": "armor_cloak_Cloak_of_Power.png",
+            "Cloak of Silence": "armor_cloak_Cloak_of_Silence.png",
+            "Cloak of Verdant Green": "armor_cloak_Cloak_of_Verdant_Green.png",
+            "Cranbel's Cloak": "armor_cloak_Cranbel's_Cloak.png",
+            "Dragon's Scales": "armor_cloak_Dragon's_Scales.png",
+            "Freya's Cloak": "armor_cloak_Freya's_Cloak.png",
+            "Jaqen's Cloak": "armor_cloak_Jaqen's_Cloak.png",
+            "Mantle of the Holy Spirit": "armor_cloak_Mantle_of_the_Holy_Spirit.png",
+            "Moonlight's Cloak": "armor_cloak_Moonlight's_Cloak.png",
+            "Nebit's Cloak of Light": "armor_cloak_Nebit's_Cloak_of_Light.png",
+            "Niarop's Cloak": "armor_cloak_Niarop's_Cloak.png",
+            "Salamander's Cloak": "armor_cloak_Salamander's_Cloak.png",
+            "Sally Hoden's Wings": "armor_cloak_Sally_Hoden's_Wings.png",
+            "Queen Ant Wings": "armor_cloak_queen_ant_wings.png"
         };
         return images[itemName] || null;
     }
@@ -1980,6 +2091,151 @@
         enchantClass: 'cloak-enchant',
         radioName: 'cloak_visual'
     });
+
+    // === PVP T-SHIRT ===
+    function getTshirtImage(itemName) {
+        const images = {
+            "Agility's Anonymous Shirt": "armor_tshirt_Agility's_anonymous_shirt.png",
+            "Anonymous Shirt of Knowledge": "armor_tshirt_Anonymous_Shirt_of_Knowledge.png",
+            "Anonymous Shirt of Strength": "armor_tshirt_Anonymous_shirt_of_strength.png",
+            "Focus Shirt": "armor_tshirt_Focus_Shirt.png",
+            "Mithril Shirt of Agility": "armor_tshirt_Mithril_Shirt_of_Agility.png",
+            "Mithril Shirt of Knowledge": "armor_tshirt_Mithril_Shirt_of_Knowledge.png",
+            "Mithril Shirt of Strength": "armor_tshirt_Mithril_Shirt_of_Strength.png",
+            "Vigilante Shirt": "armor_tshirt_Vigilante_Shirt.png",
+            "Warrior's T-shirt": "armor_tshirt_Warrior's_T-shirt.png"
+        };
+        return images[itemName] || null;
+    }
+
+    buildEquipGrid({
+        selectEl: document.getElementById('id_pvp_tshirt'),
+        enchantInput: document.getElementById('id_pvp_tshirt_enchant'),
+        gridEl: document.getElementById('tshirt-grid'),
+        enchantSection: document.getElementById('tshirt-enchant-section'),
+        enchantGridEl: document.getElementById('tshirt-enchant-grid'),
+        nameSpan: document.getElementById('selected-tshirt-name'),
+        getImageFn: getTshirtImage,
+        cardClass: 'tshirt-card',
+        enchantClass: 'tshirt-enchant',
+        radioName: 'tshirt_visual'
+    });
+    // === DYNAMIC CLASS SKILLS ===
+    const classSkillsData = {{ class_skills_data|safe }};
+    const skillsClassSelect = document.getElementById('id_character_class');
+    const skillsContainer = document.getElementById('dynamic-skills-container');
+    const skillsLabelInfo = document.getElementById('current-class-skills-label');
+    const unlockedSkillsHidden = document.getElementById('unlocked_skills_hidden');
+
+    function renderSkills() {
+        const selectedClass = skillsClassSelect.value;
+        skillsContainer.innerHTML = '';
+        
+        if (!selectedClass || !classSkillsData[selectedClass]) {
+            skillsLabelInfo.textContent = 'Select a class to view skills';
+            return;
+        }
+
+        skillsLabelInfo.textContent = 'for ' + selectedClass;
+        const skillsObj = classSkillsData[selectedClass];
+
+        // Parse existing skills
+        let currentUnlocked = [];
+        try {
+            currentUnlocked = JSON.parse(unlockedSkillsHidden.value || '[]');
+        } catch(e) {
+            currentUnlocked = [];
+        }
+
+        const rarities = [
+            { key: 'myth', title: 'Myth', color: '#B266FF', bg: 'rgba(178, 102, 255, 0.1)' },
+            { key: 'legend', title: 'Legend', color: '#ff5c5c', bg: 'rgba(255, 92, 92, 0.1)' },
+            { key: 'hero', title: 'Hero', color: '#4da6ff', bg: 'rgba(77, 166, 255, 0.1)' }
+        ];
+
+        rarities.forEach(r => {
+            if(!skillsObj[r.key] || skillsObj[r.key].length === 0) return;
+
+            const section = document.createElement('div');
+            section.style.background = 'rgba(20, 20, 20, 0.6)';
+            section.style.border = `1px solid ${r.color}`;
+            section.style.borderRadius = '10px';
+            section.style.padding = '15px';
+            section.style.marginBottom = '10px';
+
+            const title = document.createElement('h4');
+            title.style.color = r.color;
+            title.style.marginBottom = '15px';
+            title.style.fontSize = '1.1rem';
+            title.innerHTML = title.textContent = r.title;
+            section.appendChild(title);
+
+            const grid = document.createElement('div');
+            grid.style.display = 'grid';
+            grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(180px, 1fr))';
+            grid.style.gap = '10px';
+
+            skillsObj[r.key].forEach(skill => {
+                const isChecked = currentUnlocked.includes(skill);
+                const label = document.createElement('label');
+                label.className = 'checkbox-label' + (isChecked ? ' checked' : '');
+                label.style.display = 'flex';
+                label.style.alignItems = 'center';
+                label.style.gap = '8px';
+                label.style.cursor = 'pointer';
+                label.style.padding = '8px';
+                label.style.background = isChecked ? r.bg : 'rgba(0,0,0,0.3)';
+                label.style.borderRadius = '6px';
+                label.style.transition = 'all 0.2s';
+                label.style.border = isChecked ? `1px solid ${r.color}` : '1px solid transparent';
+
+                const input = document.createElement('input');
+                input.type = 'checkbox';
+                input.value = skill;
+                input.checked = isChecked;
+                input.style.accentColor = r.color;
+                
+                input.addEventListener('change', function() {
+                    let unlocked = [];
+                    try { unlocked = JSON.parse(unlockedSkillsHidden.value || '[]'); } catch(e) {}
+                    
+                    if(this.checked) {
+                        if(!unlocked.includes(this.value)) unlocked.push(this.value);
+                        label.style.background = r.bg;
+                        label.style.border = `1px solid ${r.color}`;
+                    } else {
+                        unlocked = unlocked.filter(s => s !== this.value);
+                        label.style.background = 'rgba(0,0,0,0.3)';
+                        label.style.border = '1px solid transparent';
+                    }
+                    unlockedSkillsHidden.value = JSON.stringify(unlocked);
+                });
+
+                label.appendChild(input);
+                label.appendChild(document.createTextNode(' ' + skill));
+                grid.appendChild(label);
+            });
+
+            section.appendChild(grid);
+            skillsContainer.appendChild(section);
+        });
+    }
+
+    if (skillsClassSelect) {
+        let lastSelectedClass = skillsClassSelect.value;
+        skillsClassSelect.addEventListener('change', function() {
+            if (this.value !== lastSelectedClass) {
+                // Only clear unlocked skills if actually changing the class to something else
+                unlockedSkillsHidden.value = '[]'; 
+                lastSelectedClass = this.value;
+            }
+            renderSkills();
+        });
+    }
+
+    // Initial render
+    renderSkills();
+
     // === VISUAL ENHANCEMENT: Auto-clear '0' on focus ===
     document.addEventListener('DOMContentLoaded', function() {
         // Target numeric inputs in the form, specifically those in stat-card or general numeric inputs

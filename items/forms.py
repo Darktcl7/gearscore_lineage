@@ -1,7 +1,8 @@
 from django import forms
 # IMPOR MODEL BARU
-from .models import Item, Character, SubclassStats, LegendaryClass, CharacterAttributes, CharacteristicsStats, LegendaryAgathion, InheritorBook, CLASS_CHOICES 
+from .models import Item, Character, SubclassStats, LegendaryClass, CharacterAttributes, CharacteristicsStats, LegendaryAgathion, LegendaryMount, MythicClass, InheritorBook, CLASS_CHOICES 
 from django.forms import ModelForm
+from django.db.models import Case, When, Value, IntegerField
 
 # ----------------------------------------------------
 # 1. FORM UNTUK MEMBUAT ITEM BARU (ItemForm)
@@ -56,8 +57,10 @@ class CharacterForm(forms.ModelForm):
         # Masukkan SEMUA field yang bisa diubah pengguna
         fields = [
             'name', 'clan', 'level', 'character_class', 
+            'mythic_classes',
             'legendary_classes', # Added this field
             'legendary_agathions',
+            'legendary_mounts',
             'main_weapon', 'helmet', 'armor', 
             'gloves', 'boots', 'necklace', 
             'ring_left', 'ring_right', 
@@ -70,8 +73,10 @@ class CharacterForm(forms.ModelForm):
             'clan': 'Your Clan',
             'level': 'Your LvL',
             'character_class': 'Your Class',
+            'mythic_classes': 'What Mythic classes do you have?',
             'legendary_classes': 'What legendary classes do you have?',
             'legendary_agathions': 'What legendary agathions do you have?',
+            'legendary_mounts': 'What legendary mount do you have?',
             'main_weapon': 'Main Weapon',
             'helmet': 'Helmet',
             'armor': 'Armor',
@@ -87,8 +92,10 @@ class CharacterForm(forms.ModelForm):
         # Optional: Menggunakan widget Select untuk class choice
         widgets = {
             'character_class': forms.Select(choices=CLASS_CHOICES),
+            'mythic_classes': forms.CheckboxSelectMultiple,
             'legendary_classes': forms.CheckboxSelectMultiple, # Use checkboxes
             'legendary_agathions': forms.CheckboxSelectMultiple,
+            'legendary_mounts': forms.CheckboxSelectMultiple,
         }
 
     def __init__(self, *args, **kwargs):
@@ -112,10 +119,44 @@ class CharacterForm(forms.ModelForm):
         self.fields['earring_left'].queryset = Item.objects.filter(item_type='Accessory')
         self.fields['earring_right'].queryset = Item.objects.filter(item_type='Accessory')
 
+        # Order "No ..." items first for CheckboxSelectMultiple fields
+        self.fields['mythic_classes'].queryset = MythicClass.objects.annotate(
+            sort_order=Case(
+                When(name="No mythic class", then=Value(0)),
+                default=Value(1),
+                output_field=IntegerField()
+            )
+        ).order_by('sort_order', 'id')
+
+        self.fields['legendary_classes'].queryset = LegendaryClass.objects.annotate(
+            sort_order=Case(
+                When(name="No legendary class", then=Value(0)),
+                default=Value(1),
+                output_field=IntegerField()
+            )
+        ).order_by('sort_order', 'id')
+
+        self.fields['legendary_agathions'].queryset = LegendaryAgathion.objects.annotate(
+            sort_order=Case(
+                When(name="No legendary agathions", then=Value(0)),
+                default=Value(1),
+                output_field=IntegerField()
+            )
+        ).order_by('sort_order', 'id')
+
+        self.fields['legendary_mounts'].queryset = LegendaryMount.objects.annotate(
+            sort_order=Case(
+                When(name="No legendary mount", then=Value(0)),
+                default=Value(1),
+                output_field=IntegerField()
+            )
+        ).order_by('sort_order', 'id')
+
         # Tambahkan opsi '----' (None) di awal queryset yang di-filter
         for field_name, field in self.fields.items():
-            # Only apply to dropdowns (ModelChoiceField), and explicitly exclude legendary_classes
-            if field_name != 'legendary_classes' and isinstance(field, forms.ModelChoiceField):
+            field.required = False # MAKE EVERYTHING OPTIONAL SO IT DOES NOT BLOCK SAVE
+            # Only apply to dropdowns (ModelChoiceField), and explicitly exclude legendary_classes and agathions
+            if field_name not in ['mythic_classes', 'legendary_classes', 'legendary_agathions', 'legendary_mounts'] and isinstance(field, forms.ModelChoiceField):
                 field.empty_label = "--- Pilih Item ---"
 
 # ----------------------------------------------------
@@ -129,8 +170,8 @@ class SubclassStatsForm(ModelForm):
     """
     class Meta:
         model = SubclassStats
-        # Exclude only character field, show all other fields
-        exclude = ['character']
+        # Exclude character and JSON fields (handled manually in view)
+        exclude = ['character', 'myth_skills', 'legend_skills', 'subclass_weapons']
         
         widgets = {
             # Dualblade skills
@@ -193,6 +234,86 @@ class SubclassStatsForm(ModelForm):
             'spear_rolling_thunder': forms.CheckboxInput(),
             'spear_earthquake_stomp': forms.CheckboxInput(),
             'spear_weapon': forms.RadioSelect(),
+            # Greatsword skills
+            'greatsword_crescendo_vitality': forms.CheckboxInput(),
+            'greatsword_quake': forms.CheckboxInput(),
+            'greatsword_reflect_stun': forms.CheckboxInput(),
+            'greatsword_hellfire': forms.CheckboxInput(),
+            'greatsword_bash': forms.CheckboxInput(),
+            'greatsword_war_rage': forms.CheckboxInput(),
+            'greatsword_guardian_shield': forms.CheckboxInput(),
+            'greatsword_wave_sword': forms.CheckboxInput(),
+            'greatsword_weapon': forms.RadioSelect(),
+            # Crossbow skills
+            'crossbow_heroic_change': forms.CheckboxInput(),
+            'crossbow_feralize': forms.CheckboxInput(),
+            'crossbow_chain_bolt': forms.CheckboxInput(),
+            'crossbow_blackout_bolt': forms.CheckboxInput(),
+            'crossbow_escape': forms.CheckboxInput(),
+            'crossbow_back_tumbling': forms.CheckboxInput(),
+            'crossbow_disciplin': forms.CheckboxInput(),
+            'crossbow_vampiric_mind': forms.CheckboxInput(),
+            'crossbow_weapon': forms.RadioSelect(),
+            # Chainsword skills
+            'chainsword_chain_galaxy': forms.CheckboxInput(),
+            'chainsword_overflow': forms.CheckboxInput(),
+            'chainsword_binding': forms.CheckboxInput(),
+            'chainsword_bloody_sword': forms.CheckboxInput(),
+            'chainsword_double_whip': forms.CheckboxInput(),
+            'chainsword_rust': forms.CheckboxInput(),
+            'chainsword_chain_chasing': forms.CheckboxInput(),
+            'chainsword_bloody_slash': forms.CheckboxInput(),
+            'chainsword_weapon': forms.RadioSelect(),
+            # Rapier skills
+            'rapier_feather_pool': forms.CheckboxInput(),
+            'rapier_black_feather': forms.CheckboxInput(),
+            'rapier_shooting_star': forms.CheckboxInput(),
+            'rapier_sword_blossom': forms.CheckboxInput(),
+            'rapier_sting': forms.CheckboxInput(),
+            'rapier_traceless': forms.CheckboxInput(),
+            'rapier_parrying_arrow': forms.CheckboxInput(),
+            'rapier_summon_sword': forms.CheckboxInput(),
+            'rapier_weapon': forms.RadioSelect(),
+            # Magic Cannon skills
+            'cannon_canon_night': forms.CheckboxInput(),
+            'cannon_assemble': forms.CheckboxInput(),
+            'cannon_slip': forms.CheckboxInput(),
+            'cannon_canon_expansion': forms.CheckboxInput(),
+            'cannon_barrier_shot': forms.CheckboxInput(),
+            'cannon_blast_bomb': forms.CheckboxInput(),
+            'cannon_enchant_aiming': forms.CheckboxInput(),
+            'cannon_magic_trace': forms.CheckboxInput(),
+            'cannon_weapon': forms.RadioSelect(),
+            # Orb skills
+            'orb_mess_hill': forms.CheckboxInput(),
+            'orb_holy_light': forms.CheckboxInput(),
+            'orb_last_hill': forms.CheckboxInput(),
+            'orb_divine_execution': forms.CheckboxInput(),
+            'orb_divine_spark': forms.CheckboxInput(),
+            'orb_improved_orb': forms.CheckboxInput(),
+            'orb_judgment': forms.CheckboxInput(),
+            'orb_arcane_shield': forms.CheckboxInput(),
+            'orb_weapon': forms.RadioSelect(),
+            # Dual Axe skills
+            'dualaxe_rage_strike': forms.CheckboxInput(),
+            'dualaxe_power_crush': forms.CheckboxInput(),
+            'dualaxe_whirlwind': forms.CheckboxInput(),
+            'dualaxe_execute': forms.CheckboxInput(),
+            'dualaxe_blood_rage': forms.CheckboxInput(),
+            'dualaxe_armor_break': forms.CheckboxInput(),
+            'dualaxe_cyclone': forms.CheckboxInput(),
+            'dualaxe_berserk_fury': forms.CheckboxInput(),
+            'dualaxe_weapon': forms.RadioSelect(),
+            # Soul Breaker skills
+            'soulbreaker_soul_strike': forms.CheckboxInput(),
+            'soulbreaker_dark_blast': forms.CheckboxInput(),
+            'soulbreaker_soul_drain': forms.CheckboxInput(),
+            'soulbreaker_shadow_burst': forms.CheckboxInput(),
+            'soulbreaker_void_slash': forms.CheckboxInput(),
+            'soulbreaker_soul_shatter': forms.CheckboxInput(),
+            'soulbreaker_dark_impulse': forms.CheckboxInput(),
+            'soulbreaker_annihilation': forms.CheckboxInput(),
+            'soulbreaker_weapon': forms.RadioSelect(),
         }
 
 # ----------------------------------------------------
@@ -225,20 +346,13 @@ class CharacterAttributesForm(ModelForm):
             'pvp_gaiters': 'PvP Gaiters',
             'pvp_top_armor': 'PvP Top Armor',
             'pvp_cloak': 'PvP Cloak',
+            'pvp_tshirt': 'PvP T-Shirt',
             'pvp_sigil': 'PvP Sigil',
             'pvp_necklace': 'PvP Necklace',
             'pvp_ring_left': 'PvP Ring (Left)',
             'pvp_ring_right': 'PvP Ring (Right)',
             'pvp_belt': 'PvP Belt',
             'weapon': 'Weapon',
-            'skill_frenzy': 'Frenzy',
-            'skill_vital_destruction': 'Vital Destruction',
-            'skill_infinity_strike': 'Infinity Strike',
-            'skill_disarm': 'Disarm',
-            'skill_giant_stomp': 'Giant Stomp',
-            'skill_absolute_spear': 'Absolute Spear',
-            'skill_rolling_thunder': 'Rolling Thunder',
-            'skill_earthquake_stomp': 'Earthquake Stomp',
             'stat_dmg': 'DMG (Damage)',
             'stat_acc': 'ACC (Accuracy)',
             'stat_def': 'DEF (Defense)',
@@ -249,6 +363,22 @@ class CharacterAttributesForm(ModelForm):
             'stat_guardian': 'Guardian',
             'stat_conquer': 'Conquer',
             'total_legend_codex': 'Total Legend Codex',
+            'total_epic_mount': 'Total Epic Mount',
+            'exp_one_handed_sword': 'One-Handed Sword Skill',
+            'exp_dual_wield': 'Dual-Wield Skills',
+            'exp_dagger': 'Dagger Skill',
+            'exp_bow': 'Bow Skill',
+            'exp_staff': 'Staff Skill',
+            'exp_greatsword': 'Greatsword Skill',
+            'exp_crossbow': 'Crossbow Skill',
+            'exp_chainsword': 'Chainsword Skill',
+            'exp_rapier': 'Rapier Skill',
+            'exp_magic_cannon': 'Magic Cannon Skill',
+            'exp_spear': 'Spear Skill',
+            'exp_orb': 'Orb Skill',
+            'exp_dual_axe': 'Dual Axe Skill',
+            'exp_soul_breaker': 'Soul Breaker Skill',
+            'aster_erafone': 'Aster (Erafone)',
         }
         
         widgets = {
@@ -260,15 +390,19 @@ class CharacterAttributesForm(ModelForm):
             'stat_guardian': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'max': 13}),
             'stat_conquer': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'max': 13}),
             'total_legend_codex': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+            'total_epic_mount': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+            'aster_erafone': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'max': 30}),
+            'unlocked_skills': forms.HiddenInput(attrs={'id': 'unlocked_skills_hidden'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Explicitly make these fields optional to prevent "not focusable" browser errors
-        self.fields['soulshot_level'].required = False
-        self.fields['valor_level'].required = False
-        self.fields['stat_guardian'].required = False
-        self.fields['stat_conquer'].required = False
+        # Make ALL fields optional to prevent "not focusable" errors and validation blockers
+        for field_name in self.fields:
+            self.fields[field_name].required = False
+            
+        if 'unlocked_skills' in self.fields:
+            self.fields['unlocked_skills'].label = ''
 
 # ----------------------------------------------------
 # 6. FORM FOR DETAIL CHARACTERISTICS (100+ Fields)

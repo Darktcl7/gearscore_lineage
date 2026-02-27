@@ -30,6 +30,79 @@ CLASS_CHOICES = (
     ('Soul Breaker Skill', 'Soul Breaker Skill'),
 )
 
+CLASS_SKILLS_DATA = {
+    'One-Handed Sword Skill': {
+        'myth': ['Dignity (one-handed sword)', 'Ignore Death', 'Mighty Shock', 'Authority (one-handed sword)'],
+        'legend': ['Provoke', 'Aegis', 'Last stance', 'Revenge', 'True Impact', 'Vengeance', 'Chain Strike', 'Brutal Attack'],
+        'hero': ['Toughness', 'Retribution', 'Strike Force', 'Holy Strike', 'Double Shock', 'Will of Iron', 'Touch of Life', 'Hate']
+    },
+    'Dual-Wield Skills': {
+        'myth': ['Dignity (dual swordsmanship)', 'Force Blaster', 'Crack Down', 'Authority (dual sword)'],
+        'legend': ['Savage Scourge', 'Dance of Might', 'Approach', 'Split slash', 'Cruel Slasher', 'Berserker', 'Breaking Armor', 'Dual Impact'],
+        'hero': ['Phoenix', 'Scourge', 'Sonic Mastery', 'Dual parrying', 'Triple slash', 'Sonic Blaster', 'Dance of Fury', 'Detect Weekness']
+    },
+    'Dagger Skill': {
+        'myth': ['Dignity (dagger)', 'flash', 'Betrayal', 'Authority (Dagger)'],
+        'legend': ['Flow State', 'swift', 'toxin', 'Death sign', 'Poison Explosion', 'Phantom Blade', 'marionette', 'Shadow Staff'],
+        'hero': ['Fatal Blow', 'Poisoning Spring', 'Poison terror', 'Reset movement', 'Vision of Assassin', 'Shadow Blade', 'Venom', 'Hyde']
+    },
+    'Bow Skill': {
+        'myth': ['Dignity (bow)', 'Rock on', 'Eraser', 'Authority (Bow)'],
+        'legend': ['Sweep shot', 'Recoil', 'Entangled Field', 'Energy Shield', 'Hyper Draw', 'Elimination', 'Pinpoint shot', 'Absolute Piercing'],
+        'hero': ['Sniper Spirit', 'Multi-shot', 'Quick Draw', 'Impact Shot', 'Death Stinger', 'Mana Regain', 'Entangle', 'Real Target']
+    },
+    'Staff Skill': {
+        'myth': ['Dignity (Staff)', 'Portable Gravity', 'Abyss', 'Authority (Staff)'],
+        'legend': ['Warp', 'Restore Casting II', 'Glacier Crystal', 'Glacier Storm', 'Stigma', 'Chaos', 'Gravity', 'Meteor'],
+        'hero': ['Sage Shield', 'Gust Strike', 'Tempest III', 'Frozen Crystal', 'Blizzard Storm', 'Cancel', 'Restore Casting I', 'Confuse']
+    },
+    'Orb Skill': {
+        'myth': ['Dignity (of)', 'Blessed Field', 'Sacredness', 'Authority (Orb)'],
+        'legend': ['Full heel', 'High Cure', 'Double Shield', 'Saint Guillotine', 'Celestial Shield', 'reposal', 'Pain of Karma', 'Frey'],
+        'hero': ['Mess Hill', 'Holy Light', 'Last Hill', 'Divine Execution', 'Divine Spark', 'Improved of', 'Judgment', 'Arcane Shield']
+    },
+    'Spear Skill': {
+        'myth': ['Dignity (Spear)', 'Emperor\'s Lore', 'Dive Storm', 'Authority (Spear)'],
+        'legend': ['Commander Shout', 'Lightning Bind', 'Helios Strike', 'Untouchable Force', 'Immortal', 'Absolute Spear', 'Rolling Thunder', 'Earthquake Stomp'],
+        'hero': ['War Hero', 'Perfect Spear', 'Piece of Mind', 'Giant Stomp', 'Frenzy', 'Vital Destruction', 'Disarm', 'Infinity Strike']
+    },
+    'Greatsword Skill': {
+        'myth': ['Dignity (Greatsword)', 'Paradox', 'Gigantic Bash', 'Authority (Greatsword)'],
+        'legend': ['Agent Shield', 'Reflect Ability', 'Hell Flare', 'Disregard', 'drain', 'Force Rage', 'Madness', 'genocide'],
+        'hero': ['Crescendo Vitality', 'Quake', 'Reflect stun', 'Hellfire', 'Bash III', 'War Rage', 'Guardian Shield', 'Wave Sword']
+    },
+    'Crossbow Skill': {
+        'myth': ['Dignity (Crossbow)', 'Dimension Void', 'quasar', 'Isoriti (Crossbow)'],
+        'legend': ['Gigantic Hunter', 'Nerve cut', 'Disperse', 'Tumble down', 'Focusing', 'Absolute Mirror', 'Proxima', 'Curse Paralyze'],
+        'hero': ['Heroic Change', 'Feralize', 'chain bolt', 'Blackout Bolt Shot', 'Escape', 'Back tumbling', 'Disciplin', 'Vampiric Mind']
+    },
+    'Chainsword Skill': {
+        'myth': ['Dignity (Chainsword)', 'Overlord', 'Soul Steel', 'Authority (Chainsword)'],
+        'legend': ['Eternal Force', 'binding shock', 'Double Chasing', 'Vampiric Zone', 'Evolution', 'Vampiric Shield', 'Blood Slash III', 'Bloody Steel'],
+        'hero': ['Chain Galaxy', 'Overflow', 'binding', 'Bloody Sword', 'Double Whip', 'Rust', 'Chain Chasing', 'Bloody Slash II']
+    },
+    'Rapier Skill': {
+        'myth': ['Dignity (Rapier)', 'Over speed', 'Companion', 'Authority (Rapier)'],
+        'legend': ['Feather Shower', 'Awake', 'Shooting Star II', 'Extreme Move', 'Rapierism', 'Blink', 'Raven Claw', 'Darkwing'],
+        'hero': ['feather pool', 'Black Feather', 'Shooting Star Ⅰ', 'Sword Blossom', 'Sting III', 'Traceless', 'Parrying Arrow', 'Summon Sword']
+    },
+    'Magic Cannon Skill': {
+        'myth': ['Dignity (Magic Cannon)', 'Hyperion Barrier', 'Chrono Circle', 'Authority (Magic Cannon)'],
+        'legend': ['Cross wound', 'Aegis Barrier', 'deep sleep', 'Night Expansion', 'Meta Viper', 'Blast Bomb III', 'Charge barrier', 'Recharge Shot'],
+        'hero': ['Canon Night', 'Assemble', 'slip', 'Canon Expansion', 'barrier shot', 'Blast Bomb II', 'Enchant Aiming', 'Magic Trace']
+    },
+    'Dual Axe Skill': {
+        'myth': ['Dignity (Dual Axe)', 'Berserker Wrath', 'Storm Cleave', 'Authority (Dual Axe)'],
+        'legend': ['Whirlwind Strike', 'Fury Slash', 'Twin Crusher', 'Savage Spin', 'Rage Impact', 'Power Shatter', 'Double Decimation', 'Cyclone Fury'],
+        'hero': ['Rage Strike', 'Power Crush', 'Whirlwind', 'Execute', 'Blood Rage', 'Armor Break', 'Cyclone', 'Berserk Fury']
+    },
+    'Soul Breaker Skill': {
+        'myth': ['Dignity (Soul Breaker)', 'Void Realm', 'Soul Harvest', 'Authority (Soul Breaker)'],
+        'legend': ['Soul Rend', 'Dark Pulse', 'Spirit Chains', 'Phantom Strike', 'Soul Absorb', 'Shadow Wave', 'Chaos Rift', 'Nether Blade'],
+        'hero': ['Soul Strike', 'Dark Blast', 'Soul Drain', 'Shadow Burst', 'Void Slash', 'Soul Shatter', 'Dark Impulse', 'Annihilation']
+    },
+}
+
 
 
 CLAN_CHOICES = (
@@ -181,6 +254,15 @@ class SubclassStats(models.Model):
 
     character = models.OneToOneField('Character', on_delete=models.CASCADE, related_name='subclass_stats')
 
+    # JSONFields for myth and legend tier skills (hero skills remain as individual boolean fields below)
+    # Structure: {"dualblade": ["Dignity (dual swordsmanship)", "Force Blaster"], "tank": ["Provoke", "Aegis"], ...}
+    myth_skills = models.JSONField("Myth Skills", default=dict, blank=True, help_text="Unlocked myth-tier skills per subclass")
+    legend_skills = models.JSONField("Legend Skills", default=dict, blank=True, help_text="Unlocked legend-tier skills per subclass")
+
+    # JSONField to store weapon selection from database per subclass
+    # Structure: {"dualblade": "two_sword_style|Dark Legion", "tank": "one_handed_sword|Sword of Valhalla", ...}
+    subclass_weapons = models.JSONField("Subclass Weapons", default=dict, blank=True, help_text="Selected weapon per subclass from weapon database")
+
     # ====== DUALBLADE SUBCLASS ======
     dualblade_triple_slash = models.BooleanField("Triple Slash", default=False)
     dualblade_sonic_blaster = models.BooleanField("Sonic Blaster", default=False)
@@ -292,12 +374,168 @@ class SubclassStats(models.Model):
         ('saint', 'Saint Spear'),
     ], default='none')
 
+    # ====== GREATSWORD SUBCLASS ======
+    greatsword_crescendo_vitality = models.BooleanField("Crescendo Vitality", default=False)
+    greatsword_quake = models.BooleanField("Quake", default=False)
+    greatsword_reflect_stun = models.BooleanField("Reflect Stun", default=False)
+    greatsword_hellfire = models.BooleanField("Hellfire", default=False)
+    greatsword_bash = models.BooleanField("Bash III", default=False)
+    greatsword_war_rage = models.BooleanField("War Rage", default=False)
+    greatsword_guardian_shield = models.BooleanField("Guardian Shield", default=False)
+    greatsword_wave_sword = models.BooleanField("Wave Sword", default=False)
+    greatsword_weapon = models.CharField("Greatsword Weapon", max_length=50, choices=[
+        ('none', 'Blue or lower or none'),
+        ('berserker_blade', "Berserker Blade"),
+        ('archangel', 'Archangel Slasher'),
+        ('doom_crusher', "Doom Crusher"),
+        ('dragon_slayer', "Dragon Slayer"),
+        ('black_ore', "Black Ore Greatsword"),
+    ], default='none')
+
+    # ====== CROSSBOW SUBCLASS ======
+    crossbow_heroic_change = models.BooleanField("Heroic Change", default=False)
+    crossbow_feralize = models.BooleanField("Feralize", default=False)
+    crossbow_chain_bolt = models.BooleanField("Chain Bolt", default=False)
+    crossbow_blackout_bolt = models.BooleanField("Blackout Bolt Shot", default=False)
+    crossbow_escape = models.BooleanField("Escape", default=False)
+    crossbow_back_tumbling = models.BooleanField("Back Tumbling", default=False)
+    crossbow_disciplin = models.BooleanField("Disciplin", default=False)
+    crossbow_vampiric_mind = models.BooleanField("Vampiric Mind", default=False)
+    crossbow_weapon = models.CharField("Crossbow Weapon", max_length=50, choices=[
+        ('none', 'Blue or lower or none'),
+        ('arbalester', "Arbalester"),
+        ('archangel', 'Archangel Shooter'),
+        ('ballista', "Ballista"),
+        ('death_trigger', "Death Trigger"),
+        ('evil_spirit', "Evil Spirit Crossbow"),
+    ], default='none')
+
+    # ====== CHAINSWORD SUBCLASS ======
+    chainsword_chain_galaxy = models.BooleanField("Chain Galaxy", default=False)
+    chainsword_overflow = models.BooleanField("Overflow", default=False)
+    chainsword_binding = models.BooleanField("Binding", default=False)
+    chainsword_bloody_sword = models.BooleanField("Bloody Sword", default=False)
+    chainsword_double_whip = models.BooleanField("Double Whip", default=False)
+    chainsword_rust = models.BooleanField("Rust", default=False)
+    chainsword_chain_chasing = models.BooleanField("Chain Chasing", default=False)
+    chainsword_bloody_slash = models.BooleanField("Bloody Slash II", default=False)
+    chainsword_weapon = models.CharField("Chainsword Weapon", max_length=50, choices=[
+        ('none', 'Blue or lower or none'),
+        ('chain_hydra', "Chain Hydra"),
+        ('archangel', 'Archangel Chain'),
+        ('viper_chain', "Viper Chain"),
+        ('bloody_chain', "Bloody Chain"),
+        ('demon_chain', "Demon Chain"),
+    ], default='none')
+
+    # ====== RAPIER SUBCLASS ======
+    rapier_feather_pool = models.BooleanField("Feather Pool", default=False)
+    rapier_black_feather = models.BooleanField("Black Feather", default=False)
+    rapier_shooting_star = models.BooleanField("Shooting Star", default=False)
+    rapier_sword_blossom = models.BooleanField("Sword Blossom", default=False)
+    rapier_sting = models.BooleanField("Sting III", default=False)
+    rapier_traceless = models.BooleanField("Traceless", default=False)
+    rapier_parrying_arrow = models.BooleanField("Parrying Arrow", default=False)
+    rapier_summon_sword = models.BooleanField("Summon Sword", default=False)
+    rapier_weapon = models.CharField("Rapier Weapon", max_length=50, choices=[
+        ('none', 'Blue or lower or none'),
+        ('needle_rapier', "Needle Rapier"),
+        ('archangel', 'Archangel Rapier'),
+        ('wind_rider', "Wind Rider"),
+        ('phantom_rapier', "Phantom Rapier"),
+        ('blood_rapier', "Blood Rapier"),
+    ], default='none')
+
+    # ====== MAGIC CANNON SUBCLASS ======
+    cannon_canon_night = models.BooleanField("Canon Night", default=False)
+    cannon_assemble = models.BooleanField("Assemble", default=False)
+    cannon_slip = models.BooleanField("Slip", default=False)
+    cannon_canon_expansion = models.BooleanField("Canon Expansion", default=False)
+    cannon_barrier_shot = models.BooleanField("Barrier Shot", default=False)
+    cannon_blast_bomb = models.BooleanField("Blast Bomb II", default=False)
+    cannon_enchant_aiming = models.BooleanField("Enchant Aiming", default=False)
+    cannon_magic_trace = models.BooleanField("Magic Trace", default=False)
+    cannon_weapon = models.CharField("Magic Cannon Weapon", max_length=50, choices=[
+        ('none', 'Blue or lower or none'),
+        ('spirit_cannon', "Spirit Cannon"),
+        ('archangel', 'Archangel Cannon'),
+        ('dark_cannon', "Dark Cannon"),
+        ('thunder_cannon', "Thunder Cannon"),
+        ('demon_cannon', "Demon Cannon"),
+    ], default='none')
+
+    # ====== ORB SUBCLASS ======
+    orb_mess_hill = models.BooleanField("Mess Hill", default=False)
+    orb_holy_light = models.BooleanField("Holy Light", default=False)
+    orb_last_hill = models.BooleanField("Last Hill", default=False)
+    orb_divine_execution = models.BooleanField("Divine Execution", default=False)
+    orb_divine_spark = models.BooleanField("Divine Spark", default=False)
+    orb_improved_orb = models.BooleanField("Improved Orb", default=False)
+    orb_judgment = models.BooleanField("Judgment", default=False)
+    orb_arcane_shield = models.BooleanField("Arcane Shield", default=False)
+    orb_weapon = models.CharField("Orb Weapon", max_length=50, choices=[
+        ('none', 'Blue or lower or none'),
+        ('holy_orb', "Holy Orb"),
+        ('archangel', 'Archangel Orb'),
+        ('spirit_orb', "Spirit Orb"),
+        ('divine_orb', "Divine Orb"),
+        ('celestial_orb', "Celestial Orb"),
+    ], default='none')
+
+    # ====== DUAL AXE SUBCLASS ======
+    dualaxe_rage_strike = models.BooleanField("Rage Strike", default=False)
+    dualaxe_power_crush = models.BooleanField("Power Crush", default=False)
+    dualaxe_whirlwind = models.BooleanField("Whirlwind", default=False)
+    dualaxe_execute = models.BooleanField("Execute", default=False)
+    dualaxe_blood_rage = models.BooleanField("Blood Rage", default=False)
+    dualaxe_armor_break = models.BooleanField("Armor Break", default=False)
+    dualaxe_cyclone = models.BooleanField("Cyclone", default=False)
+    dualaxe_berserk_fury = models.BooleanField("Berserk Fury", default=False)
+    dualaxe_weapon = models.CharField("Dual Axe Weapon", max_length=50, choices=[
+        ('none', 'Blue or lower or none'),
+        ('twin_edge', "Twin Edge"),
+        ('archangel', 'Archangel Dual Axe'),
+        ('destroyer', "Destroyer"),
+        ('blood_axes', "Blood Axes"),
+        ('doom_axes', "Doom Axes"),
+    ], default='none')
+
+    # ====== SOUL BREAKER SUBCLASS ======
+    soulbreaker_soul_strike = models.BooleanField("Soul Strike", default=False)
+    soulbreaker_dark_blast = models.BooleanField("Dark Blast", default=False)
+    soulbreaker_soul_drain = models.BooleanField("Soul Drain", default=False)
+    soulbreaker_shadow_burst = models.BooleanField("Shadow Burst", default=False)
+    soulbreaker_void_slash = models.BooleanField("Void Slash", default=False)
+    soulbreaker_soul_shatter = models.BooleanField("Soul Shatter", default=False)
+    soulbreaker_dark_impulse = models.BooleanField("Dark Impulse", default=False)
+    soulbreaker_annihilation = models.BooleanField("Annihilation", default=False)
+    soulbreaker_weapon = models.CharField("Soul Breaker Weapon", max_length=50, choices=[
+        ('none', 'Blue or lower or none'),
+        ('soul_edge', "Soul Edge"),
+        ('archangel', 'Archangel Breaker'),
+        ('dark_breaker', "Dark Breaker"),
+        ('phantom_breaker', "Phantom Breaker"),
+        ('chaos_breaker', "Chaos Breaker"),
+    ], default='none')
+
     def calculate_subclass_score(self):
-        """Calculate subclass score based on skills and weapons"""
+        """Calculate subclass score based on all skill tiers and weapons"""
         score = 0
-        
-        # Count skills (each skill = 10 points)
-        skill_fields = [
+
+        # ======== MYTH SKILLS (from JSONField) - 15 points each ========
+        myth_data = self.myth_skills or {}
+        for prefix, skills in myth_data.items():
+            if isinstance(skills, list):
+                score += len(skills) * 15
+
+        # ======== LEGEND SKILLS (from JSONField) - 12 points each ========
+        legend_data = self.legend_skills or {}
+        for prefix, skills in legend_data.items():
+            if isinstance(skills, list):
+                score += len(skills) * 12
+
+        # ======== HERO SKILLS (Boolean fields) - 10 points each ========
+        hero_skill_fields = [
             # Dualblade
             self.dualblade_triple_slash, self.dualblade_sonic_blaster, self.dualblade_detect_weakness,
             self.dualblade_dance_of_fury, self.dualblade_dual_parrying, self.dualblade_dual_impact,
@@ -322,26 +560,50 @@ class SubclassStats(models.Model):
             self.spear_frenzy, self.spear_vital_destruction, self.spear_infinity_strike,
             self.spear_disarm, self.spear_giant_stomp, self.spear_absolute_spear,
             self.spear_rolling_thunder, self.spear_earthquake_stomp,
+            # Greatsword
+            self.greatsword_crescendo_vitality, self.greatsword_quake, self.greatsword_reflect_stun,
+            self.greatsword_hellfire, self.greatsword_bash, self.greatsword_war_rage,
+            self.greatsword_guardian_shield, self.greatsword_wave_sword,
+            # Crossbow
+            self.crossbow_heroic_change, self.crossbow_feralize, self.crossbow_chain_bolt,
+            self.crossbow_blackout_bolt, self.crossbow_escape, self.crossbow_back_tumbling,
+            self.crossbow_disciplin, self.crossbow_vampiric_mind,
+            # Chainsword
+            self.chainsword_chain_galaxy, self.chainsword_overflow, self.chainsword_binding,
+            self.chainsword_bloody_sword, self.chainsword_double_whip, self.chainsword_rust,
+            self.chainsword_chain_chasing, self.chainsword_bloody_slash,
+            # Rapier
+            self.rapier_feather_pool, self.rapier_black_feather, self.rapier_shooting_star,
+            self.rapier_sword_blossom, self.rapier_sting, self.rapier_traceless,
+            self.rapier_parrying_arrow, self.rapier_summon_sword,
+            # Magic Cannon
+            self.cannon_canon_night, self.cannon_assemble, self.cannon_slip,
+            self.cannon_canon_expansion, self.cannon_barrier_shot, self.cannon_blast_bomb,
+            self.cannon_enchant_aiming, self.cannon_magic_trace,
+            # Orb
+            self.orb_mess_hill, self.orb_holy_light, self.orb_last_hill,
+            self.orb_divine_execution, self.orb_divine_spark, self.orb_improved_orb,
+            self.orb_judgment, self.orb_arcane_shield,
+            # Dual Axe
+            self.dualaxe_rage_strike, self.dualaxe_power_crush, self.dualaxe_whirlwind,
+            self.dualaxe_execute, self.dualaxe_blood_rage, self.dualaxe_armor_break,
+            self.dualaxe_cyclone, self.dualaxe_berserk_fury,
+            # Soul Breaker
+            self.soulbreaker_soul_strike, self.soulbreaker_dark_blast, self.soulbreaker_soul_drain,
+            self.soulbreaker_shadow_burst, self.soulbreaker_void_slash, self.soulbreaker_soul_shatter,
+            self.soulbreaker_dark_impulse, self.soulbreaker_annihilation,
         ]
-        
-        for skill in skill_fields:
+
+        for skill in hero_skill_fields:
             if skill:
                 score += 10
-        
-        # Weapon bonus (better weapons = more points)
-        weapon_scores = {
-            'none': 0, 'tallum': 20, 'archangel': 25, 'dark_legion': 25, 'mardil': 25, 'astaroth': 30,
-            'demon': 20, 'cruma': 20, 'soul': 25, 'naga': 30,
-            'daimon': 20, 'stakato': 20, 'mother_tree': 20, 'spirits': 25, 'imperial': 30,
-            'bow_peril': 20, 'carnium': 20, 'shyeed': 30,
-            'ssaurabi': 30, 'sirra': 20, 'valhalla': 20, 'miracles': 25, 'caladbolg': 30,
-            'body_slasher': 30, 'lance': 20, 'halberd': 20, 'saint': 30,
-        }
-        
-        for weapon_field in [self.dualblade_weapon, self.dagger_weapon, self.staff_weapon,
-                             self.bow_weapon, self.tank_weapon, self.spear_weapon]:
-            score += weapon_scores.get(weapon_field, 0)
-        
+
+        # ======== WEAPONS from subclass_weapons JSONField - 20 points each ========
+        weapons_data = self.subclass_weapons or {}
+        for prefix, weapon_value in weapons_data.items():
+            if weapon_value and weapon_value != '' and weapon_value != 'none':
+                score += 20
+
         return score
 
     def __str__(self):
@@ -362,7 +624,30 @@ class LegendaryClass(models.Model):
 
 
 
+class MythicClass(models.Model):
+
+    name = models.CharField("Nama", max_length=100)
+
+    icon_file = models.CharField("File Ikon", max_length=100, blank=True)
+
+    def __str__(self):
+
+        return self.name
+
+
+
 class LegendaryAgathion(models.Model):
+
+    name = models.CharField("Nama", max_length=100)
+
+    icon_file = models.CharField("File Ikon", max_length=100, blank=True)
+
+    def __str__(self):
+
+        return self.name
+
+
+class LegendaryMount(models.Model):
 
     name = models.CharField("Nama", max_length=100)
 
@@ -406,9 +691,13 @@ class Character(models.Model):
 
     character_class = models.CharField("Kelas", max_length=100, choices=CLASS_CHOICES, default='Spear Skill')
 
+    mythic_classes = models.ManyToManyField(MythicClass, verbose_name="Kelas Mythic", blank=True)
+
     legendary_classes = models.ManyToManyField(LegendaryClass, verbose_name="Kelas Legendaris", blank=True)
 
     legendary_agathions = models.ManyToManyField(LegendaryAgathion, verbose_name="Agathion Legendaris", blank=True)
+
+    legendary_mounts = models.ManyToManyField(LegendaryMount, verbose_name="Mount Legendaris", blank=True)
 
     main_weapon = models.ForeignKey(Item, verbose_name="Senjata Utama", on_delete=models.SET_NULL, related_name='equipped_weapon', null=True, blank=True)
 
@@ -482,7 +771,7 @@ class Character(models.Model):
 
         soulshot = valor = guardian = conquer = 0
 
-        legend_class_point = legend_agathion_point = total_legend_codex = 0
+        legend_class_point = legend_agathion_point = total_legend_codex = total_epic_mount = 0
 
         
 
@@ -516,16 +805,17 @@ class Character(models.Model):
             valor = attrs.valor_level or 0
             legend_class_point = attrs.epic_classes_count or 0
             legend_agathion_point = attrs.epic_agathions_count or 0
+            total_epic_mount = attrs.total_epic_mount or 0
 
             
             # Gear Score Stats formula from Excel (for Overall Gear Score)
-            # =DMG+ACC+DEF+(REDUC*3)+RESIST+(SKILL*2)+WPN+(SOULSHOT*10)+(VALOR*10)+(GUARDIAN*10)+(CONQUER*10)+LEGEND_CLASS+LEGEND_AGATHION+(CODEX*3)+(CONQUER*10)
+            # =DMG+ACC+DEF+(REDUC*3)+RESIST+(SKILL*2)+WPN+(SOULSHOT*10)+(VALOR*10)+(GUARDIAN*10)+(CONQUER*10)+LEGEND_CLASS+LEGEND_AGATHION+(CODEX*3)+(CONQUER*10)+(EPIC_MOUNT*10)
             gear_stats_score = (
                 dmg + acc + def_stat + (reduc * 3) + resist + 
                 (skill_dmg_boost * 2) + wpn_dmg_boost +
                 (soulshot * 10) + (valor * 10) + (guardian * 10) + (conquer * 10) +
                 legend_class_point + legend_agathion_point +
-                (total_legend_codex * 3) + (conquer * 10)  # conquer counted twice per Excel formula
+                (total_legend_codex * 3) + (conquer * 10) + (total_epic_mount * 10)  # conquer counted twice per Excel formula
             )
 
         except CharacterAttributes.DoesNotExist:
@@ -536,114 +826,50 @@ class Character(models.Model):
         try:
             char_stats = self.characteristics_stats
             characteristics_score = float(char_stats.calculate_total_score())
-        except:
+        except CharacteristicsStats.DoesNotExist:
             pass
-
-        
-        # ============================================
 
         # 2. SUB-CLASS SCORE
-
-        # Dari SubclassStats: level subclass dan bonus HP/MP
-
-        # ============================================
-
-
-
         subclass_score = 0.0
-
         try:
-
             subclass = self.subclass_stats
-
-            # Use the new calculate_subclass_score method
-
             subclass_score = float(subclass.calculate_subclass_score())
-
         except SubclassStats.DoesNotExist:
-
             pass
 
-        
-
-        # ============================================
-
         # 3. MAIN CLASS SCORE
+        mainclass_score = gear_stats_score
 
-        # Dari Basic Information form (CharacterAttributes)
-        # Main Class Score = gear_stats_score (same as Gear Stats from CharacterAttributes)
-
-        # ============================================
-
-        mainclass_score = gear_stats_score  # Main Class = Gear Stats Score from CharacterAttributes
-
-        
-
-        # ============================================
-
-        # TOTAL SCORE - Overall Gear Score = Characteristics + Sub-class + Main class
-
-        # ============================================
-
+        # TOTAL SCORE
         total_score = characteristics_score + subclass_score + mainclass_score
 
-        
-
         return {
-
-            'total_score': total_score,  # Overall Gear Score
-
-            'gear_stats_score': gear_stats_score,  # From Gear Score Stats tab
-
-            'characteristics': characteristics_score,  # From CharacteristicsStats (145 fields)
-
+            'total_score': total_score,
+            'gear_stats_score': gear_stats_score,
+            'characteristics': characteristics_score,
             'subclass': subclass_score,
-
             'mainclass': mainclass_score,
-
-            # Detail breakdown untuk debugging
-
             'dmg': dmg,
-
             'acc': acc,
-
             'def_stat': def_stat,
-
             'reduc': reduc,
-
             'resist': resist,
-
             'skill_dmg_boost': skill_dmg_boost,
-
             'wpn_dmg_boost': wpn_dmg_boost,
-
             'soulshot': soulshot,
-
             'valor': valor,
-
             'guardian': guardian,
-
             'conquer': conquer,
-
             'legend_class_point': legend_class_point,
-
             'legend_agathion_point': legend_agathion_point,
-
             'total_legend_codex': total_legend_codex,
-
+            'total_epic_mount': total_epic_mount,
         }
 
-
-
     def calculate_gear_score(self):
-
-        """Metode untuk menghitung total gear score. Memanggil breakdown dan mengembalikan totalnya."""
-
+        """Calculate total gear score. Returns total_score value."""
         breakdown = self.calculate_gear_score_breakdown()
-
         return breakdown['total_score']
-
-
 
 
 
@@ -651,130 +877,161 @@ class Character(models.Model):
 
 PVP_HELMET_CHOICES = [
     ('', 'No helmet selected'),
-    ("Blue Wolf Helmet", "Blue Wolf Helmet"),
-    ("Majestic Circlet", "Majestic Circlet"),
-    ("Helm of Nightmares", "Helm of Nightmares"),
+    ("Ancient Elven Helmet", "Ancient Elven Helmet"),
+    ("Crown of the World Tree", "Crown of the World Tree"),
     ("Dark Crystal Helmet", "Dark Crystal Helmet"),
-    ("Medusa's Helm", "Medusa's Helm"),
-    ("Paulina's Helmet", "Paulina's Helmet"),
-    ("Nevit's Helmet", "Nevit's Helmet"),
-    ("Tersi's Circlet", "Tersi's Circlet"),
-    ("Ancient Elven Helm", "Ancient Elven Helm"),
+    ("Devil's Helmet", "Devil's Helmet"),
+    ("Draconic Leather Helmet", "Draconic Leather Helmet"),
+    ("Helmet of the Fallen Angel", "Helmet of the Fallen Angel"),
+    ("Hildegrim", "Hildegrim"),
     ("Imperial Crusader Helmet", "Imperial Crusader Helmet"),
+    ("Majestic Circlet", "Majestic Circlet"),
     ("Major Arcana Circlet", "Major Arcana Circlet"),
-    ("Draconic Helmet", "Draconic Helmet"),
+    ("Medusa's Helmet", "Medusa's Helmet"),
+    ("Nebit's Helmet", "Nebit's Helmet"),
+    ("Nightmare Helmet", "Nightmare Helmet"),
+    ("Pauline's Helmet", "Pauline's Helmet"),
+    ("Tersi's Circlet", "Tersi's Circlet"),
 ]
 
 
 
 PVP_GLOVES_CHOICES = [
     ('', 'No gloves selected'),
-    ("Blue Wolf Gloves", "Blue Wolf Gloves"),
-    ("Majestic Gloves", "Majestic Gloves"),
-    ("Gauntlets of Nightmare", "Gauntlets of Nightmare"),
-    ("Dark Crystal Gloves", "Dark Crystal Gloves"),
-    ("Tersi's Gloves", "Tersi's Gloves"),
-    ("Paulina's Gauntlets", "Paulina's Gauntlets"),
-    ("Nevit's Gloves", "Nevit's Gloves"),
-    ("Jarngreipr", "Jarngreipr"),
-    ("Vision Guardian", "Vision Guardian"),
-    ("Gloves of Blessing", "Gloves of Blessing"),
-    ("Forgotten Hero Gloves", "Forgotten Hero Gloves"),
-    ("Demon's Gauntlets", "Demon's Gauntlets"),
-    ("Ancient Elven Gauntlet", "Ancient Elven Gauntlet"),
+    ("Ancient Elven Gauntlets", "Ancient Elven Gauntlets"),
+    ("Dark Crystal Globe", "Dark Crystal Globe"),
+    ("Devil's Gauntlet", "Devil's Gauntlet"),
     ("Draconic Leather Gloves", "Draconic Leather Gloves"),
-    ("Pa'agrio's Flames", "Pa'agrio's Flames"),
+    ("Fallen Angel's Gloves", "Fallen Angel's Gloves"),
+    ("Globe of the Forgotten Hero", "Globe of the Forgotten Hero"),
+    ("Gloves of Blessing", "Gloves of Blessing"),
+    ("Guardian of Vision", "Guardian of Vision"),
+    ("Jarngreifr", "Jarngreifr"),
+    ("Majestic Gloves", "Majestic Gloves"),
+    ("Nebit's Globe", "Nebit's Globe"),
+    ("Nightmare Gauntlet", "Nightmare Gauntlet"),
+    ("Paagrio's Flame", "Paagrio's Flame"),
+    ("Pauline's Gauntlet", "Pauline's Gauntlet"),
+    ("Tersi's Gloves", "Tersi's Gloves"),
 ]
 
 
 
 PVP_BOOTS_CHOICES = [
     ('', 'No boots selected'),
-    ("Blue Wolf Boots", "Blue Wolf Boots"),
-    ("Majestic Boots", "Majestic Boots"),
-    ("Boots of Nightmares", "Boots of Nightmares"),
-    ("Dark Crystal Boots", "Dark Crystal Boots"),
-    ("Tersi's Boots", "Tersi's Boots"),
-    ("Paulina's Boots", "Paulina's Boots"),
-    ("Nevit's Boots", "Nevit's Boots"),
-    ("Demon's Boots", "Demon's Boots"),
-    ("Kaliel's Boots", "Kaliel's Boots"),
-    ("Forgotten Hero's Boots", "Forgotten Hero's Boots"),
     ("Ancient Elven Boots", "Ancient Elven Boots"),
-    ("Draconic", "Draconic"),
-    ("Sayha's Wind", "Sayha's Wind"),
+    ("Boots of Eternal Life", "Boots of Eternal Life"),
+    ("Boots of the Forgotten Hero", "Boots of the Forgotten Hero"),
+    ("Calie's Boots", "Calie's Boots"),
+    ("Dark Crystal Boots", "Dark Crystal Boots"),
+    ("Devil's Boots", "Devil's Boots"),
+    ("Draconic Leather Boots", "Draconic Leather Boots"),
+    ("Fallen Angel's Boots", "Fallen Angel's Boots"),
+    ("Majestic Boots", "Majestic Boots"),
+    ("Nebit's Boots", "Nebit's Boots"),
+    ("Nightmare Boots", "Nightmare Boots"),
+    ("Pauline's Boots", "Pauline's Boots"),
+    ("Reaper's Boots", "Reaper's Boots"),
+    ("Saiha's Wind", "Saiha's Wind"),
+    ("Tersi's Boots", "Tersi's Boots"),
 ]
 
 
 
 PVP_GAITERS_CHOICES = [
     ('', 'No gaiters selected'),
-    ("Blue Wolf Gaiters", "Blue Wolf Gaiters"),
-    ("Basila Skin", "Basila Skin"),
-    ("Blood Gaiters", "Blood Gaiters"),
-    ("Gaiters of Light", "Gaiters of Light"),
-    ("Gaiters of Ice", "Gaiters of Ice"),
-    ("Shilen's Breath", "Shilen's Breath"),
+    ("Basil's Shell", "Basil's Shell"),
+    ("Blood Greaves", "Blood Greaves"),
+    ("Blue Wolf's Leggings", "Blue Wolf's Leggings"),
+    ("Breath of Silen", "Breath of Silen"),
     ("Crystal Gaiters", "Crystal Gaiters"),
-    ("Forgotten Hero's Gaiters", "Forgotten Hero's Gaiters"),
-    ("Imperial Crusader Gaiters", "Imperial Crusader Gaiters"),
+    ("Devil's Pact", "Devil's Pact"),
+    ("Fallen Angel's Legguards", "Fallen Angel's Legguards"),
+    ("Flame Greaves", "Flame Greaves"),
+    ("Forgotten Hero's Greaves", "Forgotten Hero's Greaves"),
+    ("Full Plate Gaiters", "Full Plate Gaiters"),
+    ("Ice Leggings", "Ice Leggings"),
+    ("Imperial Crusader Legguards", "Imperial Crusader Legguards"),
+    ("Light's Greaves", "Light's Greaves"),
+    ("Patience Leggings", "Patience Leggings"),
+    ("Spirit's Greaves", "Spirit's Greaves"),
 ]
 
 
 
 PVP_ARMOR_CHOICES = [
     ('', 'No armor selected'),
-    ("Blue Wolf Breastplate", "Blue Wolf Breastplate"),
-    ("Majestic Robe", "Majestic Robe"),
-    ("Armor of Nightmares", "Armor of Nightmares"),
-    ("Dark Crystal Breastplate", "Dark Crystal Breastplate"),
-    ("Tersi's Robe", "Tersi's Robe"),
-    ("Paulina's Breastplate", "Paulina's Breastplate"),
-    ("Nevit's Armor", "Nevit's Armor"),
-    ("Savan's Robe", "Savan's Robe"),
     ("Absolute Tunic", "Absolute Tunic"),
-    ("Apella Plate Armor", "Apella Plate Armor"),
-    ("Forgotten Hero's Breastplate", "Forgotten Hero's Breastplate"),
-    ("Ancient Elven Armor", "Ancient Elven Armor"),
-    ("Demon's Armor", "Demon's Armor"),
+    ("Apella's Armor", "Apella's Armor"),
+    ("Breastplate of the Fallen Angel", "Breastplate of the Fallen Angel"),
+    ("Breastplate of the Forgotten Hero", "Breastplate of the Forgotten Hero"),
+    ("Dark Crystal Breastplate", "Dark Crystal Breastplate"),
+    ("Devil's Armor", "Devil's Armor"),
     ("Draconic Leather Armor", "Draconic Leather Armor"),
-    ("Major Arcana Robe", "Major Arcana Robe"),
     ("Imperial Crusader Breastplate", "Imperial Crusader Breastplate"),
+    ("Majestic Robe", "Majestic Robe"),
+    ("Major Arcana Robe", "Major Arcana Robe"),
+    ("Nebit's Armor", "Nebit's Armor"),
+    ("Nightmare Armor", "Nightmare Armor"),
+    ("Polyne's Breastplate", "Polyne's Breastplate"),
+    ("Saban's Robe", "Saban's Robe"),
+    ("Tersi's Robe", "Tersi's Robe"),
 ]
 
 
 
 PVP_CLOAK_CHOICES = [
     ('', 'No cloak selected'),
-    ("Silver Cloak", "Silver Cloak"),
-    ("Cranigg's Cloak", "Cranigg's Cloak"),
-    ("Dragon's Scale", "Dragon's Scale"),
-    ("Zaken's Cloak", "Zaken's Cloak"),
-    ("Cloak of Freya", "Cloak of Freya"),
-    ("Queen Ant's Wing", "Queen Ant's Wing"),
+    ("Aegis Cloak", "Aegis Cloak"),
+    ("Cloak of Power", "Cloak of Power"),
     ("Cloak of Silence", "Cloak of Silence"),
-    ("Eigis Cloak", "Eigis Cloak"),
-    ("Cloak of Authority", "Cloak of Authority"),
-    ("Selihoden's Wing", "Selihoden's Wing"),
-    ("Nevit's Cloak of Light", "Nevit's Cloak of Light"),
-    ("Nailop's Cloak", "Nailop's Cloak"),
+    ("Cloak of Verdant Green", "Cloak of Verdant Green"),
+    ("Cranbel's Cloak", "Cranbel's Cloak"),
+    ("Dragon's Scales", "Dragon's Scales"),
+    ("Freya's Cloak", "Freya's Cloak"),
+    ("Jaqen's Cloak", "Jaqen's Cloak"),
+    ("Mantle of the Holy Spirit", "Mantle of the Holy Spirit"),
+    ("Moonlight's Cloak", "Moonlight's Cloak"),
+    ("Nebit's Cloak of Light", "Nebit's Cloak of Light"),
+    ("Niarop's Cloak", "Niarop's Cloak"),
+    ("Salamander's Cloak", "Salamander's Cloak"),
+    ("Sally Hoden's Wings", "Sally Hoden's Wings"),
+    ("Queen Ant Wings", "Queen Ant Wings"),
 ]
 
 
 
 PVP_SIGIL_CHOICES = [
     ('', 'No sigil selected'),
-    ("Dream Sigil", "Dream Sigil"),
-    ("Blue", "Blue"),
-    ("Susceptor's Heart", "Susceptor's Heart"),
-    ("Paradia's Sigil", "Paradia's Sigil"),
-    ("Cruma's Shell", "Cruma's Shell"),
-    ("Sigil of Flames", "Sigil of Flames"),
-    ("Jaeger's Sigil", "Jaeger's Sigil"),
-    ("Selihoden's Horn", "Selihoden's Horn"),
-    ("Tear of Darkness", "Tear of Darkness"),
-    ("Draconic Sigil", "Draconic Sigil"),
     ("Arcana Sigil", "Arcana Sigil"),
+    ("Blood Crystal", "Blood Crystal"),
+    ("Cruma's Shell", "Cruma's Shell"),
+    ("Crystal of Oblivion", "Crystal of Oblivion"),
+    ("Draconic Sigil", "Draconic Sigil"),
+    ("Dream Sigil", "Dream Sigil"),
+    ("Eldarach", "Eldarach"),
+    ("Holy Sigil", "Holy Sigil"),
+    ("Parody Sigil", "Parody Sigil"),
+    ("Sally Horden's Horn", "Sally Horden's Horn"),
+    ("Sniper Sigil", "Sniper Sigil"),
+    ("Susceptor's Heart", "Susceptor's Heart"),
+    ("The Sigil of the Fallen Angel", "The Sigil of the Fallen Angel"),
+    ("The Sigil of Karma", "The Sigil of Karma"),
+    ("Tier of Darkness", "Tier of Darkness"),
+]
+
+
+PVP_TSHIRT_CHOICES = [
+    ('', 'No t-shirt selected'),
+    ("Agility's Anonymous Shirt", "Agility's Anonymous Shirt"),
+    ("Anonymous Shirt of Knowledge", "Anonymous Shirt of Knowledge"),
+    ("Anonymous Shirt of Strength", "Anonymous Shirt of Strength"),
+    ("Focus Shirt", "Focus Shirt"),
+    ("Mithril Shirt of Agility", "Mithril Shirt of Agility"),
+    ("Mithril Shirt of Knowledge", "Mithril Shirt of Knowledge"),
+    ("Mithril Shirt of Strength", "Mithril Shirt of Strength"),
+    ("Vigilante Shirt", "Vigilante Shirt"),
+    ("Warrior's T-shirt", "Warrior's T-shirt"),
 ]
 
 
@@ -1064,7 +1321,18 @@ SKILL_CHOICES = [
 
 ]
 
-
+EXPERTISE_CHOICES = [
+    (0, 'No Expertise'),
+    (1, 'Rank 1'),
+    (2, 'Rank 2'),
+    (3, 'Rank 3'),
+    (4, 'Rank 4'),
+    (5, 'Rank 5'),
+    (6, 'Rank 6'),
+    (7, 'Rank 7'),
+    (8, 'Rank 8'),
+    (9, 'Rank 9'),
+]
 
 class CharacterAttributes(models.Model):
 
@@ -1096,7 +1364,23 @@ class CharacterAttributes(models.Model):
 
     enchant_seal_eva = models.IntegerField("Enchant Eva's Seal", choices=ENCHANT_CHOICES, default=0)
 
+    aster_erafone = models.IntegerField("Aster", default=0, validators=[MinValueValidator(0), MaxValueValidator(30)], help_text="Maksimal 30 Node")
 
+    # Expertise Fields
+    exp_one_handed_sword = models.IntegerField("One-Handed Sword Skill", choices=EXPERTISE_CHOICES, default=0, blank=True)
+    exp_dual_wield = models.IntegerField("Dual-Wield Skills", choices=EXPERTISE_CHOICES, default=0, blank=True)
+    exp_dagger = models.IntegerField("Dagger Skill", choices=EXPERTISE_CHOICES, default=0, blank=True)
+    exp_bow = models.IntegerField("Bow Skill", choices=EXPERTISE_CHOICES, default=0, blank=True)
+    exp_staff = models.IntegerField("Staff Skill", choices=EXPERTISE_CHOICES, default=0, blank=True)
+    exp_greatsword = models.IntegerField("Greatsword Skill", choices=EXPERTISE_CHOICES, default=0, blank=True)
+    exp_crossbow = models.IntegerField("Crossbow Skill", choices=EXPERTISE_CHOICES, default=0, blank=True)
+    exp_chainsword = models.IntegerField("Chainsword Skill", choices=EXPERTISE_CHOICES, default=0, blank=True)
+    exp_rapier = models.IntegerField("Rapier Skill", choices=EXPERTISE_CHOICES, default=0, blank=True)
+    exp_magic_cannon = models.IntegerField("Magic Cannon Skill", choices=EXPERTISE_CHOICES, default=0, blank=True)
+    exp_spear = models.IntegerField("Spear Skill", choices=EXPERTISE_CHOICES, default=0, blank=True)
+    exp_orb = models.IntegerField("Orb Skill", choices=EXPERTISE_CHOICES, default=0, blank=True)
+    exp_dual_axe = models.IntegerField("Dual Axe Skill", choices=EXPERTISE_CHOICES, default=0, blank=True)
+    exp_soul_breaker = models.IntegerField("Soul Breaker Skill", choices=EXPERTISE_CHOICES, default=0, blank=True)
 
     # New PvP Fields
 
@@ -1117,6 +1401,9 @@ class CharacterAttributes(models.Model):
 
     pvp_cloak = models.CharField("PvP Cloak", max_length=100, choices=PVP_CLOAK_CHOICES, blank=True)
     pvp_cloak_enchant = models.IntegerField("PvP Cloak Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)], help_text="Enchant level +0 to +11")
+
+    pvp_tshirt = models.CharField("PvP T-Shirt", max_length=100, choices=PVP_TSHIRT_CHOICES, blank=True)
+    pvp_tshirt_enchant = models.IntegerField("PvP T-Shirt Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)], help_text="Enchant level +0 to +11")
 
     pvp_sigil = models.CharField("PvP Sigil", max_length=100, choices=PVP_SIGIL_CHOICES, blank=True)
     pvp_sigil_enchant = models.IntegerField("PvP Sigil Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)], help_text="Enchant level +0 to +11")
@@ -1168,6 +1455,8 @@ class CharacterAttributes(models.Model):
 
     total_legend_codex = models.IntegerField("Total Legend Codex", default=0, help_text="Total Legend Class & Agathion Codex (multiplied by 3 in score)")
 
+    total_epic_mount = models.IntegerField("Total Epic Mount", default=0, help_text="Total Epic Mount (multiplied by 10 in score)")
+
     
 
     # Weapon and Skills
@@ -1175,30 +1464,7 @@ class CharacterAttributes(models.Model):
     weapon = models.CharField("Weapon", max_length=100, choices=WEAPON_CHOICES, blank=True)
     weapon_enchant = models.IntegerField("Weapon Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)], help_text="Enchant level +0 to +11")
 
-    
-
-    # Individual skill fields for Spear class
-
-    skill_frenzy = models.BooleanField("Frenzy", default=False)
-
-    skill_vital_destruction = models.BooleanField("Vital Destruction", default=False)
-
-    skill_infinity_strike = models.BooleanField("Infinity Strike", default=False)
-
-    skill_disarm = models.BooleanField("Disarm", default=False)
-
-    skill_giant_stomp = models.BooleanField("Giant Stomp", default=False)
-
-    skill_absolute_spear = models.BooleanField("Absolute Spear", default=False)
-
-    skill_rolling_thunder = models.BooleanField("Rolling Thunder", default=False)
-
-    skill_earthquake_stomp = models.BooleanField("Earthquake Stomp", default=False)
-
-
-
-
-
+    unlocked_skills = models.JSONField("Unlocked Skills", default=list, blank=True, help_text="List of unlocked skill names")
     def __str__(self):
 
         return f"Atribut untuk {self.character.name}"

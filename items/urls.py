@@ -17,6 +17,7 @@ from .views import (
     edit_characteristics_stats, # Edit Characteristics
     # Activity Views
     activity_leaderboard,
+    gearscore_leaderboard,
     my_activity,
     manage_events,
     create_event,
@@ -24,6 +25,7 @@ from .views import (
     # Discord Link
     link_discord,
     reset_password_admin, # Admin Reset Password
+    toggle_admin, # Admin Toggle Admin Status
     update_prize_config, # Activity Views - Update Config
     discord_dashboard, # Discord Management
 ) 
@@ -47,6 +49,9 @@ urlpatterns = [
 
     # URL: /items/manage/reset-password/1/ -> Reset Password User via Admin
     path('manage/reset-password/<int:user_pk>/', reset_password_admin, name='reset-password-admin'),
+
+    # URL: /items/manage/toggle-admin/1/ -> Toggle Admin Status
+    path('manage/toggle-admin/<int:user_pk>/', toggle_admin, name='toggle-admin'),
     
     # URL: /items/item/1/ -> Menampilkan detail satu item
     path('item/<int:pk>/', item_detail, name='item-detail'),
@@ -94,6 +99,9 @@ urlpatterns = [
     
     # URL: /items/activity/ -> Leaderboard Activity
     path('activity/', activity_leaderboard, name='activity-leaderboard'),
+    
+    # URL: /items/gearscore/ -> Leaderboard Gear Score
+    path('gearscore/', gearscore_leaderboard, name='gearscore-leaderboard'),
     
     # URL: /items/activity/my/ -> My Activity (User's own stats)
     path('activity/my/', my_activity, name='my-activity'),

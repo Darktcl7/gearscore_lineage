@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
-from .models import Item, Character, SubclassStats, LegendaryClass, CharacterAttributes, CharacteristicsStats, LegendaryAgathion, InheritorBook, CLASS_CHOICES, CLASS_TO_WEAPON_TYPE, WEAPON_CHOICES
+from .models import Item, Character, SubclassStats, LegendaryClass, CharacterAttributes, CharacteristicsStats, LegendaryAgathion, LegendaryMount, MythicClass, InheritorBook, CLASS_CHOICES, CLASS_TO_WEAPON_TYPE, WEAPON_CHOICES, CLASS_SKILLS_DATA
 import json
 from .forms import ItemForm, CharacterForm, SubclassStatsForm, CharacterAttributesForm, CharacteristicsStatsForm
 
@@ -19,7 +19,7 @@ def is_admin(user):
 def character_list(request):
     # Semua user (termasuk admin) hanya melihat karakter mereka sendiri di sini (Card View)
     # Optimized: select_related for OneToOne, prefetch for ManyToMany
-    characters = Character.objects.filter(owner=request.user).select_related('attributes', 'subclass_stats', 'characteristics_stats').prefetch_related('legendary_classes', 'legendary_agathions')
+    characters = Character.objects.filter(owner=request.user).select_related('attributes', 'subclass_stats', 'characteristics_stats').prefetch_related('mythic_classes', 'legendary_classes', 'legendary_agathions', 'legendary_mounts')
     return render(request, 'items/character_list.html', {'characters': characters, 'is_admin': is_admin(request.user)})
 
 # FUNGSI: Manajemen Karakter (Admin Only) -> Table View
@@ -29,7 +29,7 @@ def character_management(request):
         return HttpResponseForbidden("You are not authorized to view this page.")
     
     # Optimized: select_related for owner and attributes, prefetch for ManyToMany
-    characters = Character.objects.all().select_related('owner', 'attributes', 'subclass_stats', 'characteristics_stats').prefetch_related('legendary_classes')
+    characters = Character.objects.all().select_related('owner', 'attributes', 'subclass_stats', 'characteristics_stats').prefetch_related('mythic_classes', 'legendary_classes')
     
     # Get pending users (registered but not yet approved)
     from django.contrib.auth.models import User
@@ -43,49 +43,49 @@ def character_management(request):
 # FUNGSI: Halaman Profil Karakter (character_profile)
 @login_required
 def character_profile(request, pk):
-    from .models import CharacterAttributes
-    
+    from django.core.cache import cache
+
     # Optimized: select_related for OneToOne relations to avoid N+1
-    character = get_object_or_404(Character.objects.select_related('attributes', 'subclass_stats', 'characteristics_stats').prefetch_related('legendary_classes', 'legendary_agathions'), pk=pk)
-    
-    # Permission check: user biasa hanya bisa lihat profil sendiri
+    character = get_object_or_404(
+        Character.objects.select_related('owner', 'attributes', 'subclass_stats', 'characteristics_stats')
+        .prefetch_related('mythic_classes', 'legendary_classes', 'legendary_agathions', 'legendary_mounts'),
+        pk=pk
+    )
+
+    # Permission check
     if not is_admin(request.user) and character.owner != request.user:
         return HttpResponseForbidden("You don't have permission to view this profile.")
-    
-    # Pastikan CharacterAttributes ada untuk karakter ini
+
+    # Ensure CharacterAttributes exists
     CharacterAttributes.objects.get_or_create(character=character)
-    
-    # 1. Hitung Gear Score karakter ini
+
+    # 1. Get gear score (already optimized with select_related above)
     gear_score = character.calculate_gear_score()
-    
-    # 2. Hitung Ranking
-    # Ambil semua karakter, hitung GS mereka, lalu urutkan
-    # Optimized: Fetch all characters WITH related data for scoring loop
-    all_characters = Character.objects.select_related('attributes', 'subclass_stats', 'characteristics_stats').all()
-    char_scores = []
-    for char in all_characters:
-        score = char.calculate_gear_score()
-        char_scores.append({'id': char.id, 'score': score})
-    
-    # Urutkan dari score tertinggi ke terendah
-    char_scores.sort(key=lambda x: x['score'], reverse=True)
-    
-    # Cari posisi karakter ini (1-based index)
-    rank = "N/A"
-    for index, item in enumerate(char_scores):
-        if item['id'] == character.id:
-            rank = index + 1
-            break
-            
-    gs_logs = character.gs_logs.all() # Fetch all related logs
-    
-    # Check if user can edit this character (owner or admin)
+
+    # 2. Ranking - cached for 60 seconds to avoid recalculating on every page load
+    cache_key = 'gearscore_rankings'
+    rankings = cache.get(cache_key)
+    if rankings is None:
+        all_characters = Character.objects.select_related(
+            'attributes', 'subclass_stats', 'characteristics_stats'
+        ).all()
+        char_scores = []
+        for char in all_characters:
+            score = char.calculate_gear_score()
+            char_scores.append({'id': char.id, 'score': score.get('total_score', 0) if isinstance(score, dict) else score})
+        char_scores.sort(key=lambda x: x['score'], reverse=True)
+        rankings = {item['id']: idx + 1 for idx, item in enumerate(char_scores)}
+        cache.set(cache_key, rankings, 60)  # Cache for 1 minute
+
+    rank = rankings.get(character.id, "N/A")
+
+    gs_logs = character.gs_logs.all()
     can_edit = is_admin(request.user) or character.owner == request.user
-    
+
     context = {
         'character': character,
         'gear_score': gear_score,
-        'rank': rank, # Pass rank to template
+        'rank': rank,
         'gs_logs': gs_logs,
         'is_admin': is_admin(request.user),
         'can_edit': can_edit,
@@ -96,33 +96,28 @@ def character_profile(request, pk):
 # FUNGSI BARU: Membuat atau Mengedit Karakter (create_character)
 @login_required
 def create_character(request, pk=None):
-    # DEBUG: Print user info
-    print(f"DEBUG EDIT CHAR: PK={pk}, User={request.user} (ID: {request.user.id})")
-    print(f"Is Admin? {is_admin(request.user)}")
 
     character_instance = get_object_or_404(Character, pk=pk) if pk else None
     
     # Permission check: admin can edit any, user can only edit their own
     # Also allow editing if character has no owner (e.g., created by admin)
     if character_instance:
-        print(f"Char Owner: {character_instance.owner} (ID: {character_instance.owner.id if character_instance.owner else 'None'})")
         if not is_admin(request.user):
-            # Allow if user owns the character OR character has no owner
             if character_instance.owner and character_instance.owner != request.user:
-                print("PERMISSION DENIED")
                 return HttpResponseForbidden("You can only edit your own characters.")
             elif not character_instance.owner:
-                print("CHARACTER HAS NO OWNER - ALLOWING EDIT")
-        else:
-            print("PERMISSION GRANTED (ADMIN)")
-    
+                pass  # Character has no owner, allow edit
     attributes_instance = CharacterAttributes.objects.get_or_create(character=character_instance)[0] if character_instance else None
 
     if request.method == 'POST':
+
         character_form = CharacterForm(request.POST, instance=character_instance)
         attributes_form = CharacterAttributesForm(request.POST, instance=attributes_instance)
+        
+
 
         if character_form.is_valid() and attributes_form.is_valid():
+
             character = character_form.save(commit=False)
             # Set owner jika karakter baru
             if not character_instance:
@@ -141,8 +136,10 @@ def create_character(request, pk=None):
         character_form = CharacterForm(instance=character_instance)
         attributes_form = CharacterAttributesForm(instance=attributes_instance)
 
+    mythic_class_icons = {mc.name: mc.icon_file for mc in MythicClass.objects.all()}
     legendary_class_icons = {lc.name: lc.icon_file for lc in LegendaryClass.objects.all()}
     legendary_agathion_icons = {la.name: la.icon_file for la in LegendaryAgathion.objects.all()}
+    legendary_mount_icons = {lm.name: lm.icon_file for lm in LegendaryMount.objects.all()}
 
     question_icons = {
         'soulshot_level': 's1.webm', 'valor_level': 's2.webm',
@@ -165,11 +162,14 @@ def create_character(request, pk=None):
         'character_form': character_form,
         'attributes_form': attributes_form,
         'is_edit': character_instance is not None,
+        'mythic_class_icons': mythic_class_icons,
         'legendary_class_icons': legendary_class_icons,
         'legendary_agathion_icons': legendary_agathion_icons,
+        'legendary_mount_icons': legendary_mount_icons,
         'question_icons': question_icons,
         'class_to_weapon_type': json.dumps(CLASS_TO_WEAPON_TYPE),
         'weapon_images': json.dumps(weapon_images),
+        'class_skills_data': json.dumps(CLASS_SKILLS_DATA),
     }
     return render(request, 'items/character_form.html', context)
 
@@ -309,19 +309,88 @@ def edit_subclass_stats(request, character_pk):
     if request.method == 'POST':
         form = SubclassStatsForm(request.POST, instance=stats)
         if form.is_valid():
-            form.save()
-            # Redirect kembali ke halaman profil karakter setelah save
+            obj = form.save(commit=False)
+            # Parse myth skills JSON from hidden input
+            myth_raw = request.POST.get('myth_skills_json', '{}')
+            legend_raw = request.POST.get('legend_skills_json', '{}')
+            weapons_raw = request.POST.get('subclass_weapons_json', '{}')
+            try:
+                obj.myth_skills = json.loads(myth_raw)
+            except (json.JSONDecodeError, TypeError):
+                obj.myth_skills = {}
+            try:
+                obj.legend_skills = json.loads(legend_raw)
+            except (json.JSONDecodeError, TypeError):
+                obj.legend_skills = {}
+            try:
+                obj.subclass_weapons = json.loads(weapons_raw)
+            except (json.JSONDecodeError, TypeError):
+                obj.subclass_weapons = {}
+            obj.save()
             return redirect('character-profile', pk=character_pk)
     else:
         form = SubclassStatsForm(instance=stats)
         
+    # Build weapon data by type for subclass use
+    weapons_by_type = {}
+    for value, label in WEAPON_CHOICES:
+        if '|' in value:
+            weapon_type, weapon_name = value.split('|', 1)
+            if weapon_type not in weapons_by_type:
+                weapons_by_type[weapon_type] = []
+            weapons_by_type[weapon_type].append({'value': value, 'label': label})
+
+    # Build reverse map: subclass prefix -> weapon type
+    subclass_to_weapon_type = {
+        'tank': 'one_handed_sword',
+        'dualblade': 'two_sword_style',
+        'dagger': 'dagger',
+        'bow': 'bow',
+        'staff': 'cane',
+        'spear': 'spear',
+        'greatsword': 'greatsword',
+        'crossbow': 'crossbow',
+        'chainsword': 'chainsword',
+        'rapier': 'rapier',
+        'cannon': 'magic_cannon',
+        'orb': 'orb',
+        'dualaxe': 'double_axe',
+        'soulbreaker': 'soul_breaker',
+    }
+
+    # Map class name to subclass prefix for hiding
+    class_to_prefix = {
+        'One-Handed Sword Skill': 'tank',
+        'Dual-Wield Skills': 'dualblade',
+        'Dagger Skill': 'dagger',
+        'Bow Skill': 'bow',
+        'Staff Skill': 'staff',
+        'Spear Skill': 'spear',
+        'Greatsword Skill': 'greatsword',
+        'Crossbow Skill': 'crossbow',
+        'Chainsword Skill': 'chainsword',
+        'Rapier Skill': 'rapier',
+        'Magic Cannon Skill': 'cannon',
+        'Orb Skill': 'orb',
+        'Dual Axe Skill': 'dualaxe',
+        'Soul Breaker Skill': 'soulbreaker',
+    }
+
     context = {
         'form': form,
         'character': character,
         'title': f'Subclass Information for {character.name}',
-        'form_description': 'Fill out information about your subclass skills and weapons.'
+        'form_description': 'Fill out information about your subclass skills and weapons.',
+        'main_class': character.character_class,
+        'main_class_prefix': class_to_prefix.get(character.character_class, ''),
+        'class_skills_data': json.dumps(CLASS_SKILLS_DATA),
+        'weapons_by_type': json.dumps(weapons_by_type),
+        'subclass_to_weapon_type': json.dumps(subclass_to_weapon_type),
+        'current_myth_skills': json.dumps(stats.myth_skills or {}),
+        'current_legend_skills': json.dumps(stats.legend_skills or {}),
+        'current_subclass_weapons': json.dumps(stats.subclass_weapons or {}),
     }
-    return render(request, 'items/subclass_form.html', context)  # Use dedicated subclass template
+    return render(request, 'items/subclass_form.html', context)
 
 # FUNGSI BARU: Mengedit Characteristics Stats (100+ Fields)
 @login_required
@@ -359,6 +428,40 @@ from .models import ActivityEvent, PlayerActivity, MonthlyReport
 from django.db.models import Sum
 from django.utils import timezone
 from datetime import datetime, timedelta
+
+@login_required
+def gearscore_leaderboard(request):
+    """
+    Halaman Leaderboard khusus Gear Score - cached for performance
+    """
+    from django.core.cache import cache
+
+    cache_key = 'gearscore_leaderboard_data'
+    char_scores = cache.get(cache_key)
+
+    if char_scores is None:
+        all_characters = Character.objects.select_related(
+            'owner', 'attributes', 'subclass_stats', 'characteristics_stats'
+        ).all()
+        char_scores = []
+        for char in all_characters:
+            score = char.calculate_gear_score()
+            char_scores.append({
+                'character': char,
+                'score': score
+            })
+        char_scores.sort(key=lambda x: (
+            x['score'].get('total_score', 0) if isinstance(x['score'], dict) else x['score']
+        ), reverse=True)
+        for index, item in enumerate(char_scores):
+            item['rank'] = index + 1
+        cache.set(cache_key, char_scores, 60)  # Cache 1 minute
+
+    context = {
+        'leaderboard': char_scores,
+        'is_admin': is_admin(request.user),
+    }
+    return render(request, 'items/gearscore_leaderboard.html', context)
 
 @login_required
 def activity_leaderboard(request):
@@ -779,6 +882,34 @@ def reset_password_admin(request, user_pk):
             messages.success(request, f"Password reset successfully for {target_user.username}")
     
     return redirect('character-management')
+
+@login_required
+def toggle_admin(request, user_pk):
+    """Admin only: Toggle is_staff status for a user (make/remove admin)"""
+    if not is_admin(request.user):
+        return HttpResponseForbidden("Only administrators can change admin status.")
+    
+    target_user = get_object_or_404(User, pk=user_pk)
+    
+    # Prevent demoting yourself
+    if target_user == request.user:
+        messages.error(request, "You cannot change your own admin status.")
+        return redirect('character-management')
+    
+    # Prevent demoting superusers (only superuser can demote another admin)
+    if target_user.is_staff and not request.user.is_superuser:
+        messages.error(request, "Only superusers can remove admin status from other admins.")
+        return redirect('character-management')
+    
+    # Toggle is_staff
+    target_user.is_staff = not target_user.is_staff
+    target_user.save()
+    
+    action = "promoted to Admin" if target_user.is_staff else "demoted from Admin"
+    messages.success(request, f"{target_user.username} has been {action}.")
+    
+    return redirect('character-management')
+
 # ======================================================
 # DISCORD MANAGEMENT
 # ======================================================

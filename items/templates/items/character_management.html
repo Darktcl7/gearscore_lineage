@@ -186,6 +186,14 @@
                                 <i class="fas fa-wallet"></i>
                             </a>
 
+                            <!-- Toggle Admin Button -->
+                            <a href="#"
+                                style="color: {% if character.owner.is_staff %}#FFD700{% else %}#666{% endif %}; margin-right: 15px; text-decoration: none;"
+                                title="{% if character.owner.is_staff %}Remove Admin{% else %}Make Admin{% endif %}"
+                                onclick="showAdminConfirm('{{ character.owner.username }}', '{% url 'toggle-admin' character.owner.pk %}', {{ character.owner.is_staff|yesno:'true,false' }})">
+                                <i class="fas fa-shield-alt"></i>
+                            </a>
+
                             <a href="{% url 'delete-character' character.pk %}"
                                 style="color: #E74C3C; text-decoration: none;" title="Delete Character"><i
                                     class="fas fa-trash"></i></a>
@@ -404,7 +412,244 @@
             opacity: 1;
         }
     }
+    /* =========================================
+       TOAST NOTIFICATION
+       ========================================= */
+    .toast-container {
+        position: fixed;
+        top: 90px;
+        right: 20px;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .toast {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 22px;
+        border-radius: 10px;
+        color: #fff;
+        font-size: 0.92rem;
+        font-weight: 500;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+        backdrop-filter: blur(12px);
+        animation: toastSlideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        min-width: 280px;
+        max-width: 420px;
+        border-left: 4px solid;
+        cursor: pointer;
+        transition: transform 0.3s, opacity 0.3s;
+    }
+
+    .toast:hover {
+        transform: translateX(-5px);
+    }
+
+    .toast.toast-exit {
+        animation: toastSlideOut 0.4s cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards;
+    }
+
+    .toast-success {
+        background: linear-gradient(135deg, rgba(39, 174, 96, 0.95), rgba(30, 130, 76, 0.95));
+        border-left-color: #2ecc71;
+    }
+
+    .toast-error {
+        background: linear-gradient(135deg, rgba(192, 57, 43, 0.95), rgba(155, 35, 25, 0.95));
+        border-left-color: #e74c3c;
+    }
+
+    .toast-info {
+        background: linear-gradient(135deg, rgba(41, 128, 185, 0.95), rgba(30, 98, 145, 0.95));
+        border-left-color: #3498db;
+    }
+
+    .toast-icon {
+        font-size: 1.3rem;
+        flex-shrink: 0;
+    }
+
+    .toast-progress {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 3px;
+        background: rgba(255,255,255,0.4);
+        border-radius: 0 0 0 10px;
+        animation: toastProgress 4s linear forwards;
+    }
+
+    @keyframes toastSlideIn {
+        from { transform: translateX(120%); opacity: 0; }
+        to   { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes toastSlideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to   { transform: translateX(120%); opacity: 0; }
+    }
+
+    @keyframes toastProgress {
+        from { width: 100%; }
+        to   { width: 0%; }
+    }
+
+    /* =========================================
+       ADMIN CONFIRM MODAL
+       ========================================= */
+    .confirm-modal {
+        display: none;
+        position: fixed;
+        z-index: 99998;
+        left: 0; top: 0;
+        width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(6px);
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.25s ease;
+    }
+
+    .confirm-box {
+        background: linear-gradient(160deg, #1a1a1a 0%, #222 50%, #1a1a1a 100%);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        box-shadow: 0 0 60px rgba(255, 215, 0, 0.1), 0 20px 40px rgba(0, 0, 0, 0.5);
+        width: 100%;
+        max-width: 420px;
+        border-radius: 16px;
+        overflow: hidden;
+        animation: confirmPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes confirmPop {
+        from { transform: scale(0.8); opacity: 0; }
+        to   { transform: scale(1); opacity: 1; }
+    }
+
+    .confirm-icon-area {
+        display: flex;
+        justify-content: center;
+        padding: 30px 20px 15px;
+    }
+
+    .confirm-icon-circle {
+        width: 70px; height: 70px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        transition: all 0.3s;
+    }
+
+    .confirm-icon-circle.promote {
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.1));
+        border: 2px solid rgba(255, 215, 0, 0.4);
+        color: #FFD700;
+    }
+
+    .confirm-icon-circle.demote {
+        background: linear-gradient(135deg, rgba(231, 76, 60, 0.2), rgba(192, 57, 43, 0.1));
+        border: 2px solid rgba(231, 76, 60, 0.4);
+        color: #e74c3c;
+    }
+
+    .confirm-body {
+        padding: 10px 30px 20px;
+        text-align: center;
+    }
+
+    .confirm-body h3 {
+        color: #fff;
+        font-family: 'Cinzel', serif;
+        font-size: 1.2rem;
+        margin: 0 0 10px;
+    }
+
+    .confirm-body p {
+        color: #999;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    .confirm-body .username-highlight {
+        color: var(--gold-primary, #FFD700);
+        font-weight: bold;
+    }
+
+    .confirm-actions {
+        display: flex;
+        gap: 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .confirm-actions button {
+        flex: 1;
+        padding: 16px;
+        border: none;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.25s;
+        font-family: inherit;
+    }
+
+    .confirm-actions .btn-no {
+        background: rgba(255, 255, 255, 0.04);
+        color: #888;
+    }
+
+    .confirm-actions .btn-no:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #ccc;
+    }
+
+    .confirm-actions .btn-yes-promote {
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 165, 0, 0.1));
+        color: #FFD700;
+        border-left: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .confirm-actions .btn-yes-promote:hover {
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 165, 0, 0.2));
+    }
+
+    .confirm-actions .btn-yes-demote {
+        background: linear-gradient(135deg, rgba(231, 76, 60, 0.15), rgba(192, 57, 43, 0.1));
+        color: #e74c3c;
+        border-left: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .confirm-actions .btn-yes-demote:hover {
+        background: linear-gradient(135deg, rgba(231, 76, 60, 0.3), rgba(192, 57, 43, 0.2));
+    }
 </style>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Admin Confirm Modal -->
+<div class="confirm-modal" id="adminConfirmModal">
+    <div class="confirm-box">
+        <div class="confirm-icon-area">
+            <div class="confirm-icon-circle" id="confirmIconCircle">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+        </div>
+        <div class="confirm-body">
+            <h3 id="confirmTitle">Confirm Action</h3>
+            <p id="confirmMessage">Are you sure?</p>
+        </div>
+        <div class="confirm-actions">
+            <button class="btn-no" onclick="closeAdminConfirm()">Cancel</button>
+            <button class="btn-yes-promote" id="confirmYesBtn" onclick="executeAdminToggle()">Confirm</button>
+        </div>
+    </div>
+</div>
 
 <!-- Hidden Form to submit -->
 <form id="reset-password-form" method="post" style="display: none;">
@@ -413,14 +658,100 @@
 </form>
 
 <script>
+    // =========================================
+    // TOAST NOTIFICATION SYSTEM
+    // =========================================
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+
+        const icons = {
+            success: 'fas fa-check-circle',
+            error: 'fas fa-exclamation-circle',
+            info: 'fas fa-info-circle'
+        };
+
+        toast.innerHTML = `
+            <span class="toast-icon"><i class="${icons[type] || icons.info}"></i></span>
+            <span>${message}</span>
+            <div class="toast-progress"></div>
+        `;
+
+        toast.onclick = () => dismissToast(toast);
+        container.appendChild(toast);
+
+        // Auto dismiss after 4 seconds
+        setTimeout(() => dismissToast(toast), 4000);
+    }
+
+    function dismissToast(toast) {
+        if (toast.classList.contains('toast-exit')) return;
+        toast.classList.add('toast-exit');
+        setTimeout(() => toast.remove(), 400);
+    }
+
+    // Show Django messages as toasts on page load
+    {% if messages %}
+    document.addEventListener('DOMContentLoaded', function() {
+        {% for message in messages %}
+        showToast("{{ message|escapejs }}", "{{ message.tags|default:'info' }}");
+        {% endfor %}
+    });
+    {% endif %}
+
+    // =========================================
+    // ADMIN CONFIRM MODAL
+    // =========================================
+    let adminToggleUrl = null;
+
+    function showAdminConfirm(username, url, isCurrentlyAdmin) {
+        adminToggleUrl = url;
+
+        const circle = document.getElementById('confirmIconCircle');
+        const title = document.getElementById('confirmTitle');
+        const msg = document.getElementById('confirmMessage');
+        const yesBtn = document.getElementById('confirmYesBtn');
+
+        if (isCurrentlyAdmin) {
+            circle.className = 'confirm-icon-circle demote';
+            title.textContent = 'Remove Admin';
+            msg.innerHTML = `Remove admin privileges from <span class="username-highlight">${username}</span>?<br><small style="color:#666">This user will lose access to management features.</small>`;
+            yesBtn.className = 'btn-yes-demote';
+            yesBtn.textContent = 'Remove Admin';
+        } else {
+            circle.className = 'confirm-icon-circle promote';
+            title.textContent = 'Promote to Admin';
+            msg.innerHTML = `Grant admin privileges to <span class="username-highlight">${username}</span>?<br><small style="color:#666">This user will gain access to all management features.</small>`;
+            yesBtn.className = 'btn-yes-promote';
+            yesBtn.textContent = 'Make Admin';
+        }
+
+        document.getElementById('adminConfirmModal').style.display = 'flex';
+    }
+
+    function closeAdminConfirm() {
+        document.getElementById('adminConfirmModal').style.display = 'none';
+        adminToggleUrl = null;
+    }
+
+    function executeAdminToggle() {
+        if (adminToggleUrl) {
+            window.location.href = adminToggleUrl;
+        }
+    }
+
+    // =========================================
+    // PASSWORD RESET MODAL
+    // =========================================
     let currentUserId = null;
 
     function resetPassword(userId, username) {
         currentUserId = userId;
         document.getElementById('modalUsername').innerText = username;
         document.getElementById('passwordModal').style.display = 'flex';
-        document.getElementById('newPasswordInput').value = ''; // Clear input
-        document.getElementById('newPasswordInput').focus(); // Auto focus
+        document.getElementById('newPasswordInput').value = '';
+        document.getElementById('newPasswordInput').focus();
     }
 
     function closeModal() {
@@ -431,7 +762,7 @@
         const newPass = document.getElementById('newPasswordInput').value;
 
         if (newPass.length < 4) {
-            alert("Password is too short! Minimum 4 characters.");
+            showToast('Password is too short! Minimum 4 characters.', 'error');
             return;
         }
 
@@ -443,18 +774,24 @@
         form.submit();
     }
 
-    // Close modal if clicking outside
+    // Close modals if clicking backdrop
     window.onclick = function (event) {
-        const modal = document.getElementById('passwordModal');
-        if (event.target == modal) {
-            closeModal();
-        }
+        const pwModal = document.getElementById('passwordModal');
+        const adminModal = document.getElementById('adminConfirmModal');
+        if (event.target == pwModal) closeModal();
+        if (event.target == adminModal) closeAdminConfirm();
     }
 
-    // Submit on Enter key
+    // Submit password on Enter key
     document.getElementById('newPasswordInput').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            submitPasswordReset();
+        if (e.key === 'Enter') submitPasswordReset();
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeModal();
+            closeAdminConfirm();
         }
     });
 </script>

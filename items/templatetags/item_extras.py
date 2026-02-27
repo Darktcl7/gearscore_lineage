@@ -24,7 +24,7 @@ def is_skill_field(field_name):
 @register.filter
 def is_weapon_field(field_name):
     """Check if a field is the weapon field, weapon enchant, or pvp belt fields."""
-    return field_name in ('weapon', 'weapon_enchant', 'pvp_belt', 'pvp_belt_enchant', 'pvp_ring_left', 'pvp_ring_left_enchant', 'pvp_ring_right', 'pvp_ring_right_enchant', 'pvp_necklace', 'pvp_necklace_enchant', 'pvp_sigil', 'pvp_sigil_enchant', 'pvp_helmet', 'pvp_helmet_enchant', 'pvp_gloves', 'pvp_gloves_enchant', 'pvp_boots', 'pvp_boots_enchant', 'pvp_gaiters', 'pvp_gaiters_enchant', 'pvp_top_armor', 'pvp_top_armor_enchant', 'pvp_cloak', 'pvp_cloak_enchant')
+    return field_name in ('weapon', 'weapon_enchant', 'pvp_belt', 'pvp_belt_enchant', 'pvp_ring_left', 'pvp_ring_left_enchant', 'pvp_ring_right', 'pvp_ring_right_enchant', 'pvp_necklace', 'pvp_necklace_enchant', 'pvp_sigil', 'pvp_sigil_enchant', 'pvp_helmet', 'pvp_helmet_enchant', 'pvp_gloves', 'pvp_gloves_enchant', 'pvp_boots', 'pvp_boots_enchant', 'pvp_gaiters', 'pvp_gaiters_enchant', 'pvp_top_armor', 'pvp_top_armor_enchant', 'pvp_cloak', 'pvp_cloak_enchant', 'pvp_tshirt', 'pvp_tshirt_enchant')
 
 
 
@@ -54,9 +54,14 @@ def is_gearscore_field(field_name):
         'stat_dmg', 'stat_acc', 'stat_def', 'stat_resist', 'stat_reduc',
         'stat_skill_dmg_boost', 'stat_wpn_dmg_boost', 'soulshot_level',
         'valor_level', 'stat_guardian', 'stat_conquer', 'epic_classes_count',
-        'epic_agathions_count', 'total_legend_codex'
+        'epic_agathions_count', 'total_legend_codex', 'total_epic_mount'
     ]
     return field_name in gearscore_fields
+
+@register.filter
+def is_expertise_field(field_name):
+    """Check if a field belongs to Expertise section."""
+    return str(field_name).startswith('exp_')
 
 @register.filter
 def get_image_for_choice(label):
@@ -64,6 +69,14 @@ def get_image_for_choice(label):
     label_str = str(label).strip()
     
     mapping = {
+        # ============================================
+        # MYTHIC CLASSES
+        # ============================================
+        "No mythic class": "х3.png",
+        "Elcadia": "Icon_Classcard_Elcadia.png",
+        "Elhwynha": "Icon_Classcard_Elhwynha.png",
+        "Raoul": "Icon_Classcard_Raoul.png",
+
         # ============================================
         # LEGENDARY CLASSES
         # ============================================
@@ -75,6 +88,11 @@ def get_image_for_choice(label):
         "Solina": "Icon_Classcard_Solina.png",
         "Regina": "Icon_Classcard_Regina.png",
         "Daphne": "Icon_Classcard_Daphne.png",
+        "Amadeo Cadmus": "Icon_Classcard_AmadeoCadmus.png",
+        "Bartz": "Icon_Classcard_Bartz.png",
+        "Etis Von Etina": "Icon_Classcard_EtisVonEtina.jpg",
+        "Frintezza": "Icon_Classcard_Frintezza.jpg",
+        "Kranvel": "Icon_Classcard_Kranvel.jpg",
         "No legendary class": "х3.png",
 
         # ============================================
@@ -87,6 +105,16 @@ def get_image_for_choice(label):
         "Anakim": "Icon_Agathion_Anakim.png",
         "Lilith": "Icon_Agathion_Lilith.png",
         "Timiniel": "Icon_Agathion_Timiniel.png",
+        "Abyssal Death Knight": "Icon_Agathion_AbyssalDeathKnight.png",
+        "Akamanah": "Icon_Agathion_Akamanah.png",
+        
+        # ============================================
+        # LEGENDARY MOUNTS
+        # ============================================
+        "No legendary mount": "х3.png",
+        "Cerberus": "Icon_Mount_Cerberus.png",
+        "Freyja": "Icon_Mount_Freyja.png",
+        "Lucis": "Icon_Mount_Lucis.png",
         
         # ============================================
         # INHERITOR BOOKS
@@ -114,198 +142,148 @@ def get_image_for_choice(label):
         # ============================================
         # PVP HELMETS
         # ============================================
-        "Blue Wolf Helmet +6+": "Icon_AR_Helmet_G4_003.png",
-        "Other blue or lower": "вопрос_PiWb3ob.png",
-        "Majestic Circlet +5 and lower": "Icon_AR_Helmet_G3_001.png",
-        "Majestic Circlet +6+": "Icon_AR_Helmet_G3_001_12BgilV.png",
-        "Helm of Nightmares +5 and lower": "Icon_AR_Helmet_G3_003.png",
-        "Helm of Nightmares +6+": "Icon_AR_Helmet_G3_003_Da4OSr5.png",
-        "Dark Crystal Helmet +5 and lower": "Icon_AR_Helmet_G3_002.png",
-        "Dark Crystal Helmet +6+": "Icon_AR_Helmet_G3_002_qiXAwPl.png",
-        "Medusa's Helm +5 and lower": "Icon_AR_Helmet_G3_004.png",
-        "Medusa's Helm +6+": "Icon_AR_Helmet_G3_004_x6k8OQn.png",
-        "Paulina's Helmet +7 and lower": "Icon_AR_Helmet_G3_005.png",
-        "Paulina's Helmet +8+": "Icon_AR_Helmet_G3_005_8Gob2sb.png",
-        "Nevit's Helmet +7 and lower": "Icon_AR_Helmet_G3_006.png",
-        "Nevit's Helmet +8+": "Icon_AR_Helmet_G3_006_psXukqD.png",
-        "Tersi's Circlet +7 and lower": "Icon_AR_Helmet_G3_007.png",
-        "Tersi's Circlet +8+": "Icon_AR_Helmet_G3_007_E2ONqpB.png",
-        "Ancient Elven Helm +5 and lower": "Icon_AR_Helmet_G3_009.png",
-        "Ancient Elven Helm +6+": "Icon_AR_Helmet_G3_009_8QSGd23.png",
-        "Imperial Crusader Helmet": "Icon_AR_Helmet_G2_003.png",
-        "Major Arcana Circlet": "Icon_AR_Helmet_G2_002.png",
-        "Draconic Helmet": "Icon_AR_Helmet_G2_001.png",
+        "Ancient Elven Helmet": "armor_helmet_Ancient_Elven_Helmet.png",
+        "Crown of the World Tree": "armor_helmet_Crown_of_the_World_Tree.png",
+        "Dark Crystal Helmet": "armor_helmet_Dark_Crystal_Helmet.png",
+        "Devil's Helmet": "armor_helmet_Devil's_Helmet.png",
+        "Draconic Leather Helmet": "armor_helmet_Draconic_Leather_Helmet.png",
+        "Helmet of the Fallen Angel": "armor_helmet_Helmet_of_the_Fallen_Angel.png",
+        "Hildegrim": "armor_helmet_Hildegrim.png",
+        "Imperial Crusader Helmet": "armor_helmet_Imperial_Crusader_Helmet.png",
+        "Majestic Circlet": "armor_helmet_Majestic_Circlet.png",
+        "Major Arcana Circlet": "armor_helmet_Major_Arcana_Circlet.png",
+        "Medusa's Helmet": "armor_helmet_Medusa's_Helmet.png",
+        "Nebit's Helmet": "armor_helmet_Nebit's_Helmet.png",
+        "Nightmare Helmet": "armor_helmet_Nightmare_Helmet.png",
+        "Pauline's Helmet": "armor_helmet_Pauline's_Helmet.png",
+        "Tersi's Circlet": "armor_helmet_Tersi's_Circlet.png",
         
         # ============================================
         # PVP GLOVES
         # ============================================
-        "Blue Wolf Gloves +6+": "Icon_AR_Gloves_G4_006.png",
-        "Majestic Gloves +5 and lower": "Icon_AR_Gloves_G3_001.png",
-        "Majestic Gloves +6+": "Icon_AR_Gloves_G3_001_QaM3cf3.png",
-        "Gauntlets of Nightmare +5 and lower": "Icon_AR_Gloves_G3_002.png",
-        "Gauntlets of Nightmare +6+": "Icon_AR_Gloves_G3_002_a6HUtJf.png",
-        "Dark Crystal Gloves +5 and lower": "Icon_AR_Gloves_G3_003.png",
-        "Dark Crystal Gloves +6+": "Icon_AR_Gloves_G3_003_0lMiEvB.png",
-        "Tersi's Gloves +7 and lower": "Icon_AR_Gloves_G3_004.png",
-        "Tersi's Gloves +8+": "Icon_AR_Gloves_G3_004_pf1nYus.png",
-        "Paulina's Gauntlets +7 and lower": "Icon_AR_Gloves_G3_005.png",
-        "Paulina's Gauntlets +8+": "Icon_AR_Gloves_G3_005_LlGO3gz.png",
-        "Nevit's Gloves +7 and lower": "Icon_AR_Gloves_G3_006.png",
-        "Nevit's Gloves +8+": "Icon_AR_Gloves_G3_006_gN9Tvux.png",
-        "Jarngreipr +5 and lower": "Icon_AR_Gloves_G3_007.png",
-        "Jarngreipr +6+": "Icon_AR_Gloves_G3_007_3CSZCRG.png",
-        "Vision Guardian +7 and lower": "Icon_AR_Gloves_G3_008.png",
-        "Vision Guardian +8+": "Icon_AR_Gloves_G3_008_xqIeU8n.png",
-        "Gloves of Blessing +5 and lower": "Icon_AR_Gloves_G3_009.png",
-        "Gloves of Blessing +6+": "Icon_AR_Gloves_G3_009_RGaCLCh.png",
-        "Forgotten Hero Gloves +7 and lower": "Icon_AR_Gloves_G3_010.png",
-        "Forgotten Hero Gloves +8+": "Icon_AR_Gloves_G3_010_LhjNydA.png",
-        "Demon's Gauntlets +5 and lower": "Icon_AR_Gloves_G3_011.png",
-        "Demon's Gauntlets +6+": "Icon_AR_Gloves_G3_011_Z5XcE6l.png",
-        "Ancient Elven Gauntlet +5 and lower": "Icon_AR_Gloves_G3_012.png",
-        "Ancient Elven Gauntlet +6+": "Icon_AR_Gloves_G3_012_RMJdCVy.png",
-        "Draconic Leather Gloves": "Icon_AR_Gloves_G2_001.png",
-        "Pa'agrio's Flames": "Icon_AR_Gloves_G2_002.png",
+        "Ancient Elven Gauntlets": "armor_gloves_Ancient_Elven_Gauntlets.png",
+        "Dark Crystal Globe": "armor_gloves_Dark_Crystal_Globe.png",
+        "Devil's Gauntlet": "armor_gloves_Devil's_Gauntlet.png",
+        "Draconic Leather Gloves": "armor_gloves_Draconic_Leather_Gloves.png",
+        "Fallen Angel's Gloves": "armor_gloves_Fallen_Angel's_Gloves.png",
+        "Globe of the Forgotten Hero": "armor_gloves_Globe_of_the_Forgotten_Hero.png",
+        "Gloves of Blessing": "armor_gloves_Gloves_of_Blessing.png",
+        "Guardian of Vision": "armor_gloves_Guardian_of_Vision.png",
+        "Jarngreifr": "armor_gloves_Jarngreifr.png",
+        "Majestic Gloves": "armor_gloves_Majestic_Gloves.png",
+        "Nebit's Globe": "armor_gloves_Nebit's_Globe.png",
+        "Nightmare Gauntlet": "armor_gloves_Nightmare_Gauntlet.png",
+        "Paagrio's Flame": "armor_gloves_Paagrio's_Flame.png",
+        "Pauline's Gauntlet": "armor_gloves_Pauline's_Gauntlet.png",
+        "Tersi's Gloves": "armor_gloves_Tersi's_Gloves.png",
         
         # ============================================
         # PVP BOOTS
         # ============================================
-        "Blue Wolf Boots +6+": "Icon_AR_Boots_G4_006.png",
-        "Majestic Boots +5 or lower": "Icon_AR_Boots_G3_001.png",
-        "Majestic Boots +6+": "Icon_AR_Boots_G3_001_yojHyx3.png",
-        "Boots of Nightmares +5 or lower": "Icon_AR_Boots_G3_002.png",
-        "Boots of Nightmares +6+": "Icon_AR_Boots_G3_002_bJTsB6w.png",
-        "Dark Crystal Boots +5 or lower": "Icon_AR_Boots_G3_003.png",
-        "Dark Crystal Boots +6+": "Icon_AR_Boots_G3_003_9XLJ0Bl.png",
-        "Tersi's Boots +7 or lower": "Icon_AR_Boots_G3_004.png",
-        "Tersi's Boots +8+": "Icon_AR_Boots_G3_004_c4B8NWF.png",
-        "Paulina's Boots +7 or lower": "Icon_AR_Boots_G3_005.png",
-        "Paulina's Boots +8+": "Icon_AR_Boots_G3_005_Rl4fZQt.png",
-        "Nevit's Boots +7 or lower": "Icon_AR_Boots_G3_006.png",
-        "Nevit's Boots +8+": "Icon_AR_Boots_G3_006_qvxjIlC.png",
-        "Demon's Boots +5 or lower": "Icon_AR_Boots_G3_007.png",
-        "Demon's Boots +6+": "Icon_AR_Boots_G3_007_3z1VnBd.png",
-        "Kaliel's Boots +7 or lower": "Icon_AR_Boots_G3_008.png",
-        "Kaliel's Boots +8+": "Icon_AR_Boots_G3_008_qmLQJcb.png",
-        "Forgotten's Hero Boots +7 and lower": "Icon_AR_Boots_G3_009.png",
-        "Forgotten's Hero Boots +8+": "Icon_AR_Boots_G3_009_J5iS6W4.png",
-        "Ancient Elven Boots +5 and lower": "Icon_AR_Boots_G3_010.png",
-        "Ancient Elven Boots +6+": "Icon_AR_Boots_G3_010_NSejBgl.png",
-        "Draconic": "Icon_AR_Boots_G2_001.png",
-        "Sayha's Wind": "Icon_AR_Boots_G2_002.png",
+        "Ancient Elven Boots": "armor_shoes_Ancient_Elven_Boots.png",
+        "Boots of Eternal Life": "armor_shoes_Boots_of_Eternal_Life.png",
+        "Boots of the Forgotten Hero": "armor_shoes_Boots_of_the_Forgotten_Hero.png",
+        "Calie's Boots": "armor_shoes_Calie's_boots.png",
+        "Dark Crystal Boots": "armor_shoes_Dark_Crystal_Boots.png",
+        "Devil's Boots": "armor_shoes_Devil's_Boots.png",
+        "Draconic Leather Boots": "armor_shoes_Draconic_Leather_Boots.png",
+        "Fallen Angel's Boots": "armor_shoes_Fallen_Angel's_Boots.png",
+        "Majestic Boots": "armor_shoes_Majestic_Boots.png",
+        "Nebit's Boots": "armor_shoes_Nebit's_Boots.png",
+        "Nightmare Boots": "armor_shoes_Nightmare_Boots.png",
+        "Pauline's Boots": "armor_shoes_Pauline's_boots.png",
+        "Reaper's Boots": "armor_shoes_Reaper's_Boots.png",
+        "Saiha's Wind": "armor_shoes_Saiha's_Wind.png",
+        "Tersi's Boots": "armor_shoes_Tersi's_boots.png",
         
         # ============================================
         # PVP GAITERS (PANTS)
         # ============================================
-        "Blue Wolf Gaiters +6+": "Icon_AR_Pants_G4_003.png",
-        "Basila Skin +6+": "Icon_AR_Pants_G4_004.png",
-        "Blood Gaiters +5 and lower": "Icon_AR_Pants_G3_001.png",
-        "Blood Gaiters +6+": "Icon_AR_Pants_G3_001_mcaXulV.png",
-        "Gaiters of Light +5 and lower": "Icon_AR_Pants_G3_002.png",
-        "Gaiters of Light +6+": "Icon_AR_Pants_G3_002_zIKnuHJ.png",
-        "Gaiters of Ice +5 and lower": "Icon_AR_Pants_G3_003.png",
-        "Gaiters of Ice +6+": "Icon_AR_Pants_G3_003_yhjUAYi.png",
-        "Shilen's Breath +5 and lower": "Icon_AR_Pants_G3_004.png",
-        "Shilen's Breath +6+": "Icon_AR_Pants_G3_004_a8jdSeN.png",
-        "Crystal Gaiters +5 and lower": "Icon_AR_Pants_G3_005.png",
-        "Crystal Gaiters +6+": "Icon_AR_Pants_G3_005_Uo0dsov.png",
-        "Forgotten Hero's Gaiters +5 and lower": "Icon_AR_Pants_G3_006.png",
-        "Forgotten Hero's Gaiters +6+": "Icon_AR_Pants_G3_006_23eAWTU.png",
-        "Imperial Crusader Gaiters": "Icon_AR_Pants_G2_001.png",
+        "Basil's Shell": "armor_bottoms_Basil's_shell.png",
+        "Blood Greaves": "armor_bottoms_Blood_Greaves.png",
+        "Blue Wolf's Leggings": "armor_bottoms_Blue_Wolf's_Leggings.png",
+        "Breath of Silen": "armor_bottoms_Breath_of_Silen.png",
+        "Crystal Gaiters": "armor_bottoms_Crystal_gaiters.png",
+        "Devil's Pact": "armor_bottoms_Devil's_Pact.png",
+        "Fallen Angel's Legguards": "armor_bottoms_Fallen_Angel's_Legguards.png",
+        "Flame Greaves": "armor_bottoms_Flame_Greaves.png",
+        "Forgotten Hero's Greaves": "armor_bottoms_Forgotten_Hero's_Greaves.png",
+        "Full Plate Gaiters": "armor_bottoms_Full_plate_gaiters.png",
+        "Ice Leggings": "armor_bottoms_Ice_Leggings.png",
+        "Imperial Crusader Legguards": "armor_bottoms_Imperial_Crusader_Legguards.png",
+        "Light's Greaves": "armor_bottoms_Light's_Greaves.png",
+        "Patience Leggings": "armor_bottoms_Patience_Leggings.png",
+        "Spirit's Greaves": "armor_bottoms_Spirit's_Greaves.png",
         
         # ============================================
         # PVP ARMOR (TORSO)
         # ============================================
-        "Blue Wolf Breastplate +6+": "Icon_AR_Torso_G4_004.png",
-        "Majestic Robe +5 and lower": "Icon_AR_Torso_G3_001.png",
-        "Majestic Robe +6+": "Icon_AR_Torso_G3_001_sLOin8b.png",
-        "Armor of Nightmares +5 and lower": "Icon_AR_Torso_G3_002.png",
-        "Armor of Nightmares +6+": "Icon_AR_Torso_G3_002_xOGwcXB.png",
-        "Dark Crystal Breastplate +5 and lower": "Icon_AR_Torso_G3_003.png",
-        "Dark Crystal Breastplate +6+": "Icon_AR_Torso_G3_003_7Rqn8ca.png",
-        "Tersi's Robe +7 and lower": "Icon_AR_Torso_G3_004.png",
-        "Tersi's Robe +8+": "Icon_AR_Torso_G3_004_dsf80Kl.png",
-        "Paulina's Breastplate +7 and lower": "Icon_AR_Torso_G3_005.png",
-        "Paulina's Breastplate +8+": "Icon_AR_Torso_G3_005_Gp54AHt.png",
-        "Nevit's Armor +7 and lower": "Icon_AR_Torso_G3_006.png",
-        "Nevit's Armor +8+": "Icon_AR_Torso_G3_006_W0k8PmT.png",
-        "Savan's Robe +5 and lower": "Icon_AR_Torso_G3_007.png",
-        "Savan's Robe +6+": "Icon_AR_Torso_G3_007_8kkO6Yq.png",
-        "Absolute Tunic +5 and lower": "Icon_AR_Torso_G3_008.png",
-        "Absolute Tunic +6+": "Icon_AR_Torso_G3_008_s9rihDJ.png",
-        "Apella Plate Armor +5 and lower": "Icon_AR_Torso_G3_009.png",
-        "Apella Plate Armor +6+": "Icon_AR_Torso_G3_009_jZC8lV4.png",
-        "Forgotten Hero's Breastplate +7 and lower": "Icon_AR_Torso_G3_010.png",
-        "Forgotten Hero's Breastplate +8+": "Icon_AR_Torso_G3_010_9ECFQbt.png",
-        "Ancient Elven Armor +5 and lower": "Icon_AR_Torso_G3_011.png",
-        "Ancient Elven Armor +6+": "Icon_AR_Torso_G3_011_tjIhiVB.png",
-        "Demon's Armor +5 and lower": "Icon_AR_Torso_G3_012.png",
-        "Demon's Armor +6+": "Icon_AR_Torso_G3_012_T1bL2wA.png",
-        "Draconic Leather Armor": "Icon_AR_Torso_G2_001.png",
-        "Major Arcana Robe": "Icon_AR_Torso_G2_002.png",
-        "Imperial Crusader Breastplate": "Icon_AR_Torso_G2_003.png",
+        "Absolute Tunic": "armor_armor_Absolute_Tunic.png",
+        "Apella's Armor": "armor_armor_Apella's_Armor.png",
+        "Breastplate of the Fallen Angel": "armor_armor_Breastplate_of_the_Fallen_Angel.png",
+        "Breastplate of the Forgotten Hero": "armor_armor_Breastplate_of_the_Forgotten_Hero.png",
+        "Dark Crystal Breastplate": "armor_armor_Dark_Crystal_Breastplate.png",
+        "Devil's Armor": "armor_armor_Devil's_Armor.png",
+        "Draconic Leather Armor": "armor_armor_Draconic_Leather_Armor.png",
+        "Imperial Crusader Breastplate": "armor_armor_Imperial_Crusader_Breastplate.png",
+        "Majestic Robe": "armor_armor_Majestic_Robe.png",
+        "Major Arcana Robe": "armor_armor_Major_Arcana_Robe.png",
+        "Nebit's Armor": "armor_armor_Nebit's_Armor.png",
+        "Nightmare Armor": "armor_armor_Nightmare_Armor.png",
+        "Polyne's Breastplate": "armor_armor_Polyne's_Breastplate.png",
+        "Saban's Robe": "armor_armor_Saban's_Robe.png",
+        "Tersi's Robe": "armor_armor_Tersi's_Robe.png",
         
         # ============================================
         # PVP CLOAK (CAPE)
         # ============================================
-        "Silver Cloak +7+": "Icon_AR_Cape_G5_003.png",
-        "Cranigg's Cloak +6+": "Icon_AR_Cape_G4_006.png",
-        "Other blue or green cloak": "вопрос_PiWb3ob.png",
-        "Dragon's Scale +5 or lower": "Icon_AR_Cape_G3_001.png",
-        "Dragon's Scale +6+": "Icon_AR_Cape_G3_001_SFLdNyU.png",
-        "Zaken's Cloak +5 or lower": "Icon_AR_Cape_G3_002.png",
-        "Zaken's Cloak +6+": "Icon_AR_Cape_G3_002_EWwkM2B.png",
-        "Cloak of Freya +5 or lower": "Icon_AR_Cape_G3_003.png",
-        "Cloak of Freya +6+": "Icon_AR_Cape_G3_003_TlWsloP.png",
-        "Queen Ant's Wing +5 or lower": "Icon_AR_Cape_G3_004.png",
-        "Queen Ant's Wing +6+": "Icon_AR_Cape_G3_004_skqdoKn.png",
-        "Cloak of Silence +5 or lower": "Icon_AR_Cape_G3_005.png",
-        "Cloak of Silence +6+": "Icon_AR_Cape_G3_005_vObJqD0.png",
-        "Eigis Cloak +5 or lower": "Icon_AR_Cape_G3_006.png",
-        "Eigis Cloak +6+": "Icon_AR_Cape_G3_006_Xgvr1WM.png",
-        "Cloak of Authority +5 or lower": "Icon_AR_Cape_G3_007.png",
-        "Cloak of Authority +6+": "Icon_AR_Cape_G3_007_KG43izQ.png",
-        "Selihoden's Wing +5 and lower": "Icon_AR_Cape_G3_008.png",
-        "Selihoden's Wing +6+": "Icon_AR_Cape_G3_008_x9bE1zn.png",
-        "Nevit's Cloak of Light": "Icon_AR_Cape_G2_001.png",
-        "Nailop's Cloak": "Icon_AR_Cape_G2_002.png",
+        "Aegis Cloak": "armor_cloak_Aegis_Cloak.png",
+        "Cloak of Power": "armor_cloak_Cloak_of_Power.png",
+        "Cloak of Silence": "armor_cloak_Cloak_of_Silence.png",
+        "Cloak of Verdant Green": "armor_cloak_Cloak_of_Verdant_Green.png",
+        "Cranbel's Cloak": "armor_cloak_Cranbel's_Cloak.png",
+        "Dragon's Scales": "armor_cloak_Dragon's_Scales.png",
+        "Freya's Cloak": "armor_cloak_Freya's_Cloak.png",
+        "Jaqen's Cloak": "armor_cloak_Jaqen's_Cloak.png",
+        "Mantle of the Holy Spirit": "armor_cloak_Mantle_of_the_Holy_Spirit.png",
+        "Moonlight's Cloak": "armor_cloak_Moonlight's_Cloak.png",
+        "Nebit's Cloak of Light": "armor_cloak_Nebit's_Cloak_of_Light.png",
+        "Niarop's Cloak": "armor_cloak_Niarop's_Cloak.png",
+        "Salamander's Cloak": "armor_cloak_Salamander's_Cloak.png",
+        "Sally Hoden's Wings": "armor_cloak_Sally_Hoden's_Wings.png",
+        "Queen Ant Wings": "armor_cloak_queen_ant_wings.png",
         
         # ============================================
         # PVP SIGIL
         # ============================================
-        "Dream Sigil +3-4": "Icon_AR_Sigil_G4_001.png",
-        "Dream Sigil +5+": "Icon_AR_Sigil_G4_001_b7RRbS3.png",
-        "Blue (other) and lower": "вопрос_PiWb3ob.png",
-        "Susceptor's Heart +0": "Icon_AR_Sigil_G3_001.png",
-        "Susceptor's Heart +1-3": "Icon_AR_Sigil_G3_001_ZdLf7Rk.png",
-        "Susceptor's Heart +4+": "Icon_AR_Sigil_G3_001_cjGV7fS.png",
-        "Paradia's Sigil +0": "Icon_AR_Sigil_G3_002.png",
-        "Paradia's Sigil +1-3": "Icon_AR_Sigil_G3_002_3svNdEv.png",
-        "Paradia's Sigil +4+": "Icon_AR_Sigil_G3_002_gm3pIHV.png",
-        "Cruma's Shell +0": "Icon_AR_Sigil_G3_003.png",
-        "Cruma's Shell +1-3": "Icon_AR_Sigil_G3_003_6G2vZML.png",
-        "Cruma's Shell +4+": "Icon_AR_Sigil_G3_003_p0QF4DL.png",
-        "Sigil of Flames +0": "Icon_AR_Sigil_G3_004.png",
-        "Sigil of Flames +1-3": "Icon_AR_Sigil_G3_004_8shuYnY.png",
-        "Sigil of Flames +4+": "Icon_AR_Sigil_G3_004_s6eH0wI.png",
-        "Jaeger's Sigil +0": "Icon_AR_Sigil_G3_005.png",
-        "Jaeger's Sigil +1-3": "Icon_AR_Sigil_G3_005_a4GBCoO.png",
-        "Jaeger's Sigil +4+": "Icon_AR_Sigil_G3_005_uO92b9h.png",
-        "Selihoden's Horn +0": "Icon_AR_Sigil_G3_006.png",
-        "Selihoden's Horn +1-3": "Icon_AR_Sigil_G3_006_EsorO1X.png",
-        "Selihoden's Horn +4+": "Icon_AR_Sigil_G3_006_pXmzZJX.png",
-        "Tear of Darkness": "Icon_AR_Sigil_G2_001.png",
-        "Draconic Sigil": "Icon_AR_Sigil_G2_002.png",
-        "Arcana Sigil": "Icon_AR_Sigil_G2_003.png",
-        # Base sigil names (new format)
-        "Dream Sigil": "Icon_AR_Sigil_G4_001.png",
-        "Blue": "вопрос_PiWb3ob.png",
-        "Susceptor's Heart": "Icon_AR_Sigil_G3_001.png",
-        "Paradia's Sigil": "Icon_AR_Sigil_G3_002.png",
-        "Cruma's Shell": "Icon_AR_Sigil_G3_003.png",
-        "Sigil of Flames": "Icon_AR_Sigil_G3_004.png",
-        "Jaeger's Sigil": "Icon_AR_Sigil_G3_005.png",
-        "Selihoden's Horn": "Icon_AR_Sigil_G3_006.png",
+        "Arcana Sigil": "armor_sigil_Arcana_Sigil.png",
+        "Blood Crystal": "armor_sigil_Blood_Crystal.png",
+        "Cruma's Shell": "armor_sigil_Cruma's_Shell.png",
+        "Crystal of Oblivion": "armor_sigil_Crystal_of_Oblivion.png",
+        "Draconic Sigil": "armor_sigil_Draconic_Sigil.png",
+        "Dream Sigil": "armor_sigil_Dream_Sigil.png",
+        "Eldarach": "armor_sigil_Eldarach.png",
+        "Holy Sigil": "armor_sigil_Holy_Sigil.png",
+        "Parody Sigil": "armor_sigil_Parody_Sigil.png",
+        "Sally Horden's Horn": "armor_sigil_Sally_Horden's_Horn.png",
+        "Sniper Sigil": "armor_sigil_Sniper_Sigil.png",
+        "Susceptor's Heart": "armor_sigil_Susceptor's_Heart.png",
+        "The Sigil of the Fallen Angel": "armor_sigil_The_Sigil_of_the_Fallen_Angel.png",
+        "The Sigil of Karma": "armor_sigil_The_sigil_of_karma.png",
+        "Tier of Darkness": "armor_sigil_Tier_of_Darkness.png",
+        
+        # ============================================
+        # T-SHIRT
+        # ============================================
+        "Agility's Anonymous Shirt": "armor_tshirt_Agility's_anonymous_shirt.png",
+        "Anonymous Shirt of Knowledge": "armor_tshirt_Anonymous_Shirt_of_Knowledge.png",
+        "Anonymous Shirt of Strength": "armor_tshirt_Anonymous_shirt_of_strength.png",
+        "Focus Shirt": "armor_tshirt_Focus_Shirt.png",
+        "Mithril Shirt of Agility": "armor_tshirt_Mithril_Shirt_of_Agility.png",
+        "Mithril Shirt of Knowledge": "armor_tshirt_Mithril_Shirt_of_Knowledge.png",
+        "Mithril Shirt of Strength": "armor_tshirt_Mithril_Shirt_of_Strength.png",
+        "Vigilante Shirt": "armor_tshirt_Vigilante_Shirt.png",
+        "Warrior's T-shirt": "armor_tshirt_Warrior's_T-shirt.png",
         
         # ============================================
         # PVP NECKLACE
@@ -621,22 +599,24 @@ def get_field_image(field_label):
         "earth dragon's earring": "Icon_ACC_BMEarring_G0_002.png",
         "fire dragon's earring": "Icon_ACC_BMEarring_G0_001.png",
         "eva's seal": "Icon_ACC_Seal_G0_001.png",
+        "aster": "вопрос_PiWb3ob.png",
         
         # Inheritor Books
         "inheritor": "Icon_Item_Usable_SkillBook_04.png",
         "buku inheritor": "Icon_Item_Usable_SkillBook_04.png",
         
         # PvP Equipment Labels
-        "pvp helmet": "Icon_AR_Helmet_G3_001.png",
-        "pvp gloves": "Icon_AR_Gloves_G3_001.png",
-        "pvp boots": "Icon_AR_Boots_G3_001.png",
-        "pvp gaiters": "Icon_AR_Pants_G3_001.png",
-        "pvp top armor": "Icon_AR_Torso_G3_001.png",
-        "pvp cloak": "Icon_AR_Cape_G3_001.png",
-        "pvp sigil": "Icon_AR_Sigil_G3_001.png",
+        "pvp helmet": "armor_helmet_Majestic_Circlet.png",
+        "pvp gloves": "armor_gloves_Majestic_Gloves.png",
+        "pvp boots": "armor_shoes_Majestic_Boots.png",
+        "pvp gaiters": "armor_bottoms_Crystal_gaiters.png",
+        "pvp top armor": "armor_armor_Majestic_Robe.png",
+        "pvp cloak": "armor_cloak_Freya's_Cloak.png",
+        "pvp sigil": "armor_sigil_Dream_Sigil.png",
         "pvp necklace": "Icon_ACC_Necklace_G3_001.png",
         "pvp ring": "Icon_ACC_Ring_G3_001.png",
         "pvp belt": "Icon_ACC_Belt_G3_001.png",
+        "pvp t-shirt": "armor_tshirt_Focus_Shirt.png",
         "weapon": "Icon_WP_Spear_G3_001.png",
     }
     

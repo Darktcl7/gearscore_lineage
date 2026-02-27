@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -23,7 +24,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-_yo+3e#r6_j9c$p)84#t#oj!*qdr$1_n116_tgf-ocq(t&)xr0'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Set DEBUG=False in production via environment variable
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = ['148.230.97.130', '127.0.0.1', 'localhost']
 
@@ -49,6 +51,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Serve static files fast (install: pip install whitenoise)
+    'django.middleware.gzip.GZipMiddleware',  # Compress responses
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -94,6 +98,7 @@ DATABASES = {
         'PASSWORD': 'Rossoneri277',
         'HOST': 'localhost',
         'PORT': '5432',
+        'CONN_MAX_AGE': 600,  # Keep DB connections alive for 10 min (huge perf boost)
     }
 }
 
@@ -133,9 +138,13 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # Required for collectstatic in production
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+
+# WhiteNoise: compress + cache static files forever (cache-busted by hash)
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -150,3 +159,29 @@ LOGOUT_REDIRECT_URL = '/login/'
 # Media Files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# ============================================
+# PERFORMANCE OPTIMIZATION
+# ============================================
+
+# Cache: Use local memory cache (upgrade to Redis/Memcached for multi-process)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'gearscore-cache',
+        'TIMEOUT': 300,  # 5 minutes default
+    }
+}
+
+# Faster session storage using cached DB
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+
+# ============================================
+# SECURITY (for production deployment)
+# ============================================
+if not DEBUG:
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True

@@ -536,6 +536,21 @@
             </div>
         </div>
 
+        <!-- Mythic Classes Section -->
+        <div class="glass-card">
+            <h2><i class="fas fa-hat-wizard"></i> Mythic Classes</h2>
+            <div class="avatar-grid">
+                {% for mc in character.mythic_classes.all %}
+                <div class="avatar-card">
+                    <img src="{% static 'items/img/'|add:mc.icon_file %}" alt="{{ mc.name }}">
+                    <div class="avatar-name">{{ mc.name }}</div>
+                </div>
+                {% empty %}
+                <p>No mythic classes assigned.</p>
+                {% endfor %}
+            </div>
+        </div>
+
         <!-- Legendary Classes (Avatars) Section -->
         <div class="glass-card">
             <h2><i class="fas fa-dragon"></i> Legendary Classes</h2>
@@ -566,6 +581,21 @@
             </div>
         </div>
 
+        <!-- Legendary Mounts Section -->
+        <div class="glass-card">
+            <h2><i class="fas fa-horse"></i> Legendary Mounts</h2>
+            <div class="avatar-grid">
+                {% for mount in character.legendary_mounts.all %}
+                <div class="avatar-card">
+                    <img src="{% static 'items/img/'|add:mount.icon_file %}" alt="{{ mount.name }}">
+                    <div class="avatar-name">{{ mount.name }}</div>
+                </div>
+                {% empty %}
+                <p>No legendary mounts assigned.</p>
+                {% endfor %}
+            </div>
+        </div>
+
         <!-- Gear Score Section -->
         <div class="glass-card">
             <h2><i class="fas fa-chart-line"></i> Gear Score Analytics</h2>
@@ -574,7 +604,9 @@
                     <h3>Overall Gear Score</h3>
                     {% with character.calculate_gear_score_breakdown as breakdown %}
                     <div class="gs-value">{{ breakdown.total_score|floatformat:1 }}</div>
-                    <div class="gs-rank">Place in the ranking: {{ rank }}</div>
+                    <a href="{% url 'gearscore-leaderboard' %}" class="gs-rank" style="text-decoration: none; cursor: pointer;">
+                        Place in the ranking: {{ rank }}
+                    </a>
                 </div>
                 <div class="gs-breakdown">
                     <div class="gs-component">
@@ -597,32 +629,60 @@
         <!-- Other Attributes Section -->
         <div class="glass-card">
             <h2><i class="fas fa-star"></i> Other Attributes</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px;">
+            <div style="display: flex; flex-wrap: wrap; gap: 0; ">
                 {% with character.attributes as attrs %}
-                <p><strong>Epic Classes:</strong> {{ attrs.epic_classes_count|default:"-" }}</p>
-                <p><strong>Epic Agathions:</strong> {{ attrs.epic_agathions_count|default:"-" }}</p>
-                <p><strong>Soulshot Level:</strong> {{ attrs.soulshot_level|default:"-" }}</p>
-                <p><strong>Valor Level:</strong> {{ attrs.valor_level|default:"-" }}</p>
-                <p><strong>Soul Attack:</strong> {{ attrs.get_soul_prog_attack_display|default:"-" }}</p>
-                <p><strong>Soul Defense:</strong> {{ attrs.get_soul_prog_defense_display|default:"-" }}</p>
-                <p><strong>Soul Blessing:</strong> {{ attrs.get_soul_prog_blessing_display|default:"-" }}</p>
-                <p><strong>Holy Bracelet:</strong> {{ attrs.get_enchant_bracelet_holy_prot_display|default:"-" }}</p>
-                <p><strong>Influence Bracelet:</strong> {{ attrs.get_enchant_bracelet_influence_display|default:"-" }}
-                </p>
-                <p><strong>Earth Earring:</strong> {{ attrs.get_enchant_earring_earth_display|default:"-" }}</p>
-                <p><strong>Fire Earring:</strong> {{ attrs.get_enchant_earring_fire_display|default:"-" }}</p>
-                <p><strong>Eva's Seal:</strong> {{ character.attributes.get_enchant_seal_eva_display|default:"-" }}</p>
+                <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Soul Attack:</strong> {{ attrs.get_soul_prog_attack_display|default:"-" }}</p>
+                <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Soul Defense:</strong> {{ attrs.get_soul_prog_defense_display|default:"-" }}</p>
+                <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Soul Blessing:</strong> {{ attrs.get_soul_prog_blessing_display|default:"-" }}</p>
+                <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Holy Bracelet:</strong> {{ attrs.get_enchant_bracelet_holy_prot_display|default:"-" }}</p>
+                <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Influence Bracelet:</strong> {{ attrs.get_enchant_bracelet_influence_display|default:"-" }}</p>
+                <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Earth Earring:</strong> {{ attrs.get_enchant_earring_earth_display|default:"-" }}</p>
+                <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Fire Earring:</strong> {{ attrs.get_enchant_earring_fire_display|default:"-" }}</p>
+                <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Eva's Seal:</strong> {{ attrs.get_enchant_seal_eva_display|default:"-" }}</p>
+                <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Aster (Erafone):</strong> {{ attrs.aster_erafone|default:"0" }} Node</p>
                 {% endwith %}
             </div>
-            <h3 style="margin-top: 25px; color: #ffffff;"><i class="fas fa-book" style="color: #ffd700;"></i>
+
+            <h3 style="margin-top: 18px; margin-bottom: 2px; color: #ffffff; font-size: 0.95rem;"><i class="fas fa-book" style="color: #ffd700;"></i>
                 Inheritor's Books</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; margin-top: 10px;">
+            <div style="display: flex; flex-wrap: wrap; gap: 0;">
                 {% for book in character.attributes.inheritor_books.all %}
-                <p style="margin: 0;">- {{ book.name }}</p>
+                <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;">- {{ book.name }}</p>
                 {% empty %}
-                <p>No books assigned.</p>
+                <p style="margin: 0; font-size: 0.9rem; color: #888;">No books assigned.</p>
                 {% endfor %}
             </div>
+
+            <h3 style="margin-top: 18px; margin-bottom: 2px; color: #ffffff; font-size: 0.95rem;"><i class="fas fa-trophy" style="color: #2196F3;"></i>
+                Weapon Expertise</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 0;">
+                {% with character.attributes as attrs %}
+                {% if attrs.exp_one_handed_sword %}<p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>One-Handed Sword:</strong> Rank {{ attrs.exp_one_handed_sword }}</p>{% endif %}
+                {% if attrs.exp_dual_wield %}<p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Dual-Wield:</strong> Rank {{ attrs.exp_dual_wield }}</p>{% endif %}
+                {% if attrs.exp_dagger %}<p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Dagger:</strong> Rank {{ attrs.exp_dagger }}</p>{% endif %}
+                {% if attrs.exp_bow %}<p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Bow:</strong> Rank {{ attrs.exp_bow }}</p>{% endif %}
+                {% if attrs.exp_staff %}<p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Staff:</strong> Rank {{ attrs.exp_staff }}</p>{% endif %}
+                {% if attrs.exp_greatsword %}<p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Greatsword:</strong> Rank {{ attrs.exp_greatsword }}</p>{% endif %}
+                {% if attrs.exp_crossbow %}<p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Crossbow:</strong> Rank {{ attrs.exp_crossbow }}</p>{% endif %}
+                {% if attrs.exp_chainsword %}<p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Chainsword:</strong> Rank {{ attrs.exp_chainsword }}</p>{% endif %}
+                {% if attrs.exp_rapier %}<p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Rapier:</strong> Rank {{ attrs.exp_rapier }}</p>{% endif %}
+                {% if attrs.exp_magic_cannon %}<p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Magic Cannon:</strong> Rank {{ attrs.exp_magic_cannon }}</p>{% endif %}
+                {% if attrs.exp_spear %}<p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Spear:</strong> Rank {{ attrs.exp_spear }}</p>{% endif %}
+                {% if attrs.exp_orb %}<p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Orb:</strong> Rank {{ attrs.exp_orb }}</p>{% endif %}
+                {% if attrs.exp_dual_axe %}<p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Dual Axe:</strong> Rank {{ attrs.exp_dual_axe }}</p>{% endif %}
+                {% if attrs.exp_soul_breaker %}<p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Soul Breaker:</strong> Rank {{ attrs.exp_soul_breaker }}</p>{% endif %}
+                {% endwith %}
+            </div>
+
+            {% if character.attributes.unlocked_skills %}
+            <h3 style="margin-top: 18px; margin-bottom: 2px; color: #ffffff; font-size: 0.95rem;"><i class="fas fa-book-open" style="color: #ffd700;"></i>
+                Skills Book</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 0;">
+                {% for skill in character.attributes.unlocked_skills %}
+                <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;">- {{ skill }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
         </div>
 
         <!-- PvP Equipment Section -->
@@ -642,7 +702,7 @@
                         <p class="item-name">PvP Helmet</p>
                         <p class="item-grade">
                             {{ attrs.pvp_helmet|default:"-" }}
-                            {% if attrs.pvp_helmet_enchant and attrs.pvp_helmet_enchant > 0 %}
+                            {% if attrs.pvp_helmet and attrs.pvp_helmet_enchant and attrs.pvp_helmet_enchant > 0 %}
                             <span style="color: #795548; font-weight: 700;"> +{{ attrs.pvp_helmet_enchant }}</span>
                             {% endif %}
                         </p>
@@ -659,7 +719,7 @@
                         <p class="item-name">PvP Gloves</p>
                         <p class="item-grade">
                             {{ attrs.pvp_gloves|default:"-" }}
-                            {% if attrs.pvp_gloves_enchant and attrs.pvp_gloves_enchant > 0 %}
+                            {% if attrs.pvp_gloves and attrs.pvp_gloves_enchant and attrs.pvp_gloves_enchant > 0 %}
                             <span style="color: #FF5722; font-weight: 700;"> +{{ attrs.pvp_gloves_enchant }}</span>
                             {% endif %}
                         </p>
@@ -676,7 +736,7 @@
                         <p class="item-name">PvP Boots</p>
                         <p class="item-grade">
                             {{ attrs.pvp_boots|default:"-" }}
-                            {% if attrs.pvp_boots_enchant and attrs.pvp_boots_enchant > 0 %}
+                            {% if attrs.pvp_boots and attrs.pvp_boots_enchant and attrs.pvp_boots_enchant > 0 %}
                             <span style="color: #8BC34A; font-weight: 700;"> +{{ attrs.pvp_boots_enchant }}</span>
                             {% endif %}
                         </p>
@@ -693,7 +753,7 @@
                         <p class="item-name">PvP Gaiters</p>
                         <p class="item-grade">
                             {{ attrs.pvp_gaiters|default:"-" }}
-                            {% if attrs.pvp_gaiters_enchant and attrs.pvp_gaiters_enchant > 0 %}
+                            {% if attrs.pvp_gaiters and attrs.pvp_gaiters_enchant and attrs.pvp_gaiters_enchant > 0 %}
                             <span style="color: #3F51B5; font-weight: 700;"> +{{ attrs.pvp_gaiters_enchant }}</span>
                             {% endif %}
                         </p>
@@ -710,7 +770,7 @@
                         <p class="item-name">PvP Top Armor</p>
                         <p class="item-grade">
                             {{ attrs.pvp_top_armor|default:"-" }}
-                            {% if attrs.pvp_top_armor_enchant and attrs.pvp_top_armor_enchant > 0 %}
+                            {% if attrs.pvp_top_armor and attrs.pvp_top_armor_enchant and attrs.pvp_top_armor_enchant > 0 %}
                             <span style="color: #9E9E9E; font-weight: 700;"> +{{ attrs.pvp_top_armor_enchant }}</span>
                             {% endif %}
                         </p>
@@ -727,7 +787,7 @@
                         <p class="item-name">PvP Cloak</p>
                         <p class="item-grade">
                             {{ attrs.pvp_cloak|default:"-" }}
-                            {% if attrs.pvp_cloak_enchant and attrs.pvp_cloak_enchant > 0 %}
+                            {% if attrs.pvp_cloak and attrs.pvp_cloak_enchant and attrs.pvp_cloak_enchant > 0 %}
                             <span style="color: #FFEB3B; font-weight: 700;"> +{{ attrs.pvp_cloak_enchant }}</span>
                             {% endif %}
                         </p>
@@ -744,8 +804,25 @@
                         <p class="item-name">PvP Sigil</p>
                         <p class="item-grade">
                             {{ attrs.pvp_sigil|default:"-" }}
-                            {% if attrs.pvp_sigil_enchant and attrs.pvp_sigil_enchant > 0 %}
+                            {% if attrs.pvp_sigil and attrs.pvp_sigil_enchant and attrs.pvp_sigil_enchant > 0 %}
                             <span style="color: #607D8B; font-weight: 700;"> +{{ attrs.pvp_sigil_enchant }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="equipment-card">
+                    <div class="item-icon">
+                        {% with attrs.pvp_tshirt|get_image_for_choice as img %}
+                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP T-Shirt"
+                            style="width:50px;height:50px;">{% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="item-details">
+                        <p class="item-name">PvP T-Shirt</p>
+                        <p class="item-grade">
+                            {{ attrs.pvp_tshirt|default:"-" }}
+                            {% if attrs.pvp_tshirt and attrs.pvp_tshirt_enchant and attrs.pvp_tshirt_enchant > 0 %}
+                            <span style="color: #4CAF50; font-weight: 700;"> +{{ attrs.pvp_tshirt_enchant }}</span>
                             {% endif %}
                         </p>
                     </div>

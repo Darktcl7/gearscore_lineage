@@ -1,0 +1,263 @@
+{% extends 'items/base.html' %}
+{% load static %}
+
+{% block title %}Gear Score Leaderboard{% endblock %}
+
+{% block extra_body_attributes %}class="fullscreen-page"{% endblock %}
+
+{% block extra_head %}
+<style>
+    html,
+    body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background: #0c0c0c;
+        font-family: 'Outfit', sans-serif;
+    }
+
+    .activity-container {
+        min-height: 80vh;
+        margin-bottom: 60px;
+        margin-top: 80px;
+        display: flex;
+        flex-direction: column;
+        background: rgba(18, 18, 18, 0.65);
+        border-radius: 20px;
+        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.8);
+        position: relative;
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        margin-left: 10px;
+        margin-right: 10px;
+        margin-bottom: 50px;
+        padding: 5px 0;
+    }
+
+    .activity-header {
+        padding: 15px 30px;
+        background: linear-gradient(135deg, rgba(58, 58, 58, 0.4), rgba(42, 42, 42, 0.4));
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+    }
+
+    .activity-header h1 {
+        margin: 0;
+        color: #ffffff;
+        font-size: 1.6rem;
+        font-weight: 700;
+        text-shadow: 0 0 20px rgba(197, 168, 0, 0.3);
+        letter-spacing: 0.5px;
+    }
+
+    .activity-content {
+        flex: 1;
+        display: flex;
+        gap: 20px;
+        padding: 20px 30px;
+    }
+
+    .leaderboard-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .glass-card {
+        background: linear-gradient(160deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+        border-radius: 12px;
+        padding: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    .glass-card h3 {
+        margin: 0 0 12px 0;
+        color: #DAA520;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-bottom: 1px solid rgba(218, 165, 32, 0.2);
+        padding-bottom: 8px;
+    }
+
+    .leaderboard-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 4px;
+    }
+
+    .leaderboard-table th {
+        padding: 6px 12px;
+        text-align: left;
+        color: #888;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        letter-spacing: 1px;
+    }
+
+    .leaderboard-table td {
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.02);
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        color: #ddd;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+
+    .leaderboard-table td:first-child {
+        border-left: 1px solid rgba(255, 255, 255, 0.05);
+        border-top-left-radius: 10px;
+        border-bottom-left-radius: 10px;
+    }
+
+    .leaderboard-table td:last-child {
+        border-right: 1px solid rgba(255, 255, 255, 0.05);
+        border-top-right-radius: 10px;
+        border-bottom-right-radius: 10px;
+    }
+
+    .leaderboard-table tr:hover td {
+        background: rgba(218, 165, 32, 0.05);
+        transform: scale(1.01);
+        border-color: rgba(218, 165, 32, 0.2);
+    }
+
+    .rank-badge {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        font-weight: 800;
+        font-size: 1rem;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .rank-1 {
+        background: linear-gradient(135deg, #FFD700, #FDB931);
+        color: #333;
+        border: 2px solid #FFF8DC;
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+        font-size: 1.2rem;
+    }
+
+    .rank-2 {
+        background: linear-gradient(135deg, #E0E0E0, #B0B0B0);
+        color: #333;
+        border: 2px solid #F5F5F5;
+        box-shadow: 0 0 15px rgba(192, 192, 192, 0.3);
+    }
+
+    .rank-3 {
+        background: linear-gradient(135deg, #CD7F32, #A0522D);
+        color: #FFF;
+        border: 2px solid #DEB887;
+        box-shadow: 0 0 15px rgba(205, 127, 50, 0.3);
+    }
+
+    .rank-other {
+        background: rgba(255, 255, 255, 0.05);
+        color: #888;
+        font-size: 0.9rem;
+    }
+
+    .score-cell {
+        font-family: 'Courier New', monospace;
+        font-weight: 700;
+        color: #fff;
+        font-size: 1.1rem;
+    }
+
+    .activity-content::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .activity-content::-webkit-scrollbar-thumb {
+        background: #555;
+        border-radius: 3px;
+    }
+
+    .activity-content::-webkit-scrollbar-track {
+        background: transparent;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="activity-container">
+    <div class="activity-header">
+        <h1><i class="fas fa-trophy" style="color: #FFD700;"></i> Gear Score Leaderboard</h1>
+    </div>
+
+    <div class="activity-content">
+        <!-- Main Leaderboard -->
+        <div class="leaderboard-section">
+            <div class="glass-card" style="flex: 1; display: flex; flex-direction: column;">
+                <h3><i class="fas fa-crown"></i> Overall Ranking</h3>
+
+                {% if leaderboard %}
+                <div style="flex: 1; overflow-y: auto;">
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px; text-align: center;">Rank</th>
+                                <th>Guardian</th>
+                                <th>Class</th>
+                                <th>Total Gear Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in leaderboard %}
+                            <tr>
+                                <td style="text-align: center;">
+                                    {% if item.rank == 1 %}
+                                    <div class="rank-badge rank-1">1</div>
+                                    {% elif item.rank == 2 %}
+                                    <div class="rank-badge rank-2">2</div>
+                                    {% elif item.rank == 3 %}
+                                    <div class="rank-badge rank-3">3</div>
+                                    {% else %}
+                                    <div class="rank-badge rank-other">{{ item.rank }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'character-profile' item.character.pk %}" style="text-decoration: none;">
+                                        <div style="font-weight: 600; color: #fff;">{{ item.character.name }}</div>
+                                        <div style="font-size: 0.8rem; color: #666;">
+                                            Level {{ item.character.level }}
+                                        </div>
+                                    </a>
+                                </td>
+                                <td>
+                                    <div style="color: #bbb;">{{ item.character.character_class|default:"None" }}</div>
+                                </td>
+                                <td class="score-cell">{{ item.score|floatformat:1 }} <span
+                                        style="font-size: 0.8rem; color: #888; font-weight: normal;">pts</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div style="text-align: center; padding: 50px;">
+                    <p style="color: #888;">Belum ada data gear score.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
