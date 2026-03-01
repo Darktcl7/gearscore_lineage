@@ -1,4 +1,4 @@
-from django.template.defaulttags import register
+﻿from django.template.defaulttags import register
 
 @register.filter
 def get_item(dictionary, key):
@@ -54,8 +54,10 @@ def is_gearscore_field(field_name):
         'stat_dmg', 'stat_acc', 'stat_def', 'stat_resist', 'stat_reduc',
         'stat_skill_dmg_boost', 'stat_wpn_dmg_boost', 'soulshot_level',
         'valor_level', 'stat_guardian', 'stat_conquer', 'epic_classes_count',
-        'epic_agathions_count', 'total_legend_codex', 'total_epic_mount'
+        'epic_agathions_count', 'total_legend_codex', 'total_epic_mount',
     ]
+    # Include all G fields (g1 to g38)
+    gearscore_fields += [f'g{i}' for i in range(1, 39)]
     return field_name in gearscore_fields
 
 @register.filter
@@ -68,54 +70,41 @@ def get_image_for_choice(label):
     """Returns the image filename for a given choice label."""
     label_str = str(label).strip()
     
+    # Dynamic lookup for legendary items from database
+    from items.models import LegendaryClass, LegendaryAgathion, LegendaryMount
+    
+    # Check legendary classes
+    try:
+        lc = LegendaryClass.objects.filter(name=label_str).first()
+        if lc and lc.icon_file:
+            return lc.icon_file
+    except Exception:
+        pass
+    
+    # Check legendary agathions
+    try:
+        la = LegendaryAgathion.objects.filter(name=label_str).first()
+        if la and la.icon_file:
+            return la.icon_file
+    except Exception:
+        pass
+    
+    # Check legendary mounts
+    try:
+        lm = LegendaryMount.objects.filter(name=label_str).first()
+        if lm and lm.icon_file:
+            return lm.icon_file
+    except Exception:
+        pass
+    
     mapping = {
         # ============================================
         # MYTHIC CLASSES
         # ============================================
-        "No mythic class": "х3.png",
         "Elcadia": "Icon_Classcard_Elcadia.png",
         "Elhwynha": "Icon_Classcard_Elhwynha.png",
         "Raoul": "Icon_Classcard_Raoul.png",
 
-        # ============================================
-        # LEGENDARY CLASSES
-        # ============================================
-        "Demon Slayer": "Zariche.png",
-        "Scryde": "Icon_Classcard_Scryde.png",
-        "Lionel Hunter": "Icon_Classcard_LionelHunter.png",
-        "Aria": "Icon_Classcard_Aria.png",
-        "Veora": "Icon_Classcard_Veora.png",
-        "Solina": "Icon_Classcard_Solina.png",
-        "Regina": "Icon_Classcard_Regina.png",
-        "Daphne": "Icon_Classcard_Daphne.png",
-        "Amadeo Cadmus": "Icon_Classcard_AmadeoCadmus.png",
-        "Bartz": "Icon_Classcard_Bartz.png",
-        "Etis Von Etina": "Icon_Classcard_EtisVonEtina.jpg",
-        "Frintezza": "Icon_Classcard_Frintezza.jpg",
-        "Kranvel": "Icon_Classcard_Kranvel.jpg",
-        "No legendary class": "х3.png",
-
-        # ============================================
-        # LEGENDARY AGATHIONS
-        # ============================================
-        "No legendary agathions": "х3.png",
-        "Zarich": "Icon_Agathion_Zariche.png",
-        "Orfen": "Icon_Agathion_Orfen.png",
-        "Baium": "Icon_Agathion_Baium.png",
-        "Anakim": "Icon_Agathion_Anakim.png",
-        "Lilith": "Icon_Agathion_Lilith.png",
-        "Timiniel": "Icon_Agathion_Timiniel.png",
-        "Abyssal Death Knight": "Icon_Agathion_AbyssalDeathKnight.png",
-        "Akamanah": "Icon_Agathion_Akamanah.png",
-        
-        # ============================================
-        # LEGENDARY MOUNTS
-        # ============================================
-        "No legendary mount": "х3.png",
-        "Cerberus": "Icon_Mount_Cerberus.png",
-        "Freyja": "Icon_Mount_Freyja.png",
-        "Lucis": "Icon_Mount_Lucis.png",
-        
         # ============================================
         # INHERITOR BOOKS
         # ============================================
@@ -288,57 +277,6 @@ def get_image_for_choice(label):
         # ============================================
         # PVP NECKLACE
         # ============================================
-        "Blue necklace +3-4": "Icon_ACC_Necklace_G4_007.png",
-        "Blue necklace +5+": "Icon_ACC_Necklace_G4_007_OUFSufM.png",
-        "Blue (other) and lower": "вопрос_PiWb3ob.png",
-        "Necklace of Immortality +0": "Icon_ACC_Necklace_G3_001.png",
-        "Necklace of Immortality +1-3": "Icon_ACC_Necklace_G3_001_lAVquC3.png",
-        "Necklace of Immortality +4+": "Icon_ACC_Necklace_G3_001_tZ9U10V.png",
-        "Lilith's Soul Necklace +0": "Icon_ACC_Necklace_G3_002.png",
-        "Lilith's Soul Necklace +1-3": "Icon_ACC_Necklace_G3_002_OS11uSl.png",
-        "Lilith's Soul Necklace +4+": "Icon_ACC_Necklace_G3_002_XWs1dCe.png",
-        "Anakeem's Soul Necklace +0": "Icon_ACC_Necklace_G3_002.png",
-        "Anakeem's Soul Necklace +1-3": "Icon_ACC_Necklace_G3_002_OS11uSl.png",
-        "Anakeem's Soul Necklace +4+": "Icon_ACC_Necklace_G3_002_XWs1dCe.png",
-        "Necklace of Valakas +0": "Icon_ACC_Necklace_G3_003.png",
-        "Necklace of Valakas +1-3": "Icon_ACC_Necklace_G3_003_REExzLz.png",
-        "Necklace of Valakas +4+": "Icon_ACC_Necklace_G3_003_wD01uUH.png",
-        "Valakas' Necklace +0": "Icon_ACC_Necklace_G3_003.png",
-        "Frintezza's Necklace +0": "Icon_ACC_Necklace_G3_004.png",
-        "Frintezza's Necklace +1-3": "Icon_ACC_Necklace_G3_004_FiVflic.png",
-        "Frintezza's Necklace +4+": "Icon_ACC_Necklace_G3_004_e28xJ1h.png",
-        "Necklace of Hrunting +0": "Icon_ACC_Necklace_G3_005.png",
-        "Necklace of Hrunting +1-3": "Icon_ACC_Necklace_G3_005_b99XXwc.png",
-        "Necklace of Hrunting +4+": "Icon_ACC_Necklace_G3_005_oiY0FLh.png",
-        "Antharas' Necklace +0": "Icon_ACC_Necklace_G3_006.png",
-        "Antharas' Necklace +1-3": "Icon_ACC_Necklace_G3_006_0S0wnA6.png",
-        "Antharas' Necklace +4+": "Icon_ACC_Necklace_G3_006_iaZMJWj.png",
-        "Antharas Necklace +0": "Icon_ACC_Necklace_G3_006.png",
-        "Blessed Antharas' Necklace +0": "Icon_ACC_Necklace_G3_007.png",
-        "Blessed Antharas' Necklace +1-3": "Icon_ACC_Necklace_G3_007_G5dCVLh.png",
-        "Blessed Antharas' Necklace +4+": "Icon_ACC_Necklace_G3_007_TA6r7zT.png",
-        "Baium's Necklace +0": "Icon_ACC_Necklace_G3_001.png",
-        "Baium's Necklace +1-3": "Icon_ACC_Necklace_G3_001_lAVquC3.png",
-        "Baium's Necklace +4+": "Icon_ACC_Necklace_G3_001_tZ9U10V.png",
-        "Zaken's Necklace +0": "Icon_ACC_Necklace_G3_004.png",
-        "Zaken's Necklace +1-3": "Icon_ACC_Necklace_G3_004_FiVflic.png",
-        "Zaken's Necklace +4+": "Icon_ACC_Necklace_G3_004_e28xJ1h.png",
-        "Orfen's Necklace +0": "Icon_ACC_Necklace_G2_002.png",
-        "Orfen's Necklace +1-3": "Icon_ACC_Necklace_G2_002.png",
-        "Orfen's Necklace +4+": "Icon_ACC_Necklace_G2_002.png",
-        "Majestic Necklace +0": "Icon_ACC_Necklace_G3_001.png",
-        "Majestic Necklace +1-3": "Icon_ACC_Necklace_G3_001_lAVquC3.png",
-        "Majestic Necklace +4+": "Icon_ACC_Necklace_G3_001_tZ9U10V.png",
-        "Apella Necklace +0": "Icon_ACC_Necklace_G3_001.png",
-        "Apella Necklace +1-3": "Icon_ACC_Necklace_G3_001_lAVquC3.png",
-        "Apella Necklace +4+": "Icon_ACC_Necklace_G3_001_tZ9U10V.png",
-        "Lindvior's Necklace +0": "Icon_ACC_Necklace_G3_006.png",
-        "Archmage Necklace +0": "Icon_ACC_Necklace_G3_001.png",
-        "Queen Ant's Souled Necklace": "Icon_ACC_Necklace_G2_001.png",
-        "Orfen's Necklace": "Icon_ACC_Necklace_G2_002.png",
-        "Core's Necklace": "Icon_ACC_Necklace_G2_003.png",
-        "Blessed Valakas' Necklace": "Icon_ACC_Necklace_G2_004.png",
-        # Base necklace names (new format)
         "Blue necklace": "Icon_ACC_Necklace_G4_007.png",
         "Necklace of Immortality": "Icon_ACC_Necklace_G3_001.png",
         "Lilith's Soul Necklace": "Icon_ACC_Necklace_G3_002.png",
@@ -356,64 +294,6 @@ def get_image_for_choice(label):
         # ============================================
         # PVP RINGS
         # ============================================
-        "Blue ring +3-4": "Icon_ACC_Ring_G4_010.png",
-        "Blue ring +5+": "Icon_ACC_Ring_G4_010_iKhk3KB.png",
-        "Ring of Blessing +3+": "Icon_ACC_Ring_G4_010.png",
-        "Other blue or lower": "вопрос_PiWb3ob.png",
-        "Ring of Baium +0": "Icon_ACC_Ring_G3_001.png",
-        "Ring of Baium +1-3": "Icon_ACC_Ring_G3_001_8kwlekG.png",
-        "Ring of Baium +4+": "Icon_ACC_Ring_G3_001_KZGqaKy.png",
-        "Baium's Ring +0": "Icon_ACC_Ring_G3_001.png",
-        "Baium's Ring +1-3": "Icon_ACC_Ring_G3_001_8kwlekG.png",
-        "Baium's Ring +4+": "Icon_ACC_Ring_G3_001_KZGqaKy.png",
-        "Antharas' Ring +0": "Icon_ACC_Ring_G3_002.png",
-        "Antharas' Ring +1-3": "Icon_ACC_Ring_G3_002_0NZX3nn.png",
-        "Antharas' Ring +4+": "Icon_ACC_Ring_G3_002_Lb8Ne6y.png",
-        "Frintezza's Ring +0": "Icon_ACC_Ring_G3_003.png",
-        "Frintezza's Ring +1-3": "Icon_ACC_Ring_G3_003_65NYCI3.png",
-        "Frintezza's Ring +4+": "Icon_ACC_Ring_G3_003_9N9N6dn.png",
-        "Queen Ant's Ring +0": "Icon_ACC_Ring_G3_004.png",
-        "Queen Ant's Ring +1-3": "Icon_ACC_Ring_G3_004_9WdXrdt.png",
-        "Queen Ant's Ring +4+": "Icon_ACC_Ring_G3_004_aOaKpsn.png",
-        "Ring of Core +0": "Icon_ACC_Ring_G3_005.png",
-        "Ring of Core +1-3": "Icon_ACC_Ring_G3_005_A63H9uZ.png",
-        "Ring of Core +4+": "Icon_ACC_Ring_G3_005_EmbEpH0.png",
-        "Core Ring +0": "Icon_ACC_Ring_G3_005.png",
-        "Core Ring +1-3": "Icon_ACC_Ring_G3_005_A63H9uZ.png",
-        "Core Ring +4+": "Icon_ACC_Ring_G3_005_EmbEpH0.png",
-        "Ring of Hrunting +0": "Icon_ACC_Ring_G3_006.png",
-        "Ring of Hrunting +1-3": "Icon_ACC_Ring_G3_006_AlrIaxF.png",
-        "Ring of Hrunting +4+": "Icon_ACC_Ring_G3_006_BeR09N3.png",
-        "Blessed Antharas' Ring +0": "Icon_ACC_Ring_G3_007.png",
-        "Blessed Antharas' Ring +1-3": "Icon_ACC_Ring_G3_007_Jt1mnj3.png",
-        "Blessed Antharas' Ring +4+": "Icon_ACC_Ring_G3_007_ckB2Fpj.png",
-        "Ring of Insolence +0": "Icon_ACC_Ring_G3_008.png",
-        "Ring of Insolence +1-3": "Icon_ACC_Ring_G3_008_1BUxW3v.png",
-        "Ring of Insolence +4+": "Icon_ACC_Ring_G3_008_VJyhEoe.png",
-        "Blessed Baium's Ring +0": "Icon_ACC_Ring_G3_009.png",
-        "Blessed Baium's Ring +1-3": "Icon_ACC_Ring_G3_009_4AN8uSW.png",
-        "Blessed Baium's Ring +4+": "Icon_ACC_Ring_G3_009_6xzYOmn.png",
-        "Lilith's Ring +0": "Icon_ACC_Ring_G3_003.png",
-        "Lilith's Ring +1-3": "Icon_ACC_Ring_G3_003_65NYCI3.png",
-        "Lilith's Ring +4+": "Icon_ACC_Ring_G3_003_9N9N6dn.png",
-        "Anakeem's Ring +0": "Icon_ACC_Ring_G3_003.png",
-        "Anakeem's Ring +1-3": "Icon_ACC_Ring_G3_003_65NYCI3.png",
-        "Anakeem's Ring +4+": "Icon_ACC_Ring_G3_003_9N9N6dn.png",
-        "Vereth's Ring +0": "Icon_ACC_Ring_G3_006.png",
-        "Vereth's Ring +1-3": "Icon_ACC_Ring_G3_006_AlrIaxF.png",
-        "Vereth's Ring +4+": "Icon_ACC_Ring_G3_006_BeR09N3.png",
-        "Ring of Passion +0": "Icon_ACC_Ring_G3_008.png",
-        "Ring of Passion +1-3": "Icon_ACC_Ring_G3_008_1BUxW3v.png",
-        "Ring of Passion +4+": "Icon_ACC_Ring_G3_008_VJyhEoe.png",
-        "Majestic Ring +0": "Icon_ACC_Ring_G3_001.png",
-        "Majestic Ring +1-3": "Icon_ACC_Ring_G3_001_8kwlekG.png",
-        "Majestic Ring +4+": "Icon_ACC_Ring_G3_001_KZGqaKy.png",
-        "Forgotten Hero's Ring +0": "Icon_ACC_Ring_G3_009.png",
-        "Forgotten Hero's Ring +1-3": "Icon_ACC_Ring_G3_009_4AN8uSW.png",
-        "Forgotten Hero's Ring +4+": "Icon_ACC_Ring_G3_009_6xzYOmn.png",
-        "Desperion's Ring": "Icon_ACC_Ring_G2_001.png",
-        "Ring of Orfen": "Icon_ACC_Ring_G2_001.png",
-        # Base ring names (new format without enchant)
         "Ring of Blessing": "Icon_ACC_Ring_G4_010.png",
         "Lilith's Ring": "Icon_ACC_Ring_G3_003.png",
         "Anakeem's Ring": "Icon_ACC_Ring_G3_003.png",
@@ -424,160 +304,18 @@ def get_image_for_choice(label):
         "Ring of Passion": "Icon_ACC_Ring_G3_008.png",
         "Majestic Ring": "Icon_ACC_Ring_G3_001.png",
         "Forgotten Hero's Ring": "Icon_ACC_Ring_G3_009.png",
+        "Desperion's Ring": "Icon_ACC_Ring_G2_001.png",
         
         # ============================================
         # PVP BELT
         # ============================================
-        "Blue +3-4": "Icon_ACC_Belt_G3_004.png",
-        "Blue +5+": "Icon_ACC_Belt_G3_004_7MqECuK.png",
-        "Blue belt +3-4": "Icon_ACC_Belt_G3_004.png",
-        "Blue belt +5+": "Icon_ACC_Belt_G3_004_7MqECuK.png",
-        "Anakim's Belt +0": "Icon_ACC_Belt_G3_001.png",
-        "Anakim's Belt +1-3": "Icon_ACC_Belt_G3_001_GxLx0Kg.png",
-        "Anakim's Belt +4+": "Icon_ACC_Belt_G3_001_mgLa9iS.png",
-        "Lilith's Belt +0": "Icon_ACC_Belt_G3_002.png",
-        "Lilith's Belt +1-3": "Icon_ACC_Belt_G3_002_KCbTg13.png",
-        "Lilith's Belt +4+": "Icon_ACC_Belt_G3_002_qCOwpYC.png",
-        "Ekimus' Belt +0": "Icon_ACC_Belt_G3_003.png",
-        "Ekimus' Belt +1-3": "Icon_ACC_Belt_G3_003_UHLGN0X.png",
-        "Ekimus' Belt +4+": "Icon_ACC_Belt_G3_003_yiEO65W.png",
-        "Eratone's Belt +0": "Icon_ACC_Belt_G3_003.png",
-        "Eratone's Belt +1-3": "Icon_ACC_Belt_G3_003_UHLGN0X.png",
-        "Eratone's Belt +4+": "Icon_ACC_Belt_G3_003_yiEO65W.png",
-        "Dragon Belt +0": "Icon_ACC_Belt_G3_001.png",
-        "Dragon Belt +1-3": "Icon_ACC_Belt_G3_001_GxLx0Kg.png",
-        "Dragon Belt +4+": "Icon_ACC_Belt_G3_001_mgLa9iS.png",
-        "Tiat's Belt +0": "Icon_ACC_Belt_G3_002.png",
-        "Tiat's Belt +1-3": "Icon_ACC_Belt_G3_002_KCbTg13.png",
-        "Tiat's Belt +4+": "Icon_ACC_Belt_G3_002_qCOwpYC.png",
-        "Lord's Authority": "Icon_ACC_Belt_G2_001.png",
-        "Maphr's Belt": "Icon_ACC_Belt_G2_002.png",
-        # Base belt names (new format without enchant)
         "Blue": "Icon_ACC_Belt_G3_004.png",
         "Ekimus' Belt": "Icon_ACC_Belt_G3_003.png",
         "Dragon Belt": "Icon_ACC_Belt_G3_001.png",
         "Tiat's Belt": "Icon_ACC_Belt_G3_002.png",
         "Eratone's Belt": "Icon_ACC_Belt_G3_003_UHLGN0X.png",
-        
-        # ============================================
-        
-        # === BATCH ADDED MAPPINGS ===
-        # SIGIL
-        "Dream Sigil": "Icon_AR_Sigil_G4_001.png",
-        "Susceptor's Heart": "Icon_AR_Sigil_G3_001.png",
-        "Paradia's Sigil": "Icon_AR_Sigil_G3_002.png",
-        "Cruma's Shell": "Icon_AR_Sigil_G3_003.png",
-        "Sigil of Flames": "Icon_AR_Sigil_G3_004.png",
-        "Jaeger's Sigil": "Icon_AR_Sigil_G3_005.png",
-        "Selihoden's Horn": "Icon_AR_Sigil_G3_006.png",
-        
-        # HELMET
-        "Blue Wolf Helmet": "Icon_AR_Helmet_G3_006.png",
-        "Majestic Circlet": "Icon_AR_Helmet_G3_001.png",
-        "Helm of Nightmares": "Icon_AR_Helmet_G3_002.png",
-        "Dark Crystal Helmet": "Icon_AR_Helmet_G3_003.png",
-        "Medusa's Helm": "Icon_AR_Helmet_G3_004.png",
-        "Paulina's Helmet": "Icon_AR_Helmet_G3_005.png",
-"Nevit's Helmet": "Icon_AR_Helmet_G3_007.png",
-        "Tersi's Circlet": "Icon_AR_Helmet_G3_009.png",
-        "Ancient Elven Helm": "Icon_AR_Helmet_G2_002.png",
-        "Imperial Crusader Helmet": "Icon_AR_Helmet_G3_009.png",
-        "Major Arcana Circlet": "Icon_AR_Helmet_G3_009.png",
-        "Draconic Helmet": "Icon_AR_Helmet_G3_009.png",
-
-        # GLOVES
-        "Blue Wolf Gloves": "Icon_AR_Gloves_G3_006.png",
-        "Majestic Gloves": "Icon_AR_Gloves_G3_001.png",
-        "Gauntlets of Nightmare": "Icon_AR_Gloves_G3_002.png",
-        "Dark Crystal Gloves": "Icon_AR_Gloves_G3_003.png",
-        "Tersi's Gloves": "Icon_AR_Gloves_G3_008.png",
-        "Paulina's Gauntlets": "Icon_AR_Gloves_G3_005.png",
-        "Nevit's Gloves": "Icon_AR_Gloves_G3_007.png",
-        "Jarngreipr": "Icon_AR_Gloves_G3_004.png",
-        "Vision Guardian": "Icon_AR_Gloves_G3_009.png",
-        "Gloves of Blessing": "Icon_AR_Gloves_G2_003.png",
-        "Forgotten Hero Gloves": "Icon_AR_Gloves_G3_010.png",
-        "Demon's Gauntlets": "Icon_AR_Gloves_G2_001.png",
-        "Ancient Elven Gauntlet": "Icon_AR_Gloves_G2_002.png",
-        "Draconic Leather Gloves": "Icon_AR_Gloves_G3_011.png",
-        "Pa'agrio's Flames": "Icon_AR_Gloves_G3_012.png",
-
-        # BOOTS
-        "Blue Wolf Boots": "Icon_AR_Boots_G3_006.png",
-        "Majestic Boots": "Icon_AR_Boots_G3_001.png",
-        "Boots of Nightmares": "Icon_AR_Boots_G3_002.png",
-        "Dark Crystal Boots": "Icon_AR_Boots_G3_003.png",
-        "Tersi's Boots": "Icon_AR_Boots_G3_008.png",
-        "Paulina's Boots": "Icon_AR_Boots_G3_005.png",
-        "Nevit's Boots": "Icon_AR_Boots_G3_007.png",
-        "Demon's Boots": "Icon_AR_Boots_G2_001.png",
-        "Kaliel's Boots": "Icon_AR_Boots_G2_004.png",
-        "Forgotten Hero's Boots": "Icon_AR_Boots_G3_009.png",
-        "Ancient Elven Boots": "Icon_AR_Boots_G2_002.png",
-        "Draconic": "Icon_AR_Boots_G3_010.png",
-        "Sayha's Wind": "Icon_AR_Boots_G3_011.png",
-
-        # GAITERS
-        "Blue Wolf Gaiters": "Icon_AR_Pants_G3_006.png",
-        "Basila Skin": "Icon_AR_Pants_G3_008.png",
-        "Blood Gaiters": "Icon_AR_Pants_G3_001.png",
-        "Gaiters of Light": "Icon_AR_Pants_G3_002.png",
-        "Gaiters of Ice": "Icon_AR_Pants_G3_003.png",
-        "Shilen's Breath": "Icon_AR_Pants_G3_004.png",
-        "Crystal Gaiters": "Icon_AR_Pants_G3_005.png",
-        "Forgotten Hero's Gaiters": "Icon_AR_Pants_G3_007.png",
-        "Imperial Crusader Gaiters": "Icon_AR_Pants_G3_009.png",
-
-        # ARMOR
-        "Blue Wolf Breastplate": "Icon_AR_Torso_G3_006.png",
-        "Majestic Robe": "Icon_AR_Torso_G3_001.png",
-        "Armor of Nightmares": "Icon_AR_Torso_G3_002.png",
-        "Dark Crystal Breastplate": "Icon_AR_Torso_G3_003.png",
-        "Tersi's Robe": "Icon_AR_Torso_G3_008.png",
-        "Paulina's Breastplate": "Icon_AR_Torso_G3_005.png",
-        "Nevit's Armor": "Icon_AR_Torso_G3_007.png",
-        "Savan's Robe": "Icon_AR_Torso_G3_004.png",
-        "Absolute Tunic": "Icon_AR_Torso_G2_003.png",
-        "Apella Plate Armor": "Icon_AR_Torso_G2_004.png",
-        "Forgotten Hero's Breastplate": "Icon_AR_Torso_G3_009.png",
-        "Ancient Elven Armor": "Icon_AR_Torso_G2_002.png",
-        "Demon's Armor": "Icon_AR_Torso_G2_001.png",
-        "Draconic Leather Armor": "Icon_AR_Torso_G3_011.png",
-        "Major Arcana Robe": "Icon_AR_Torso_G3_012.png",
-        "Imperial Crusader Breastplate": "Icon_AR_Torso_G3_010.png",
-
-        # CLOAK
-        "Silver Cloak": "Icon_AR_Cape_G3_001.png",
-        "Cranigg's Cloak": "Icon_AR_Cape_G3_002.png",
-        "Dragon's Scale": "Icon_AR_Cape_G3_003.png",
-        "Zaken's Cloak": "Icon_AR_Cape_G3_004.png",
-        "Cloak of Freya": "Icon_AR_Cape_G3_005.png",
-        "Queen Ant's Wing": "Icon_AR_Cape_G3_006.png (check suffix)",
-        "Cloak of Silence": "Icon_AR_Cape_G3_007.png",
-        "Eigis Cloak": "Icon_AR_Cape_G3_008.png",
-        "Cloak of Authority": "Icon_AR_Cape_G3_007.png", # Duplicate icon in original mapping?
-        "Selihoden's Wing": "Icon_AR_Cape_G3_008.png", # Duplicate icon in original mapping?
-        "Nevit's Cloak of Light": "Icon_AR_Cape_G2_001.png",
-        "Nailop's Cloak": "Icon_AR_Cape_G2_002.png",
-
-        # WEAPONS (from Subclass Information_files)
-        # ============================================
-        "Blue or lower": "вопрос_PiWb3ob.png",
-        # Bow
-        "Cabrio's Hand +7 or lower": "Icon_WP_Bow_G3_001.png",
-        "Cabrio's Hand +8": "Icon_WP_Bow_G3_002.png",
-        "Cabrio's Hand +9": "Icon_WP_Bow_G3_003.png",
-        # Orb (Staff weapons)
-        "Archangel Orb +7 or lower": "Icon_WP_Staff_G3_001.png",
-        "Archangel Orb +8": "Icon_WP_Staff_G3_002.png",
-        "Archangel Orb +9": "Icon_WP_Staff_G3_003.png",
-        "Flaming Dragon Skull +7 or lower": "Icon_WP_Staff_G3_004.png",
-        "Flaming Dragon Skull +8": "Icon_WP_Staff_G3_005.png",
-        "Flaming Dragon Skull +9": "Icon_WP_Staff_G2_001.png",
-        "Spiritual Eye +7 or lower": "Icon_WP_Staff_G3_001.png",
-        "Spiritual Eye +8": "Icon_WP_Staff_G3_002.png",
-        "Spiritual Eye +9": "Icon_WP_Staff_G3_003.png",
-        "Arcana's Orb": "Icon_WP_Staff_G2_001.png",
+        "Lord's Authority": "Icon_ACC_Belt_G2_001.png",
+        "Maphr's Belt": "Icon_ACC_Belt_G2_002.png",
     }
     
     return mapping.get(label_str)

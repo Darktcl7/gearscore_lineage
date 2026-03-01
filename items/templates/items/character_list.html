@@ -629,6 +629,7 @@
 
             <div class="card-body">
                 <!-- Mythic Classes -->
+                {% if character.mythic_classes.all.count > 0 %}
                 <div class="info-group">
                     <span class="info-label">Mythic Classes</span>
                     <ul class="info-list">
@@ -642,13 +643,13 @@
                             {% endif %}
                             {{ mc.name }}
                         </li>
-                        {% empty %}
-                        <li class="empty-list">No Mythic Classes recorded</li>
                         {% endfor %}
                     </ul>
                 </div>
+                {% endif %}
 
                 <!-- Legendary Classes -->
+                {% if character.legendary_classes.all.count > 0 %}
                 <div class="info-group">
                     <span class="info-label">Legendary Classes</span>
                     <ul class="info-list">
@@ -662,13 +663,13 @@
                             {% endif %}
                             {{ lc.name }}
                         </li>
-                        {% empty %}
-                        <li class="empty-list">No Legendary Classes recorded</li>
                         {% endfor %}
                     </ul>
                 </div>
+                {% endif %}
 
                 <!-- Legendary Agathions -->
+                {% if character.legendary_agathions.all.count > 0 %}
                 <div class="info-group">
                     <span class="info-label">Legendary Agathions</span>
                     <ul class="info-list">
@@ -682,13 +683,13 @@
                             {% endif %}
                             {{ la.name }}
                         </li>
-                        {% empty %}
-                        <li class="empty-list">No Legendary Agathions recorded</li>
                         {% endfor %}
                     </ul>
                 </div>
+                {% endif %}
 
                 <!-- Legendary Mounts -->
+                {% if character.legendary_mounts.all.count > 0 %}
                 <div class="info-group">
                     <span class="info-label">Legendary Mounts</span>
                     <ul class="info-list">
@@ -702,11 +703,10 @@
                             {% endif %}
                             {{ lm.name }}
                         </li>
-                        {% empty %}
-                        <li class="empty-list">No Legendary Mounts recorded</li>
                         {% endfor %}
                     </ul>
                 </div>
+                {% endif %}
             </div>
 
             <div class="card-footer">

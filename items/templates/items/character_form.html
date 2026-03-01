@@ -584,6 +584,7 @@
 
                             <div class="checkbox-group">
                                 {% for choice in field %}
+                                {% if "No mythic" not in choice.choice_label and "No legendary" not in choice.choice_label %}
                                 <label class="checkbox-label">
                                     {{ choice.tag }}
                                     <span class="choice-label-text">{{ choice.choice_label }}</span>
@@ -601,6 +602,7 @@
                                     {% endif %}
                                     {% endwith %}
                                 </label>
+                                {% endif %}
                                 {% endfor %}
                             </div>
                         </div>
@@ -610,178 +612,207 @@
                 </div>
 
                 <div class="tab-content" id="gearscore-tab">
-                    <div class="form-section">
-                        <div class="form-group"
-                            style="background: linear-gradient(145deg, #1a3a1a, #0d1f0d); border: 1px solid rgba(76, 175, 80, 0.3);">
-                            <h3
-                                style="color: #4CAF50; margin-bottom: 20px; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                                <img src="{% static 'items/images/choices/Icon_WP_Sword_G3_001.png' %}" alt="Combat"
-                                    style="width: 32px; height: 32px;">
-                                Base Combat Stats
-                            </h3>
-                            <div
-                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
-                                <div class="stat-input-group">
-                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                        <img src="{% static 'items/images/choices/Icon_WP_Sword_G3_002.png' %}"
-                                            alt="DMG" style="width: 32px; height: 32px;">
-                                        <label class="form-label" style="margin: 0;">DMG (Damage)</label>
-                                    </div>
-                                    {{ attributes_form.stat_dmg }}
+                    <div class="form-section" style="padding: 0;">
+
+                        <!-- Group Header -->
+                        <div style="padding: 12px 15px; border-bottom: 2px solid rgba(197, 168, 0, 0.5); margin-bottom: 15px;">
+                            <h2 style="font-size: 1.15rem; color: #ffd700; margin: 0;">⚔️ BASE STATS</h2>
+                        </div>
+
+                        <!-- Sub-Group: Damage Reduction & Evasion -->
+                        <div style="padding: 0 5px 10px; border-bottom: 1px solid rgba(197, 168, 0, 0.2); margin-bottom: 15px;">
+                            <h3 style="font-size: 0.95rem; color: #ffd700; margin: 0 0 12px 10px; padding-bottom: 8px;">🛡️ Damage Reduction & Evasion</h3>
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Melee DMG Reduction</label>
+                                    {{ attributes_form.g1 }}
                                 </div>
-                                <div class="stat-input-group">
-                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                        <img src="{% static 'items/images/choices/Icon_WP_Bow_G3_001.png' %}" alt="ACC"
-                                            style="width: 32px; height: 32px;">
-                                        <label class="form-label" style="margin: 0;">ACC (Accuracy)</label>
-                                    </div>
-                                    {{ attributes_form.stat_acc }}
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Ranged DMG Reduction</label>
+                                    {{ attributes_form.g2 }}
                                 </div>
-                                <div class="stat-input-group">
-                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                        <img src="{% static 'items/images/choices/Icon_AR_Torso_G3_001.png' %}"
-                                            alt="DEF" style="width: 32px; height: 32px;">
-                                        <label class="form-label" style="margin: 0;">DEF (Defense)</label>
-                                    </div>
-                                    {{ attributes_form.stat_def }}
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Magic DMG Reduction</label>
+                                    {{ attributes_form.g3 }}
                                 </div>
-                                <div class="stat-input-group">
-                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                        <img src="{% static 'items/images/choices/Icon_AR_Sigil_G3_001.png' %}"
-                                            alt="RESIST" style="width: 32px; height: 32px;">
-                                        <label class="form-label" style="margin: 0;">SKILL RESIST</label>
-                                    </div>
-                                    {{ attributes_form.stat_resist }}
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Melee Evasion</label>
+                                    {{ attributes_form.g4 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Ranged Evasion</label>
+                                    {{ attributes_form.g5 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Magic Evasion</label>
+                                    {{ attributes_form.g6 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Skill Resistance</label>
+                                    {{ attributes_form.g7 }}
                                 </div>
                             </div>
                         </div>
 
-                        <div class="form-group"
-                            style="background: linear-gradient(145deg, #3a2a1a, #1f150d); border: 1px solid rgba(255, 152, 0, 0.3);">
-                            <h3
-                                style="color: #FF9800; margin-bottom: 20px; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                                <img src="{% static 'items/images/choices/Icon_WP_Staff_G3_001.png' %}" alt="Multiplied"
-                                    style="width: 32px; height: 32px;">
-                                Multiplied Stats (Higher Score Impact)
-                            </h3>
-                            <div
-                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
-                                <div class="stat-input-group">
-                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                        <img src="{% static 'items/images/choices/Icon_AR_Cape_G3_001.png' %}"
-                                            alt="REDUC" style="width: 32px; height: 32px;">
-                                        <label class="form-label" style="margin: 0;">DMG REDUCT (×3)</label>
-                                    </div>
-                                    {{ attributes_form.stat_reduc }}
+                        <!-- Sub-Group: Speed & Utility -->
+                        <div style="padding: 0 5px 10px; border-bottom: 1px solid rgba(197, 168, 0, 0.2); margin-bottom: 15px;">
+                            <h3 style="font-size: 0.95rem; color: #ffd700; margin: 0 0 12px 10px; padding-bottom: 8px;">⚡ Speed & Utility</h3>
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Movement Speed (%)</label>
+                                    {{ attributes_form.g8 }}
                                 </div>
-                                <div class="stat-input-group">
-                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                        <img src="{% static 'items/images/choices/Icon_WP_Staff_G3_003.png' %}"
-                                            alt="SKILL" style="width: 32px; height: 32px;">
-                                        <label class="form-label" style="margin: 0;">SKILL DMG BOOST (×2)</label>
-                                    </div>
-                                    {{ attributes_form.stat_skill_dmg_boost }}
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Weapon Block (%)</label>
+                                    {{ attributes_form.g11 }}
                                 </div>
-                                <div class="stat-input-group">
-                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                        <img src="{% static 'items/images/choices/Icon_WP_Spear_G3_001.png' %}"
-                                            alt="WPN" style="width: 32px; height: 32px;">
-                                        <label class="form-label" style="margin: 0;">WPN DMG BOOST</label>
-                                    </div>
-                                    {{ attributes_form.stat_wpn_dmg_boost }}
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Defense</label>
+                                    {{ attributes_form.g12 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Cooldown Reduction (%)</label>
+                                    {{ attributes_form.g13 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Attack Speed (%)</label>
+                                    {{ attributes_form.g27 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Cast Speed (%)</label>
+                                    {{ attributes_form.g28 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">MP Consumption Red. (%)</label>
+                                    {{ attributes_form.g33 }}
                                 </div>
                             </div>
                         </div>
 
-                        <div class="form-group"
-                            style="background: linear-gradient(145deg, #1a1a3a, #0d0d1f); border: 1px solid rgba(103, 58, 183, 0.3);">
-                            <h3
-                                style="color: #9C27B0; margin-bottom: 20px; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                                <img src="{% static 'items/images/choices/Icon_SoulStone_Option_Icon_01.png' %}"
-                                    alt="Progression" style="width: 32px; height: 32px;">
-                                Progression Stats (×10)
-                            </h3>
-                            <div
-                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
-                                <div class="stat-input-group">
-                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                        <img src="{% static 'items/images/choices/Icon_SoulStone_Option_Icon_01.png' %}"
-                                            alt="SOULSHOT" style="width: 32px; height: 32px;">
-                                        <label class="form-label" style="margin: 0;">SOULSHOT Level</label>
-                                    </div>
-                                    {{ attributes_form.soulshot_level }}
+                        <!-- Sub-Group: HP & MP -->
+                        <div style="padding: 0 5px 10px; border-bottom: 1px solid rgba(197, 168, 0, 0.2); margin-bottom: 15px;">
+                            <h3 style="font-size: 0.95rem; color: #ffd700; margin: 0 0 12px 10px; padding-bottom: 8px;">❤️ HP & MP</h3>
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Max HP</label>
+                                    {{ attributes_form.g9 }}
                                 </div>
-                                <div class="stat-input-group">
-                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                        <img src="{% static 'items/images/choices/Icon_SoulStone_Option_Icon_04.png' %}"
-                                            alt="VALOR" style="width: 32px; height: 32px;">
-                                        <label class="form-label" style="margin: 0;">VALOR Level</label>
-                                    </div>
-                                    {{ attributes_form.valor_level }}
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Max MP</label>
+                                    {{ attributes_form.g10 }}
                                 </div>
-                                <div class="stat-input-group">
-                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                        <img src="{% static 'items/images/choices/Icon_SoulStone_Option_Icon_07.png' %}"
-                                            alt="GUARDIAN" style="width: 32px; height: 32px;">
-                                        <label class="form-label" style="margin: 0;">GUARDIAN</label>
-                                    </div>
-                                    {{ attributes_form.stat_guardian }}
-                                </div>
-                                <div class="stat-input-group">
-                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                        <img src="{% static 'items/images/choices/Icon_AR_Helmet_G4_003.png' %}"
-                                            alt="CONQUER" style="width: 32px; height: 32px;">
-                                        <label class="form-label" style="margin: 0;">CONQUER</label>
-                                    </div>
-                                    {{ attributes_form.stat_conquer }}
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Weight Limit</label>
+                                    {{ attributes_form.g34 }}
                                 </div>
                             </div>
                         </div>
 
-                        <div class="form-group"
-                            style="background: linear-gradient(145deg, #3a1a3a, #1f0d1f); border: 1px solid rgba(233, 30, 99, 0.3);">
-                            <h3
-                                style="color: #E91E63; margin-bottom: 20px; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                                <img src="{% static 'items/images/choices/Icon_Classcard_Aria.png' %}" alt="Legend"
-                                    style="width: 32px; height: 32px;">
-                                Legend Points
-                            </h3>
-                            <div
-                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
-                                <div class="stat-input-group">
-                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                        <img src="{% static 'items/images/choices/Icon_Classcard_Scryde.png' %}"
-                                            alt="Epic Classes" style="width: 32px; height: 32px;">
-                                        <label class="form-label" style="margin: 0;">Epic Classes Count (×20)</label>
-                                    </div>
-                                    {{ attributes_form.epic_classes_count }}
+                        <!-- Sub-Group: Damage & Accuracy -->
+                        <div style="padding: 0 5px 10px; border-bottom: 1px solid rgba(197, 168, 0, 0.2); margin-bottom: 15px;">
+                            <h3 style="font-size: 0.95rem; color: #ffd700; margin: 0 0 12px 10px; padding-bottom: 8px;">🗡️ Damage & Accuracy</h3>
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Melee Damage</label>
+                                    {{ attributes_form.g14 }}
                                 </div>
-                                <div class="stat-input-group">
-                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                        <img src="{% static 'items/images/choices/Icon_Agathion_Baium.png' %}"
-                                            alt="Epic Agathions" style="width: 32px; height: 32px;">
-                                        <label class="form-label" style="margin: 0;">Epic Agathions Count (×20)</label>
-                                    </div>
-                                    {{ attributes_form.epic_agathions_count }}
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Melee Accuracy</label>
+                                    {{ attributes_form.g15 }}
                                 </div>
-                                <div class="stat-input-group">
-                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                        <img src="{% static 'items/images/choices/Icon_Item_Usable_SkillBook_04.png' %}"
-                                            alt="Codex" style="width: 32px; height: 32px;">
-                                        <label class="form-label" style="margin: 0;">Total Legend Codex (×3)</label>
-                                    </div>
-                                    {{ attributes_form.total_legend_codex }}
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Ranged Damage</label>
+                                    {{ attributes_form.g17 }}
                                 </div>
-                                <div class="stat-input-group">
-                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                        <img src="{% static 'items/images/choices/Icon_Item_Usable_SkillBook_04.png' %}"
-                                            alt="Epic Mount" style="width: 32px; height: 32px;">
-                                        <label class="form-label" style="margin: 0;">Total Epic Mount (×10)</label>
-                                    </div>
-                                    {{ attributes_form.total_epic_mount }}
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Ranged Accuracy</label>
+                                    {{ attributes_form.g18 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Magic Damage</label>
+                                    {{ attributes_form.g20 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Magic Accuracy</label>
+                                    {{ attributes_form.g21 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Weapon Damage</label>
+                                    {{ attributes_form.g29 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Extra Damage</label>
+                                    {{ attributes_form.g30 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">HP Recovery (Tick)</label>
+                                    {{ attributes_form.g31 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">MP Recovery (Tick)</label>
+                                    {{ attributes_form.g32 }}
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Sub-Group: Critical & Boosts -->
+                        <div style="padding: 0 5px 10px; border-bottom: 1px solid rgba(197, 168, 0, 0.2); margin-bottom: 15px;">
+                            <h3 style="font-size: 0.95rem; color: #ffd700; margin: 0 0 12px 10px; padding-bottom: 8px;">🎯 Critical & Boosts</h3>
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Melee Critical Hit (%)</label>
+                                    {{ attributes_form.g16 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Ranged Critical Hit (%)</label>
+                                    {{ attributes_form.g19 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Magic Critical Hit (%)</label>
+                                    {{ attributes_form.g22 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Weapon DMG Boost (%)</label>
+                                    {{ attributes_form.g23 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Weapon Defense (%)</label>
+                                    {{ attributes_form.g24 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Skill DMG Boost (%)</label>
+                                    {{ attributes_form.g25 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">Skill Defense (%)</label>
+                                    {{ attributes_form.g26 }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sub-Group: Progression Levels -->
+                        <div style="padding: 0 5px 10px;">
+                            <h3 style="font-size: 0.95rem; color: #ffd700; margin: 0 0 12px 10px; padding-bottom: 8px;">⭐ Progression Levels</h3>
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">SOULSHOT Level</label>
+                                    {{ attributes_form.g35 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">VALOR Level</label>
+                                    {{ attributes_form.g36 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">GUARDIAN Level</label>
+                                    {{ attributes_form.g37 }}
+                                </div>
+                                <div class="form-group" style="padding: 12px; background: linear-gradient(160deg, #3a3a3a, #2a2a2a); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 6px; display: block;">CONQUER Level</label>
+                                    {{ attributes_form.g38 }}
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 

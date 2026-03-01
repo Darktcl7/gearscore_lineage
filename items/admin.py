@@ -84,9 +84,8 @@ class ActivityEventAdmin(admin.ModelAdmin):
 
 
 class PlayerActivityAdmin(admin.ModelAdmin):
-    list_display = ('player', 'event', 'status', 'points_earned', 'is_verified', 'checked_in_at')
-    list_filter = ('status', 'is_verified', 'event__event_type', 'event__date')
-    list_editable = ('is_verified',)
+    list_display = ('player', 'event', 'status', 'points_earned', 'checked_in_at')
+    list_filter = ('status', 'event__event_type', 'event__date')
     search_fields = ('player__name', 'event__name', 'discord_user_id')
     autocomplete_fields = ['player', 'event']
     ordering = ['-event__date']

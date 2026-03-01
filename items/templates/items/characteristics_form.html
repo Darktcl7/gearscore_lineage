@@ -198,8 +198,12 @@
         <div class="form-description">
             <p>{{ form_description }}</p>
         </div>
+        {% for group_name, fields in field_groups %}
+        <div class="form-header" style="margin-top: 30px; text-align: left; padding-left: 15px; border-bottom: 1px solid rgba(197, 168, 0, 0.3);">
+            <h2 style="font-size: 1.1rem; color: #ffd700; margin: 0; padding-bottom: 10px;">{{ group_name }}</h2>
+        </div>
         <div class="form-content">
-            {% for field in form %}
+            {% for field in fields %}
             <div class="form-group">
                 <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
                 {{ field }}
@@ -207,6 +211,7 @@
             </div>
             {% endfor %}
         </div>
+        {% endfor %}
         <div class="form-buttons">
             <button type="submit" class="btn btn-primary">Save Changes</button>
             <a href="{% url 'character-profile' character.pk %}" class="btn btn-secondary">Cancel</a>

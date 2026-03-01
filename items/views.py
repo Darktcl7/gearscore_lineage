@@ -397,11 +397,9 @@ def edit_subclass_stats(request, character_pk):
 def edit_characteristics_stats(request, character_pk):
     character = get_object_or_404(Character, pk=character_pk)
     
-    # Permission check: admin can edit any, user can only edit their own
     if not is_admin(request.user) and character.owner != request.user:
         return HttpResponseForbidden("You can only edit your own characters.")
     
-    # Dapatkan atau buat objek CharacteristicsStats yang terikat pada karakter ini
     stats, created = CharacteristicsStats.objects.get_or_create(character=character)
     
     if request.method == 'POST':
@@ -412,8 +410,19 @@ def edit_characteristics_stats(request, character_pk):
     else:
         form = CharacteristicsStatsForm(instance=stats)
         
+    # Group fields for rendering
+    field_groups = [
+        ('CORE PVP DEFENSE', [form[f'a{i}'] for i in range(1, 13)]),
+        ('CORE PVP OFFENSE', [form[f'b{i}'] for i in range(1, 10)]),
+        ('CROWD CONTROL', [form[f'c{i}'] for i in range(1, 18)]),
+        ('SURVIVAL', [form[f'd{i}'] for i in range(1, 9)]),
+        ('SECONDARY DEFENSE', [form[f'e{i}'] for i in range(1, 11)]),
+        ('SECONDARY OFFENSE', [form[f'f{i}'] for i in range(1, 14)]),
+    ]
+        
     context = {
         'form': form,
+        'field_groups': field_groups,
         'character': character,
         'title': f'Edit Characteristics for {character.name}',
         'form_description': 'Detailed breakdown of all combat statistics.'

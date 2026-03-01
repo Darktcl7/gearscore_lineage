@@ -30,6 +30,23 @@ CLASS_CHOICES = (
     ('Soul Breaker Skill', 'Soul Breaker Skill'),
 )
 
+CLASS_TO_WEAPON_TYPE = {
+    'One-Handed Sword Skill': 'one_handed_sword',
+    'Dual-Wield Skills': 'two_sword_style',
+    'Dagger Skill': 'dagger',
+    'Bow Skill': 'bow',
+    'Staff Skill': 'cane',
+    'Greatsword Skill': 'greatsword',
+    'Crossbow Skill': 'crossbow',
+    'Chainsword Skill': 'chainsword',
+    'Rapier Skill': 'rapier',
+    'Magic Cannon Skill': 'magic_cannon',
+    'Spear Skill': 'spear',
+    'Orb Skill': 'orb',
+    'Dual Axe Skill': 'double_axe',
+    'Soul Breaker Skill': 'soul_breaker',
+}
+
 CLASS_SKILLS_DATA = {
     'One-Handed Sword Skill': {
         'myth': ['Dignity (one-handed sword)', 'Ignore Death', 'Mighty Shock', 'Authority (one-handed sword)'],
@@ -731,97 +748,6 @@ class Character(models.Model):
 
 
     def calculate_gear_score_breakdown(self):
-
-        """
-
-        Menghitung gear score dengan breakdown 3 kategori sesuai l2mgearscore.com:
-
-        - Characteristics: dari CharacterAttributes (stats umum)
-
-        - Sub-class: dari SubclassStats
-
-        - Main class: dari level karakter dan class bonuses
-
-        
-
-        Formula sesuai spreadsheet:
-
-        SCORE = DMG + ACC + DEF + (DMG_REDUCT × 3) + SKILL_RESIST + (SKILL_DMG_BOOST × 2) + 
-
-                WPN_DMG_BOOST + (SOULSHOT × 10) + (VALOR × 10) + (GUARDIAN × 10) +
-
-                (CONQUER × 10) + (LEGEND_CLASS_POINT × 20) + (LEGEND_AGATHION_POINT × 20) +
-
-                (TOTAL_LEGEND_CODEX × 3)
-
-        """
-
-        # ============================================
-
-        # 1. GEAR SCORE STATS
-
-        # Dari CharacterAttributes: DMG, ACC, DEF, REDUC, RESIST, skill/wpn boost
-
-        # ============================================
-
-        characteristics_score = 0.0
-        gear_stats_score = 0.0
-
-        dmg = acc = def_stat = reduc = resist = skill_dmg_boost = wpn_dmg_boost = 0
-
-        soulshot = valor = guardian = conquer = 0
-
-        legend_class_point = legend_agathion_point = total_legend_codex = total_epic_mount = 0
-
-        
-
-        try:
-
-            attrs = self.attributes
-
-            dmg = attrs.stat_dmg or 0
-
-            acc = attrs.stat_acc or 0
-
-            def_stat = attrs.stat_def or 0
-
-            reduc = attrs.stat_reduc or 0
-
-            resist = attrs.stat_resist or 0
-
-            skill_dmg_boost = attrs.stat_skill_dmg_boost or 0
-
-            wpn_dmg_boost = attrs.stat_wpn_dmg_boost or 0
-
-            guardian = attrs.stat_guardian or 0
-
-            conquer = attrs.stat_conquer or 0
-
-            total_legend_codex = attrs.total_legend_codex or 0
-
-            
-            # Now these are IntegerField, just get the value directly
-            soulshot = attrs.soulshot_level or 0
-            valor = attrs.valor_level or 0
-            legend_class_point = attrs.epic_classes_count or 0
-            legend_agathion_point = attrs.epic_agathions_count or 0
-            total_epic_mount = attrs.total_epic_mount or 0
-
-            
-            # Gear Score Stats formula from Excel (for Overall Gear Score)
-            # =DMG+ACC+DEF+(REDUC*3)+RESIST+(SKILL*2)+WPN+(SOULSHOT*10)+(VALOR*10)+(GUARDIAN*10)+(CONQUER*10)+LEGEND_CLASS+LEGEND_AGATHION+(CODEX*3)+(CONQUER*10)+(EPIC_MOUNT*10)
-            gear_stats_score = (
-                dmg + acc + def_stat + (reduc * 3) + resist + 
-                (skill_dmg_boost * 2) + wpn_dmg_boost +
-                (soulshot * 10) + (valor * 10) + (guardian * 10) + (conquer * 10) +
-                legend_class_point + legend_agathion_point +
-                (total_legend_codex * 3) + (conquer * 10) + (total_epic_mount * 10)  # conquer counted twice per Excel formula
-            )
-
-        except CharacterAttributes.DoesNotExist:
-            gear_stats_score = 0.0
-
-        # Calculate Characteristics Score from CharacteristicsStats (145 fields)
         characteristics_score = 0.0
         try:
             char_stats = self.characteristics_stats
@@ -837,15 +763,37 @@ class Character(models.Model):
         except SubclassStats.DoesNotExist:
             pass
 
-        # 3. MAIN CLASS SCORE
-        mainclass_score = gear_stats_score
+        # 3. MAIN CLASS SCORE (Gear Score Stats - KELOMPOK G)
+        mainclass_score = 0.0
+        dmg = acc = def_stat = reduc = resist = skill_dmg_boost = wpn_dmg_boost = soulshot = valor = guardian = conquer = 0
+        try:
+            attrs = self.attributes
+            g_score = (
+                0.5 * (attrs.g1 + attrs.g2 + attrs.g3 + attrs.g4 + attrs.g5 + attrs.g6 + attrs.g7) +
+                0.005 * (attrs.g8 + attrs.g11 + attrs.g12 + attrs.g13 + attrs.g27 + attrs.g28 + attrs.g33) +
+                0.0005 * (attrs.g9 + attrs.g10) +
+                0.0001 * (attrs.g34) +
+                0.05 * (attrs.g14 + attrs.g15 + attrs.g17 + attrs.g18 + attrs.g20 + attrs.g21 + attrs.g29 + attrs.g30 + attrs.g31 + attrs.g32) +
+                0.005 * (attrs.g16 + attrs.g19 + attrs.g22 + attrs.g23 + attrs.g24 + attrs.g25 + attrs.g26) +
+                0.15 * attrs.g35 + 0.2 * attrs.g36 + 0.2 * attrs.g37 + 0.25 * attrs.g38
+            )
+            mainclass_score = float(g_score)
+            
+            # backward compatibility for view returning attributes (though no longer accurate for original intent)
+            dmg = attrs.g14
+            acc = attrs.g15
+            def_stat = attrs.g12
+            soulshot = attrs.g35
+            valor = attrs.g36
+        except CharacterAttributes.DoesNotExist:
+            pass
 
         # TOTAL SCORE
         total_score = characteristics_score + subclass_score + mainclass_score
 
         return {
             'total_score': total_score,
-            'gear_stats_score': gear_stats_score,
+            'gear_stats_score': mainclass_score,
             'characteristics': characteristics_score,
             'subclass': subclass_score,
             'mainclass': mainclass_score,
@@ -860,16 +808,19 @@ class Character(models.Model):
             'valor': valor,
             'guardian': guardian,
             'conquer': conquer,
-            'legend_class_point': legend_class_point,
-            'legend_agathion_point': legend_agathion_point,
-            'total_legend_codex': total_legend_codex,
-            'total_epic_mount': total_epic_mount,
+            'legend_class_point': 0,
+            'legend_agathion_point': 0,
+            'total_legend_codex': 0,
+            'total_epic_mount': 0,
         }
 
     def calculate_gear_score(self):
-        """Calculate total gear score. Returns total_score value."""
         breakdown = self.calculate_gear_score_breakdown()
         return breakdown['total_score']
+
+
+
+
 
 
 
@@ -894,8 +845,6 @@ PVP_HELMET_CHOICES = [
     ("Tersi's Circlet", "Tersi's Circlet"),
 ]
 
-
-
 PVP_GLOVES_CHOICES = [
     ('', 'No gloves selected'),
     ("Ancient Elven Gauntlets", "Ancient Elven Gauntlets"),
@@ -914,8 +863,6 @@ PVP_GLOVES_CHOICES = [
     ("Pauline's Gauntlet", "Pauline's Gauntlet"),
     ("Tersi's Gloves", "Tersi's Gloves"),
 ]
-
-
 
 PVP_BOOTS_CHOICES = [
     ('', 'No boots selected'),
@@ -936,8 +883,6 @@ PVP_BOOTS_CHOICES = [
     ("Tersi's Boots", "Tersi's Boots"),
 ]
 
-
-
 PVP_GAITERS_CHOICES = [
     ('', 'No gaiters selected'),
     ("Basil's Shell", "Basil's Shell"),
@@ -956,8 +901,6 @@ PVP_GAITERS_CHOICES = [
     ("Patience Leggings", "Patience Leggings"),
     ("Spirit's Greaves", "Spirit's Greaves"),
 ]
-
-
 
 PVP_ARMOR_CHOICES = [
     ('', 'No armor selected'),
@@ -978,8 +921,6 @@ PVP_ARMOR_CHOICES = [
     ("Tersi's Robe", "Tersi's Robe"),
 ]
 
-
-
 PVP_CLOAK_CHOICES = [
     ('', 'No cloak selected'),
     ("Aegis Cloak", "Aegis Cloak"),
@@ -998,8 +939,6 @@ PVP_CLOAK_CHOICES = [
     ("Sally Hoden's Wings", "Sally Hoden's Wings"),
     ("Queen Ant Wings", "Queen Ant Wings"),
 ]
-
-
 
 PVP_SIGIL_CHOICES = [
     ('', 'No sigil selected'),
@@ -1020,7 +959,6 @@ PVP_SIGIL_CHOICES = [
     ("Tier of Darkness", "Tier of Darkness"),
 ]
 
-
 PVP_TSHIRT_CHOICES = [
     ('', 'No t-shirt selected'),
     ("Agility's Anonymous Shirt", "Agility's Anonymous Shirt"),
@@ -1033,8 +971,6 @@ PVP_TSHIRT_CHOICES = [
     ("Vigilante Shirt", "Vigilante Shirt"),
     ("Warrior's T-shirt", "Warrior's T-shirt"),
 ]
-
-
 
 PVP_NECKLACE_CHOICES = [
     ('', 'No necklace selected'),
@@ -1053,8 +989,6 @@ PVP_NECKLACE_CHOICES = [
     ("Archmage Necklace", "Archmage Necklace"),
 ]
 
-
-
 PVP_RING_CHOICES = [
     ('', 'No ring selected'),
     ("Ring of Blessing", "Ring of Blessing"),
@@ -1070,8 +1004,6 @@ PVP_RING_CHOICES = [
     ("Desperion's Ring", "Desperion's Ring"),
 ]
 
-
-
 PVP_BELT_CHOICES = [
     ('', 'No belt selected'),
     ("Blue", "Blue"),
@@ -1083,242 +1015,15 @@ PVP_BELT_CHOICES = [
     ("Maphr's Belt", "Maphr's Belt"),
 ]
 
-
-
-WEAPON_CHOICES = [
-    ('', 'No weapon selected'),
-    # Bow
-    ('bow|Akatt Longbow', 'Akatt Longbow'),
-    ('bow|Amenance Bow', 'Amenance Bow'),
-    ('bow|Archangel Bow', 'Archangel Bow'),
-    ('bow|Bow of Oblivion', 'Bow of Oblivion'),
-    ('bow|Bow of the Shingung', 'Bow of the Shingung'),
-    ('bow|Bow of the Soul', 'Bow of the Soul'),
-    ('bow|Carnium Bow', 'Carnium Bow'),
-    ('bow|Devils Bow', 'Devils Bow'),
-    ('bow|Elemental Bow', 'Elemental Bow'),
-    ('bow|Giants Bow', 'Giants Bow'),
-    ('bow|Hazard Bow', 'Hazard Bow'),
-    ('bow|Ice Crystal Bow', 'Ice Crystal Bow'),
-    ('bow|Moonlight Bow', 'Moonlight Bow'),
-    ('bow|Plasma Bow', 'Plasma Bow'),
-    # Cane (Staff)
-    ('cane|Archangel Staff', 'Archangel Staff'),
-    ('cane|Bloody Nebulite', 'Bloody Nebulite'),
-    ('cane|Branch of Life', 'Branch of Life'),
-    ('cane|Branches of the World Tree', 'Branches of the World Tree'),
-    ('cane|Commander Staff', 'Commander Staff'),
-    ('cane|Crystal Wand', 'Crystal Wand'),
-    ('cane|Dead Man Staff', 'Dead Man Staff'),
-    ('cane|Desperion Staff', 'Desperion Staff'),
-    ('cane|Ghoul Staff', 'Ghoul Staff'),
-    ('cane|Giant Staff', 'Giant Staff'),
-    ('cane|Imperial Sttaff', 'Imperial Sttaff'),
-    ('cane|Inferno Staff', 'Inferno Staff'),
-    ('cane|Spirit Staff', 'Spirit Staff'),
-    # Chainsword
-    ('chainsword|Archangel Chainsword', 'Archangel Chainsword'),
-    ('chainsword|Barakiel Chainsword', 'Barakiel Chainsword'),
-    ('chainsword|Berseker Chainsword', 'Berseker Chainsword'),
-    ('chainsword|Bultgang', 'Bultgang'),
-    ('chainsword|Chrono Kitara', 'Chrono Kitara'),
-    ('chainsword|Dismentor', 'Dismentor'),
-    ('chainsword|Dragon Hunter', 'Dragon Hunter'),
-    ('chainsword|Gram', 'Gram'),
-    ('chainsword|Lightning Chainsword', 'Lightning Chainsword'),
-    ('chainsword|Nameless Victory', 'Nameless Victory'),
-    ('chainsword|Pain of Gardenness', 'Pain of Gardenness'),
-    ('chainsword|Schrager', 'Schrager'),
-    # Crossbow
-    ('crossbow|Alvarest', 'Alvarest'),
-    ('crossbow|Archangel Crossbow', 'Archangel Crossbow'),
-    ('crossbow|Ballista', 'Ballista'),
-    ('crossbow|Burst Avenger', 'Burst Avenger'),
-    ('crossbow|Crystal Bowgun', 'Crystal Bowgun'),
-    ('crossbow|Doom Singer', 'Doom Singer'),
-    ('crossbow|Giant Crossbow', 'Giant Crossbow'),
-    ('crossbow|Hellhound', 'Hellhound'),
-    ('crossbow|Peacemaker', 'Peacemaker'),
-    ('crossbow|Tasram', 'Tasram'),
-    ('crossbow|Thorn Crossbow', 'Thorn Crossbow'),
-    ('crossbow|antique crossbow', 'antique crossbow'),
-    # Dagger
-    ('dagger|Archangel Slayer', 'Archangel Slayer'),
-    ('dagger|Blood Orchid', 'Blood Orchid'),
-    ('dagger|Crystal Dagger', 'Crystal Dagger'),
-    ('dagger|Dagger of Contamination', 'Dagger of Contamination'),
-    ('dagger|Dagger of Mana', 'Dagger of Mana'),
-    ('dagger|Devil Dagger', 'Devil Dagger'),
-    ('dagger|Flame Breaker', 'Flame Breaker'),
-    ('dagger|Giant Dagger', 'Giant Dagger'),
-    ('dagger|Hell Knife', 'Hell Knife'),
-    ("dagger|Kruma's Horn", "Kruma's Horn"),
-    ('dagger|Soul Separator', 'Soul Separator'),
-    ('dagger|chris', 'chris'),
-    ('dagger|stiletto', 'stiletto'),
-    # Double Axe
-    ('double_axe|Archangel Twin Axe', 'Archangel Twin Axe'),
-    ('double_axe|Bloody Angish', 'Bloody Angish'),
-    ('double_axe|Bloody Cross', 'Bloody Cross'),
-    ('double_axe|Clarent', 'Clarent'),
-    ('double_axe|Cursed Twin Axe', 'Cursed Twin Axe'),
-    ('double_axe|Furious Berserker', 'Furious Berserker'),
-    ('double_axe|Gallatin', 'Gallatin'),
-    ("double_axe|Giant's Twin Axes", "Giant's Twin Axes"),
-    ('double_axe|Ice Storm Twin Axe', 'Ice Storm Twin Axe'),
-    ('double_axe|Madness Twin Axe', 'Madness Twin Axe'),
-    ('double_axe|Meteor Impact', 'Meteor Impact'),
-    ('double_axe|Warpeak', 'Warpeak'),
-    ('double_axe|Yaksha Twin Axe', 'Yaksha Twin Axe'),
-    # Greatsword
-    ('greatsword|Archangel Buster', 'Archangel Buster'),
-    ("greatsword|Berserker's Greatsword", "Berserker's Greatsword"),
-    ("greatsword|Commander's Greatsword", "Commander's Greatsword"),
-    ('greatsword|Dragon Slayer', 'Dragon Slayer'),
-    ('greatsword|First Blood', 'First Blood'),
-    ('greatsword|Flamberge', 'Flamberge'),
-    ("greatsword|Guardian's Two-Handed Greatsword", "Guardian's Two-Handed Greatsword"),
-    ("greatsword|Heaven's Wingblade", "Heaven's Wingblade"),
-    ('greatsword|Inferno Master', 'Inferno Master'),
-    ('greatsword|Sword of Iphos', 'Sword of Iphos'),
-    # Magic Cannon
-    ('magic_cannon|Archangel Blaster', 'Archangel Blaster'),
-    ('magic_cannon|Assault Cannon', 'Assault Cannon'),
-    ('magic_cannon|Basilisk Culverin', 'Basilisk Culverin'),
-    ('magic_cannon|Deathbringer', 'Deathbringer'),
-    ('magic_cannon|Divine Blaster', 'Divine Blaster'),
-    ('magic_cannon|Doom Crusher', 'Doom Crusher'),
-    ("magic_cannon|Giant's Blaster", "Giant's Blaster"),
-    ('magic_cannon|Mine Buster', 'Mine Buster'),
-    ('magic_cannon|Pata', 'Pata'),
-    ('magic_cannon|Sarakael Magic Cannon', 'Sarakael Magic Cannon'),
-    ('magic_cannon|Schofield', 'Schofield'),
-    ('magic_cannon|Star Buster', 'Star Buster'),
-    ('magic_cannon|Zephyrus', 'Zephyrus'),
-    # One-Handed Sword
-    ('one_handed_sword|Archangel Blade', 'Archangel Blade'),
-    ('one_handed_sword|Elemental Sword', 'Elemental Sword'),
-    ("one_handed_sword|Fighting Father's Sword", "Fighting Father's Sword"),
-    ("one_handed_sword|Giant's Sword", "Giant's Sword"),
-    ("one_handed_sword|Guardian's Sword", "Guardian's Sword"),
-    ('one_handed_sword|Kshanberg', 'Kshanberg'),
-    ('one_handed_sword|Raid Sword', 'Raid Sword'),
-    ('one_handed_sword|Sir Blade', 'Sir Blade'),
-    ('one_handed_sword|Spirits Sword', 'Spirits Sword'),
-    ('one_handed_sword|Sword of Eclipse', 'Sword of Eclipse'),
-    ('one_handed_sword|Sword of Miracle', 'Sword of Miracle'),
-    ('one_handed_sword|Sword of Nightmare', 'Sword of Nightmare'),
-    ('one_handed_sword|Sword of Valhalla', 'Sword of Valhalla'),
-    ('one_handed_sword|Tsurugi', 'Tsurugi'),
-    # Orb
-    ('orb|Archangel Orb', 'Archangel Orb'),
-    ("orb|Devil's Orb", "Devil's Orb"),
-    ('orb|Dragon Flame Head', 'Dragon Flame Head'),
-    ('orb|Eclipse of', 'Eclipse of'),
-    ('orb|Elysion', 'Elysion'),
-    ('orb|Fairy Queen', 'Fairy Queen'),
-    ("orb|Giant's Orb", "Giant's Orb"),
-    ('orb|Hall of Faith', 'Hall of Faith'),
-    ('orb|Hand of Cabrio', 'Hand of Cabrio'),
-    ('orb|Nirvana', 'Nirvana'),
-    ('orb|Spell Breaker', 'Spell Breaker'),
-    ('orb|The Bones of Kaim Banul', 'The Bones of Kaim Banul'),
-    # Rapier
-    ('rapier|Archangel Rapier', 'Archangel Rapier'),
-    ('rapier|Assault Rapier', 'Assault Rapier'),
-    ('rapier|Blink Rapier', 'Blink Rapier'),
-    ('rapier|Eclair Bijou', 'Eclair Bijou'),
-    ("rapier|Giant's Rapier", "Giant's Rapier"),
-    ('rapier|Glorious', 'Glorious'),
-    ('rapier|Grid Rapier', 'Grid Rapier'),
-    ('rapier|Hauteclair', 'Hauteclair'),
-    ('rapier|Kolishmard', 'Kolishmard'),
-    ('rapier|Levatein', 'Levatein'),
-    ('rapier|Soldat Estark', 'Soldat Estark'),
-    ("rapier|Tromba's Fang", "Tromba's Fang"),
-    # Soul Breaker
-    ('soul_breaker|Archangel Soul Breaker', 'Archangel Soul Breaker'),
-    ('soul_breaker|Blade of Madness', 'Blade of Madness'),
-    ('soul_breaker|Crystal Soul Breaker', 'Crystal Soul Breaker'),
-    ('soul_breaker|Dark Shadow', 'Dark Shadow'),
-    ('soul_breaker|Frostbite', 'Frostbite'),
-    ("soul_breaker|Giant's Soul Breaker", "Giant's Soul Breaker"),
-    ('soul_breaker|Hrunting', 'Hrunting'),
-    ('soul_breaker|Judge of the Sun', 'Judge of the Sun'),
-    ('soul_breaker|Sword of the Soul', 'Sword of the Soul'),
-    ('soul_breaker|Wisdom of our ancestors', 'Wisdom of our ancestors'),
-    # Spear
-    ('spear|Archangel Halberd', 'Archangel Halberd'),
-    ('spear|Ascalon', 'Ascalon'),
-    ('spear|Battle Spear', 'Battle Spear'),
-    ('spear|Body Slasher', 'Body Slasher'),
-    ("spear|Giant's Spear", "Giant's Spear"),
-    ('spear|Great Axe', 'Great Axe'),
-    ('spear|Halberd', 'Halberd'),
-    ('spear|Heavy War Axe', 'Heavy War Axe'),
-    ('spear|Lancia', 'Lancia'),
-    ('spear|Saint Spear', 'Saint Spear'),
-    ('spear|Scorpion', 'Scorpion'),
-    ('spear|Side', 'Side'),
-    ('spear|Tallum Glaive', 'Tallum Glaive'),
-    ('spear|Typhon Spear', 'Typhon Spear'),
-    ('spear|Widowmaker', 'Widowmaker'),
-    # Two Sword Style (Dual-Wield)
-    ('two_sword_style|Archangel Dual Swords', 'Archangel Dual Swords'),
-    ('two_sword_style|Caribs Dual Swords', 'Caribs Dual Swords'),
-    ('two_sword_style|Damascus Dual Sword', 'Damascus Dual Sword'),
-    ('two_sword_style|Dark Legion', 'Dark Legion'),
-    ('two_sword_style|Death Lord Dual Swords', 'Death Lord Dual Swords'),
-    ("two_sword_style|Giant's Dual Swords", "Giant's Dual Swords"),
-    ('two_sword_style|Homunculus Dual Sword', 'Homunculus Dual Sword'),
-    ("two_sword_style|Mardil's Wrath", "Mardil's Wrath"),
-    ('two_sword_style|Mystery Dual Swords', 'Mystery Dual Swords'),
-    ('two_sword_style|Saint Dual Sword', 'Saint Dual Sword'),
-    ('two_sword_style|Tears of Warrior', 'Tears of Warrior'),
-    ("two_sword_style|Themis's Tongue", "Themis's Tongue"),
-]
-
-# Mapping dari Character Class ke Weapon Type key
-CLASS_TO_WEAPON_TYPE = {
-    'Bow Skill': 'bow',
-    'Chainsword Skill': 'chainsword',
-    'Crossbow Skill': 'crossbow',
-    'Dagger Skill': 'dagger',
-    'Dual Axe Skill': 'double_axe',
-    'Dual-Wield Skills': 'two_sword_style',
-    'Greatsword Skill': 'greatsword',
-    'Magic Cannon Skill': 'magic_cannon',
-    'One-Handed Sword Skill': 'one_handed_sword',
-    'Orb Skill': 'orb',
-    'Rapier Skill': 'rapier',
-    'Soul Breaker Skill': 'soul_breaker',
-    'Spear Skill': 'spear',
-    'Staff Skill': 'cane',
-}
-
-
-
-
 SKILL_CHOICES = [
-
-    # Spear class skills (from reference)
-
     ("Frenzy", "Frenzy"),
-
     ("Vital Destruction", "Vital Destruction"),
-
     ("Infinity Strike", "Infinity Strike"),
-
     ("Disarm", "Disarm"),
-
     ("Giant Stomp", "Giant Stomp"),
-
     ("Absolute Spear", "Absolute Spear"),
-
     ("Rolling Thunder", "Rolling Thunder"),
-
     ("Earthquake Stomp", "Earthquake Stomp"),
-
 ]
 
 EXPERTISE_CHOICES = [
@@ -1334,36 +1039,42 @@ EXPERTISE_CHOICES = [
     (9, 'Rank 9'),
 ]
 
+
+
+WEAPON_CHOICES = [
+    ('', 'No weapon selected'),
+    ('bow|Akatt Longbow', 'Akatt Longbow'), ('bow|Amenance Bow', 'Amenance Bow'), ('bow|Archangel Bow', 'Archangel Bow'), ('bow|Bow of Oblivion', 'Bow of Oblivion'), ('bow|Bow of the Shingung', 'Bow of the Shingung'), ('bow|Bow of the Soul', 'Bow of the Soul'), ('bow|Carnium Bow', 'Carnium Bow'), ('bow|Devils Bow', 'Devils Bow'), ('bow|Elemental Bow', 'Elemental Bow'), ('bow|Giants Bow', 'Giants Bow'), ('bow|Hazard Bow', 'Hazard Bow'), ('bow|Ice Crystal Bow', 'Ice Crystal Bow'), ('bow|Moonlight Bow', 'Moonlight Bow'), ('bow|Plasma Bow', 'Plasma Bow'),
+    ('cane|Archangel Staff', 'Archangel Staff'), ('cane|Bloody Nebulite', 'Bloody Nebulite'), ('cane|Branch of Life', 'Branch of Life'), ('cane|Branches of the World Tree', 'Branches of the World Tree'), ('cane|Commander Staff', 'Commander Staff'), ('cane|Crystal Wand', 'Crystal Wand'), ('cane|Dead Man Staff', 'Dead Man Staff'), ('cane|Desperion Staff', 'Desperion Staff'), ('cane|Ghoul Staff', 'Ghoul Staff'), ('cane|Giant Staff', 'Giant Staff'), ('cane|Imperial Sttaff', 'Imperial Sttaff'), ('cane|Inferno Staff', 'Inferno Staff'), ('cane|Spirit Staff', 'Spirit Staff'),
+    ('chainsword|Archangel Chainsword', 'Archangel Chainsword'), ('chainsword|Barakiel Chainsword', 'Barakiel Chainsword'), ('chainsword|Berseker Chainsword', 'Berseker Chainsword'), ('chainsword|Bultgang', 'Bultgang'), ('chainsword|Chrono Kitara', 'Chrono Kitara'), ('chainsword|Dismentor', 'Dismentor'), ('chainsword|Dragon Hunter', 'Dragon Hunter'), ('chainsword|Gram', 'Gram'), ('chainsword|Lightning Chainsword', 'Lightning Chainsword'), ('chainsword|Nameless Victory', 'Nameless Victory'), ('chainsword|Pain of Gardenness', 'Pain of Gardenness'), ('chainsword|Schrager', 'Schrager'),
+    ('crossbow|Alvarest', 'Alvarest'), ('crossbow|Archangel Crossbow', 'Archangel Crossbow'), ('crossbow|Ballista', 'Ballista'), ('crossbow|Burst Avenger', 'Burst Avenger'), ('crossbow|Crystal Bowgun', 'Crystal Bowgun'), ('crossbow|Doom Singer', 'Doom Singer'), ('crossbow|Giant Crossbow', 'Giant Crossbow'), ('crossbow|Hellhound', 'Hellhound'), ('crossbow|Peacemaker', 'Peacemaker'), ('crossbow|Tasram', 'Tasram'), ('crossbow|Thorn Crossbow', 'Thorn Crossbow'), ('crossbow|antique crossbow', 'antique crossbow'),
+    ('dagger|Archangel Slayer', 'Archangel Slayer'), ('dagger|Blood Orchid', 'Blood Orchid'), ('dagger|Crystal Dagger', 'Crystal Dagger'), ('dagger|Dagger of Contamination', 'Dagger of Contamination'), ('dagger|Dagger of Mana', 'Dagger of Mana'), ('dagger|Devil Dagger', 'Devil Dagger'), ('dagger|Flame Breaker', 'Flame Breaker'), ('dagger|Giant Dagger', 'Giant Dagger'), ('dagger|Hell Knife', 'Hell Knife'), ("dagger|Kruma's Horn", "Kruma's Horn"), ('dagger|Soul Separator', 'Soul Separator'), ('dagger|chris', 'chris'), ('dagger|stiletto', 'stiletto'),
+    ('double_axe|Archangel Twin Axe', 'Archangel Twin Axe'), ('double_axe|Bloody Angish', 'Bloody Angish'), ('double_axe|Bloody Cross', 'Bloody Cross'), ('double_axe|Clarent', 'Clarent'), ('double_axe|Cursed Twin Axe', 'Cursed Twin Axe'), ('double_axe|Furious Berserker', 'Furious Berserker'), ('double_axe|Gallatin', 'Gallatin'), ("double_axe|Giant's Twin Axes", "Giant's Twin Axes"), ('double_axe|Ice Storm Twin Axe', 'Ice Storm Twin Axe'), ('double_axe|Madness Twin Axe', 'Madness Twin Axe'), ('double_axe|Meteor Impact', 'Meteor Impact'), ('double_axe|Warpeak', 'Warpeak'), ('double_axe|Yaksha Twin Axe', 'Yaksha Twin Axe'),
+    ('greatsword|Archangel Buster', 'Archangel Buster'), ("greatsword|Berserker's Greatsword", "Berserker's Greatsword"), ("greatsword|Commander's Greatsword", "Commander's Greatsword"), ('greatsword|Dragon Slayer', 'Dragon Slayer'), ('greatsword|First Blood', 'First Blood'), ('greatsword|Flamberge', 'Flamberge'), ("greatsword|Guardian's Two-Handed Greatsword", "Guardian's Two-Handed Greatsword"), ("greatsword|Heaven's Wingblade", "Heaven's Wingblade"), ('greatsword|Inferno Master', 'Inferno Master'), ('greatsword|Sword of Iphos', 'Sword of Iphos'),
+    ('magic_cannon|Archangel Blaster', 'Archangel Blaster'), ('magic_cannon|Assault Cannon', 'Assault Cannon'), ('magic_cannon|Basilisk Culverin', 'Basilisk Culverin'), ('magic_cannon|Deathbringer', 'Deathbringer'), ('magic_cannon|Divine Blaster', 'Divine Blaster'), ('magic_cannon|Doom Crusher', 'Doom Crusher'), ("magic_cannon|Giant's Blaster", "Giant's Blaster"), ('magic_cannon|Mine Buster', 'Mine Buster'), ('magic_cannon|Pata', 'Pata'), ('magic_cannon|Sarakael Magic Cannon', 'Sarakael Magic Cannon'), ('magic_cannon|Schofield', 'Schofield'), ('magic_cannon|Star Buster', 'Star Buster'), ('magic_cannon|Zephyrus', 'Zephyrus'),
+    ('one_handed_sword|Archangel Blade', 'Archangel Blade'), ('one_handed_sword|Elemental Sword', 'Elemental Sword'), ("one_handed_sword|Fighting Father's Sword", "Fighting Father's Sword"), ("one_handed_sword|Giant's Sword", "Giant's Sword"), ("one_handed_sword|Guardian's Sword", "Guardian's Sword"), ('one_handed_sword|Kshanberg', 'Kshanberg'), ('one_handed_sword|Raid Sword', 'Raid Sword'), ('one_handed_sword|Sir Blade', 'Sir Blade'), ('one_handed_sword|Spirits Sword', 'Spirits Sword'), ('one_handed_sword|Sword of Eclipse', 'Sword of Eclipse'), ('one_handed_sword|Sword of Miracle', 'Sword of Miracle'), ('one_handed_sword|Sword of Nightmare', 'Sword of Nightmare'), ('one_handed_sword|Sword of Valhalla', 'Sword of Valhalla'), ('one_handed_sword|Tsurugi', 'Tsurugi'),
+    ('orb|Archangel Orb', 'Archangel Orb'), ("orb|Devil's Orb", "Devil's Orb"), ('orb|Dragon Flame Head', 'Dragon Flame Head'), ('orb|Eclipse of', 'Eclipse of'), ('orb|Elysion', 'Elysion'), ('orb|Fairy Queen', 'Fairy Queen'), ("orb|Giant's Orb", "Giant's Orb"), ('orb|Hall of Faith', 'Hall of Faith'), ('orb|Hand of Cabrio', 'Hand of Cabrio'), ('orb|Nirvana', 'Nirvana'), ('orb|Spell Breaker', 'Spell Breaker'), ('orb|The Bones of Kaim Banul', 'The Bones of Kaim Banul'),
+    ('rapier|Archangel Rapier', 'Archangel Rapier'), ('rapier|Assault Rapier', 'Assault Rapier'), ('rapier|Blink Rapier', 'Blink Rapier'), ('rapier|Eclair Bijou', 'Eclair Bijou'), ("rapier|Giant's Rapier", "Giant's Rapier"), ('rapier|Glorious', 'Glorious'), ('rapier|Grid Rapier', 'Grid Rapier'), ('rapier|Hauteclair', 'Hauteclair'), ('rapier|Kolishmard', 'Kolishmard'), ('rapier|Levatein', 'Levatein'), ('rapier|Soldat Estark', 'Soldat Estark'), ("rapier|Tromba's Fang", "Tromba's Fang"),
+    ('soul_breaker|Archangel Soul Breaker', 'Archangel Soul Breaker'), ('soul_breaker|Blade of Madness', 'Blade of Madness'), ('soul_breaker|Crystal Soul Breaker', 'Crystal Soul Breaker'), ('soul_breaker|Dark Shadow', 'Dark Shadow'), ('soul_breaker|Frostbite', 'Frostbite'), ("soul_breaker|Giant's Soul Breaker", "Giant's Soul Breaker"), ('soul_breaker|Hrunting', 'Hrunting'), ('soul_breaker|Judge of the Sun', 'Judge of the Sun'), ('soul_breaker|Sword of the Soul', 'Sword of the Soul'), ('soul_breaker|Wisdom of our ancestors', 'Wisdom of our ancestors'),
+    ('spear|Archangel Halberd', 'Archangel Halberd'), ('spear|Ascalon', 'Ascalon'), ('spear|Battle Spear', 'Battle Spear'), ('spear|Body Slasher', 'Body Slasher'), ("spear|Giant's Spear", "Giant's Spear"), ('spear|Great Axe', 'Great Axe'), ('spear|Halberd', 'Halberd'), ('spear|Heavy War Axe', 'Heavy War Axe'), ('spear|Lancia', 'Lancia'), ('spear|Saint Spear', 'Saint Spear'), ('spear|Scorpion', 'Scorpion'), ('spear|Side', 'Side'), ('spear|Tallum Glaive', 'Tallum Glaive'), ('spear|Typhon Spear', 'Typhon Spear'), ('spear|Widowmaker', 'Widowmaker'),
+    ('two_sword_style|Archangel Dual Swords', 'Archangel Dual Swords'), ('two_sword_style|Caribs Dual Swords', 'Caribs Dual Swords'), ('two_sword_style|Damascus Dual Sword', 'Damascus Dual Sword'), ('two_sword_style|Dark Legion', 'Dark Legion'), ('two_sword_style|Death Lord Dual Swords', 'Death Lord Dual Swords'), ("two_sword_style|Giant's Dual Swords", "Giant's Dual Swords"), ('two_sword_style|Homunculus Dual Sword', 'Homunculus Dual Sword'), ("two_sword_style|Mardil's Wrath", "Mardil's Wrath"), ('two_sword_style|Mystery Dual Swords', 'Mystery Dual Swords'), ('two_sword_style|Saint Dual Sword', 'Saint Dual Sword'), ('two_sword_style|Tears of Warrior', 'Tears of Warrior'), ("two_sword_style|Themis's Tongue", "Themis's Tongue"),
+]
+
+
 class CharacterAttributes(models.Model):
-
     character = models.OneToOneField(Character, on_delete=models.CASCADE, related_name='attributes')
-
     inheritor_books = models.ManyToManyField(InheritorBook, verbose_name="Buku Inheritor", blank=True)
-
     epic_classes_count = models.IntegerField("Legend Class Point", default=0)
-
     epic_agathions_count = models.IntegerField("Legend Agathion Point", default=0)
 
-    soulshot_level = models.IntegerField("Soulshot Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(13)], blank=True)
-
-    valor_level = models.IntegerField("Valor Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(13)], blank=True)
-
     soul_prog_attack = models.CharField("Soul Progression Attack", max_length=10, choices=SOUL_PROGRESSION_CHOICES, blank=True)
-
     soul_prog_defense = models.CharField("Soul Progression Defense", max_length=10, choices=SOUL_PROGRESSION_CHOICES, blank=True)
-
     soul_prog_blessing = models.CharField("Soul Progression Blessing", max_length=10, choices=SOUL_PROGRESSION_CHOICES, blank=True)
 
     enchant_bracelet_holy_prot = models.IntegerField("Enchant Bracelet of Holy Protection", choices=ENCHANT_CHOICES, default=0)
-
     enchant_bracelet_influence = models.IntegerField("Enchant Bracelet of Influence", choices=ENCHANT_CHOICES, default=0)
-
     enchant_earring_earth = models.IntegerField("Enchant Earth Dragon's Earring", choices=ENCHANT_CHOICES, default=0)
-
     enchant_earring_fire = models.IntegerField("Enchant Fire Dragon's Earring", choices=ENCHANT_CHOICES, default=0)
-
     enchant_seal_eva = models.IntegerField("Enchant Eva's Seal", choices=ENCHANT_CHOICES, default=0)
-
     aster_erafone = models.IntegerField("Aster", default=0, validators=[MinValueValidator(0), MaxValueValidator(30)], help_text="Maksimal 30 Node")
 
     # Expertise Fields
@@ -1382,773 +1093,228 @@ class CharacterAttributes(models.Model):
     exp_dual_axe = models.IntegerField("Dual Axe Skill", choices=EXPERTISE_CHOICES, default=0, blank=True)
     exp_soul_breaker = models.IntegerField("Soul Breaker Skill", choices=EXPERTISE_CHOICES, default=0, blank=True)
 
-    # New PvP Fields
-
+    # PvP Equipment Fields
     pvp_helmet = models.CharField("PvP Helmet", max_length=100, choices=PVP_HELMET_CHOICES, blank=True)
-    pvp_helmet_enchant = models.IntegerField("PvP Helmet Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)], help_text="Enchant level +0 to +11")
-
+    pvp_helmet_enchant = models.IntegerField("PvP Helmet Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)])
     pvp_gloves = models.CharField("PvP Gloves", max_length=100, choices=PVP_GLOVES_CHOICES, blank=True)
-    pvp_gloves_enchant = models.IntegerField("PvP Gloves Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)], help_text="Enchant level +0 to +11")
-
+    pvp_gloves_enchant = models.IntegerField("PvP Gloves Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)])
     pvp_boots = models.CharField("PvP Boots", max_length=100, choices=PVP_BOOTS_CHOICES, blank=True)
-    pvp_boots_enchant = models.IntegerField("PvP Boots Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)], help_text="Enchant level +0 to +11")
-
+    pvp_boots_enchant = models.IntegerField("PvP Boots Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)])
     pvp_gaiters = models.CharField("PvP Gaiters", max_length=100, choices=PVP_GAITERS_CHOICES, blank=True)
-    pvp_gaiters_enchant = models.IntegerField("PvP Gaiters Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)], help_text="Enchant level +0 to +11")
-
+    pvp_gaiters_enchant = models.IntegerField("PvP Gaiters Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)])
     pvp_top_armor = models.CharField("PvP Top Armor", max_length=100, choices=PVP_ARMOR_CHOICES, blank=True)
-    pvp_top_armor_enchant = models.IntegerField("PvP Armor Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)], help_text="Enchant level +0 to +11")
-
+    pvp_top_armor_enchant = models.IntegerField("PvP Armor Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)])
     pvp_cloak = models.CharField("PvP Cloak", max_length=100, choices=PVP_CLOAK_CHOICES, blank=True)
-    pvp_cloak_enchant = models.IntegerField("PvP Cloak Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)], help_text="Enchant level +0 to +11")
-
+    pvp_cloak_enchant = models.IntegerField("PvP Cloak Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)])
     pvp_tshirt = models.CharField("PvP T-Shirt", max_length=100, choices=PVP_TSHIRT_CHOICES, blank=True)
-    pvp_tshirt_enchant = models.IntegerField("PvP T-Shirt Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)], help_text="Enchant level +0 to +11")
-
+    pvp_tshirt_enchant = models.IntegerField("PvP T-Shirt Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)])
     pvp_sigil = models.CharField("PvP Sigil", max_length=100, choices=PVP_SIGIL_CHOICES, blank=True)
-    pvp_sigil_enchant = models.IntegerField("PvP Sigil Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)], help_text="Enchant level +0 to +11")
-    pvp_sigil_enchant = models.IntegerField("PvP Sigil Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)], help_text="Enchant level +0 to +11")
-
+    pvp_sigil_enchant = models.IntegerField("PvP Sigil Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)])
     pvp_necklace = models.CharField("PvP Necklace", max_length=100, choices=PVP_NECKLACE_CHOICES, blank=True)
-    pvp_necklace_enchant = models.IntegerField("PvP Necklace Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)], help_text="Enchant level +0 to +11")
-
+    pvp_necklace_enchant = models.IntegerField("PvP Necklace Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)])
     pvp_ring_left = models.CharField("PvP Ring (Left)", max_length=100, choices=PVP_RING_CHOICES, blank=True)
-    pvp_ring_left_enchant = models.IntegerField("PvP Ring (Left) Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)], help_text="Enchant level +0 to +11")
-
+    pvp_ring_left_enchant = models.IntegerField("PvP Ring (Left) Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)])
     pvp_ring_right = models.CharField("PvP Ring (Right)", max_length=100, choices=PVP_RING_CHOICES, blank=True)
-    pvp_ring_right_enchant = models.IntegerField("PvP Ring (Right) Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)], help_text="Enchant level +0 to +11")
-
+    pvp_ring_right_enchant = models.IntegerField("PvP Ring (Right) Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)])
     pvp_belt = models.CharField("PvP Belt", max_length=100, choices=PVP_BELT_CHOICES, blank=True)
-    pvp_belt_enchant = models.IntegerField("PvP Belt Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)], help_text="Enchant level +0 to +11")
+    pvp_belt_enchant = models.IntegerField("PvP Belt Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)])
 
-    
+    # OLD STAT FIELDS (kept for DB compatibility - will be removed after migration)
+    soulshot_level = models.IntegerField("Soulshot Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(13)], blank=True)
+    valor_level = models.IntegerField("Valor Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(13)], blank=True)
+    stat_dmg = models.IntegerField("DMG (Damage)", default=0)
+    stat_acc = models.IntegerField("ACC (Accuracy)", default=0)
+    stat_def = models.IntegerField("DEF (Defense)", default=0)
+    stat_reduc = models.IntegerField("REDUC (Damage Reduction)", default=0)
+    stat_resist = models.IntegerField("RESIST (Resistance)", default=0)
+    stat_skill_dmg_boost = models.IntegerField("Skill DMG Boost", default=0)
+    stat_wpn_dmg_boost = models.IntegerField("Weapon DMG Boost", default=0)
+    stat_guardian = models.IntegerField("Guardian", default=0, validators=[MinValueValidator(0), MaxValueValidator(13)], blank=True)
+    stat_conquer = models.IntegerField("Conquer", default=0, validators=[MinValueValidator(0), MaxValueValidator(13)], blank=True)
+    total_legend_codex = models.IntegerField("Total Legend Codex", default=0)
+    total_epic_mount = models.IntegerField("Total Epic Mount", default=0)
 
-    # ============================================
-
-    # NEW STAT FIELDS FOR GEAR SCORE CALCULATION
-
-    # Based on spreadsheet formula:
-
-    # SCORE = DMG + ACC + DEF + (REDUC×3) + RESIST + (SKILL_DMG_BOOST×2) + 
-
-    #         WPN_DMG_BOOST + (SOULSHOT×10) + (VALOR×10) + (GUARDIAN×10)
-
-    # ============================================
-
-    stat_dmg = models.IntegerField("DMG (Damage)", default=0, help_text="Total damage stat")
-
-    stat_acc = models.IntegerField("ACC (Accuracy)", default=0, help_text="Total accuracy stat")
-
-    stat_def = models.IntegerField("DEF (Defense)", default=0, help_text="Total defense stat")
-
-    stat_reduc = models.IntegerField("REDUC (Damage Reduction)", default=0, help_text="Damage reduction stat (multiplied by 3 in score)")
-
-    stat_resist = models.IntegerField("RESIST (Resistance)", default=0, help_text="Magic/status resistance stat")
-
-    stat_skill_dmg_boost = models.IntegerField("Skill DMG Boost", default=0, help_text="Skill damage boost (multiplied by 2 in score)")
-
-    stat_wpn_dmg_boost = models.IntegerField("Weapon DMG Boost", default=0, help_text="Weapon damage boost stat")
-
-    stat_guardian = models.IntegerField("Guardian", default=0, validators=[MinValueValidator(0), MaxValueValidator(13)], help_text="Guardian level (max 13, multiplied by 10 in score)", blank=True)
-
-    stat_conquer = models.IntegerField("Conquer", default=0, validators=[MinValueValidator(0), MaxValueValidator(13)], help_text="Conquer level (max 13, multiplied by 10 in score)", blank=True)
-
-    total_legend_codex = models.IntegerField("Total Legend Codex", default=0, help_text="Total Legend Class & Agathion Codex (multiplied by 3 in score)")
-
-    total_epic_mount = models.IntegerField("Total Epic Mount", default=0, help_text="Total Epic Mount (multiplied by 10 in score)")
-
-    
+    # KELOMPOK G - BASE STATS
+    g1 = models.IntegerField("Melee Damage Reduction", default=0)
+    g2 = models.IntegerField("Ranged Damage Reduction", default=0)
+    g3 = models.IntegerField("Magic Damage Reduction", default=0)
+    g4 = models.IntegerField("Melee Evasion", default=0)
+    g5 = models.IntegerField("Ranged Evasion", default=0)
+    g6 = models.IntegerField("Magic Evasion", default=0)
+    g7 = models.IntegerField("Skill Resistance", default=0)
+    g8 = models.IntegerField("Movement Speed (%)", default=0)
+    g9 = models.IntegerField("Max HP", default=0)
+    g10 = models.IntegerField("Max MP", default=0)
+    g11 = models.IntegerField("Weapon Block (%)", default=0)
+    g12 = models.IntegerField("Defense", default=0)
+    g13 = models.IntegerField("Cooldown Reduction (%)", default=0)
+    g14 = models.IntegerField("Melee Damage", default=0)
+    g15 = models.IntegerField("Melee Accuracy", default=0)
+    g16 = models.IntegerField("Melee Critical Hit (%)", default=0)
+    g17 = models.IntegerField("Ranged Damage", default=0)
+    g18 = models.IntegerField("Ranged Accuracy", default=0)
+    g19 = models.IntegerField("Ranged Critical Hit (%)", default=0)
+    g20 = models.IntegerField("Magic Damage", default=0)
+    g21 = models.IntegerField("Magic Accuracy", default=0)
+    g22 = models.IntegerField("Magic Critical Hit (%)", default=0)
+    g23 = models.IntegerField("Weapon Damage Boost (%)", default=0)
+    g24 = models.IntegerField("Weapon Defense (%)", default=0)
+    g25 = models.IntegerField("Skill Damage Boost (%)", default=0)
+    g26 = models.IntegerField("Skill Defense (%)", default=0)
+    g27 = models.IntegerField("Attack Speed (%)", default=0)
+    g28 = models.IntegerField("Cast Speed (%)", default=0)
+    g29 = models.IntegerField("Weapon Damage", default=0)
+    g30 = models.IntegerField("Extra Damage", default=0)
+    g31 = models.IntegerField("HP Recovery (Tick)", default=0)
+    g32 = models.IntegerField("MP Recovery (Tick)", default=0)
+    g33 = models.IntegerField("MP Consumption Reduction (%)", default=0)
+    g34 = models.IntegerField("Weight Limit", default=0)
+    g35 = models.IntegerField("SOULSHOT Level", default=0)
+    g36 = models.IntegerField("VALOR Level", default=0)
+    g37 = models.IntegerField("GUARDIAN Level", default=0)
+    g38 = models.IntegerField("CONQUER Level", default=0)
 
     # Weapon and Skills
-
     weapon = models.CharField("Weapon", max_length=100, choices=WEAPON_CHOICES, blank=True)
-    weapon_enchant = models.IntegerField("Weapon Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)], help_text="Enchant level +0 to +11")
+    weapon_enchant = models.IntegerField("Weapon Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)])
+    unlocked_skills = models.JSONField("Unlocked Skills", default=list, blank=True)
 
-    unlocked_skills = models.JSONField("Unlocked Skills", default=list, blank=True, help_text="List of unlocked skill names")
     def __str__(self):
-
         return f"Atribut untuk {self.character.name}"
 
 
-
 class Skill(models.Model):
-
     name = models.CharField(max_length=100, unique=True)
-
     icon_file = models.CharField(max_length=100, blank=True, null=True)
 
-
-
     def __str__(self):
-
         return self.name
 
 
-
-
-
-
-
 class GearScoreLog(models.Model):
-
     character = models.ForeignKey(Character, on_delete=models.CASCADE, related_name='gs_logs')
-
     timestamp = models.DateTimeField(auto_now_add=True)
-
-    reason = models.CharField("Alasan", max_length=255, default='Pembaruan Karakter')
-
+    reason = models.CharField(max_length=255, default='Character update')
     total_score = models.FloatField()
-
-    # New stat fields matching the spreadsheet formula
-
+    gear_stats_score = models.FloatField("Gear Stats Score", default=0)
+    characteristics_score = models.FloatField("Characteristics Score", default=0)
+    subclass_score = models.FloatField("Subclass Score", default=0)
+    mainclass_score = models.FloatField("Mainclass Score", default=0)
     dmg = models.IntegerField("DMG", default=0)
-
     acc = models.IntegerField("ACC", default=0)
-
     def_stat = models.IntegerField("DEF", default=0)
-
     reduc = models.IntegerField("REDUC", default=0)
-
     resist = models.IntegerField("RESIST", default=0)
-
     skill_dmg_boost = models.IntegerField("Skill DMG Boost", default=0)
-
     wpn_dmg_boost = models.IntegerField("Wpn DMG Boost", default=0)
-
     soulshot = models.IntegerField("Soulshot", default=0)
-
     valor = models.IntegerField("Valor", default=0)
-
     guardian = models.IntegerField("Guardian", default=0)
 
-
-
     class Meta:
-
         ordering = ['-timestamp']
 
-
-
     def __str__(self):
-
-        return f'{self.character.name} GS Log @ {self.timestamp.strftime("%Y-%m-%d %H:%M")}'
-
+        return f"GS Log {self.character.name}: {self.total_score} ({self.timestamp})"
 
 
 # (GearScoreLog model omitted for brevity)
 
 class CharacteristicsStats(models.Model):
-
-
-
     character = models.OneToOneField(Character, on_delete=models.CASCADE, related_name='characteristics_stats')
 
-
-
-
-
-
-
-    uron_char_mag = models.IntegerField("Magic Damage", default=0)
-
-
-
-    acc_char_mag = models.IntegerField("Magic Accuracy", default=0)
-
-
-
-    crit_char_mag = models.IntegerField("Magic Critical Hit", default=0)
-
-
-
-    uron_char_mele = models.IntegerField("Melee Damage", default=0)
-
-
-
-    acc_char_mele = models.IntegerField("Melee Accuracy", default=0)
-
-
-
-    crit_char_mele = models.IntegerField("Melee Critical Hit", default=0)
-
-
-
-    uron_char_range = models.IntegerField("Ranged Damage", default=0)
-
-
-
-    acc_char_range = models.IntegerField("Ranged Accuracy", default=0)
-
-
-
-    crit_char_range = models.IntegerField("Ranged Critical Hit", default=0)
-
-
-
-    uror_char = models.IntegerField("Weapon Damage", default=0)
-
-
-
-    dopur_char = models.IntegerField("Extra Damage", default=0)
-
-
-
-    dopurcrit_char = models.IntegerField("Extra Damage (on Critical Hit)", default=0)
-
-
-
-    shdvur_char = models.IntegerField("Double Chance", default=0)
-
-
-
-    shtrur_char = models.IntegerField("Triple Chance", default=0)
-
-
-
-    blockor_char = models.IntegerField("Weapon Block", default=0)
-
-
-
-    scoratk_char = models.IntegerField("Attack Speed", default=0)
-
-
-
-    scor_char = models.IntegerField("Movement Speed", default=0)
-
-
-
-    scormag_char = models.IntegerField("Cast Speed", default=0)
-
-
-
-    snih_char = models.IntegerField("Damage Reduction", default=0)
-
-
-
-    snihurvmili = models.IntegerField("Melee Damage Reduction", default=0)
-
-
-
-    snihurvdal = models.IntegerField("Ranged Damage Reduction", default=0)
-
-
-
-    snihurmag = models.IntegerField("Magic Damage Reduction", default=0)
-
-
-
-    def_char = models.IntegerField("Defence", default=0)
-
-
-
-    uklvblis = models.IntegerField("Melee Evasion", default=0)
-
-
-
-    uklvdal = models.IntegerField("Ranged Evasion", default=0)
-
-
-
-    uklvmag = models.IntegerField("Magic Evasion", default=0)
-
-
-
-    sopr_char = models.IntegerField("Skill Resistance", default=0)
-
-
-
-    maxhp = models.IntegerField("Max HP", default=0)
-
-
-
-    maxmp = models.IntegerField("Max MP", default=0)
-
-
-
-    vosthp = models.IntegerField("HP Recovery (Tick)", default=0)
-
-
-
-    vostmp = models.IntegerField("MP Recovery (Tick)", default=0)
-
-
-
-    umenmp = models.IntegerField("MP Consumption Reduction", default=0)
-
-
-
-    umenper = models.IntegerField("Coldown Reduction", default=0)
-
-
-
-    maksgruz = models.IntegerField("Weigt Limit", default=0)
-
-
-
-    uveluror = models.IntegerField("Weapon Damage Boost", default=0)
-
-
-
-    sopruror = models.IntegerField("Weapon Defence", default=0)
-
-
-
-    uvelurumen = models.IntegerField("Skill Damage Boost", default=0)
-
-
-
-    soprurumen = models.IntegerField("Skill Defence", default=0)
-
-
-
-    snihkrit = models.IntegerField("Critical Hit Reduction", default=0)
-
-
-
-    soprkritmili = models.IntegerField("Mele Critical Hit Resistance", default=0)
-
-
-
-    soprktitreng = models.IntegerField("Ranged Critical Hit Resistance", default=0)
-
-
-
-    soprkritmag = models.IntegerField("Magic Critical Hit Resistance", default=0)
-
-
-
-    soprdvoinur = models.IntegerField("Double Resistance", default=0)
-
-
-
-    soprtroinur = models.IntegerField("Triple Resistance", default=0)
-
-
-
-    probivblock = models.IntegerField("Block Penetration", default=0)
-
-
-
-    ignrsnishur = models.IntegerField("Ignore Damage Reduction", default=0)
-
-
-
-    shansogl = models.IntegerField("Stun Accuracy", default=0)
-
-
-
-    soprogl = models.IntegerField("Stun Resistance", default=0)
-
-
-
-    snishurogl = models.IntegerField("Stun Reduction", default=0)
-
-
-
-    zashvogl = models.IntegerField("Stun Defence", default=0)
-
-
-
-    doptochogl = models.IntegerField("Extra Accuracy (to Stunned)", default=0)
-
-
-
-    ignordopsnishogl = models.IntegerField("Ignore Extra Reduction (to Stunned)", default=0)
-
-
-
-    shansuder = models.IntegerField("Hold Accuracy", default=0)
-
-
-
-    soprudersh = models.IntegerField("Hold Resistance", default=0)
-
-
-
-    snishurvsostuder = models.IntegerField("Hold Reduction", default=0)
-
-
-
-    zashvsostuder = models.IntegerField("Hold Defence", default=0)
-
-
-
-    doptchpouder = models.IntegerField("Extra Accuracy (to Held)", default=0)
-
-
-
-    ignordopshishpouder = models.IntegerField("Ignore Extra Reduction (to Held)", default=0)
-
-
-
-    shansagro = models.IntegerField("Vex Accuracy", default=0)
-
-
-
-    sopragro = models.IntegerField("Aggression Resistance", default=0)
-
-
-
-    shansbezmolv = models.IntegerField("Silence Accuracy", default=0)
-
-
-
-    soprbezmolv = models.IntegerField("Silence Resistance", default=0)
-
-
-
-    shansanomal = models.IntegerField("CC Accuracy", default=0)
-
-
-
-    sopranomal = models.IntegerField("CC Resistance", default=0)
-
-
-
-    umendlitanomal = models.IntegerField("CC Duration Reduction", default=0)
-
-
-
-    uveldlitanomalsost = models.IntegerField("Increases CC Duration", default=0)
-
-
-
-    moshzelvost = models.IntegerField("Potion Recovery Rate", default=0)
-
-
-
-    effectzelvost = models.IntegerField("Potion Recovery Amount", default=0)
-
-
-
-    effectlech = models.IntegerField("Heal Boost", default=0)
-
-
-
-    effectpollech = models.IntegerField("Received Heal Increase", default=0)
-
-
-
-    absolutvosthp = models.IntegerField("Fixed HP Recovery", default=0)
-
-
-
-    absolutvostmp = models.IntegerField("Fixed MP Recovery", default=0)
-
-
-
-    ignorshtrafvosthp = models.IntegerField("Ignore HP Recovery Penalty", default=0)
-
-
-
-    ignorshtrafvostmp = models.IntegerField("Ignore MP Recovery Penalty", default=0)
-
-
-
-    tochobichattak = models.IntegerField("Basic Attack Accuracy", default=0)
-
-
-
-    uronobichattak = models.IntegerField("Basic Attack Damage", default=0)
-
-
-
-    snishuronaotobichattak = models.IntegerField("Basic Attack Damage Reduction", default=0)
-
-
-
-    uveluronaotobichattak = models.IntegerField("Basic Attack Damage Boost", default=0)
-
-
-
-    sopruronuotobichattak = models.IntegerField("Basic Attack Damage Resistance", default=0)
-
-
-
-    tochnumen = models.IntegerField("Skill Accuracy", default=0)
-
-
-
-    zashotumen = models.IntegerField("Skill Evasion", default=0)
-
-
-
-    shansdvurotumen = models.IntegerField("Skill Double Chance", default=0)
-
-
-
-    soprdvoinurotumen = models.IntegerField("Skill Double Resistance", default=0)
-
-
-
-    shanstroinurotumen = models.IntegerField("Skill Triple Chance", default=0)
-
-
-
-    soprtroinurotumen = models.IntegerField("Skill Triple Resistance", default=0)
-
-
-
-    dopurvpvp_mele = models.IntegerField("Extra PvP Melee Damage", default=0)
-
-
-
-    tochnvpvp_mele = models.IntegerField("PvP Melee Accuracy", default=0)
-
-
-
-    dopurvpvp_range = models.IntegerField("Extra PvP Range Damage", default=0)
-
-
-
-    tochnvpvp_range = models.IntegerField("PvP Range Accuracy", default=0)
-
-
-
-    dopurvpvp_mag = models.IntegerField("Extra PvP Magic Damage", default=0)
-
-
-
-    tochnvpvp_mag = models.IntegerField("PvP Magic Accuracy", default=0)
-
-
-
-    kritatkpvp = models.IntegerField("PvP Critical Hit", default=0)
-
-
-
-    uklvmilipvp = models.IntegerField("PvP Melee Evasion", default=0)
-
-
-
-    uklvrengepvp = models.IntegerField("PvP Ranged Evasion", default=0)
-
-
-
-    uklmagpvp = models.IntegerField("PvP Magic Evasion", default=0)
-
-
-
-    snishurvmilipvp = models.IntegerField("PvP Melee Damage Reduction", default=0)
-
-
-
-    snishurvrengepvp = models.IntegerField("PvP Ranged Damage Reduction", default=0)
-
-
-
-    snishurvmagpvp = models.IntegerField("PvP Magic Damage Reduction", default=0)
-
-
-
-    soprurvblishpvp = models.IntegerField("PvP Melee Damage Resistance", default=0)
-
-
-
-    soprurvdalnpvp = models.IntegerField("PvP Ranged Damage Resistance", default=0)
-
-
-
-    soprmagurvpvp = models.IntegerField("PvP Magic Damage Resistance", default=0)
-
-
-
-    soprurotumenvpvp = models.IntegerField("PvP Skill Defence", default=0)
-
-
-
-    soprurotoruvpvp = models.IntegerField("PvP Weapon Defence", default=0)
-
-
-
-    shansdvoinurpvp = models.IntegerField("PvP Double Chance", default=0)
-
-
-
-    soprdvoinurvpvp = models.IntegerField("PvP Double Resistance", default=0)
-
-
-
-    shanstroinurvpvp = models.IntegerField("PvP Triple Chance", default=0)
-
-
-
-    soprtroinurvpvp = models.IntegerField("PvP Triple Resistance", default=0)
-
-
-
-    soprkritatkvpvp = models.IntegerField("PvP Critical Hit Resistance", default=0)
-
-
-
-    dopurvpve = models.IntegerField("Extra PvE Damage", default=0)
-
-
-
-    tochnvpve = models.IntegerField("PvE Accuracy", default=0)
-
-
-
-    zashvpve = models.IntegerField("PvE Defence", default=0)
-
-
-
-    snishurvpve = models.IntegerField("PvE Damage Reduction", default=0)
-
-
-
-    soproglvpve = models.IntegerField("PvE Stun Resistance", default=0)
-
-
-
-    uronvodoi = models.IntegerField("Water Type Damage", default=0)
-
-
-
-    uronognem = models.IntegerField("Fire Type Damage", default=0)
-
-
-
-    uronvetrom = models.IntegerField("Wind Type Damage", default=0)
-
-
-
-    uronzemlei = models.IntegerField("Eart Type Damage", default=0)
-
-
-
-    uronsvyat = models.IntegerField("Light Type Damage", default=0)
-
-
-
-    urontmoi = models.IntegerField("Dark Type Damage", default=0)
-
-
-
-    uveluronavodoi = models.IntegerField("Water Type Damage Boost", default=0)
-
-
-
-    uveluronaognem = models.IntegerField("Fire Type Damage Boost", default=0)
-
-
-
-    uvelurovavetrom = models.IntegerField("Wind Type Damage Boost", default=0)
-
-
-
-    uveluronazemlei = models.IntegerField("Eart Type Damage Boost", default=0)
-
-
-
-    uveluronasvyat = models.IntegerField("Light Type Damage Boost", default=0)
-
-
-
-    uveluronatmoi = models.IntegerField("Dark Type Damage Boost", default=0)
-
-
-
-    soprotvode = models.IntegerField("Water Type Resistance", default=0)
-
-
-
-    soprotogny = models.IntegerField("Fire Type Resistance", default=0)
-
-
-
-    soprotvetry = models.IntegerField("Wind Type Resistance", default=0)
-
-
-
-    soprotzemle = models.IntegerField("Eart Type Resistance", default=0)
-
-
-
-    soprotsvyat = models.IntegerField("Light Type Resistance", default=0)
-
-
-
-    soprottme = models.IntegerField("Dark Type Resistance", default=0)
-
-
-
-    tochnostszardushi = models.IntegerField("Soulshot Accuracy", default=0)
-
-
-
-    urotorushszardushi = models.IntegerField("Soulshot Weapon Damage", default=0)
-
-
-
-    uveluronaszardushi = models.IntegerField("Soulshot Weapon Damage Boost", default=0)
-
-
-
-    dopurszaryaddushi = models.IntegerField("Extra Soulshot Damage", default=0)
-
-
-
-    tochszaryaddushiviskach = models.IntegerField("Greated Soulshot Accuracy", default=0)
-
-
-
-    uronotorushszarviskach = models.IntegerField("Greated Soulshot Weapon Damage", default=0)
-
-
-
-    uveluronotorushsvishkach = models.IntegerField("Greated Soulshot weapon Damage Boost", default=0)
-
-
-
-    dopurszardushiviskach = models.IntegerField("Extra Greated Soulshot Damage", default=0)
-
-
-
-    urotstreli = models.IntegerField("Arrow Damage", default=0)
-
-
-
-    dalnstreli = models.IntegerField("Extra Range", default=0)
-
-
-
-    uvelnapoeng = models.IntegerField("Blessing Recharge Increase", default=0)
-
-
-
-    uvelpoluchengzaporysh = models.IntegerField("Oracle Quest Blessing Reward Increase", default=0)
-
-
-
-    umenshrasheng = models.IntegerField("Blessing Conservation", default=0)
-
-
-
-    bonuskopyt = models.IntegerField("Bonus EXP", default=0)
-
-
-
-
+    # KELOMPOK A - CORE PVP DEFENSE
+    a1 = models.IntegerField("PvP Melee Damage Reduction", default=0)
+    a2 = models.IntegerField("PvP Ranged Damage Reduction", default=0)
+    a3 = models.IntegerField("PvP Magic Damage Reduction", default=0)
+    a4 = models.IntegerField("PvP Melee Evasion", default=0)
+    a5 = models.IntegerField("PvP Ranged Evasion", default=0)
+    a6 = models.IntegerField("PvP Magic Evasion", default=0)
+    a7 = models.IntegerField("PvP Skill Defense (%)", default=0)
+    a8 = models.IntegerField("PvP Weapon Defense (%)", default=0)
+    a9 = models.IntegerField("PvP Melee Damage Resistance (%)", default=0)
+    a10 = models.IntegerField("PvP Ranged Damage Resistance (%)", default=0)
+    a11 = models.IntegerField("PvP Magic Damage Resistance (%)", default=0)
+    a12 = models.IntegerField("PvP Critical Hit Resistance (%)", default=0)
+
+    # KELOMPOK B - CORE PVP OFFENSE
+    b1 = models.IntegerField("Extra PvP Melee Damage", default=0)
+    b2 = models.IntegerField("Extra PvP Ranged Damage", default=0)
+    b3 = models.IntegerField("Extra PvP Magic Damage", default=0)
+    b4 = models.IntegerField("PvP Melee Accuracy", default=0)
+    b5 = models.IntegerField("PvP Ranged Accuracy", default=0)
+    b6 = models.IntegerField("PvP Magic Accuracy", default=0)
+    b7 = models.IntegerField("PvP Critical Hit (%)", default=0)
+    b8 = models.IntegerField("PvP Double Chance (%)", default=0)
+    b9 = models.IntegerField("PvP Triple Chance (%)", default=0)
+
+    # KELOMPOK C - CROWD CONTROL
+    c1 = models.IntegerField("Stun Accuracy (%)", default=0)
+    c2 = models.IntegerField("Stun Resistance (%)", default=0)
+    c3 = models.IntegerField("Hold Accuracy (%)", default=0)
+    c4 = models.IntegerField("Hold Resistance (%)", default=0)
+    c5 = models.IntegerField("CC Accuracy (%)", default=0)
+    c6 = models.IntegerField("CC Resistance (%)", default=0)
+    c7 = models.IntegerField("CC Duration Reduction (%)", default=0)
+    c8 = models.IntegerField("Increases CC Duration (%)", default=0)
+    c9 = models.IntegerField("Extra Accuracy (to Stunned)", default=0)
+    c10 = models.IntegerField("Ignore Extra Reduction (to Stunned)", default=0)
+    c11 = models.IntegerField("Hold Defense", default=0)
+    c12 = models.IntegerField("Stun Reduction", default=0)
+    c13 = models.IntegerField("Stun Defense", default=0)
+    c14 = models.IntegerField("Vex Accuracy (%)", default=0)
+    c15 = models.IntegerField("Aggression Resistance (%)", default=0)
+    c16 = models.IntegerField("Silence Accuracy (%)", default=0)
+    c17 = models.IntegerField("Silence Resistance (%)", default=0)
+
+    # KELOMPOK D - SURVIVAL
+    d1 = models.IntegerField("Heal Boost (%)", default=0)
+    d2 = models.IntegerField("Received Heal Increase (%)", default=0)
+    d3 = models.IntegerField("Potion Recovery Rate (%)", default=0)
+    d4 = models.IntegerField("Potion Recovery Amount", default=0)
+    d5 = models.IntegerField("Fixed HP Recovery", default=0)
+    d6 = models.IntegerField("Fixed MP Recovery", default=0)
+    d7 = models.IntegerField("Ignore HP Recovery Penalty (%)", default=0)
+    d8 = models.IntegerField("Ignore MP Recovery Penalty (%)", default=0)
+
+    # KELOMPOK E - SECONDARY DEFENSE
+    e1 = models.IntegerField("Critical Hit Reduction", default=0)
+    e2 = models.IntegerField("Melee Critical Hit Resistance (%)", default=0)
+    e3 = models.IntegerField("Ranged Critical Hit Resistance (%)", default=0)
+    e4 = models.IntegerField("Magic Critical Hit Resistance (%)", default=0)
+    e5 = models.IntegerField("Double Resistance (%)", default=0)
+    e6 = models.IntegerField("Triple Resistance (%)", default=0)
+    e7 = models.IntegerField("PvP Double Resistance (%)", default=0)
+    e8 = models.IntegerField("PvP Triple Resistance (%)", default=0)
+    e9 = models.IntegerField("Skill Double Resistance (%)", default=0)
+    e10 = models.IntegerField("Skill Triple Resistance (%)", default=0)
+
+    # KELOMPOK F - SECONDARY OFFENSE
+    f1 = models.IntegerField("Block Penetration (%)", default=0)
+    f2 = models.IntegerField("Ignore Damage Reduction", default=0)
+    f3 = models.IntegerField("Extra Damage (on Critical Hit)", default=0)
+    f4 = models.IntegerField("Soulshot Weapon Damage Boost (%)", default=0)
+    f5 = models.IntegerField("Extra Soulshot Damage", default=0)
+    f6 = models.IntegerField("Greater Soulshot Weapon Damage Boost (%)", default=0)
+    f7 = models.IntegerField("Extra Greater Soulshot Damage", default=0)
+    f8 = models.IntegerField("Double Chance (%)", default=0)
+    f9 = models.IntegerField("Triple Chance (%)", default=0)
+    f10 = models.IntegerField("Soulshot Accuracy", default=0)
+    f11 = models.IntegerField("Soulshot Weapon Damage", default=0)
+    f12 = models.IntegerField("Greater Soulshot Accuracy", default=0)
+    f13 = models.IntegerField("Greater Soulshot Weapon Damage", default=0)
 
     def calculate_total_score(self):
-        """
-        Calculate the total characteristics score by summing all stat fields.
-        Returns the sum of all 145 integer fields.
-        """
-        total = 0
-        for field in self._meta.fields:
-            if field.name not in ['id', 'character'] and isinstance(field, models.IntegerField):
-                value = getattr(self, field.name, 0) or 0
-                total += value
-        return total
-
+        A = 2 * (self.a1 + self.a2 + self.a3 + self.a4 + self.a5 + self.a6) + 0.02 * (self.a7 + self.a8 + self.a9 + self.a10 + self.a11 + self.a12)
+        B = 1.8 * (self.b1 + self.b2 + self.b3 + self.b4 + self.b5 + self.b6) + 0.018 * (self.b7 + self.b8 + self.b9)
+        C = 0.015 * (self.c1 + self.c2 + self.c3 + self.c4 + self.c5 + self.c6 + self.c7 + self.c8 + self.c14 + self.c15 + self.c16 + self.c17) + 1.5 * (self.c9 + self.c10 + self.c11 + self.c12 + self.c13)
+        D = 0.012 * (self.d1 + self.d2 + self.d3 + self.d7 + self.d8) + 1.2 * (self.d4 + self.d5 + self.d6)
+        E = 1.0 * self.e1 + 0.01 * (self.e2 + self.e3 + self.e4 + self.e5 + self.e6 + self.e7 + self.e8 + self.e9 + self.e10)
+        F = 0.01 * (self.f1 + self.f4 + self.f6 + self.f8 + self.f9) + 1.0 * (self.f2 + self.f3 + self.f5 + self.f7 + self.f10 + self.f11 + self.f12 + self.f13)
+        return A + B + C + D + E + F
 
     def __str__(self):
-
-
-
-        return f"Characteristics for {self.character.name}"
+        return f"Characteristics Stats for {self.character.name}"
 
 
 # ======================================================
@@ -2156,75 +1322,38 @@ class CharacteristicsStats(models.Model):
 # ======================================================
 
 class ActivityEvent(models.Model):
-    """
-    Model untuk menyimpan data event guild (Invasion, Boss Rush, Catacombs)
-    """
+    """Model untuk menyimpan data event guild (Invasion, Boss Rush, Catacombs)"""
     EVENT_TYPE_CHOICES = (
         ('INVASION', 'Invasion'),
         ('BOSS_RUSH', 'Boss Rush'),
         ('CATACOMBS', 'Catacombs'),
+        ('DIMENSIONAL_SIEGE', 'Dimensional Siege'),
         ('CUSTOM', 'Custom Event'),
     )
-    
-    event_id = models.CharField(
-        "Event ID", 
-        max_length=50, 
-        unique=True, 
-        blank=True,
-        help_text="Unique ID dari Discord/System"
-    )
+
+    event_id = models.CharField("Event ID", max_length=50, unique=True, blank=True, help_text="Unique ID dari Discord/System")
     name = models.CharField("Nama Event", max_length=100)
-    event_type = models.CharField(
-        "Tipe Event", 
-        max_length=20, 
-        choices=EVENT_TYPE_CHOICES
-    )
+    event_type = models.CharField("Tipe Event", max_length=20, choices=EVENT_TYPE_CHOICES)
     date = models.DateTimeField("Waktu Event")
-    
-    # Result fields
-    is_completed = models.BooleanField("Selesai (Fisik)", default=False)
-    is_finalized = models.BooleanField("Finalized (Poin Dibagi)", default=False, help_text="Set True setelah verifikasi kehadiran")
-    is_win = models.BooleanField(
-        "Menang", 
-        default=False, 
-        help_text="Untuk Boss Rush & Catacombs"
-    )
-    
-    # Invasion specific - JSON field untuk boss yang dibunuh
-    bosses_killed = models.JSONField(
-        "Boss Terbunuh", 
-        default=dict, 
-        blank=True,
-        help_text="Format: {'dragon_beast': true, 'carnifex': true, 'orfen': false}"
-    )
-    
-    # Invasion boss points (editable by admin)
-    dragon_beast_points = models.IntegerField(
-        "Poin Dragon Beast",
-        default=10,
-        help_text="Poin bonus jika Dragon Beast terbunuh"
-    )
-    carnifex_points = models.IntegerField(
-        "Poin Carnifex",
-        default=15,
-        help_text="Poin bonus jika Carnifex terbunuh"
-    )
-    orfen_points = models.IntegerField(
-        "Poin Orfen",
-        default=25,
-        help_text="Poin bonus jika Orfen terbunuh"
-    )
-    
-    # Custom event specific
-    custom_points = models.IntegerField(
-        "Poin Custom Event",
-        default=10,
-        help_text="Poin untuk Custom Event (diisi admin)"
-    )
-    
+    is_completed = models.BooleanField("Selesai", default=False)
+    is_win = models.BooleanField("Menang", default=False, help_text="Untuk Boss Rush & Catacombs")
+    is_finalized = models.BooleanField("Finalized", default=False)
+    bosses_killed = models.JSONField("Boss Terbunuh", default=dict, blank=True,
+        help_text="Format: {'dragon_beast': true, 'carnifex': true, 'orfen': false}")
+    custom_points = models.IntegerField("Custom Points", default=0, blank=True)
+
+    # Boss-specific points
+    carnifex_points = models.IntegerField("Carnifex Points", default=2)
+    orfen_points = models.IntegerField("Orfen Points", default=2)
+    dragon_beast_points = models.IntegerField("Dragon Beast Points", default=2)
+    latana_points = models.IntegerField("Latana Points", default=2)
+    kain_van_halter_points = models.IntegerField("Kain Van Halter Points", default=3)
+    balthazar_points = models.IntegerField("Balthazar Points", default=3)
+    core_points = models.IntegerField("Core Points", default=3)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         ordering = ['-date']
         verbose_name = "Activity Event"
@@ -2234,63 +1363,53 @@ class ActivityEvent(models.Model):
             models.Index(fields=['is_completed', '-date']),
             models.Index(fields=['event_type', '-date']),
         ]
-    
+
     def save(self, *args, **kwargs):
-        # Auto-generate event_id if not provided
         if not self.event_id:
             import uuid
-            self.event_id = f"{self.event_type}_{uuid.uuid4().hex[:8].upper()}"
+            self.event_id = str(uuid.uuid4())[:8]
         super().save(*args, **kwargs)
-    
+
     def __str__(self):
-        return f"{self.get_event_type_display()} - {self.date.strftime('%Y-%m-%d %H:%M')}"
-    
+        return f"{self.name} ({self.get_event_type_display()}) - {self.date.strftime('%Y-%m-%d')}"
+
     def calculate_max_points(self):
         """Hitung poin maksimal yang bisa didapat dari event ini"""
         if self.event_type == 'INVASION':
-            # DB=10, Carnifex=15, Orfen=25
-            points = 5  # Base attendance points
-            
-            bosses = self.bosses_killed
-            
-            # Safety check: if stored as string (rare but possible with SQLite/old data)
-            if isinstance(bosses, str):
-                import json
-                try:
-                    bosses = json.loads(bosses.replace("'", '"')) # Simple fix for python dict string
-                except:
-                    bosses = {}
-            
-            if not isinstance(bosses, dict):
-                bosses = {}
-
-            if bosses.get('dragon_beast'):
-                points += self.dragon_beast_points or 10
-            if bosses.get('carnifex'):
-                points += self.carnifex_points or 15
-            if bosses.get('orfen'):
-                points += self.orfen_points or 25
-            return points
+            base = 5
+            boss_points = 0
+            boss_point_map = {
+                'carnifex': self.carnifex_points,
+                'orfen': self.orfen_points,
+                'dragon_beast': self.dragon_beast_points,
+                'latana': self.latana_points,
+                'kain_van_halter': self.kain_van_halter_points,
+                'balthazar': self.balthazar_points,
+                'core': self.core_points,
+            }
+            if self.bosses_killed:
+                for boss, killed in self.bosses_killed.items():
+                    if killed:
+                        boss_points += boss_point_map.get(boss, 0)
+            return base + boss_points
         elif self.event_type == 'BOSS_RUSH':
-            # Join=20, Win=+10
-            return 30 if self.is_win else 20
+            return 10 if self.is_win else 5
         elif self.event_type == 'CATACOMBS':
-            # Join=15, Win=+10
-            return 25 if self.is_win else 15
+            return 10 if self.is_win else 5
+        elif self.event_type == 'DIMENSIONAL_SIEGE':
+            return 15 if self.is_win else 8
         elif self.event_type == 'CUSTOM':
-            return self.custom_points or 10
-        return 0
+            return self.custom_points
+        return 5
 
 
 class PlayerActivity(models.Model):
-    """
-    Model untuk tracking partisipasi player di setiap event
-    """
+    """Model untuk tracking partisipasi player di setiap event"""
     STATUS_CHOICES = (
         ('ATTENDED', 'Hadir'),
         ('ABSENT', 'Tidak Hadir'),
     )
-    
+
     player = models.ForeignKey(
         Character,
         on_delete=models.CASCADE,
@@ -2303,26 +1422,13 @@ class PlayerActivity(models.Model):
         related_name='participants',
         verbose_name="Event"
     )
-    discord_user_id = models.CharField(
-        "Discord User ID", 
-        max_length=50, 
-        blank=True,
-        help_text="Untuk mapping jika check-in via Discord"
-    )
-    status = models.CharField(
-        "Status", 
-        max_length=20, 
-        choices=STATUS_CHOICES, 
-        default='ATTENDED'
-    )
-    is_verified = models.BooleanField("Verified", default=False, help_text="Centang jika valid hadir")
+    discord_user_id = models.CharField("Discord User ID", max_length=50, blank=True)
+    status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default='ATTENDED')
     points_earned = models.IntegerField("Poin Didapat", default=0)
     checked_in_at = models.DateTimeField("Waktu Check-In", auto_now_add=True)
-    
-    # New field: Store per-player boss participation for Invasion
     bosses_killed = models.JSONField(
-        "Boss Terbunuh (Individual)", 
-        default=dict, 
+        "Boss Terbunuh (Individual)",
+        default=dict,
         blank=True,
         help_text="Spesifik untuk player ini: {'dragon_beast': true, 'carnifex': false, ...}"
     )
@@ -2336,144 +1442,102 @@ class PlayerActivity(models.Model):
             models.Index(fields=['player', 'status']),
             models.Index(fields=['event', 'status']),
         ]
-    
+
     def save(self, *args, **kwargs):
-        # Auto-calculate points based on event and status
-        if self.status == 'ATTENDED':
-            if self.event.event_type == 'INVASION':
-                # Calculate points from per-player boss kills
-                points = 5  # Base attendance
-                my_bosses = self.bosses_killed or {}
-                if my_bosses.get('dragon_beast') is True or str(my_bosses.get('dragon_beast', '')).lower() == 'true':
-                    points += self.event.dragon_beast_points or 10
-                if my_bosses.get('carnifex') is True or str(my_bosses.get('carnifex', '')).lower() == 'true':
-                    points += self.event.carnifex_points or 15
-                if my_bosses.get('orfen') is True or str(my_bosses.get('orfen', '')).lower() == 'true':
-                    points += self.event.orfen_points or 25
-                self.points_earned = points
-            else:
-                self.points_earned = self.event.calculate_max_points()
-        else:
-            self.points_earned = 0
+        if self.status == 'ATTENDED' and self.points_earned == 0:
+            self.points_earned = self.event.calculate_max_points()
         super().save(*args, **kwargs)
-    
+
     def __str__(self):
-        return f"{self.player.name} - {self.event.name} ({self.points_earned} pts)"
+        return f"{self.player.name} - {self.event.name} ({self.get_status_display()})"
 
 
 class PrizePoolConfig(models.Model):
-    """
-    Configuration for Prize Pool calculation.
-    Allows admins to adjust percentages and total pool dynamically.
-    """
+    """Configuration for Prize Pool calculation."""
     total_pool = models.IntegerField("Total Prize Pool", default=10000)
-    
-    # Percentages (stored as 0.70 for 70%)
-    elite_percentage = models.FloatField("Elite %", default=0.20)
-    core_percentage = models.FloatField("Core %", default=0.70)
+    elite_percentage = models.FloatField("Elite %", default=0.70)
+    core_percentage = models.FloatField("Core %", default=0.20)
     active_percentage = models.FloatField("Active %", default=0.10)
     casual_percentage = models.FloatField("Casual %", default=0.00)
-    
     updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.CharField(max_length=100, blank=True)
-    
+
     def save(self, *args, **kwargs):
-        # Validate total is 1.0 (allow small float error)
         total = self.elite_percentage + self.core_percentage + self.active_percentage + self.casual_percentage
-        if not (0.99 <= total <= 1.01):
-            # We won't raise error to avoid breaking admin saving, but backend logic should be careful
+        if abs(total - 1.0) > 0.01:
             pass
         super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = "Prize Pool Configuration"
-        verbose_name_plural = "Prize Pool Configurations" 
-        
-    def __str__(self):
-        return f"Config (Pool: {self.total_pool})"
+        verbose_name_plural = "Prize Pool Configurations"
 
+    def __str__(self):
+        return f"Prize Pool: {self.total_pool}"
+
+
+# ======================================================
+# MONTHLY RECAPS FOR DKP SYSTEM
+# ======================================================
 
 class MonthlyReport(models.Model):
-    """
-    Model untuk menyimpan rekap bulanan per player
-    """
+    """Model untuk menyimpan rekap bulanan per player"""
     TIER_CHOICES = (
         ('ELITE', '🏆 Elite'),
         ('CORE', '⚔️ Core'),
         ('ACTIVE', '🛡️ Active'),
         ('CASUAL', '🌱 Casual'),
     )
-    
+
+    player = models.ForeignKey(Character, on_delete=models.CASCADE, related_name='monthly_reports', verbose_name="Karakter")
     month = models.DateField("Bulan", help_text="Tanggal bulan (hari=1)")
-    player = models.ForeignKey(
-        Character,
-        on_delete=models.CASCADE,
-        related_name='monthly_reports',
-        verbose_name="Karakter"
-    )
-    
-    # Calculated fields
     total_events = models.IntegerField("Total Event", default=0)
     attended_events = models.IntegerField("Event Dihadiri", default=0)
     attendance_rate = models.FloatField("Attendance Rate", default=0.0)
-    
     activity_score = models.IntegerField("Skor Aktivitas", default=0)
     consistency_bonus = models.IntegerField("Bonus Konsistensi", default=0)
     decay_penalty = models.IntegerField("Decay Penalty", default=0)
-    manual_adjustment = models.IntegerField("Manual Adjustment", default=0)
     total_score = models.IntegerField("Total Skor", default=0)
-    
-    tier = models.CharField(
-        "Tier", 
-        max_length=20, 
-        choices=TIER_CHOICES, 
-        default='CASUAL'
-    )
+    tier = models.CharField("Tier", max_length=20, choices=TIER_CHOICES, default='CASUAL')
     is_qualified = models.BooleanField("Qualified untuk Reward", default=False)
     prize_amount = models.IntegerField("Jumlah Hadiah", default=0)
-    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
+    def calculate_tier(self):
+        """Determine tier based on total score"""
+        if self.attendance_rate >= 0.8 and self.total_score >= 80:
+            return 'ELITE'
+        elif self.attendance_rate >= 0.6 and self.total_score >= 50:
+            return 'CORE'
+        elif self.attendance_rate >= 0.3:
+            return 'ACTIVE'
+        return 'CASUAL'
+
+    def calculate_consistency_bonus(self):
+        """Calculate consistency bonus based on attendance rate"""
+        if self.attendance_rate >= 0.9:
+            return 20
+        elif self.attendance_rate >= 0.8:
+            return 15
+        elif self.attendance_rate >= 0.7:
+            return 10
+        elif self.attendance_rate >= 0.5:
+            return 5
+        return 0
+
+    def save(self, *args, **kwargs):
+        self.tier = self.calculate_tier()
+        self.consistency_bonus = self.calculate_consistency_bonus()
+        self.total_score = self.activity_score + self.consistency_bonus - self.decay_penalty
+        self.is_qualified = self.tier in ['ELITE', 'CORE', 'ACTIVE']
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.player.name} - {self.month.strftime('%B %Y')} ({self.get_tier_display()})"
+
     class Meta:
         unique_together = ['month', 'player']
         ordering = ['-month', '-total_score']
         verbose_name = "Monthly Report"
         verbose_name_plural = "Monthly Reports"
-        indexes = [
-            models.Index(fields=['month', 'tier']),
-            models.Index(fields=['-total_score']),
-            models.Index(fields=['player', 'month']),
-        ]
-    
-    def calculate_tier(self):
-        """Determine tier based on total score"""
-        if self.total_score >= 900:
-            return 'ELITE'
-        elif self.total_score >= 600:
-            return 'CORE'
-        elif self.total_score >= 300:
-            return 'ACTIVE'
-        return 'CASUAL'
-    
-    def calculate_consistency_bonus(self):
-        """Calculate consistency bonus based on attendance rate"""
-        if self.attendance_rate >= 0.9:
-            return 150
-        elif self.attendance_rate >= 0.7:
-            return 100
-        elif self.attendance_rate >= 0.5:
-            return 50
-        return 0
-    
-    def save(self, *args, **kwargs):
-        # Auto-calculate tier and qualification
-        self.tier = self.calculate_tier()
-        self.is_qualified = self.tier != 'CASUAL'
-        super().save(*args, **kwargs)
-    
-    def __str__(self):
-        return f"{self.player.name} - {self.month.strftime('%B %Y')} ({self.get_tier_display()})"
-
-
-

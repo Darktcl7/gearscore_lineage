@@ -537,71 +537,71 @@
         </div>
 
         <!-- Mythic Classes Section -->
+        {% if character.mythic_classes.all.count > 0 %}
         <div class="glass-card">
             <h2><i class="fas fa-hat-wizard"></i> Mythic Classes</h2>
             <div class="avatar-grid">
                 {% for mc in character.mythic_classes.all %}
                 <div class="avatar-card">
-                    <img src="{% static 'items/img/'|add:mc.icon_file %}" alt="{{ mc.name }}">
+                    <img src="{% static 'items/images/choices/'|add:mc.icon_file %}" alt="{{ mc.name }}">
                     <div class="avatar-name">{{ mc.name }}</div>
                 </div>
-                {% empty %}
-                <p>No mythic classes assigned.</p>
                 {% endfor %}
             </div>
         </div>
+        {% endif %}
 
         <!-- Legendary Classes (Avatars) Section -->
+        {% if character.legendary_classes.all.count > 0 %}
         <div class="glass-card">
             <h2><i class="fas fa-dragon"></i> Legendary Classes</h2>
             <div class="avatar-grid">
                 {% for class in character.legendary_classes.all %}
                 <div class="avatar-card">
-                    <img src="{% static 'items/img/'|add:class.icon_file %}" alt="{{ class.name }}">
+                    <img src="{% static 'items/images/choices/'|add:class.icon_file %}" alt="{{ class.name }}">
                     <div class="avatar-name">{{ class.name }}</div>
                 </div>
-                {% empty %}
-                <p>No legendary classes assigned.</p>
                 {% endfor %}
             </div>
         </div>
+        {% endif %}
 
         <!-- Legendary Agathions Section -->
+        {% if character.legendary_agathions.all.count > 0 %}
         <div class="glass-card">
             <h2><i class="fas fa-paw"></i> Legendary Agathions</h2>
             <div class="avatar-grid">
                 {% for agathion in character.legendary_agathions.all %}
                 <div class="avatar-card">
-                    <img src="{% static 'items/img/'|add:agathion.icon_file %}" alt="{{ agathion.name }}">
+                    <img src="{% static 'items/images/choices/'|add:agathion.icon_file %}" alt="{{ agathion.name }}">
                     <div class="avatar-name">{{ agathion.name }}</div>
                 </div>
-                {% empty %}
-                <p>No legendary agathions assigned.</p>
                 {% endfor %}
             </div>
         </div>
+        {% endif %}
 
         <!-- Legendary Mounts Section -->
+        {% if character.legendary_mounts.all.count > 0 %}
         <div class="glass-card">
             <h2><i class="fas fa-horse"></i> Legendary Mounts</h2>
             <div class="avatar-grid">
                 {% for mount in character.legendary_mounts.all %}
                 <div class="avatar-card">
-                    <img src="{% static 'items/img/'|add:mount.icon_file %}" alt="{{ mount.name }}">
+                    <img src="{% static 'items/images/choices/'|add:mount.icon_file %}" alt="{{ mount.name }}">
                     <div class="avatar-name">{{ mount.name }}</div>
                 </div>
-                {% empty %}
-                <p>No legendary mounts assigned.</p>
                 {% endfor %}
             </div>
         </div>
+        {% endif %}
 
         <!-- Gear Score Section -->
         <div class="glass-card">
             <h2><i class="fas fa-chart-line"></i> Gear Score Analytics</h2>
             <div class="gs-overview">
                 <div class="gs-card total-gs">
-                    <h3>Overall Gear Score</h3>
+                    <h3>Overall PVP Score</h3>
                     {% with character.calculate_gear_score_breakdown as breakdown %}
                     <div class="gs-value">{{ breakdown.total_score|floatformat:1 }}</div>
                     <a href="{% url 'gearscore-leaderboard' %}" class="gs-rank" style="text-decoration: none; cursor: pointer;">
