@@ -197,6 +197,92 @@
     .btn-back:hover {
         color: #DAA520;
     }
+
+    /* Reward Checkbox Styles */
+    .reward-section {
+        display: none;
+        margin-top: 15px;
+    }
+    .reward-section.active {
+        display: block;
+    }
+    .reward-section label.section-label {
+        display: block;
+        margin-bottom: 12px;
+        color: #DAA520;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+    .reward-cards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .reward-card {
+        flex: 1;
+        min-width: 160px;
+        padding: 16px;
+        background: rgba(255,255,255,0.04);
+        border: 1.5px solid rgba(255,255,255,0.10);
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    .reward-card:hover {
+        background: rgba(255,255,255,0.08);
+    }
+    .reward-card.checked {
+        border-color: #DAA520;
+        background: rgba(218,165,32,0.10);
+        box-shadow: 0 0 12px rgba(218,165,32,0.15);
+    }
+    .reward-card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    .reward-card-header input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        accent-color: #DAA520;
+        cursor: pointer;
+    }
+    .reward-card-header .reward-icon {
+        font-size: 1.5rem;
+    }
+    .reward-card-header .reward-label {
+        color: #fff;
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+    .reward-points-input {
+        display: none;
+        margin-top: 8px;
+    }
+    .reward-points-input.active {
+        display: block;
+    }
+    .reward-points-input input {
+        width: 100%;
+        padding: 10px 12px;
+        background: rgba(0,0,0,0.4);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 8px;
+        color: #fff;
+        font-size: 0.95rem;
+        box-sizing: border-box;
+    }
+    .reward-points-input input:focus {
+        outline: none;
+        border-color: #DAA520;
+        box-shadow: 0 0 0 3px rgba(218,165,32,0.18);
+    }
+    .reward-points-input label {
+        font-size: 0.8rem;
+        color: #aaa;
+        margin-bottom: 4px;
+    }
 </style>
 {% endblock %}
 
@@ -225,27 +311,81 @@
                 <input type="text" name="custom_name" id="custom_name" placeholder="Enter custom event name...">
             </div>
 
-            <div class="form-group" id="custom-points-group" style="display:none;">
-                <label for="custom_points">Attendance Points</label>
-                <input type="number" name="custom_points" id="custom_points" value="10" min="1" max="100"
+            <div class="form-group" id="event-points-group" style="display:none;">
+                <label for="event_points" id="event-points-label">Attendance Points</label>
+                <input type="number" name="event_points" id="event_points" value="100" min="1" max="9999"
                     placeholder="Points for attending">
+                <small style="color: #888; margin-top: 5px; display: block; font-size: 0.8rem;" id="event-points-hint"></small>
             </div>
 
-            <div class="form-group">
+            <!-- Reward Checkboxes for Custom Events -->
+            <div class="reward-section" id="reward-section">
+                <label class="section-label"><i class="fas fa-gift"></i> Reward Selection</label>
+                <div class="reward-cards">
+                    <!-- Diamond -->
+                    <div class="reward-card" id="reward-card-diamond">
+                        <div class="reward-card-header">
+                            <input type="checkbox" name="reward_diamond" id="reward_diamond">
+                            <span class="reward-icon">💎</span>
+                            <span class="reward-label">Diamond</span>
+                        </div>
+                        <div class="reward-points-input" id="diamond-points-group">
+                            <label for="reward_diamond_points">Points Value</label>
+                            <input type="number" name="reward_diamond_points" id="reward_diamond_points" value="0" min="0" max="99999" placeholder="Enter diamond points">
+                        </div>
+                    </div>
+                    <!-- Key -->
+                    <div class="reward-card" id="reward-card-key">
+                        <div class="reward-card-header">
+                            <input type="checkbox" name="reward_key" id="reward_key">
+                            <span class="reward-icon">🔑</span>
+                            <span class="reward-label">Key</span>
+                        </div>
+                        <div class="reward-points-input" id="key-points-group">
+                            <label for="reward_key_points">Points Value</label>
+                            <input type="number" name="reward_key_points" id="reward_key_points" value="0" min="0" max="99999" placeholder="Enter key points">
+                        </div>
+                    </div>
+                    <!-- Membership -->
+                    <div class="reward-card" id="reward-card-membership">
+                        <div class="reward-card-header">
+                            <input type="checkbox" name="reward_membership" id="reward_membership">
+                            <span class="reward-icon">👑</span>
+                            <span class="reward-label">Membership</span>
+                        </div>
+                        <div class="reward-points-input" id="membership-points-group">
+                            <label for="reward_membership_points">Points Value</label>
+                            <input type="number" name="reward_membership_points" id="reward_membership_points" value="0" min="0" max="99999" placeholder="Enter membership points">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group" id="event-name-group">
                 <label for="name">Event Name (Optional)</label>
                 <input type="text" name="name" id="name" placeholder="e.g., Weekly Invasion #12">
             </div>
 
             <div class="form-group">
-                <label for="date">Event Date & Time</label>
+                <label for="date">Event Date &amp; Time</label>
                 <input type="datetime-local" name="date" id="date" required>
             </div>
 
-            <div class="form-group">
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                    <input type="checkbox" name="is_completed" style="width: 20px; height: 20px;">
-                    Event Completed (Closed)
+            <div class="form-group" style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0; color: #e74c3c;">
+                    <input type="checkbox" name="is_mandatory" id="is_mandatory" style="width: 20px; height: 20px; accent-color: #e74c3c;">
+                    Mandatory Event
                 </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0; color: #9b59b6;">
+                    <input type="checkbox" name="is_repeatable" style="width: 20px; height: 20px; accent-color: #9b59b6;">
+                    Repeatable Weekly (Auto-renew)
+                </label>
+            </div>
+
+            <div class="form-group" id="penalty-points-group" style="display:none;">
+                <label for="penalty_points" style="color: #e74c3c;">Penalty Points (for absent members)</label>
+                <input type="number" name="penalty_points" id="penalty_points" value="5" min="1" max="100"
+                    placeholder="Points deducted for absence">
             </div>
 
             <div class="form-group" style="margin-top: 30px;">
@@ -262,30 +402,85 @@
 </div>
 
 <script>
+    const DEFAULT_POINTS = {{ default_points|safe }};
+
     // Set default datetime to now
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     document.getElementById('date').value = now.toISOString().slice(0, 16);
 
-    // Toggle custom event fields
+    // Toggle fields based on event type
     document.getElementById('event_type').addEventListener('change', function () {
+        var evType = this.value;
         var customNameGroup = document.getElementById('custom-name-group');
         var customNameInput = document.getElementById('custom_name');
-        var customPointsGroup = document.getElementById('custom-points-group');
-        if (this.value === 'CUSTOM') {
+        var pointsGroup = document.getElementById('event-points-group');
+        var pointsInput = document.getElementById('event_points');
+        var pointsHint = document.getElementById('event-points-hint');
+        var rewardSection = document.getElementById('reward-section');
+        var eventNameGroup = document.getElementById('event-name-group');
+
+        // Custom event name field & reward section
+        if (evType === 'CUSTOM') {
             customNameGroup.style.display = 'block';
             customNameInput.required = true;
-            customPointsGroup.style.display = 'block';
-            document.querySelector('label[for="name"]').textContent = 'Reward';
-            document.getElementById('name').placeholder = 'e.g. 1,000,000 Adena';
+            rewardSection.classList.add('active');
+            eventNameGroup.style.display = 'none';
         } else {
             customNameGroup.style.display = 'none';
             customNameInput.required = false;
             customNameInput.value = '';
-            customPointsGroup.style.display = 'none';
-            document.querySelector('label[for="name"]').textContent = 'Event Name (Optional)';
-            document.getElementById('name').placeholder = 'e.g., Weekly Invasion #12';
+            rewardSection.classList.remove('active');
+            eventNameGroup.style.display = 'block';
+        }
+
+        // Points field - show for all except INVASION (which uses boss config)
+        if (evType && evType !== 'INVASION') {
+            pointsGroup.style.display = 'block';
+            var defaultPts = DEFAULT_POINTS[evType] || 10;
+            pointsInput.value = defaultPts;
+            pointsHint.textContent = 'Default: ' + defaultPts + ' pts (you can edit this)';
+        } else {
+            pointsGroup.style.display = 'none';
+            if (evType === 'INVASION') {
+                pointsHint.textContent = '';
+            }
         }
     });
+
+    // Toggle mandatory penalty points field
+    document.getElementById('is_mandatory').addEventListener('change', function () {
+        var penaltyGroup = document.getElementById('penalty-points-group');
+        penaltyGroup.style.display = this.checked ? 'block' : 'none';
+    });
+
+    // Reward checkbox toggle logic
+    function setupRewardCheckbox(checkboxId, cardId, pointsGroupId) {
+        var checkbox = document.getElementById(checkboxId);
+        var card = document.getElementById(cardId);
+        var pointsGroup = document.getElementById(pointsGroupId);
+
+        checkbox.addEventListener('change', function () {
+            if (this.checked) {
+                card.classList.add('checked');
+                pointsGroup.classList.add('active');
+            } else {
+                card.classList.remove('checked');
+                pointsGroup.classList.remove('active');
+            }
+        });
+
+        // Clicking on card toggles checkbox
+        card.addEventListener('click', function (e) {
+            if (e.target.tagName !== 'INPUT') {
+                checkbox.checked = !checkbox.checked;
+                checkbox.dispatchEvent(new Event('change'));
+            }
+        });
+    }
+
+    setupRewardCheckbox('reward_diamond', 'reward-card-diamond', 'diamond-points-group');
+    setupRewardCheckbox('reward_key', 'reward-card-key', 'key-points-group');
+    setupRewardCheckbox('reward_membership', 'reward-card-membership', 'membership-points-group');
 </script>
 {% endblock %}

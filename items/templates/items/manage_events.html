@@ -157,6 +157,21 @@
         color: #fff;
     }
 
+    .event-dimensional {
+        background: #1abc9c;
+        color: #fff;
+    }
+
+    .event-isle_awakening {
+        background: #f39c12;
+        color: #fff;
+    }
+
+    .event-custom {
+        background: #7f8c8d;
+        color: #fff;
+    }
+
     .status-badge {
         padding: 4px 10px;
         border-radius: 20px;
@@ -401,7 +416,6 @@
         <table class="events-table">
             <thead>
                 <tr>
-                    <th>Event ID</th>
                     <th>Type</th>
                     <th>Name</th>
                     <th>Date</th>
@@ -414,17 +428,26 @@
             <tbody>
                 {% for event in events %}
                 <tr>
-                    <td><code>{{ event.event_id }}</code></td>
                     <td>
                         <span class="event-type-badge event-{{ event.event_type|lower }}">
                             {{ event.get_event_type_display }}
                         </span>
                     </td>
-                    <td>{{ event.name }}</td>
+                    <td>
+                        {{ event.name }}
+                        {% if event.is_repeatable %}
+                        <span style="color: #9b59b6; margin-left: 5px; font-size: 0.9em;" title="Repeatable Weekly"><i class="fas fa-redo"></i></span>
+                        {% endif %}
+                        {% if event.is_mandatory %}
+                        <span style="color: #e74c3c; margin-left: 5px; font-size: 0.9em;" title="Mandatory Event (-{{ event.mandatory_penalty }} pts for absent)"><i class="fas fa-exclamation-circle"></i></span>
+                        {% endif %}
+                    </td>
                     <td>{{ event.date|date:"M d, Y H:i" }}</td>
                     <td>
                         {% if event.is_completed %}
                         <span class="status-badge status-completed"><i class="fas fa-check-circle"></i> Completed</span>
+                        {% elif event.is_upcoming %}
+                        <span class="status-badge" style="background: rgba(243, 156, 18, 0.2); color: #f39c12; border: 1px solid rgba(243, 156, 18, 0.3);"><i class="fas fa-hourglass-start"></i> Upcoming</span>
                         {% else %}
                         <span class="status-badge status-pending"><i class="fas fa-clock"></i> Active</span>
                         {% endif %}
@@ -444,7 +467,7 @@
                         {% endif %}
                     </td>
                     <td>
-                        <strong>{{ event.participants.count }}</strong> players
+                        <strong>{{ event.attended_count }}</strong> players
                     </td>
                     <td>
                         <a href="{% url 'record-attendance' event.pk %}" class="action-btn-icon"
@@ -464,6 +487,20 @@
                             onclick="confirmAction('reopen', '{{ event.pk }}', '{{ event.event_id }}', '{{ event.name|escapejs }}')"
                             class="action-btn-icon" title="Reopen Event" style="color: #f39c12;">
                             <i class="fas fa-undo"></i>
+                        </button>
+                        {% endif %}
+
+                        {% if event.is_repeatable %}
+                        <button
+                            onclick="confirmAction('stop_repeat', '{{ event.pk }}', '{{ event.event_id }}', '{{ event.name|escapejs }}')"
+                            class="action-btn-icon" title="Stop Auto-Repeat" style="color: #9b59b6;">
+                            <i class="fas fa-ban"></i>
+                        </button>
+                        {% else %}
+                        <button
+                            onclick="confirmAction('start_repeat', '{{ event.pk }}', '{{ event.event_id }}', '{{ event.name|escapejs }}')"
+                            class="action-btn-icon" title="Start Auto-Repeat" style="color: #9b59b6;">
+                            <i class="fas fa-redo"></i>
                         </button>
                         {% endif %}
 
@@ -548,6 +585,22 @@
                     // Toggle uses PK (Integer)
                     confirmBtn.onclick = function () { toggleEventStatus(pk); };
                 }
+                else if (actionType === 'start_repeat') {
+                    title.innerHTML = '<i class="fas fa-redo"></i> Start Auto-Repeat';
+                    message.innerHTML = `Enable Auto-Repeat for <strong>${eventName}</strong>?`;
+                    message.innerHTML += '<br><small style="color:#aaa">The event will automatically renew every week after completion.</small>';
+                    confirmBtn.innerText = 'Start Repeat';
+                    confirmBtn.classList.add('btn-complete'); // Use green color
+                    confirmBtn.onclick = function () { toggleRepeat(pk); };
+                }
+                else if (actionType === 'stop_repeat') {
+                    title.innerHTML = '<i class="fas fa-ban"></i> Stop Auto-Repeat';
+                    message.innerHTML = `Disable Auto-Repeat for <strong>${eventName}</strong>?`;
+                    message.innerHTML += '<br><small style="color:#aaa">This event will no longer auto-renew next week.</small>';
+                    confirmBtn.innerText = 'Stop Repeat';
+                    confirmBtn.classList.add('btn-delete'); // Use red color
+                    confirmBtn.onclick = function () { toggleRepeat(pk); };
+                }
             }
 
             function getCookie(name) {
@@ -563,6 +616,21 @@
                     }
                 }
                 return cookieValue;
+            }
+
+            function toggleRepeat(eventId) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/portal/activity/events/${eventId}/toggle-repeat/`;
+                
+                const csrfToken = document.createElement('input');
+                csrfToken.type = 'hidden';
+                csrfToken.name = 'csrfmiddlewaretoken';
+                csrfToken.value = getCookie('csrftoken');
+                
+                form.appendChild(csrfToken);
+                document.body.appendChild(form);
+                form.submit();
             }
 
             function deleteEvent(eventId) {

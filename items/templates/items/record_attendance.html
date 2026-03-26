@@ -37,6 +37,9 @@ main{flex:1;overflow:hidden}
 .event-invasion{background:#e74c3c;color:#fff}
 .event-boss_rush{background:#9b59b6;color:#fff}
 .event-catacombs{background:#3498db;color:#fff}
+.event-dimensional{background:#1abc9c;color:#fff}
+.event-isle_awakening{background:#f39c12;color:#fff}
+.event-custom{background:#7f8c8d;color:#fff}
 .pb{padding:4px 10px;background:#DAA520;color:#000;border-radius:20px;font-size:.8rem;font-weight:600}
 .boss-pts-editor{margin-top:15px;padding:12px 15px;background:rgba(255,255,255,.06);border:1px solid rgba(218,165,32,.3);border-radius:10px}
 .boss-pts-title{color:#DAA520;font-weight:600;font-size:.9rem;margin-bottom:10px}
@@ -49,6 +52,8 @@ main{flex:1;overflow:hidden}
 
 {% block content %}
 <div class="ac">
+<form method="post" id="af" style="display:flex; flex-direction:column; height:100%;">
+{% csrf_token %}
 <div class="ah">
 <h1><i class="fas fa-user-check"></i> Record Attendance</h1>
 <div class="ei">
@@ -60,16 +65,14 @@ main{flex:1;overflow:hidden}
 <div class="boss-pts-editor">
 <div class="boss-pts-title"><i class="fas fa-skull-crossbones"></i> Boss Points (editable)</div>
 <div class="boss-pts-row">
-<label>&#x1F432; Dragon Beast <input type="number" name="dragon_beast_points" value="{{ event.dragon_beast_points }}" min="0" max="999" class="bp-input" form="af"></label>
-<label>&#x1F479; Carnifex <input type="number" name="carnifex_points" value="{{ event.carnifex_points }}" min="0" max="999" class="bp-input" form="af"></label>
-<label>&#x1F577;&#xFE0F; Orfen <input type="number" name="orfen_points" value="{{ event.orfen_points }}" min="0" max="999" class="bp-input" form="af"></label>
+<label>&#x1F432; Dragon Beast <input type="number" name="dragon_beast_points" value="{{ boss_points.dragon_beast }}" min="0" max="999" class="bp-input"></label>
+<label>&#x1F479; Carnifex <input type="number" name="carnifex_points" value="{{ boss_points.carnifex }}" min="0" max="999" class="bp-input"></label>
+<label>&#x1F577;&#xFE0F; Orfen <input type="number" name="orfen_points" value="{{ boss_points.orfen }}" min="0" max="999" class="bp-input"></label>
 </div>
 </div>
 {% endif %}
 </div>
 <div class="acn">
-<form method="post" id="af">
-{% csrf_token %}
 <div class="sab">
 <label><input type="checkbox" id="select-all"> Select All</label>
 <span style="color:#888"><span id="sc">0</span> / {{ characters|length }} selected</span>
@@ -97,7 +100,7 @@ main{flex:1;overflow:hidden}
 <a href="{% url 'manage-events' %}" class="bcan"><i class="fas fa-times"></i> Cancel</a>
 <button type="submit" class="bsub"><i class="fas fa-save"></i> Save Attendance</button>
 </div>
-</form></div></div>
+</div></form></div>
 <script>
 function toggleCard(c,e){
 if(e.target.type==='checkbox')return;

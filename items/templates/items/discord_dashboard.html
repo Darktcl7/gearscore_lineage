@@ -16,7 +16,7 @@
 
     .activity-container {
         min-height: 60vh;
-        margin-top: 100px;
+        margin-top: 0;
         margin-bottom: 50px;
         display: flex;
         flex-direction: column;
@@ -390,7 +390,7 @@
         box-shadow: 0 5px 15px rgba(231, 76, 60, 0.35);
     }
 </style>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="{% static 'fontawesome/css/all.min.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -426,7 +426,7 @@
 
     <!-- Alarm Section -->
     <h2 style="border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 20px;">
-        <i class="fas fa-clock"></i> Automated Alarms
+        <i class="fas fa-clock"></i> Automated Alarms (WIB)
     </h2>
     <div style="display: flex; gap: 30px; flex-wrap: wrap;">
 
@@ -484,10 +484,10 @@
                     {% for alarm in alarms %}
                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                         <td style="padding: 15px 10px; font-weight: bold;">{{ alarm.get_day_display }}</td>
-                        <td style="padding: 15px 10px; color: #DAA520; font-family: monospace; font-size: 1.1rem;">{{ alarm.time|time:'H:i' }}</td>
+                        <td style="padding: 15px 10px; color: #DAA520; font-family: monospace; font-size: 1.1rem;">{{ alarm.time|time:'H:i' }} WIB</td>
                         <td style="padding: 15px 10px; color: #ccc; font-size: 0.9rem;">{{ alarm.message }}</td>
                         <td style="padding: 15px 10px; text-align: right;">
-                            <button type="button" class="delete-alarm-btn" data-alarm-id="{{ alarm.id }}" data-alarm-day="{{ alarm.get_day_display }}" data-alarm-time="{{ alarm.time|time:'H:i' }}" data-alarm-message="{{ alarm.message|truncatechars:50 }}" onclick="showDeleteModal(this)">
+                            <button type="button" class="delete-alarm-btn" data-alarm-id="{{ alarm.id }}" data-alarm-day="{{ alarm.get_day_display }}" data-alarm-time="{{ alarm.time|time:'H:i' }} WIB" data-alarm-message="{{ alarm.message|truncatechars:50 }}" onclick="showDeleteModal(this)">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>

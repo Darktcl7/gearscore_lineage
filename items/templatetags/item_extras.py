@@ -1,4 +1,4 @@
-﻿from django.template.defaulttags import register
+from django.template.defaulttags import register
 
 @register.filter
 def get_item(dictionary, key):
@@ -71,8 +71,16 @@ def get_image_for_choice(label):
     label_str = str(label).strip()
     
     # Dynamic lookup for legendary items from database
-    from items.models import LegendaryClass, LegendaryAgathion, LegendaryMount
+    from items.models import LegendaryClass, LegendaryAgathion, LegendaryMount, LegendarySkin
     
+    # Check legendary skins
+    try:
+        ls = LegendarySkin.objects.filter(name=label_str).first()
+        if ls and ls.icon_file:
+            return ls.icon_file
+    except Exception:
+        pass
+
     # Check legendary classes
     try:
         lc = LegendaryClass.objects.filter(name=label_str).first()
@@ -330,6 +338,7 @@ def get_field_image(field_label):
         "soul progression attack": "Icon_SoulStone_Option_Icon_01.png",
         "soul progression defense": "Icon_SoulStone_Option_Icon_04.png",
         "soul progression blessing": "Icon_SoulStone_Option_Icon_07.png",
+        "soul progression accuracy": "soul_progression_accuracy-removebg-preview.png",
         
         # Enchant Accessories
         "bracelet of holy protection": "Icon_ACC_BMBracelet_G0_003.png",

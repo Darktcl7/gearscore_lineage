@@ -30,7 +30,7 @@
 
     .activity-container {
         height: calc(100% - 90px);
-        margin-top: 80px;
+        margin-top: 0;
         display: flex;
         flex-direction: column;
         background: rgba(18, 18, 18, 0.85);
@@ -65,17 +65,9 @@
     }
 
     @keyframes gradientShift {
-        0% {
-            background-position: 0% 50%;
-        }
-
-        50% {
-            background-position: 100% 50%;
-        }
-
-        100% {
-            background-position: 0% 50%;
-        }
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
     }
 
     .activity-header h1 {
@@ -150,26 +142,6 @@
         margin-top: 15px;
     }
 
-    .tier-elite {
-        background: linear-gradient(145deg, #FFD700, #FFA500);
-        color: #000;
-    }
-
-    .tier-core {
-        background: linear-gradient(145deg, #9B59B6, #8E44AD);
-        color: #fff;
-    }
-
-    .tier-active {
-        background: linear-gradient(145deg, #3498DB, #2980B9);
-        color: #fff;
-    }
-
-    .tier-casual {
-        background: linear-gradient(145deg, #7F8C8D, #6C7A7D);
-        color: #fff;
-    }
-
     .activity-table {
         width: 100%;
         border-collapse: collapse;
@@ -191,32 +163,22 @@
         background: rgba(255, 255, 255, 0.05);
     }
 
-    .status-attended {
-        color: #2ecc71;
-    }
-
-    .status-absent {
-        color: #e74c3c;
-    }
+    .status-attended { color: #2ecc71; }
+    .status-absent { color: #e74c3c; }
 
     .event-type-badge {
         padding: 4px 8px;
         border-radius: 4px;
         font-size: 0.75rem;
         font-weight: 600;
+        color: #fff;
     }
-
-    .event-invasion {
-        background: #e74c3c;
-    }
-
-    .event-boss_rush {
-        background: #9b59b6;
-    }
-
-    .event-catacombs {
-        background: #3498db;
-    }
+    .event-invasion { background: #e74c3c; }
+    .event-boss_rush { background: #9b59b6; }
+    .event-catacombs { background: #3498db; }
+    .event-dimensional { background: #1abc9c; }
+    .event-isle_awakening { background: #f39c12; }
+    .event-custom { background: #7f8c8d; }
 
     .no-character {
         text-align: center;
@@ -272,13 +234,15 @@
             <div class="glass-card">
                 <h3><i class="fas fa-user"></i> {{ character.name }}</h3>
                 <div style="text-align: center;">
-                    {% if monthly_report %}
-                    <div class="tier-badge tier-{{ monthly_report.tier|lower }}">
-                        {{ monthly_report.get_tier_display }}
+                    <div class="tier-badge" style="
+                        {% if tier == 'Core' %}background: linear-gradient(145deg, #FFD700, #FFA500); color: #000;
+                        {% elif tier == 'Elite' %}background: linear-gradient(145deg, #9B59B6, #8E44AD); color: #fff;
+                        {% elif tier == 'Active' %}background: linear-gradient(145deg, #3498DB, #2980B9); color: #fff;
+                        {% else %}background: linear-gradient(145deg, #7F8C8D, #6C7A7D); color: #fff;{% endif %}
+                    ">
+                        {% if tier == 'Core' %}👑{% elif tier == 'Elite' %}🛡️{% elif tier == 'Active' %}⚔️{% else %}💤{% endif %}
+                        {{ tier }} Member
                     </div>
-                    {% else %}
-                    <div class="tier-badge tier-casual">🌱 Casual</div>
-                    {% endif %}
                 </div>
             </div>
 
@@ -286,8 +250,8 @@
                 <h3><i class="fas fa-chart-bar"></i> Monthly Stats</h3>
                 <div class="stat-grid">
                     <div class="stat-item">
-                        <div class="stat-value">{{ monthly_report.total_score|default:0 }}</div>
-                        <div class="stat-label">Current Score</div>
+                        <div class="stat-value" style="color: #2ecc71;">{{ total_points }}</div>
+                        <div class="stat-label">Total Score</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-value">{{ attendance_rate|floatformat:0 }}%</div>
@@ -301,8 +265,91 @@
                         <div class="stat-value">{{ total_events }}</div>
                         <div class="stat-label">Total Events</div>
                     </div>
+                    <div class="stat-item">
+                        <div class="stat-value" style="color: {% if ap_points > 0 %}#2ecc71{% elif ap_points < 0 %}#e74c3c{% else %}#888{% endif %};">{{ ap_points }}</div>
+                        <div class="stat-label">Total AP</div>
+                    </div>
                 </div>
             </div>
+
+            {% if monthly_rewards %}
+            <div class="glass-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0;"><i class="fas fa-gift"></i> Monthly Rewards</h3>
+                    {% if is_admin %}
+                    <button type="button" onclick="document.getElementById('reward-reset-modal').style.display='flex'"
+                        style="padding: 6px 14px; background: rgba(231,76,60,0.15); border: 1px solid rgba(231,76,60,0.4); border-radius: 8px; color: #e74c3c; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;"
+                        onmouseover="this.style.background='rgba(231,76,60,0.3)'" onmouseout="this.style.background='rgba(231,76,60,0.15)'">
+                        <i class="fas fa-undo"></i> Reset Rewards
+                    </button>
+                    {% endif %}
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    {% if monthly_rewards.diamond_total > 0 %}
+                    <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: rgba(52, 152, 219, 0.12); border: 1px solid rgba(52, 152, 219, 0.3); border-radius: 10px;">
+                        <span style="font-size: 1.6rem;">💎</span>
+                        <div style="flex: 1;">
+                            <div style="color: #3498db; font-weight: 700; font-size: 1rem;">Diamond</div>
+                            <div style="color: #888; font-size: 0.8rem;">{{ monthly_rewards.diamond_count }} event{{ monthly_rewards.diamond_count|pluralize }}</div>
+                        </div>
+                        <div style="color: #3498db; font-weight: 700; font-size: 1.3rem;">{{ monthly_rewards.diamond_total }} <span style="font-size: 0.75rem; color: #aaa;">pts</span></div>
+                    </div>
+                    {% endif %}
+                    {% if monthly_rewards.key_total > 0 %}
+                    <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: rgba(241, 196, 15, 0.12); border: 1px solid rgba(241, 196, 15, 0.3); border-radius: 10px;">
+                        <span style="font-size: 1.6rem;">🔑</span>
+                        <div style="flex: 1;">
+                            <div style="color: #f1c40f; font-weight: 700; font-size: 1rem;">Key</div>
+                            <div style="color: #888; font-size: 0.8rem;">{{ monthly_rewards.key_count }} event{{ monthly_rewards.key_count|pluralize }}</div>
+                        </div>
+                        <div style="color: #f1c40f; font-weight: 700; font-size: 1.3rem;">{{ monthly_rewards.key_total }} <span style="font-size: 0.75rem; color: #aaa;">pts</span></div>
+                    </div>
+                    {% endif %}
+                    {% if monthly_rewards.membership_total > 0 %}
+                    <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: rgba(155, 89, 182, 0.12); border: 1px solid rgba(155, 89, 182, 0.3); border-radius: 10px;">
+                        <span style="font-size: 1.6rem;">👑</span>
+                        <div style="flex: 1;">
+                            <div style="color: #9b59b6; font-weight: 700; font-size: 1rem;">Membership</div>
+                            <div style="color: #888; font-size: 0.8rem;">{{ monthly_rewards.membership_count }} event{{ monthly_rewards.membership_count|pluralize }}</div>
+                        </div>
+                        <div style="color: #9b59b6; font-weight: 700; font-size: 1.3rem;">{{ monthly_rewards.membership_total }} <span style="font-size: 0.75rem; color: #aaa;">pts</span></div>
+                    </div>
+                    {% endif %}
+                    {% if monthly_rewards.diamond_total == 0 and monthly_rewards.key_total == 0 and monthly_rewards.membership_total == 0 %}
+                    <div style="text-align: center; padding: 15px; color: #666;">
+                        <i class="fas fa-box-open" style="font-size: 1.5rem; margin-bottom: 8px; display: block; opacity: 0.4;"></i>
+                        No rewards earned this month.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Reset Rewards Confirmation Modal -->
+            {% if is_admin %}
+            <div id="reward-reset-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; justify-content:center; align-items:center; backdrop-filter:blur(4px);">
+                <div style="background:#1a1a1a; border:1px solid rgba(231,76,60,0.4); border-radius:16px; padding:30px; max-width:400px; width:90%; text-align:center; box-shadow:0 15px 40px rgba(0,0,0,0.5);">
+                    <div style="font-size:3rem; margin-bottom:15px;">⚠️</div>
+                    <h3 style="color:#e74c3c; margin:0 0 10px 0;">Reset Monthly Rewards?</h3>
+                    <p style="color:#aaa; font-size:0.9rem; margin-bottom:25px;">
+                        This will clear all reward data (💎 Diamond, 🔑 Key, 👑 Membership) from custom events this month. This action cannot be undone.
+                    </p>
+                    <div style="display:flex; gap:12px; justify-content:center;">
+                        <button onclick="document.getElementById('reward-reset-modal').style.display='none'"
+                            style="padding:10px 24px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:8px; color:#fff; font-weight:600; cursor:pointer; transition:all 0.3s ease;">
+                            Cancel
+                        </button>
+                        <form method="post" action="{% url 'reset-monthly-rewards' %}" style="margin:0;">
+                            {% csrf_token %}
+                            <button type="submit"
+                                style="padding:10px 24px; background:linear-gradient(145deg,#e74c3c,#c0392b); border:none; border-radius:8px; color:#fff; font-weight:600; cursor:pointer; transition:all 0.3s ease;">
+                                <i class="fas fa-trash-alt"></i> Reset
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
 
             <a href="{% url 'activity-leaderboard' %}" class="glass-card"
                 style="text-decoration: none; display: block; text-align: center;">
@@ -331,20 +378,41 @@
                         <tr>
                             <td>{{ activity.event.date|date:"M d, H:i" }}</td>
                             <td>
-                                <span class="event-type-badge event-{{ activity.event.event_type|lower }}">
-                                    {{ activity.event.get_event_type_display }}
-                                </span>
+                                {% if activity.is_adjustment %}
+                                    <span class="event-type-badge" style="background: {% if activity.points_earned > 0 %}#2ecc71{% else %}#e74c3c{% endif %};">
+                                        {{ activity.adjustment_type }}
+                                    </span>
+                                    <span style="margin-left: 5px; color: #bbb;">{{ activity.adjustment_reason }}</span>
+                                {% else %}
+                                    <span class="event-type-badge event-{{ activity.event.event_type|lower }}">
+                                        {{ activity.event.get_event_type_display }}
+                                    </span>
+                                    <span style="margin-left: 5px;">{{ activity.event.name }}</span>
+                                    {% if activity.event.is_mandatory %}
+                                    <span style="color: #e74c3c; margin-left: 5px; font-size: 0.8rem;" title="Mandatory Event"><i class="fas fa-exclamation-circle"></i> Mandatory</span>
+                                    {% endif %}
+                                {% endif %}
                             </td>
                             <td>
-                                {% if activity.status == 'ATTENDED' %}
-                                <span class="status-attended"><i class="fas fa-check-circle"></i> Attended</span>
+                                {% if activity.is_adjustment %}
+                                    {% if activity.points_earned > 0 %}
+                                    <span style="color: #2ecc71; font-weight: 600;"><i class="fas fa-plus-circle"></i> Give</span>
+                                    {% else %}
+                                    <span style="color: #e74c3c; font-weight: 600;"><i class="fas fa-minus-circle"></i> Remove</span>
+                                    {% endif %}
                                 {% else %}
-                                <span class="status-absent"><i class="fas fa-times-circle"></i> Absent</span>
+                                    {% if activity.status == 'ATTENDED' %}
+                                    <span class="status-attended"><i class="fas fa-check-circle"></i> Attended</span>
+                                    {% else %}
+                                    <span class="status-absent"><i class="fas fa-times-circle"></i> Absent</span>
+                                    {% endif %}
                                 {% endif %}
                             </td>
                             <td>
                                 {% if activity.points_earned > 0 %}
                                 <strong style="color: #2ecc71;">+{{ activity.points_earned }}</strong>
+                                {% elif activity.points_earned < 0 %}
+                                <strong style="color: #e74c3c;">{{ activity.points_earned }}</strong>
                                 {% else %}
                                 <span style="color: #888;">0</span>
                                 {% endif %}

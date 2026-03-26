@@ -136,6 +136,14 @@ def api_record_checkin(request):
                 'error': 'Event sudah selesai',
                 'message': 'Event ini sudah berakhir dan tidak menerima check-in lagi.'
             }, status=400)
+            
+        # Prevent check-in for future events
+        from django.utils import timezone
+        if event.date > timezone.now():
+            return JsonResponse({
+                'error': 'Event belum dimulai',
+                'message': f"Event '{event.name}' baru akan dimulai pada {event.date.strftime('%Y-%m-%d %H:%M')}. Belum bisa check-in!"
+            }, status=400)
         
         # Find character ONLY by discord_user_id (must be linked first!)
         discord_id = data.get('discord_user_id')
@@ -232,6 +240,26 @@ def api_complete_event(request):
             event.bosses_killed = data.get('bosses_killed')
         
         event.save()
+        
+        # Auto-repeat logic 
+        if event.is_completed and getattr(event, 'is_repeatable', False):
+            from datetime import timedelta
+            # Check if auto-generated event already exists to prevent duplicates
+            next_date = event.date + timedelta(days=7)
+            if not ActivityEvent.objects.filter(name=event.name, event_type=event.event_type, date=next_date).exists():
+                ActivityEvent.objects.create(
+                    name=event.name,
+                    event_type=event.event_type,
+                    date=next_date,
+                    is_completed=False,
+                    is_repeatable=True,
+                    is_mandatory=getattr(event, 'is_mandatory', False),
+                    mandatory_penalty=getattr(event, 'mandatory_penalty', 5),
+                    is_win=False,
+                    max_points=event.max_points,
+                    base_points=event.base_points,
+                    boss_point_config=event.boss_point_config,
+                )
         
         # Recalculate points for all participants
         recalculate_event_points(event)
@@ -410,7 +438,8 @@ def api_get_active_events(request):
         return JsonResponse({'error': 'Invalid API key'}, status=401)
     
     try:
-        events = ActivityEvent.objects.filter(is_completed=False).order_by('-date')
+        from django.utils import timezone
+        events = ActivityEvent.objects.filter(is_completed=False, date__lte=timezone.now()).order_by('-date')
         
         event_list = []
         for event in events:
@@ -419,7 +448,7 @@ def api_get_active_events(request):
                 'name': event.name,
                 'type': event.event_type,
                 'date': event.date.strftime('%Y-%m-%d %H:%M'),
-                'participants': event.participants.count()
+                'participants': event.attended_count
             })
             
         return JsonResponse({'success': True, 'events': event_list})
@@ -441,6 +470,26 @@ def api_toggle_event_status(request, event_pk):
         event = ActivityEvent.objects.get(pk=event_pk)
         event.is_completed = not event.is_completed
         event.save()
+        
+        # Auto-repeat logic 
+        if event.is_completed and getattr(event, 'is_repeatable', False):
+            from datetime import timedelta
+            # Check if auto-generated event already exists to prevent duplicates
+            next_date = event.date + timedelta(days=7)
+            if not ActivityEvent.objects.filter(name=event.name, event_type=event.event_type, date=next_date).exists():
+                ActivityEvent.objects.create(
+                    name=event.name,
+                    event_type=event.event_type,
+                    date=next_date,
+                    is_completed=False,
+                    is_repeatable=True,
+                    is_mandatory=getattr(event, 'is_mandatory', False),
+                    mandatory_penalty=getattr(event, 'mandatory_penalty', 5),
+                    is_win=False,
+                    max_points=event.max_points,
+                    base_points=event.base_points,
+                    boss_point_config=event.boss_point_config,
+                )
         
         status_text = "Completed" if event.is_completed else "Re-opened"
         return JsonResponse({
@@ -466,9 +515,7 @@ def api_toggle_event_result(request, event_pk):
     
     try:
         event = ActivityEvent.objects.get(pk=event_pk)
-        if event.event_type == 'INVASION':
-             return JsonResponse({'error': 'Invasion result cannot be toggled simply.'}, status=400)
-             
+        
         event.is_win = not event.is_win
         event.save()
         

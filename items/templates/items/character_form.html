@@ -39,7 +39,7 @@
 
     .character-form-container {
         max-width: 1400px;
-        margin: 80px auto 30px auto;
+        margin: 0px auto 30px auto;
         padding: 30px;
         background: rgba(18, 18, 18, 0.85);
         border-radius: 20px;
@@ -564,7 +564,7 @@
                         </div>
 
                         {% for field in character_form %}
-                        {% if field.name == 'mythic_classes' or field.name == 'legendary_classes' or field.name == 'legendary_agathions' or field.name == 'legendary_mounts' %}
+                        {% if field.name == 'mythic_classes' or field.name == 'legendary_skins' or field.name == 'legendary_classes' or field.name == 'legendary_agathions' or field.name == 'legendary_mounts' %}
                         <div class="form-group">
                             <label class="form-label"><strong>{{ field.label }}</strong></label>
 
@@ -575,7 +575,7 @@
                                 <video src="{% static 'items/images/choices/'|add:field_img %}" autoplay muted loop
                                     class="img-fluid"></video>
                                 {% else %}
-                                <img src="{% static 'items/images/choices/'|add:field_img %}" alt="Question Image"
+                                <img loading="lazy" src="{% static 'items/images/choices/'|add:field_img %}" alt="Question Image"
                                     class="img-fluid">
                                 {% endif %}
                             </div>
@@ -584,7 +584,7 @@
 
                             <div class="checkbox-group">
                                 {% for choice in field %}
-                                {% if "No mythic" not in choice.choice_label and "No legendary" not in choice.choice_label %}
+                                {% if "No mythic" not in choice.choice_label and "No legendary" not in choice.choice_label and "No legendary skin" not in choice.choice_label %}
                                 <label class="checkbox-label">
                                     {{ choice.tag }}
                                     <span class="choice-label-text">{{ choice.choice_label }}</span>
@@ -595,7 +595,7 @@
                                         <video src="{% static 'items/images/choices/'|add:img_name %}" autoplay muted
                                             loop></video>
                                         {% else %}
-                                        <img src="{% static 'items/images/choices/'|add:img_name %}"
+                                        <img loading="lazy" src="{% static 'items/images/choices/'|add:img_name %}"
                                             alt="{{ choice.choice_label }}">
                                         {% endif %}
                                     </div>
@@ -822,7 +822,7 @@
                             {% for field in attributes_form %}
                             {% with n=field.name %}
                             {% if not n|is_gearscore_field and not n|is_skill_field and not n|is_weapon_field and not n|is_expertise_field and n != "unlocked_skills" %}
-                            <div class="form-group">
+                            <div class="form-group"{% if n == 'inheritor_books' %} style="grid-column: 1 / -1;"{% endif %}>
                                 <label class="form-label"><strong>{{ field.label }}</strong></label>
 
                                 {% with field_img=field.label|get_field_image %}
@@ -832,7 +832,7 @@
                                     <video src="{% static 'items/images/choices/'|add:field_img %}" autoplay muted loop
                                         class="img-fluid"></video>
                                     {% else %}
-                                    <img src="{% static 'items/images/choices/'|add:field_img %}" alt="Question Image"
+                                    <img loading="lazy" src="{% static 'items/images/choices/'|add:field_img %}" alt="Question Image"
                                         class="img-fluid">
                                     {% endif %}
                                 </div>
@@ -853,7 +853,7 @@
                                             <video src="{% static 'items/images/choices/'|add:img_name %}" autoplay
                                                 muted loop></video>
                                             {% else %}
-                                            <img src="{% static 'items/images/choices/'|add:img_name %}"
+                                            <img loading="lazy" src="{% static 'items/images/choices/'|add:img_name %}"
                                                 alt="{{ choice.choice_label }}">
                                             {% endif %}
                                         </div>
@@ -875,7 +875,7 @@
                                             <video src="{% static 'items/images/choices/'|add:img_name %}" autoplay
                                                 muted loop></video>
                                             {% else %}
-                                            <img src="{% static 'items/images/choices/'|add:img_name %}"
+                                            <img loading="lazy" src="{% static 'items/images/choices/'|add:img_name %}"
                                                 alt="{{ choice.choice_label }}">
                                             {% endif %}
                                         </div>
@@ -1378,12 +1378,20 @@
         'id_aster_erafone': 30
     };
 
+    var labelOverrides = {
+        'id_enchant_talisman_aden': 'Aden Talisman',
+        'id_enchant_talisman_speed': 'Speed Talisman',
+        'id_enchant_talisman_eve': "Eve's Talisman",
+        'id_enchant_talisman_authority': 'Authority Talisman',
+        'id_aster_erafone': 'Aster (Eratone)'
+    };
+
     const fieldNames = {
         'id_soulshot_level': 'Soulshot Level',
         'id_valor_level': 'Valor Level',
         'id_stat_guardian': 'Guardian',
         'id_stat_conquer': 'Conquer',
-        'id_aster_erafone': 'Aster (Erafone)'
+        'id_aster_erafone': 'Aster (Eratone)'
     };
 
     function showPopup(message) {
@@ -1549,7 +1557,7 @@
             card.innerHTML = `
                 <input type="radio" name="weapon_visual" value="${opt.value}" ${isSelected ? 'checked' : ''} style="display:none;">
                 <div class="weapon-card-inner">
-                    ${imgUrl ? `<img src="${imgUrl}" alt="${wName}" class="weapon-card-img" onerror="this.style.display='none'">` : '<div class="weapon-card-img" style="display:flex;align-items:center;justify-content:center;color:#666;">⚔️</div>'}
+                    ${imgUrl ? `<img loading="lazy" src="${imgUrl}" alt="${wName}" class="weapon-card-img" onerror="this.style.display='none'">` : '<div class="weapon-card-img" style="display:flex;align-items:center;justify-content:center;color:#666;">⚔️</div>'}
                     <div class="weapon-card-name">${wName}</div>
                 </div>
             `;
@@ -1682,7 +1690,7 @@
             card.innerHTML = `
                 <input type="radio" name="belt_visual" value="${opt.value}" ${isSelected ? 'checked' : ''} style="display:none;">
                 <div class="weapon-card-inner">
-                    ${imgName ? `<img src="/static/items/images/choices/${imgName}" alt="${beltName}" class="weapon-card-img" onerror="this.style.display='none'">` : '<div class="weapon-card-img" style="display:flex;align-items:center;justify-content:center;color:#666;">🛡️</div>'}
+                    ${imgName ? `<img loading="lazy" src="/static/items/images/choices/${imgName}" alt="${beltName}" class="weapon-card-img" onerror="this.style.display='none'">` : '<div class="weapon-card-img" style="display:flex;align-items:center;justify-content:center;color:#666;">🛡️</div>'}
                     <div class="weapon-card-name">${beltName}</div>
                 </div>
             `;
@@ -1774,7 +1782,7 @@
             card.innerHTML = `
                 <input type="radio" name="${radioName}" value="${opt.value}" ${isSelected ? 'checked' : ''} style="display:none;">
                 <div class="weapon-card-inner">
-                    ${imgName ? `<img src="/static/items/images/choices/${imgName}" alt="${itemName}" class="weapon-card-img" onerror="this.style.display='none'">` : '<div class="weapon-card-img" style="display:flex;align-items:center;justify-content:center;color:#666;">💍</div>'}
+                    ${imgName ? `<img loading="lazy" src="/static/items/images/choices/${imgName}" alt="${itemName}" class="weapon-card-img" onerror="this.style.display='none'">` : '<div class="weapon-card-img" style="display:flex;align-items:center;justify-content:center;color:#666;">💍</div>'}
                     <div class="weapon-card-name">${itemName}</div>
                 </div>
             `;

@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-_yo+3e#r6_j9c$p)84#t#oj!*qdr$1_n116_tgf-ocq(t&)xr0
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # Set DEBUG=False in production via environment variable
-DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
+DEBUG = True
 
 ALLOWED_HOSTS = ['valkyrie.id', 'www.valkyrie.id', '148.230.97.130', '127.0.0.1', 'localhost']
 CSRF_TRUSTED_ORIGINS = ['https://valkyrie.id', 'https://www.valkyrie.id']
@@ -129,7 +129,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Jakarta'
 
 USE_I18N = True
 
@@ -146,7 +146,7 @@ STATICFILES_DIRS = [
 ]
 
 # WhiteNoise: compress + cache static files forever (cache-busted by hash)
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

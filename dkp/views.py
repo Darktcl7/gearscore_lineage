@@ -503,7 +503,8 @@ def dkp_all_wallets(request):
     
     return render(request, 'dkp/all_wallets.html', {'profiles': profiles})
 
-from items.models import ActivityEvent
+
+
 
 @login_required(login_url='/login/')
 def dkp_manage(request):
@@ -514,22 +515,51 @@ def dkp_manage(request):
         action = request.POST.get('action')
         
         if action == 'create':
-            name = request.POST.get('name')
-            code = request.POST.get('code')
+            name = request.POST.get('name', '').strip()
+            boss_type = request.POST.get('boss_type', '').strip()
             value = request.POST.get('value')
+            participant_ids = request.POST.getlist('participant_ids')
+
             if name and value:
-                # 1. Close ALL running events first to prevent duplicates
-                # This ensures only 1 event is active at a time
-                DKPEvent.objects.filter(is_active=True).update(is_active=False, is_closed=True)
-                
-                # 2. Create the new event
-                final_name = f"{name} ({code})" if code else name
-                
-                DKPEvent.objects.create(
+                try:
+                    points = int(value)
+                except (ValueError, TypeError):
+                    points = 0
+
+                # Build final event name
+                final_name = f"[{boss_type}] {name}" if boss_type else name
+
+                # Create event — already finalized (direct award, no check-in needed)
+                event = DKPEvent.objects.create(
                     name=final_name,
-                    points_to_award=value,
-                    is_active=True
+                    points_to_award=points,
+                    is_active=False,
+                    is_closed=True,
+                    is_finalized=True
                 )
+
+                # Distribute points immediately to selected participants
+                if participant_ids and points > 0:
+                    for pid in participant_ids:
+                        try:
+                            profile = DKPProfile.objects.get(id=int(pid))
+                            DKPAttendance.objects.get_or_create(
+                                event=event,
+                                character=profile.character,
+                                defaults={'is_verified': True}
+                            )
+                            profile.current_dkp += points
+                            profile.total_earned += points
+                            profile.save()
+                            DKPLog.objects.create(
+                                profile=profile,
+                                amount=points,
+                                reason=f"Activity: {final_name}",
+                                created_by=request.user
+                            )
+                        except (DKPProfile.DoesNotExist, ValueError):
+                            pass
+
         elif action == 'toggle':
             event_id = request.POST.get('event_id')
             try:
@@ -546,7 +576,8 @@ def dkp_manage(request):
         return redirect('web-dkp-manage')
             
     events = DKPEvent.objects.order_by('-date')
-    return render(request, 'dkp/manage.html', {'events': events})
+    profiles = DKPProfile.objects.select_related('character').order_by('character__name')
+    return render(request, 'dkp/manage.html', {'events': events, 'profiles': profiles})
 
 @login_required(login_url='/login/')
 def dkp_attendance_list(request, event_id):

@@ -14,8 +14,7 @@ DEFAULT_CONFIG = {
     'total': 10000,
     'tier_allocation': {
         'ELITE': 0.20,
-        'CORE': 0.70,
-        'ACTIVE': 0.10,
+        'CORE': 0.80,
         'CASUAL': 0.00,
     },
     'consistency_bonus': { # Keep this hardcoded for now or move to DB later
@@ -34,7 +33,6 @@ def get_active_config():
             'tier_allocation': {
                 'ELITE': config.elite_percentage,
                 'CORE': config.core_percentage,
-                'ACTIVE': config.active_percentage,
                 'CASUAL': config.casual_percentage,
             },
             'consistency_bonus': DEFAULT_CONFIG['consistency_bonus']
@@ -96,13 +94,32 @@ def calculate_monthly_reports(year=None, month=None):
         
         # Calculate consistency bonus
         consistency_bonus = 0
-        for threshold, bonus in sorted(config['consistency_bonus'].items(), reverse=True):
-            if attendance_rate * 100 >= threshold:
-                consistency_bonus = bonus
-                break
+        if total_events >= 3:
+            for threshold, bonus in sorted(config['consistency_bonus'].items(), reverse=True):
+                if attendance_rate * 100 >= threshold:
+                    consistency_bonus = bonus
+                    break
+        
+        # Calculate mandatory penalty
+        mandatory_penalty = 0
+        mandatory_events = events.filter(is_mandatory=True, is_completed=True)
+        for m_event in mandatory_events:
+            # Check if this player was explicitly marked absent
+            absent = PlayerActivity.objects.filter(
+                player=character,
+                event=m_event,
+                status='ABSENT'
+            ).exists()
+            if absent:
+                mandatory_penalty += m_event.mandatory_penalty
         
         # Total score
-        total_score = activity_score + consistency_bonus
+        total_score = activity_score + consistency_bonus - mandatory_penalty
+        
+        # Get existing score_adjustment (preserve manual edits)
+        existing_report = MonthlyReport.objects.filter(month=month_date, player=character).first()
+        score_adjustment = existing_report.score_adjustment if existing_report else 0
+        total_score += score_adjustment
         
         # Update or create monthly report
         report, created = MonthlyReport.objects.update_or_create(
@@ -114,6 +131,8 @@ def calculate_monthly_reports(year=None, month=None):
                 'attendance_rate': attendance_rate,
                 'activity_score': activity_score,
                 'consistency_bonus': consistency_bonus,
+                'mandatory_penalty': mandatory_penalty,
+                'score_adjustment': score_adjustment,
                 'total_score': total_score,
             }
         )
@@ -203,7 +222,6 @@ def get_leaderboard_summary(year=None, month=None):
     tier_counts = {
         'ELITE': reports.filter(tier='ELITE').count(),
         'CORE': reports.filter(tier='CORE').count(),
-        'ACTIVE': reports.filter(tier='ACTIVE').count(),
         'CASUAL': reports.filter(tier='CASUAL').count(),
     }
     

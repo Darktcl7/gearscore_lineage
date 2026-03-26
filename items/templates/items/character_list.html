@@ -100,8 +100,7 @@
         max-width: 750px;
         /* Dikecilkan lagi sedikit */
         min-width: 250px;
-        background: rgba(10, 10, 12, 0.9);
-        /* Slightly more opaque */
+        background: rgba(10, 10, 12, 0.45);
         border: 1px solid rgba(212, 175, 55, 0.3);
         backdrop-filter: blur(15px);
         box-shadow: 0 0 50px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 0, 0, 0.5);
@@ -115,9 +114,9 @@
     }
 
     .profile-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 60px rgba(212, 175, 55, 0.15);
-        border-color: rgba(212, 175, 55, 0.6);
+        transform: translateY(-5px);
+        box-shadow: 0 15px 60px rgba(212, 175, 55, 0.2), inset 0 0 30px rgba(212, 175, 55, 0.1);
+        border-color: rgba(212, 175, 55, 0.8);
     }
 
     /* Gold corner accents */
@@ -175,13 +174,13 @@
 
     .char-name {
         font-family: 'Cinzel', serif;
-        font-size: 1.5rem;
+        font-size: 1.8rem;
         font-weight: 700;
         color: #fff;
-        margin: 0 0 8px;
+        margin: 0 0 10px;
         text-transform: uppercase;
-        letter-spacing: 3px;
-        text-shadow: 0 2px 15px rgba(0, 0, 0, 0.8);
+        letter-spacing: 4px;
+        text-shadow: 0 2px 15px rgba(212, 175, 55, 0.6), 0 0 30px rgba(212, 175, 55, 0.3);
     }
 
     .char-details-grid {
@@ -238,6 +237,15 @@
 
     .info-group {
         text-align: left;
+        background: rgba(255, 255, 255, 0.03);
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: background 0.3s;
+    }
+
+    .info-group:hover {
+        background: rgba(255, 255, 255, 0.06);
     }
 
     .info-group:last-child {
@@ -282,6 +290,7 @@
         border: 1px solid var(--gold-primary);
         box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
         object-fit: cover;
+        object-position: top center;
         background: #000;
         margin-right: 10px;
     }
@@ -406,9 +415,10 @@
     }
 
     .btn-view-detail:hover {
-        background: var(--gold-primary);
+        background: linear-gradient(45deg, var(--gold-primary), #fff3b0);
         color: #000;
-        box-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
+        box-shadow: 0 0 25px rgba(212, 175, 55, 0.6);
+        transform: scale(1.05);
     }
 
     /* Grid for multiple characters if user has more than one */
@@ -428,7 +438,7 @@
         background: rgba(0, 0, 0, 0.6);
         padding: 40px;
         border-radius: 10px;
-        margin-top: 50px;
+        margin-top: 0;
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
@@ -602,7 +612,7 @@
                 <!-- Restored Class Icons -->
                 <div class="class-icon-circle">
                     {% with class_slug=character.character_class|slugify %}
-                    <img src="{% static 'items/images/class_icons/' %}{{ class_slug }}.png"
+                    <img loading="lazy" src="{% static 'items/images/class_icons/' %}{{ class_slug }}.png"
                         alt="{{ character.character_class }}"
                         style="width: 100%; height: 100%; object-fit: contain; border-radius: 50%; padding: 5px;">
                     {% endwith %}
@@ -631,12 +641,12 @@
                 <!-- Mythic Classes -->
                 {% if character.mythic_classes.all.count > 0 %}
                 <div class="info-group">
-                    <span class="info-label">Mythic Classes</span>
+                    <span class="info-label"><i class="fas fa-hat-wizard" style="margin-right: 8px;"></i>Mythic Classes</span>
                     <ul class="info-list">
                         {% for mc in character.mythic_classes.all %}
                         <li>
                             {% if mc.icon_file %}
-                            <img src="{% static 'items/images/choices/' %}{{ mc.icon_file }}" class="legend-icon"
+                            <img loading="lazy" src="{% static 'items/images/choices/' %}{{ mc.icon_file }}" class="legend-icon"
                                 alt="{{ mc.name }}">
                             {% else %}
                             <i class="fas fa-hat-wizard legend-icon-placeholder"></i>
@@ -648,15 +658,35 @@
                 </div>
                 {% endif %}
 
+                <!-- Legendary Skins -->
+                {% if character.legendary_skins.all.count > 0 %}
+                <div class="info-group">
+                    <span class="info-label"><i class="fas fa-magic" style="margin-right: 8px;"></i>Legendary Skins</span>
+                    <ul class="info-list">
+                        {% for skin in character.legendary_skins.all %}
+                        <li>
+                            {% if skin.icon_file %}
+                            <img loading="lazy" src="{% static 'items/images/choices/' %}{{ skin.icon_file }}" class="legend-icon"
+                                alt="{{ skin.name }}">
+                            {% else %}
+                            <i class="fas fa-star legend-icon-placeholder"></i>
+                            {% endif %}
+                            {{ skin.name }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
                 <!-- Legendary Classes -->
                 {% if character.legendary_classes.all.count > 0 %}
                 <div class="info-group">
-                    <span class="info-label">Legendary Classes</span>
+                    <span class="info-label"><i class="fas fa-chess-king" style="margin-right: 8px;"></i>Legendary Classes</span>
                     <ul class="info-list">
                         {% for lc in character.legendary_classes.all %}
                         <li>
                             {% if lc.icon_file %}
-                            <img src="{% static 'items/images/choices/' %}{{ lc.icon_file }}" class="legend-icon"
+                            <img loading="lazy" src="{% static 'items/images/choices/' %}{{ lc.icon_file }}" class="legend-icon"
                                 alt="{{ lc.name }}">
                             {% else %}
                             <i class="fas fa-chess-king legend-icon-placeholder"></i>
@@ -671,12 +701,12 @@
                 <!-- Legendary Agathions -->
                 {% if character.legendary_agathions.all.count > 0 %}
                 <div class="info-group">
-                    <span class="info-label">Legendary Agathions</span>
+                    <span class="info-label"><i class="fas fa-dragon" style="margin-right: 8px;"></i>Legendary Agathions</span>
                     <ul class="info-list">
                         {% for la in character.legendary_agathions.all %}
                         <li>
                             {% if la.icon_file %}
-                            <img src="{% static 'items/images/choices/' %}{{ la.icon_file }}" class="legend-icon"
+                            <img loading="lazy" src="{% static 'items/images/choices/' %}{{ la.icon_file }}" class="legend-icon"
                                 alt="{{ la.name }}">
                             {% else %}
                             <i class="fas fa-dragon legend-icon-placeholder"></i>
@@ -691,12 +721,12 @@
                 <!-- Legendary Mounts -->
                 {% if character.legendary_mounts.all.count > 0 %}
                 <div class="info-group">
-                    <span class="info-label">Legendary Mounts</span>
+                    <span class="info-label"><i class="fas fa-horse" style="margin-right: 8px;"></i>Legendary Mounts</span>
                     <ul class="info-list">
                         {% for lm in character.legendary_mounts.all %}
                         <li>
                             {% if lm.icon_file %}
-                            <img src="{% static 'items/images/choices/' %}{{ lm.icon_file }}" class="legend-icon"
+                            <img loading="lazy" src="{% static 'items/images/choices/' %}{{ lm.icon_file }}" class="legend-icon"
                                 alt="{{ lm.name }}">
                             {% else %}
                             <i class="fas fa-horse legend-icon-placeholder"></i>

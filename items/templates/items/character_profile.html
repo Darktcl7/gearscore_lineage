@@ -46,8 +46,7 @@
         max-width: 1200px;
         margin: 0 auto;
         padding: 20px;
-        padding-top: 100px;
-        /* Space for fixed top bar */
+        padding-top: 0px;
         height: 100%;
         overflow: visible;
     }
@@ -251,6 +250,7 @@
         border-radius: 10px;
         margin-bottom: 8px;
         object-fit: cover;
+        object-position: top center;
     }
 
     .avatar-name {
@@ -543,8 +543,23 @@
             <div class="avatar-grid">
                 {% for mc in character.mythic_classes.all %}
                 <div class="avatar-card">
-                    <img src="{% static 'items/images/choices/'|add:mc.icon_file %}" alt="{{ mc.name }}">
+                    <img loading="lazy" src="{% static 'items/images/choices/'|add:mc.icon_file %}" alt="{{ mc.name }}">
                     <div class="avatar-name">{{ mc.name }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Legendary Skins Section -->
+        {% if character.legendary_skins.all.count > 0 %}
+        <div class="glass-card">
+            <h2><i class="fas fa-magic"></i> Legendary Skins</h2>
+            <div class="avatar-grid">
+                {% for ls in character.legendary_skins.all %}
+                <div class="avatar-card">
+                    <img loading="lazy" src="{% static 'items/images/choices/'|add:ls.icon_file %}" alt="{{ ls.name }}">
+                    <div class="avatar-name">{{ ls.name }}</div>
                 </div>
                 {% endfor %}
             </div>
@@ -558,7 +573,7 @@
             <div class="avatar-grid">
                 {% for class in character.legendary_classes.all %}
                 <div class="avatar-card">
-                    <img src="{% static 'items/images/choices/'|add:class.icon_file %}" alt="{{ class.name }}">
+                    <img loading="lazy" src="{% static 'items/images/choices/'|add:class.icon_file %}" alt="{{ class.name }}">
                     <div class="avatar-name">{{ class.name }}</div>
                 </div>
                 {% endfor %}
@@ -573,7 +588,7 @@
             <div class="avatar-grid">
                 {% for agathion in character.legendary_agathions.all %}
                 <div class="avatar-card">
-                    <img src="{% static 'items/images/choices/'|add:agathion.icon_file %}" alt="{{ agathion.name }}">
+                    <img loading="lazy" src="{% static 'items/images/choices/'|add:agathion.icon_file %}" alt="{{ agathion.name }}">
                     <div class="avatar-name">{{ agathion.name }}</div>
                 </div>
                 {% endfor %}
@@ -588,7 +603,7 @@
             <div class="avatar-grid">
                 {% for mount in character.legendary_mounts.all %}
                 <div class="avatar-card">
-                    <img src="{% static 'items/images/choices/'|add:mount.icon_file %}" alt="{{ mount.name }}">
+                    <img loading="lazy" src="{% static 'items/images/choices/'|add:mount.icon_file %}" alt="{{ mount.name }}">
                     <div class="avatar-name">{{ mount.name }}</div>
                 </div>
                 {% endfor %}
@@ -634,12 +649,13 @@
                 <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Soul Attack:</strong> {{ attrs.get_soul_prog_attack_display|default:"-" }}</p>
                 <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Soul Defense:</strong> {{ attrs.get_soul_prog_defense_display|default:"-" }}</p>
                 <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Soul Blessing:</strong> {{ attrs.get_soul_prog_blessing_display|default:"-" }}</p>
+                <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Soul Accuracy:</strong> {{ attrs.get_soul_prog_accuracy_display|default:"-" }}</p>
                 <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Holy Bracelet:</strong> {{ attrs.get_enchant_bracelet_holy_prot_display|default:"-" }}</p>
                 <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Influence Bracelet:</strong> {{ attrs.get_enchant_bracelet_influence_display|default:"-" }}</p>
                 <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Earth Earring:</strong> {{ attrs.get_enchant_earring_earth_display|default:"-" }}</p>
                 <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Fire Earring:</strong> {{ attrs.get_enchant_earring_fire_display|default:"-" }}</p>
                 <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Eva's Seal:</strong> {{ attrs.get_enchant_seal_eva_display|default:"-" }}</p>
-                <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Aster (Erafone):</strong> {{ attrs.aster_erafone|default:"0" }} Node</p>
+                <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; width: 220px;"><strong>Aster (Eratone):</strong> {{ attrs.aster_erafone|default:"0" }} Node</p>
                 {% endwith %}
             </div>
 
@@ -694,7 +710,7 @@
                 <div class="equipment-card">
                     <div class="item-icon">
                         {% with attrs.pvp_helmet|get_image_for_choice as img %}
-                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Helmet"
+                        {% if img %}<img loading="lazy" src="{% static 'items/images/choices/'|add:img %}" alt="PvP Helmet"
                             style="width:50px;height:50px;">{% endif %}
                         {% endwith %}
                     </div>
@@ -711,7 +727,7 @@
                 <div class="equipment-card">
                     <div class="item-icon">
                         {% with attrs.pvp_gloves|get_image_for_choice as img %}
-                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Gloves"
+                        {% if img %}<img loading="lazy" src="{% static 'items/images/choices/'|add:img %}" alt="PvP Gloves"
                             style="width:50px;height:50px;">{% endif %}
                         {% endwith %}
                     </div>
@@ -728,7 +744,7 @@
                 <div class="equipment-card">
                     <div class="item-icon">
                         {% with attrs.pvp_boots|get_image_for_choice as img %}
-                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Boots"
+                        {% if img %}<img loading="lazy" src="{% static 'items/images/choices/'|add:img %}" alt="PvP Boots"
                             style="width:50px;height:50px;">{% endif %}
                         {% endwith %}
                     </div>
@@ -745,7 +761,7 @@
                 <div class="equipment-card">
                     <div class="item-icon">
                         {% with attrs.pvp_gaiters|get_image_for_choice as img %}
-                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Gaiters"
+                        {% if img %}<img loading="lazy" src="{% static 'items/images/choices/'|add:img %}" alt="PvP Gaiters"
                             style="width:50px;height:50px;">{% endif %}
                         {% endwith %}
                     </div>
@@ -762,7 +778,7 @@
                 <div class="equipment-card">
                     <div class="item-icon">
                         {% with attrs.pvp_top_armor|get_image_for_choice as img %}
-                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Armor"
+                        {% if img %}<img loading="lazy" src="{% static 'items/images/choices/'|add:img %}" alt="PvP Armor"
                             style="width:50px;height:50px;">{% endif %}
                         {% endwith %}
                     </div>
@@ -779,7 +795,7 @@
                 <div class="equipment-card">
                     <div class="item-icon">
                         {% with attrs.pvp_cloak|get_image_for_choice as img %}
-                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Cloak"
+                        {% if img %}<img loading="lazy" src="{% static 'items/images/choices/'|add:img %}" alt="PvP Cloak"
                             style="width:50px;height:50px;">{% endif %}
                         {% endwith %}
                     </div>
@@ -796,7 +812,7 @@
                 <div class="equipment-card">
                     <div class="item-icon">
                         {% with attrs.pvp_sigil|get_image_for_choice as img %}
-                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Sigil"
+                        {% if img %}<img loading="lazy" src="{% static 'items/images/choices/'|add:img %}" alt="PvP Sigil"
                             style="width:50px;height:50px;">{% endif %}
                         {% endwith %}
                     </div>
@@ -813,7 +829,7 @@
                 <div class="equipment-card">
                     <div class="item-icon">
                         {% with attrs.pvp_tshirt|get_image_for_choice as img %}
-                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP T-Shirt"
+                        {% if img %}<img loading="lazy" src="{% static 'items/images/choices/'|add:img %}" alt="PvP T-Shirt"
                             style="width:50px;height:50px;">{% endif %}
                         {% endwith %}
                     </div>
@@ -830,7 +846,7 @@
                 <div class="equipment-card">
                     <div class="item-icon">
                         {% with attrs.pvp_necklace|get_image_for_choice as img %}
-                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Necklace"
+                        {% if img %}<img loading="lazy" src="{% static 'items/images/choices/'|add:img %}" alt="PvP Necklace"
                             style="width:50px;height:50px;">{% endif %}
                         {% endwith %}
                     </div>
@@ -847,7 +863,7 @@
                 <div class="equipment-card">
                     <div class="item-icon">
                         {% with attrs.pvp_ring_left|get_image_for_choice as img %}
-                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Ring Left"
+                        {% if img %}<img loading="lazy" src="{% static 'items/images/choices/'|add:img %}" alt="PvP Ring Left"
                             style="width:50px;height:50px;">{% endif %}
                         {% endwith %}
                     </div>
@@ -864,7 +880,7 @@
                 <div class="equipment-card">
                     <div class="item-icon">
                         {% with attrs.pvp_ring_right|get_image_for_choice as img %}
-                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Ring Right"
+                        {% if img %}<img loading="lazy" src="{% static 'items/images/choices/'|add:img %}" alt="PvP Ring Right"
                             style="width:50px;height:50px;">{% endif %}
                         {% endwith %}
                     </div>
@@ -881,7 +897,7 @@
                 <div class="equipment-card">
                     <div class="item-icon">
                         {% with attrs.pvp_belt|get_image_for_choice as img %}
-                        {% if img %}<img src="{% static 'items/images/choices/'|add:img %}" alt="PvP Belt"
+                        {% if img %}<img loading="lazy" src="{% static 'items/images/choices/'|add:img %}" alt="PvP Belt"
                             style="width:50px;height:50px;">{% endif %}
                         {% endwith %}
                     </div>
@@ -901,13 +917,13 @@
                         {% with media_url=weapon_val|get_weapon_media_url %}
                         {% if media_url %}
                         <!-- New weapon system (from Media) -->
-                        <img src="/media/{{ media_url }}" alt="Weapon"
+                        <img loading="lazy" src="/media/{{ media_url }}" alt="Weapon"
                             style="width:50px;height:50px; object-fit: contain;">
                         {% else %}
                         <!-- Fallback to old system (Static) -->
                         {% with weapon_val|get_image_for_choice as img %}
                         {% if img %}
-                        <img src="{% static 'items/images/choices/'|add:img %}" alt="Weapon"
+                        <img loading="lazy" src="{% static 'items/images/choices/'|add:img %}" alt="Weapon"
                             style="width:50px;height:50px;">
                         {% endif %}
                         {% endwith %}

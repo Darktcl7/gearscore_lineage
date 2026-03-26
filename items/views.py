@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
 from django.http import HttpResponseForbidden
 from .models import Item, Character, SubclassStats, LegendaryClass, CharacterAttributes, CharacteristicsStats, LegendaryAgathion, LegendaryMount, MythicClass, InheritorBook, CLASS_CHOICES, CLASS_TO_WEAPON_TYPE, WEAPON_CHOICES, CLASS_SKILLS_DATA
 import json
@@ -19,7 +20,7 @@ def is_admin(user):
 def character_list(request):
     # Semua user (termasuk admin) hanya melihat karakter mereka sendiri di sini (Card View)
     # Optimized: select_related for OneToOne, prefetch for ManyToMany
-    characters = Character.objects.filter(owner=request.user).select_related('attributes', 'subclass_stats', 'characteristics_stats').prefetch_related('mythic_classes', 'legendary_classes', 'legendary_agathions', 'legendary_mounts')
+    characters = Character.objects.filter(owner=request.user).select_related('attributes', 'subclass_stats', 'characteristics_stats').prefetch_related('mythic_classes', 'legendary_classes', 'legendary_skins', 'legendary_agathions', 'legendary_mounts')
     return render(request, 'items/character_list.html', {'characters': characters, 'is_admin': is_admin(request.user)})
 
 # FUNGSI: Manajemen Karakter (Admin Only) -> Table View
@@ -29,8 +30,7 @@ def character_management(request):
         return HttpResponseForbidden("You are not authorized to view this page.")
     
     # Optimized: select_related for owner and attributes, prefetch for ManyToMany
-    characters = Character.objects.all().select_related('owner', 'attributes', 'subclass_stats', 'characteristics_stats').prefetch_related('mythic_classes', 'legendary_classes')
-    
+    characters = Character.objects.all().select_related('owner', 'attributes', 'subclass_stats', 'characteristics_stats').prefetch_related('mythic_classes', 'legendary_classes', 'legendary_skins')
     # Get pending users (registered but not yet approved)
     from django.contrib.auth.models import User
     pending_users = User.objects.filter(is_active=False, is_staff=False).order_by('-date_joined')
@@ -144,7 +144,8 @@ def create_character(request, pk=None):
     question_icons = {
         'soulshot_level': 's1.webm', 'valor_level': 's2.webm',
         'soul_prog_attack': 'Icon_SoulStone_Option_Icon_01.png', 'soul_prog_defense': 'Icon_SoulStone_Option_Icon_04.png',
-        'soul_prog_blessing': 'Icon_SoulStone_Option_Icon_07.png', 'inheritor_books': 'Icon_Item_Usable_SkillBook_04.png',
+        'soul_prog_blessing': 'Icon_SoulStone_Option_Icon_07.png', 'soul_prog_accuracy': 'soul_progression_accuracy-removebg-preview.png',
+        'inheritor_books': 'Icon_Item_Usable_SkillBook_04.png',
         'enchant_bracelet_holy_prot': 'Icon_ACC_BMBracelet_G0_003.png', 'enchant_bracelet_influence': 'Icon_ACC_BMBracelet_G0_001.png',
         'enchant_earring_earth': 'Icon_ACC_BMEarring_G0_002.png', 'enchant_earring_fire': 'Icon_ACC_BMEarring_G0_001.png',
         'enchant_seal_eva': 'Icon_ACC_Seal_G0_001.png',
@@ -412,12 +413,12 @@ def edit_characteristics_stats(request, character_pk):
         
     # Group fields for rendering
     field_groups = [
-        ('CORE PVP DEFENSE', [form[f'a{i}'] for i in range(1, 13)]),
-        ('CORE PVP OFFENSE', [form[f'b{i}'] for i in range(1, 10)]),
-        ('CROWD CONTROL', [form[f'c{i}'] for i in range(1, 18)]),
-        ('SURVIVAL', [form[f'd{i}'] for i in range(1, 9)]),
-        ('SECONDARY DEFENSE', [form[f'e{i}'] for i in range(1, 11)]),
-        ('SECONDARY OFFENSE', [form[f'f{i}'] for i in range(1, 14)]),
+        ('KELOMPOK A - CORE PVP DEFENSE (Bobot: 2.0)', [form[f'a{i}'] for i in range(1, 13)]),
+        ('KELOMPOK B - CORE PVP OFFENSE (Bobot: 1.8)', [form[f'b{i}'] for i in range(1, 10)]),
+        ('KELOMPOK C - CROWD CONTROL (Bobot: 1.5)', [form[f'c{i}'] for i in range(1, 18)]),
+        ('KELOMPOK D - SURVIVAL (Bobot: 1.2)', [form[f'd{i}'] for i in range(1, 9)]),
+        ('KELOMPOK E - SECONDARY DEFENSE (Bobot: 1.0)', [form[f'e{i}'] for i in range(1, 11)]),
+        ('KELOMPOK F - SECONDARY OFFENSE (Bobot: 1.0)', [form[f'f{i}'] for i in range(1, 14)]),
     ]
         
     context = {
@@ -434,7 +435,7 @@ def edit_characteristics_stats(request, character_pk):
 # ACTIVITY VIEWS
 # ======================================================
 from .models import ActivityEvent, PlayerActivity, MonthlyReport
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from django.utils import timezone
 from datetime import datetime, timedelta
 
@@ -475,67 +476,131 @@ def gearscore_leaderboard(request):
 @login_required
 def activity_leaderboard(request):
     """
-    Halaman Activity Leaderboard - tampilan utama untuk semua user
+    Halaman Activity Leaderboard - Monthly & Weekly Rankings + Guild Stats
     """
-    # Get current month
     today = timezone.now()
-    current_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     
-    # Get monthly reports for current month
-    monthly_reports = MonthlyReport.objects.filter(
-        month__year=today.year,
-    ).select_related('player').order_by('-total_score')
+    # ── MONTHLY RANKING ──
+    # Total Score = event points only (EXCLUDE AP adjustments)
+    monthly_data = (
+        PlayerActivity.objects.filter(
+            event__date__year=today.year,
+            event__date__month=today.month
+        )
+        .exclude(event__name__startswith='AP Adjustment:')
+        .values('player__id', 'player__name')
+        .annotate(
+            total_score=Sum('points_earned'),
+        )
+        .order_by('-total_score')
+    )
     
-    # Get recent events (last 7 days)
-    week_ago = today - timedelta(days=7)
-    recent_events = ActivityEvent.objects.filter(
-        date__gte=week_ago
+    monthly_ranking = []
+    for i, entry in enumerate(monthly_data, 1):
+        score = entry['total_score'] or 0
+        tier = _get_tier(score)
+        
+        # Calculate AP adjustments separately
+        ap_points = PlayerActivity.objects.filter(
+            player__id=entry['player__id'],
+            event__name__startswith='AP Adjustment:',
+            event__date__year=today.year,
+            event__date__month=today.month
+        ).aggregate(total=Sum('points_earned'))['total'] or 0
+        
+        monthly_ranking.append({
+            'rank': i,
+            'id': entry['player__id'],
+            'name': entry['player__name'],
+            'total_score': score,
+            'ap_points': ap_points,
+            'tier': tier,
+            'tier_class': tier.lower().replace(' ', '_'),
+        })
+    
+    # ── WEEKLY RANKING ──
+    from datetime import timedelta as td
+    from .models import LeaderboardConfig
+    start_of_week = (today - td(days=today.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # Respect weekly reset timestamp - only show events after the reset
+    lb_config = LeaderboardConfig.get_config()
+    weekly_cutoff = start_of_week
+    if lb_config.weekly_reset_at and lb_config.weekly_reset_at > start_of_week:
+        weekly_cutoff = lb_config.weekly_reset_at
+    
+    weekly_data = (
+        PlayerActivity.objects.filter(
+            event__date__gte=weekly_cutoff
+        )
+        .exclude(event__name__startswith='AP Adjustment:')
+        .values('player__id', 'player__name')
+        .annotate(
+            total_score=Sum('points_earned'),
+        )
+        .order_by('-total_score')
+    )
+    
+    weekly_ranking = []
+    for i, entry in enumerate(weekly_data, 1):
+        score = entry['total_score'] or 0
+        tier = _get_tier(score)
+        
+        ap_points = PlayerActivity.objects.filter(
+            player__id=entry['player__id'],
+            event__name__startswith='AP Adjustment:',
+            event__date__gte=weekly_cutoff
+        ).aggregate(total=Sum('points_earned'))['total'] or 0
+        
+        weekly_ranking.append({
+            'rank': i,
+            'id': entry['player__id'],
+            'name': entry['player__name'],
+            'total_score': score,
+            'ap_points': ap_points,
+            'tier': tier,
+            'tier_class': tier.lower().replace(' ', '_'),
+        })
+    
+    # ── GUILD STATISTICS ──
+    # Use monthly scores for guild stats
+    guild_stats = {
+        'core': sum(1 for r in monthly_ranking if r['total_score'] > 950),
+        'elite': sum(1 for r in monthly_ranking if 675 < r['total_score'] <= 950),
+        'active': sum(1 for r in monthly_ranking if 400 < r['total_score'] <= 675),
+        'inactive': sum(1 for r in monthly_ranking if r['total_score'] <= 400),
+        'total': len(monthly_ranking),
+    }
+    
+    # ── RECENT EVENTS ──
+    recent_events = ActivityEvent.objects.filter(date__lte=today).exclude(
+        name__startswith='AP Adjustment:'
+    ).exclude(
+        name__startswith='Score Adjustment:'
     ).order_by('-date')[:10]
     
-    # Get user's character and their stats (if logged in as regular user)
-    user_report = None
-    user_character = None
-    if not is_admin(request.user):
-        user_character = Character.objects.filter(owner=request.user).first()
-        if user_character:
-            user_report = MonthlyReport.objects.filter(
-                player=user_character,
-                month__year=today.year,
-                month__month=today.month
-            ).first()
-    
-    # Calculate tier statistics
-    tier_counts = {
-        'ELITE': monthly_reports.filter(tier='ELITE').count(),
-        'CORE': monthly_reports.filter(tier='CORE').count(),
-        'ACTIVE': monthly_reports.filter(tier='ACTIVE').count(),
-        'CASUAL': monthly_reports.filter(tier='CASUAL').count(),
-    }
-    
-    # Get Config for UI (percentages)
-    from .services import get_active_config
-    config = get_active_config()
-    
-    # Pre-calculate percentage integers for display
-    # The config has floats like 0.7, template wants "70%"
-    tier_percentages = {
-        'ELITE': int(config['tier_allocation']['ELITE'] * 100),
-        'CORE': int(config['tier_allocation']['CORE'] * 100),
-        'ACTIVE': int(config['tier_allocation']['ACTIVE'] * 100),
-        'CASUAL': int(config['tier_allocation']['CASUAL'] * 100),
-    }
-
     context = {
-        'monthly_reports': monthly_reports,
+        'monthly_ranking': monthly_ranking,
+        'weekly_ranking': weekly_ranking,
+        'guild_stats': guild_stats,
         'recent_events': recent_events,
-        'user_report': user_report,
-        'user_character': user_character,
-        'tier_counts': tier_counts,
-        'current_month': current_month,
+        'current_month': today.strftime('%B %Y'),
+        'current_week': f"01 {today.strftime('%b')} - {__import__('calendar').monthrange(today.year, today.month)[1]} {today.strftime('%b %Y')}",
         'is_admin': is_admin(request.user),
-        'tier_percentages': tier_percentages, # Pass to template
     }
     return render(request, 'items/activity_leaderboard.html', context)
+
+
+def _get_tier(score):
+    """Get tier based on total score"""
+    if score > 950:
+        return 'Core'
+    elif score > 675:
+        return 'Elite'
+    elif score > 400:
+        return 'Active'
+    else:
+        return 'Inactive'
 
 
 @login_required
@@ -549,33 +614,27 @@ def update_prize_config(request):
     
     if request.method == 'POST':
         try:
+            total_pool_val = int(request.POST.get('total_pool', 10000))
             elite = float(request.POST.get('elite', 0))
             core = float(request.POST.get('core', 0)) 
-            active = float(request.POST.get('active', 0))
             casual = float(request.POST.get('casual', 0))
             
             # Basic validation
-            total = elite + core + active + casual
+            total = elite + core + casual
             if total != 100:
-                 # Allow small margin of user error or just normalize?
-                 # For now, strict 100% check
                  pass 
                  
             # Convert to 0.70 format
             from .models import PrizePoolConfig
             config = PrizePoolConfig.objects.create(
+                total_pool=total_pool_val,
                 elite_percentage=elite/100.0,
                 core_percentage=core/100.0,
-                active_percentage=active/100.0,
                 casual_percentage=casual/100.0,
                 updated_by=request.user.username
             )
-            # You might want to update total_pool too if needed
             
             # Recalculate current month's prizes immediately?
-            # User requirement: "results in existing/previous leaderboard not affected"
-            # But the CURRENT month is usually considered "live".
-            # If we want the change to apply immediately to the CURRENT displaying month:
             from .services import calculate_prize_distribution
             today = timezone.now()
             calculate_prize_distribution(today.year, today.month)
@@ -586,6 +645,168 @@ def update_prize_config(request):
             pass # Invalid numbers
             
     return redirect('activity-leaderboard')
+
+
+@login_required
+@require_http_methods(["POST"])
+def adjust_ap(request):
+    """
+    Adjust Activity Points for a user (Give/Remove AP)
+    """
+    if not is_admin(request.user):
+        return HttpResponseForbidden("Unauthorized")
+        
+    player_id = request.POST.get('player_id')
+    points = int(request.POST.get('points', 0))
+    action = request.POST.get('action') # 'give' or 'remove'
+    reason = request.POST.get('reason', 'Manual Adjustment')
+    
+    if action == 'remove':
+        points = -abs(points)
+    else:
+        points = abs(points)
+        
+    if points != 0:
+        player = get_object_or_404(Character, id=player_id)
+        
+        event = ActivityEvent.objects.create(
+            name=f"AP Adjustment: {reason}",
+            event_type='CUSTOM',
+            date=timezone.now(),
+            max_points=abs(points),
+            base_points=abs(points),
+            is_completed=True,
+        )
+        
+        PlayerActivity.objects.create(
+            player=player,
+            event=event,
+            status='ATTENDED' if points > 0 else 'ABSENT',
+            points_earned=points,
+        )
+        
+        from .services import calculate_monthly_reports
+        calculate_monthly_reports(event.date.year, event.date.month)
+        
+        from django.contrib import messages
+        messages.success(request, f"Successfully {'gave' if points > 0 else 'removed'} {abs(points)} AP for {player.name}")
+        
+    return redirect(request.META.get('HTTP_REFERER', 'activity-leaderboard'))
+
+
+@login_required
+@require_http_methods(["POST"])
+def adjust_score(request):
+    """
+    Admin can manually adjust a player's Total Score (add/subtract event points).
+    This creates a hidden CUSTOM event that goes into the main score calculation.
+    """
+    if not is_admin(request.user):
+        return HttpResponseForbidden("Unauthorized")
+        
+    player_id = request.POST.get('player_id')
+    points = int(request.POST.get('points', 0))
+    action = request.POST.get('action')  # 'add' or 'subtract'
+    reason = request.POST.get('reason', 'Score Adjustment')
+    
+    if action == 'subtract':
+        points = -abs(points)
+    else:
+        points = abs(points)
+        
+    if points != 0:
+        player = get_object_or_404(Character, id=player_id)
+        
+        event = ActivityEvent.objects.create(
+            name=f"Score Adjustment: {reason}",
+            event_type='CUSTOM',
+            date=timezone.now(),
+            max_points=abs(points),
+            base_points=abs(points),
+            is_completed=True,
+        )
+        
+        PlayerActivity.objects.create(
+            player=player,
+            event=event,
+            status='ATTENDED' if points > 0 else 'ABSENT',
+            points_earned=points,
+        )
+        
+        from django.contrib import messages
+        messages.success(request, f"Successfully {'added' if points > 0 else 'subtracted'} {abs(points)} score for {player.name}")
+        
+    return redirect(request.META.get('HTTP_REFERER', 'activity-leaderboard'))
+
+
+@login_required
+def reset_leaderboard_data(request):
+    """
+    Admin action to wipe Leaderboard data (Weekly, Monthly, or All).
+    Weekly reset: only resets weekly ranking display (data preserved for monthly).
+    Monthly/All reset: actually deletes data.
+    """
+    if not is_admin(request.user):
+        return HttpResponseForbidden("Unauthorized")
+        
+    if request.method == 'POST':
+        reset_type = request.POST.get('type', 'all')
+        today = timezone.now()
+        
+        if reset_type == 'weekly':
+            # Weekly reset: only update the reset timestamp
+            # Data is NOT deleted, so monthly totals stay intact
+            from .models import LeaderboardConfig
+            config = LeaderboardConfig.get_config()
+            config.weekly_reset_at = today
+            config.save()
+        elif reset_type == 'monthly':
+            PlayerActivity.objects.filter(event__date__year=today.year, event__date__month=today.month).delete()
+            ActivityEvent.objects.filter(date__year=today.year, date__month=today.month).delete()
+        else:
+            PlayerActivity.objects.all().delete()
+            ActivityEvent.objects.all().delete()
+            
+        return redirect('activity-leaderboard')
+        
+    return redirect('activity-leaderboard')
+
+
+@login_required
+def admin_adjust_score(request):
+    """
+    Admin can manually adjust a player's score.
+    POST: report_id, adjustment (integer, can be negative)
+    """
+    if not is_admin(request.user):
+        return HttpResponseForbidden("Unauthorized")
+    
+    if request.method == 'POST':
+        import json
+        try:
+            data = json.loads(request.body)
+            report_id = data.get('report_id')
+            new_adjustment = int(data.get('adjustment', 0))
+            
+            report = MonthlyReport.objects.get(pk=report_id)
+            report.score_adjustment = new_adjustment
+            report.save()  # This triggers recalculation of total_score
+            
+            from django.http import JsonResponse
+            return JsonResponse({
+                'success': True,
+                'total_score': report.total_score,
+                'score_adjustment': report.score_adjustment,
+            })
+        except MonthlyReport.DoesNotExist:
+            from django.http import JsonResponse
+            return JsonResponse({'error': 'Report not found'}, status=404)
+        except (ValueError, TypeError) as e:
+            from django.http import JsonResponse
+            return JsonResponse({'error': str(e)}, status=400)
+    
+    from django.http import JsonResponse
+    return JsonResponse({'error': 'POST required'}, status=405)
 
 
 @login_required
@@ -623,30 +844,132 @@ def my_activity(request):
     ).select_related('event').order_by('-event__date')
     
     # Calculate quick stats
-    total_points = activities.filter(status='ATTENDED').aggregate(
+    total_points = activities.exclude(
+        event__name__startswith='AP Adjustment:'
+    ).aggregate(total=Sum('points_earned'))['total'] or 0
+    
+    ap_points = activities.filter(
+        event__name__startswith='AP Adjustment:'
+    ).aggregate(total=Sum('points_earned'))['total'] or 0
+    
+    penalty_total = activities.exclude(
+        event__name__startswith='AP Adjustment:'
+    ).filter(points_earned__lt=0).aggregate(
         total=Sum('points_earned')
     )['total'] or 0
     
-    attended_count = activities.filter(status='ATTENDED').count()
-    total_events = ActivityEvent.objects.filter(
+    attended_count = activities.exclude(
+        event__name__startswith='AP Adjustment:'
+    ).exclude(
+        event__name__startswith='Score Adjustment:'
+    ).filter(status='ATTENDED').count()
+    
+    total_events = ActivityEvent.objects.exclude(
+        name__startswith='AP Adjustment:'
+    ).exclude(
+        name__startswith='Score Adjustment:'
+    ).filter(
         date__gte=month_ago,
         is_completed=True
     ).count()
     
     attendance_rate = (attended_count / total_events * 100) if total_events > 0 else 0
     
+    # Calculate tier
+    tier = _get_tier(total_points)
+    
+    # Calculate monthly rewards from custom events
+    monthly_custom_events = PlayerActivity.objects.filter(
+        player=character,
+        event__date__year=today.year,
+        event__date__month=today.month,
+        event__event_type='CUSTOM',
+        status='ATTENDED',
+    ).select_related('event').exclude(
+        event__name__startswith='AP Adjustment:'
+    ).exclude(
+        event__name__startswith='Score Adjustment:'
+    )
+    
+    diamond_total = 0
+    diamond_count = 0
+    key_total = 0
+    key_count = 0
+    membership_total = 0
+    membership_count = 0
+    
+    for act in monthly_custom_events:
+        ev = act.event
+        if ev.reward_diamond:
+            diamond_total += ev.reward_diamond_points
+            diamond_count += 1
+        if ev.reward_key:
+            key_total += ev.reward_key_points
+            key_count += 1
+        if ev.reward_membership:
+            membership_total += ev.reward_membership_points
+            membership_count += 1
+    
+    monthly_rewards = {
+        'diamond_total': diamond_total,
+        'diamond_count': diamond_count,
+        'key_total': key_total,
+        'key_count': key_count,
+        'membership_total': membership_total,
+        'membership_count': membership_count,
+    }
+    
     context = {
         'character': character,
         'monthly_report': monthly_report,
         'activities': activities,
         'total_points': total_points,
+        'ap_points': ap_points,
+        'penalty_total': penalty_total,
         'attended_count': attended_count,
         'total_events': total_events,
         'attendance_rate': attendance_rate,
+        'tier': tier,
+        'monthly_rewards': monthly_rewards,
         'is_admin': is_admin(request.user),
     }
     return render(request, 'items/my_activity.html', context)
 
+
+@login_required
+@require_http_methods(["POST"])
+def reset_monthly_rewards(request):
+    """
+    Admin action to reset all monthly reward data (diamond/key/membership)
+    from custom events in the current month.
+    """
+    if not is_admin(request.user):
+        return HttpResponseForbidden("Only administrators can reset rewards.")
+    
+    today = timezone.now()
+    
+    # Reset reward flags on all custom events this month
+    updated = ActivityEvent.objects.filter(
+        date__year=today.year,
+        date__month=today.month,
+        event_type='CUSTOM',
+    ).exclude(
+        name__startswith='AP Adjustment:'
+    ).exclude(
+        name__startswith='Score Adjustment:'
+    ).update(
+        reward_diamond=False,
+        reward_diamond_points=0,
+        reward_key=False,
+        reward_key_points=0,
+        reward_membership=False,
+        reward_membership_points=0,
+    )
+    
+    from django.contrib import messages
+    messages.success(request, f"Monthly rewards reset successfully. ({updated} events updated)")
+    
+    return redirect('my-activity')
 
 @login_required
 def manage_events(request):
@@ -656,8 +979,12 @@ def manage_events(request):
     if not is_admin(request.user):
         return HttpResponseForbidden("Only administrators can manage events.")
     
-    # Get all events, ordered by date
-    events = ActivityEvent.objects.all().order_by('-date')[:50]
+    # Get all actual events (excluding manual point adjustments), ordered by date
+    events = ActivityEvent.objects.exclude(
+        name__startswith='AP Adjustment:'
+    ).exclude(
+        name__startswith='Score Adjustment:'
+    ).order_by('-date')[:50]
     
     context = {
         'events': events,
@@ -679,13 +1006,48 @@ def create_event(request):
         name = request.POST.get('name')
         custom_name = request.POST.get('custom_name', '').strip()
         date_str = request.POST.get('date')
-        is_win = request.POST.get('is_win') == 'on'
         
-        # For custom events, use the custom name
+        # Handle custom event reward checkboxes
+        reward_diamond = False
+        reward_diamond_points = 0
+        reward_key = False
+        reward_key_points = 0
+        reward_membership = False
+        reward_membership_points = 0
+        
+        if event_type == 'CUSTOM':
+            reward_diamond = request.POST.get('reward_diamond') == 'on'
+            reward_key = request.POST.get('reward_key') == 'on'
+            reward_membership = request.POST.get('reward_membership') == 'on'
+            
+            if reward_diamond:
+                try:
+                    reward_diamond_points = int(request.POST.get('reward_diamond_points', 0))
+                except (ValueError, TypeError):
+                    reward_diamond_points = 0
+            if reward_key:
+                try:
+                    reward_key_points = int(request.POST.get('reward_key_points', 0))
+                except (ValueError, TypeError):
+                    reward_key_points = 0
+            if reward_membership:
+                try:
+                    reward_membership_points = int(request.POST.get('reward_membership_points', 0))
+                except (ValueError, TypeError):
+                    reward_membership_points = 0
+        
+        # For custom events, use the custom name and build reward summary
         if event_type == 'CUSTOM' and custom_name:
-            reward = request.POST.get('name')
-            if reward:
-                final_name = f"{custom_name} ({reward})"
+            reward_parts = []
+            if reward_diamond:
+                reward_parts.append(f"💎 Diamond: {reward_diamond_points}pts")
+            if reward_key:
+                reward_parts.append(f"🔑 Key: {reward_key_points}pts")
+            if reward_membership:
+                reward_parts.append(f"👑 Membership: {reward_membership_points}pts")
+            
+            if reward_parts:
+                final_name = f"{custom_name} ({', '.join(reward_parts)})"
             else:
                 final_name = custom_name
         elif name:
@@ -693,38 +1055,58 @@ def create_event(request):
         else:
             final_name = f"{event_type} Event"
         
-        # Parse bosses killed for Invasion
-        bosses_killed = {}
+        # Get default points for this event type
+        default_pts = ActivityEvent.DEFAULT_POINTS.get(event_type, 10)
+        
+        # Parse editable points (user can override default)
+        try:
+            event_points = int(request.POST.get('event_points', default_pts))
+        except (ValueError, TypeError):
+            event_points = default_pts
+
+        # Parse penalty points for mandatory events
+        penalty_pts = 0
+        if request.POST.get('is_mandatory') == 'on':
+            try:
+                penalty_pts = int(request.POST.get('penalty_points', 5))
+            except (ValueError, TypeError):
+                penalty_pts = 5
+        
+        # Build event kwargs
+        event_kwargs = {
+            'event_type': event_type,
+            'name': final_name,
+            'date': datetime.strptime(date_str, '%Y-%m-%dT%H:%M'),
+            'is_completed': False,
+            'is_repeatable': request.POST.get('is_repeatable') == 'on',
+            'is_mandatory': request.POST.get('is_mandatory') == 'on',
+            'mandatory_penalty': penalty_pts,
+            'is_win': False,
+            'max_points': event_points,
+            'reward_diamond': reward_diamond,
+            'reward_diamond_points': reward_diamond_points,
+            'reward_key': reward_key,
+            'reward_key_points': reward_key_points,
+            'reward_membership': reward_membership,
+            'reward_membership_points': reward_membership_points,
+        }
+        
+        # For INVASION, set default boss_point_config
         if event_type == 'INVASION':
-            bosses_killed = {
-                'dragon_beast': request.POST.get('dragon_beast') == 'on',
-                'carnifex': request.POST.get('carnifex') == 'on',
-                'orfen': request.POST.get('orfen') == 'on',
+            event_kwargs['boss_point_config'] = {
+                'dragon_beast': 50,
+                'carnifex': 25,
+                'orfen': 100,
             }
         
-        # Parse custom points for Custom events
-        custom_pts = 10
-        if event_type == 'CUSTOM':
-            try:
-                custom_pts = int(request.POST.get('custom_points', 10))
-            except (ValueError, TypeError):
-                custom_pts = 10
-        
-        # Create event
-        event = ActivityEvent.objects.create(
-            event_type=event_type,
-            name=final_name,
-            date=datetime.strptime(date_str, '%Y-%m-%dT%H:%M'),
-            is_completed=request.POST.get('is_completed') == 'on',
-            is_win=False,
-            bosses_killed={},
-            custom_points=custom_pts,
-        )
+        event = ActivityEvent.objects.create(**event_kwargs)
         
         return redirect('manage-events')
     
+    import json
     context = {
         'event_types': ActivityEvent.EVENT_TYPE_CHOICES,
+        'default_points': json.dumps(ActivityEvent.DEFAULT_POINTS),
         'is_admin': True,
     }
     return render(request, 'items/create_event.html', context)
@@ -756,17 +1138,22 @@ def record_attendance(request, event_pk):
         # Save boss points if Invasion
         if event.event_type == 'INVASION':
             try:
-                event.dragon_beast_points = int(request.POST.get('dragon_beast_points', 10))
+                db_pts = int(request.POST.get('dragon_beast_points', 50))
             except (ValueError, TypeError):
-                event.dragon_beast_points = 10
+                db_pts = 50
             try:
-                event.carnifex_points = int(request.POST.get('carnifex_points', 15))
+                carnifex_pts = int(request.POST.get('carnifex_points', 25))
             except (ValueError, TypeError):
-                event.carnifex_points = 15
+                carnifex_pts = 25
             try:
-                event.orfen_points = int(request.POST.get('orfen_points', 25))
+                orfen_pts = int(request.POST.get('orfen_points', 100))
             except (ValueError, TypeError):
-                event.orfen_points = 25
+                orfen_pts = 100
+            event.boss_point_config = {
+                'dragon_beast': db_pts,
+                'carnifex': carnifex_pts,
+                'orfen': orfen_pts,
+            }
             event.save()
         
         # Get selected characters
@@ -776,7 +1163,7 @@ def record_attendance(request, event_pk):
         for char_id in selected_ids:
             character = Character.objects.get(pk=char_id)
             
-            defaults = {'status': 'ATTENDED'}
+            defaults = {'status': 'ATTENDED', 'points_earned': 0}
             
             # For Invasion, capture INDIVIDUAL boss checkboxes
             if event.event_type == 'INVASION':
@@ -787,11 +1174,13 @@ def record_attendance(request, event_pk):
                 }
                 defaults['bosses_killed'] = bosses
             
-            PlayerActivity.objects.update_or_create(
+            activity, created = PlayerActivity.objects.update_or_create(
                 player=character,
                 event=event,
                 defaults=defaults
             )
+            # Force re-save to trigger point calculation in model's save()
+            activity.save()
         
         # Mark absent for unselected
         for char in all_characters:
@@ -816,14 +1205,69 @@ def record_attendance(request, event_pk):
         char.is_attended = att is not None
         char.bosses_killed = att['bosses_killed'] if att else {}
         processed_characters.append(char)
+        
+    bosspc = event.boss_point_config or {}
+    boss_points = {
+        'dragon_beast': bosspc.get('dragon_beast', 50),
+        'carnifex': bosspc.get('carnifex', 25),
+        'orfen': bosspc.get('orfen', 100),
+    }
     
     context = {
         'event': event,
         'characters': processed_characters,
-        # 'existing_attendance' removed as it's now char.is_attended
+        'boss_points': boss_points,
         'is_admin': True,
     }
     return render(request, 'items/record_attendance.html', context)
+
+
+@login_required
+def duplicate_event(request, event_pk):
+    """
+    Duplicate an event exactly 7 days later
+    """
+    if not is_admin(request.user):
+        return HttpResponseForbidden("Only administrators can duplicate events.")
+    
+    event = get_object_or_404(ActivityEvent, pk=event_pk)
+    
+    if request.method == 'POST':
+        # Create a new event 7 days later
+        new_event = ActivityEvent.objects.create(
+            name=event.name,
+            event_type=event.event_type,
+            date=event.date + timedelta(days=7),
+            is_completed=False,
+            is_repeatable=getattr(event, 'is_repeatable', False),
+            is_mandatory=getattr(event, 'is_mandatory', False),
+            mandatory_penalty=getattr(event, 'mandatory_penalty', 5),
+            is_win=False,
+            max_points=event.max_points,
+            base_points=event.base_points,
+            boss_point_config=event.boss_point_config,
+        )
+        return redirect('manage-events')
+        
+    # If not POST, just redirect back
+    return redirect('manage-events')
+
+
+@login_required
+def toggle_event_repeatable(request, event_pk):
+    """
+    Toggle the is_repeatable status of an event
+    """
+    if not is_admin(request.user):
+        return HttpResponseForbidden("Only administrators can manage events.")
+    
+    event = get_object_or_404(ActivityEvent, pk=event_pk)
+    
+    if request.method == 'POST':
+        event.is_repeatable = not event.is_repeatable
+        event.save()
+        
+    return redirect('manage-events')
 
 
 # ======================================================

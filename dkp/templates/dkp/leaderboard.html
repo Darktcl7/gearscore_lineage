@@ -286,58 +286,6 @@
         display: inline-block;
     }
 
-    .bulk-actions {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 20px;
-        padding: 15px;
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .btn-bulk {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        font-size: 0.9rem;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .btn-bulk-give {
-        background: rgba(46, 204, 113, 0.2);
-        border: 1px solid rgba(46, 204, 113, 0.5);
-        color: #2ecc71;
-    }
-
-    .btn-bulk-give:hover {
-        background: rgba(46, 204, 113, 0.4);
-    }
-
-    .btn-bulk-remove {
-        background: rgba(243, 156, 18, 0.2);
-        border: 1px solid rgba(243, 156, 18, 0.5);
-        color: #f39c12;
-    }
-
-    .btn-bulk-remove:hover {
-        background: rgba(243, 156, 18, 0.4);
-    }
-
-    .btn-bulk-decay {
-        background: rgba(231, 76, 60, 0.2);
-        border: 1px solid rgba(231, 76, 60, 0.5);
-        color: #e74c3c;
-    }
-
-    .btn-bulk-decay:hover {
-        background: rgba(231, 76, 60, 0.4);
-    }
 
     .reason-input {
         width: 100%;
@@ -375,30 +323,33 @@
         color: #FFD700;
         font-size: 0.9rem;
     }
+
+    /* Bulk action bar (matching activity leaderboard style) */
+    .bulk-bar {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 15px; margin-bottom: 15px;
+        background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 10px;
+    }
+    .bulk-bar label { color: #aaa; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .bulk-bar input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+    .bulk-bar .divider { width: 1px; height: 24px; background: rgba(255,255,255,0.15); }
+    .bulk-bar .bbtn {
+        padding: 8px 16px; border-radius: 8px; border: none;
+        cursor: pointer; font-weight: 600; font-size: 0.85rem;
+        display: flex; align-items: center; gap: 6px; transition: all 0.2s;
+    }
+    .bulk-bar .bbtn-give { background: rgba(46,204,113,0.15); color: #2ecc71; border: 1px solid rgba(46,204,113,0.3); }
+    .bulk-bar .bbtn-give:hover { background: rgba(46,204,113,0.35); }
+    .bulk-bar .bbtn-remove { background: rgba(243,156,18,0.15); color: #f39c12; border: 1px solid rgba(243,156,18,0.3); }
+    .bulk-bar .bbtn-remove:hover { background: rgba(243,156,18,0.35); }
+    .bulk-bar .bbtn-decay { background: rgba(231,76,60,0.15); color: #e74c3c; border: 1px solid rgba(231,76,60,0.3); }
+    .bulk-bar .bbtn-decay:hover { background: rgba(231,76,60,0.35); }
+    .bulk-bar .sel-count { color: #888; font-size: 0.8rem; font-style: italic; margin-left: auto; }
 </style>
 {% endblock %}
 
 {% block content %}
-{% if is_admin %}
-<div class="bulk-actions">
-    <div style="display:flex;align-items:center;gap:10px;">
-        <input type="checkbox" id="select-all" onchange="toggleSelectAll()"
-            style="width:18px;height:18px;cursor:pointer;">
-        <label for="select-all" style="cursor:pointer;color:#ccc;font-size:0.9rem;">Select All</label>
-    </div>
-    <div style="border-left:1px solid rgba(255,255,255,0.2);padding-left:10px;display:flex;gap:10px;">
-        <button class="btn-bulk btn-bulk-give" onclick="openBulkGiveSelected()">
-            <i class="fas fa-plus-circle"></i> Give DKP
-        </button>
-        <button class="btn-bulk btn-bulk-remove" onclick="openBulkRemoveSelected()">
-            <i class="fas fa-minus-circle"></i> Remove DKP
-        </button>
-        <button class="btn-bulk btn-bulk-decay" onclick="openBulkDecaySelected()">
-            <i class="fas fa-percentage"></i> Decay
-        </button>
-    </div>
-</div>
-{% endif %}
 <div class="activity-container">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
         <div>
@@ -414,6 +365,22 @@
     </div>
 
     <div class="table-wrapper">
+        {% if is_admin %}
+        <div class="bulk-bar">
+            <label><input type="checkbox" id="select-all" onchange="toggleSelectAll()" /> Select All</label>
+            <span class="divider"></span>
+            <button class="bbtn bbtn-give" onclick="openBulkGiveSelected()">
+                <i class="fas fa-plus-circle"></i> Give DKP
+            </button>
+            <button class="bbtn bbtn-remove" onclick="openBulkRemoveSelected()">
+                <i class="fas fa-minus-circle"></i> Remove DKP
+            </button>
+            <button class="bbtn bbtn-decay" onclick="openBulkDecaySelected()">
+                <i class="fas fa-percentage"></i> Decay
+            </button>
+            <span class="sel-count" id="dkp-sel-count">0 selected</span>
+        </div>
+        {% endif %}
         <table>
             <thead>
                 <tr>
@@ -430,6 +397,7 @@
                     {% if is_admin %}
                     <td style="text-align:center;">
                         <input type="checkbox" class="player-checkbox" value="{{ profile.id }}"
+                            onchange="updateDkpCount()"
                             style="width:16px;height:16px;cursor:pointer;">
                     </td>
                     {% endif %}
@@ -462,6 +430,12 @@
         checkboxes.forEach(function (cb) {
             cb.checked = selectAll.checked;
         });
+        updateDkpCount();
+    }
+    function updateDkpCount() {
+        var checked = document.querySelectorAll('.player-checkbox:checked');
+        var el = document.getElementById('dkp-sel-count');
+        if (el) el.textContent = checked.length + ' selected';
     }
     function getSelectedPlayers() {
         var checkboxes = document.querySelectorAll('.player-checkbox:checked');

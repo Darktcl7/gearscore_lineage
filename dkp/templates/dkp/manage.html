@@ -6,8 +6,7 @@
 {% block extra_head %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
 <style>
-    html,
-    body {
+    html, body {
         height: 100%;
         margin: 0;
         background: #0c0c0c;
@@ -17,26 +16,23 @@
 
     .activity-container {
         min-height: 60vh;
-        margin-top: 90px;
+        margin-top: 0;
         margin-bottom: 40px;
         display: flex;
         flex-direction: column;
-        background: rgba(10, 10, 10, 0.9);
+        background: rgba(10,10,10,0.9);
         border-radius: 20px;
         padding: 30px;
         margin-left: max(20px, 10%);
         margin-right: max(20px, 10%);
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         backdrop-filter: blur(10px);
         border: 1px solid #222;
     }
 
-    h1 {
-        font-family: 'Cinzel', serif;
-        color: #FFD700;
-    }
+    h1 { font-family: 'Cinzel', serif; color: #FFD700; }
 
-    input {
+    input[type="number"], input[type="text"] {
         background: #222;
         border: 1px solid #444;
         color: white;
@@ -45,310 +41,213 @@
 
     .btn-gold {
         background: linear-gradient(45deg, #FFD700, #FFA500);
-        border: none;
-        color: black;
-        padding: 10px 20px;
-        cursor: pointer;
-        font-weight: bold;
-        border-radius: 5px;
+        border: none; color: black;
+        padding: 10px 20px; cursor: pointer;
+        font-weight: bold; border-radius: 5px; transition: all 0.2s;
+    }
+    .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(255,215,0,0.3); }
+
+    .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    .leaderboard-table th { text-align:left; padding:10px; border-bottom:1px solid #555; color:#888; }
+    .leaderboard-table td { padding:10px; border-bottom:1px solid #333; }
+
+    /* ===== BOSS TABS ===== */
+    .boss-tab-wrapper {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 16px; padding: 28px; margin-bottom: 40px;
+    }
+    .boss-tab-wrapper h3 { margin-top:0; color:#FFD700; font-family:'Cinzel',serif; margin-bottom:20px; }
+
+    .tab-nav {
+        display: flex; gap: 8px; flex-wrap: wrap;
+        margin-bottom: 24px; border-bottom: 1px solid #333; padding-bottom: 0;
+    }
+    .tab-btn {
+        background: transparent; border: none; color: #888;
+        font-family: 'Outfit', sans-serif; font-size: 0.9rem; font-weight: 600;
+        padding: 10px 20px; cursor: pointer;
+        border-bottom: 3px solid transparent; margin-bottom: -1px;
+        transition: all 0.25s; border-radius: 8px 8px 0 0;
+        letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .tab-btn:hover { color: #ccc; background: rgba(255,255,255,0.05); }
+    .tab-btn[data-tab="raid"].active    { color: #e74c3c; border-bottom-color: #e74c3c; background: rgba(231,76,60,0.08); }
+    .tab-btn[data-tab="territory"].active { color: #9b59b6; border-bottom-color: #9b59b6; background: rgba(155,89,182,0.08); }
+    .tab-btn[data-tab="world"].active   { color: #3498db; border-bottom-color: #3498db; background: rgba(52,152,219,0.08); }
+    .tab-btn[data-tab="rift"].active    { color: #1abc9c; border-bottom-color: #1abc9c; background: rgba(26,188,156,0.08); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Region accordion */
+    .region-group { margin-bottom: 16px; background: rgba(0,0,0,0.3); border: 1px solid #333; border-radius: 12px; overflow: hidden; }
+    .region-header {
+        display: flex; align-items: center; gap: 10px;
+        padding: 12px 18px; background: rgba(255,255,255,0.04);
+        border-bottom: 1px solid #333; cursor: pointer; user-select: none;
+    }
+    .region-header .ri { color: #FFD700; font-size: 0.85rem; }
+    .region-header span { font-family: 'Cinzel', serif; font-size: 0.95rem; color: #FFD700; font-weight: 600; }
+    .region-header .chevron { margin-left: auto; transition: transform 0.3s; color: #555; }
+    .region-group.open .chevron { transform: rotate(180deg); }
+    .region-body { padding: 16px 20px; display: none; }
+    .region-group.open .region-body { display: flex; flex-wrap: wrap; gap: 10px 16px; }
+
+    /* Boss pill */
+    .boss-pill {
+        display: flex; align-items: center; gap: 8px;
+        background: rgba(255,255,255,0.05); border: 1px solid #3a3a3a;
+        border-radius: 30px; padding: 6px 14px; cursor: pointer;
+        transition: all 0.2s; font-size: 0.88rem; white-space: nowrap;
+    }
+    .boss-pill:hover { border-color: #FFD700; background: rgba(255,215,0,0.08); }
+    .boss-pill input[type="radio"] { display: none; }
+    /* Settings panel */
+    .settings-panel { display:none; margin-top:20px; background:rgba(0,0,0,0.3); border:1px solid #333; border-radius:12px; padding:20px; }
+    .settings-panel.open { display:block; }
+    .settings-section-title { color:#FFD700; font-family:'Cinzel',serif; font-size:0.85rem; margin:16px 0 8px 0; padding-bottom:4px; border-bottom:1px solid #2a2a2a; }
+    .settings-section-title:first-child { margin-top:0; }
+    .settings-boss-grid { display:flex; flex-wrap:wrap; gap:8px 14px; }
+    .settings-boss-row { display:flex; align-items:center; gap:8px; }
+    .settings-boss-row span { color:#bbb; font-size:0.82rem; width:160px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .settings-boss-row input { width:70px; padding:5px 8px; font-size:0.85rem; text-align:center; background:#1a1a1a; border:1px solid #444; color:#FFD700; border-radius:6px; }
+    .btn-settings-toggle { background:transparent; border:1px solid #444; color:#888; padding:6px 14px; border-radius:8px; cursor:pointer; font-size:0.82rem; transition:all 0.2s; }
+    .btn-settings-toggle:hover { border-color:#FFD700; color:#FFD700; }
+    .btn-save-settings { background:linear-gradient(45deg,#27ae60,#2ecc71); border:none; color:white; padding:8px 18px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:0.85rem; margin-top:14px; }
+    .btn-save-settings:hover { transform:translateY(-1px); }
+    .boss-pill .check-icon {
+        width: 16px; height: 16px; border-radius: 50%;
+        border: 1.5px solid #555; display: flex; align-items: center;
+        justify-content: center; transition: all 0.2s; flex-shrink: 0;
+        font-size: 10px; font-weight: bold; color: black; line-height: 1;
+    }
+    .boss-pill.selected { border-color: #FFD700; background: rgba(255,215,0,0.15); color: #FFD700; }
+    .boss-pill.selected .check-icon { border-color: #FFD700; background: #FFD700; }
+
+    #tab-territory .boss-pill.selected { border-color: #9b59b6; background: rgba(155,89,182,0.15); color: #c39bd3; }
+    #tab-territory .boss-pill.selected .check-icon { border-color: #9b59b6; background: #9b59b6; }
+    #tab-world .boss-pill.selected { border-color: #3498db; background: rgba(52,152,219,0.15); color: #85c1e9; }
+    #tab-world .boss-pill.selected .check-icon { border-color: #3498db; background: #3498db; }
+    #tab-rift .boss-pill.selected { border-color: #1abc9c; background: rgba(26,188,156,0.15); color: #76d7c4; }
+    #tab-rift .boss-pill.selected .check-icon { border-color: #1abc9c; background: #1abc9c; }
+
+    .flat-boss-list { display: flex; flex-wrap: wrap; gap: 10px 16px; padding: 4px 0; }
+
+    /* Submit row */
+    .submit-row {
+        display: flex; align-items: center; gap: 14px;
+        flex-wrap: wrap; margin-top: 22px; padding-top: 18px;
+        border-top: 1px solid #2a2a2a;
+    }
+    .submit-row label { color: #aaa; font-size: 0.9rem; white-space: nowrap; }
+    .pts-input { width: 100px; padding: 10px 14px; font-size: 1rem; font-weight: bold; text-align: center; }
+    .selected-summary { flex: 1; min-width: 200px; color: #888; font-size: 0.85rem; font-style: italic; }
+
+    /* Points display badge (read-only) */
+    .pts-display-box {
+        display: flex; align-items: center; gap: 10px;
+    }
+    .pts-label { color: #aaa; font-size: 0.9rem; white-space: nowrap; }
+    .pts-value-badge {
+        background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,165,0,0.1));
+        border: 1px solid rgba(255,215,0,0.4);
+        color: #FFD700; font-weight: bold; font-size: 1.1rem;
+        padding: 6px 18px; border-radius: 20px; min-width: 80px; text-align: center;
+        letter-spacing: 0.5px;
     }
 
-    .leaderboard-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-    }
-
-    .leaderboard-table th {
-        text-align: left;
-        padding: 10px;
-        border-bottom: 1px solid #555;
-        color: #888;
-    }
-
-    .leaderboard-table td {
-        padding: 10px;
-        border-bottom: 1px solid #333;
-    }
-
-    /* ===== CUSTOM MODAL STYLES ===== */
-    .custom-modal-overlay {
+    /* Participant section */
+    .participant-section {
         display: none;
-        position: fixed;
-        z-index: 9999;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        backdrop-filter: blur(8px);
-        align-items: center;
-        justify-content: center;
+        margin-top: 20px;
+        background: rgba(0,0,0,0.25);
+        border: 1px solid #2a2a2a;
+        border-radius: 12px;
+        padding: 18px 20px;
         animation: fadeIn 0.3s ease;
     }
-
-    .custom-modal-overlay.active {
-        display: flex;
+    .participant-section-header {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 14px;
     }
+    .participant-section-title {
+        color: #FFD700; font-family: 'Cinzel', serif; font-size: 0.95rem;
+    }
+    .participant-actions { display: flex; gap: 8px; }
+    .btn-part-action {
+        background: transparent; border: 1px solid #444; color: #888;
+        padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 0.78rem;
+        transition: all 0.2s;
+    }
+    .btn-part-action:hover { border-color: #FFD700; color: #FFD700; }
+    .participant-grid {
+        display: flex; flex-wrap: wrap; gap: 8px 14px;
+    }
+    .part-pill {
+        display: flex; align-items: center; gap: 8px;
+        background: rgba(255,255,255,0.04); border: 1px solid #3a3a3a;
+        border-radius: 25px; padding: 6px 14px; cursor: pointer;
+        transition: all 0.2s; font-size: 0.85rem;
+    }
+    .part-pill:hover { border-color: #888; background: rgba(255,255,255,0.08); }
+    .part-pill input[type="checkbox"] { display: none; }
+    .part-check {
+        width: 15px; height: 15px; border-radius: 3px;
+        border: 1.5px solid #555; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 10px; font-weight: bold; color: black; transition: all 0.2s;
+    }
+    .part-pill.checked { border-color: #4CAF50; background: rgba(76,175,80,0.12); color: #81c784; }
+    .part-pill.checked .part-check { background: #4CAF50; border-color: #4CAF50; }
+    .part-counter { color: #888; font-size: 0.82rem; margin-left: auto; margin-top: 10px; font-style: italic; }
 
+    /* ===== MODAL ===== */
+    .custom-modal-overlay {
+        display: none; position: fixed; z-index: 9999;
+        left: 0; top: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+        align-items: center; justify-content: center; animation: fadeIn 0.3s ease;
+    }
+    .custom-modal-overlay.active { display: flex; }
     .custom-modal {
-        background: linear-gradient(145deg, rgba(25, 25, 30, 0.98), rgba(15, 15, 20, 0.98));
-        border: 1px solid rgba(231, 76, 60, 0.5);
-        box-shadow:
-            0 0 80px rgba(231, 76, 60, 0.2),
-            0 30px 60px rgba(0, 0, 0, 0.6),
-            inset 0 1px 0 rgba(255, 255, 255, 0.05);
-        width: 100%;
-        max-width: 450px;
-        border-radius: 16px;
-        position: relative;
-        overflow: hidden;
-        animation: modalSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        background: linear-gradient(145deg, rgba(25,25,30,0.98), rgba(15,15,20,0.98));
+        border: 1px solid rgba(231,76,60,0.5);
+        box-shadow: 0 0 80px rgba(231,76,60,0.2), 0 30px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+        width: 100%; max-width: 450px; border-radius: 16px;
+        position: relative; overflow: hidden;
+        animation: modalSlideIn 0.4s cubic-bezier(0.16,1,0.3,1);
     }
-
-    .modal-glow {
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle at center, rgba(231, 76, 60, 0.1) 0%, transparent 50%);
-        pointer-events: none;
-    }
-
-    .modal-close {
-        position: absolute;
-        top: 15px;
-        right: 18px;
-        color: #666;
-        font-size: 1.3rem;
-        cursor: pointer;
-        transition: all 0.3s;
-        z-index: 10;
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        background: none;
-        border: none;
-    }
-
-    .modal-close:hover {
-        color: #fff;
-        background: rgba(255, 255, 255, 0.1);
-        transform: rotate(90deg);
-    }
-
-    .modal-header {
-        background: linear-gradient(135deg, rgba(231, 76, 60, 0.25), rgba(192, 57, 43, 0.15));
-        padding: 25px 30px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        position: relative;
-    }
-
-    .modal-header::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 3px;
-        background: linear-gradient(90deg, #e74c3c, #c0392b, #e74c3c);
-        background-size: 200% 100%;
-        animation: shimmer 2s ease infinite;
-    }
-
-    @keyframes shimmer {
-        0% {
-            background-position: -100% 0;
-        }
-
-        100% {
-            background-position: 100% 0;
-        }
-    }
-
-    .modal-header h2 {
-        margin: 0;
-        font-size: 1.3rem;
-        color: #fff;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-family: 'Cinzel', serif;
-    }
-
-    .modal-header h2 i {
-        color: #e74c3c;
-        font-size: 1.5rem;
-    }
-
-    .modal-body {
-        padding: 30px;
-        position: relative;
-    }
-
-    .modal-body p {
-        color: #bbb;
-        margin: 0 0 20px 0;
-        line-height: 1.6;
-        font-size: 1rem;
-    }
-
-    .event-preview {
-        background: rgba(0, 0, 0, 0.4);
-        border: 1px solid rgba(255, 215, 0, 0.15);
-        border-radius: 12px;
-        padding: 18px 22px;
-        margin-bottom: 20px;
-    }
-
-    .event-preview-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        color: #888;
-        font-size: 0.95rem;
-        margin-bottom: 10px;
-    }
-
-    .event-preview-item:last-child {
-        margin-bottom: 0;
-    }
-
-    .event-preview-item i {
-        color: #FFD700;
-        width: 22px;
-        text-align: center;
-    }
-
-    .event-preview-item strong {
-        color: #fff;
-    }
-
-    .event-points-badge {
-        background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.1));
-        border: 1px solid rgba(255, 215, 0, 0.3);
-        padding: 3px 10px;
-        border-radius: 20px;
-        color: #FFD700;
-        font-weight: bold;
-        font-size: 0.85rem;
-    }
-
-    .warning-box {
-        background: linear-gradient(135deg, rgba(231, 76, 60, 0.15), rgba(192, 57, 43, 0.1));
-        border: 1px solid rgba(231, 76, 60, 0.3);
-        border-radius: 10px;
-        padding: 15px 18px;
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-    }
-
-    .warning-box i {
-        color: #e74c3c;
-        font-size: 1.3rem;
-        margin-top: 2px;
-    }
-
-    .warning-box span {
-        color: #e57373;
-        font-size: 0.9rem;
-        line-height: 1.5;
-    }
-
-    .modal-footer {
-        padding: 20px 30px;
-        background: rgba(0, 0, 0, 0.3);
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-    }
-
-    .btn-modal {
-        padding: 12px 24px;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 0.9rem;
-        cursor: pointer;
-        transition: all 0.3s;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-family: 'Outfit', sans-serif;
-    }
-
-    .btn-modal-cancel {
-        background: transparent;
-        color: #888;
-        border: 1px solid #444;
-    }
-
-    .btn-modal-cancel:hover {
-        color: #fff;
-        border-color: #666;
-        background: rgba(255, 255, 255, 0.05);
-    }
-
-    .btn-modal-delete {
-        background: linear-gradient(135deg, #e74c3c, #c0392b);
-        color: #fff;
-        border: none;
-        box-shadow: 0 4px 15px rgba(231, 76, 60, 0.35);
-    }
-
-    .btn-modal-delete:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(231, 76, 60, 0.5);
-    }
-
-    .btn-modal-delete:active {
-        transform: translateY(0);
-    }
-
-    /* Delete button styling */
-    .delete-event-btn {
-        background: rgba(30, 30, 35, 0.9);
-        border: 1px solid rgba(231, 76, 60, 0.3);
-        color: #e57373;
-        padding: 6px 12px;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.3s;
-        font-size: 0.85rem;
-    }
-
-    .delete-event-btn:hover {
-        background: rgba(231, 76, 60, 0.15);
-        border-color: #e74c3c;
-        color: #fff;
-        transform: translateY(-1px);
-    }
-
-    /* ===== ANIMATIONS ===== */
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-        }
-
-        to {
-            opacity: 1;
-        }
-    }
-
-    @keyframes modalSlideIn {
-        from {
-            opacity: 0;
-            transform: translateY(-30px) scale(0.95);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-    }
+    .modal-glow { position: absolute; top:-50%; left:-50%; width:200%; height:200%; background: radial-gradient(circle at center, rgba(231,76,60,0.1) 0%, transparent 50%); pointer-events:none; }
+    .modal-close { position:absolute; top:15px; right:18px; color:#666; font-size:1.3rem; cursor:pointer; transition:all 0.3s; z-index:10; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:none; border:none; }
+    .modal-close:hover { color:#fff; background:rgba(255,255,255,0.1); transform:rotate(90deg); }
+    .modal-header { background:linear-gradient(135deg, rgba(231,76,60,0.25), rgba(192,57,43,0.15)); padding:25px 30px; border-bottom:1px solid rgba(255,255,255,0.05); position:relative; }
+    .modal-header::before { content:''; position:absolute; top:0; left:0; width:100%; height:3px; background:linear-gradient(90deg,#e74c3c,#c0392b,#e74c3c); background-size:200% 100%; animation:shimmer 2s ease infinite; }
+    @keyframes shimmer { 0%{background-position:-100% 0} 100%{background-position:100% 0} }
+    .modal-header h2 { margin:0; font-size:1.3rem; color:#fff; display:flex; align-items:center; gap:12px; font-family:'Cinzel',serif; }
+    .modal-header h2 i { color:#e74c3c; font-size:1.5rem; }
+    .modal-body { padding:30px; position:relative; }
+    .modal-body p { color:#bbb; margin:0 0 20px 0; line-height:1.6; font-size:1rem; }
+    .event-preview { background:rgba(0,0,0,0.4); border:1px solid rgba(255,215,0,0.15); border-radius:12px; padding:18px 22px; margin-bottom:20px; }
+    .event-preview-item { display:flex; align-items:center; gap:12px; color:#888; font-size:0.95rem; margin-bottom:10px; }
+    .event-preview-item:last-child { margin-bottom:0; }
+    .event-preview-item i { color:#FFD700; width:22px; text-align:center; }
+    .event-preview-item strong { color:#fff; }
+    .event-points-badge { background:linear-gradient(135deg,rgba(255,215,0,0.2),rgba(255,165,0,0.1)); border:1px solid rgba(255,215,0,0.3); padding:3px 10px; border-radius:20px; color:#FFD700; font-weight:bold; font-size:0.85rem; }
+    .warning-box { background:linear-gradient(135deg,rgba(231,76,60,0.15),rgba(192,57,43,0.1)); border:1px solid rgba(231,76,60,0.3); border-radius:10px; padding:15px 18px; display:flex; align-items:flex-start; gap:12px; }
+    .warning-box i { color:#e74c3c; font-size:1.3rem; margin-top:2px; }
+    .warning-box span { color:#e57373; font-size:0.9rem; line-height:1.5; }
+    .modal-footer { padding:20px 30px; background:rgba(0,0,0,0.3); display:flex; justify-content:flex-end; gap:12px; }
+    .btn-modal { padding:12px 24px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; transition:all 0.3s; text-transform:uppercase; letter-spacing:0.5px; font-family:'Outfit',sans-serif; }
+    .btn-modal-cancel { background:transparent; color:#888; border:1px solid #444; }
+    .btn-modal-cancel:hover { color:#fff; border-color:#666; background:rgba(255,255,255,0.05); }
+    .btn-modal-delete { background:linear-gradient(135deg,#e74c3c,#c0392b); color:#fff; border:none; box-shadow:0 4px 15px rgba(231,76,60,0.35); }
+    .btn-modal-delete:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(231,76,60,0.5); }
+    .btn-modal-delete:active { transform:translateY(0); }
+    .delete-event-btn { background:rgba(30,30,35,0.9); border:1px solid rgba(231,76,60,0.3); color:#e57373; padding:6px 12px; border-radius:6px; cursor:pointer; transition:all 0.3s; font-size:0.85rem; }
+    .delete-event-btn:hover { background:rgba(231,76,60,0.15); border-color:#e74c3c; color:#fff; transform:translateY(-1px); }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    @keyframes modalSlideIn { from{opacity:0;transform:translateY(-30px) scale(0.95)} to{opacity:1;transform:translateY(0) scale(1)} }
 </style>
 {% endblock %}
 
@@ -357,30 +256,409 @@
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h1>DKP Control Center</h1>
     </div>
-    <p style="color:#888; margin-bottom:30px;">Manage Raids & Distributed Points</p>
+    <p style="color:#888; margin-bottom:30px;">Manage Raids &amp; Distributed Points</p>
 
-    <div
-        style="background:rgba(255,255,255,0.05); padding:25px; border-radius:15px; margin-bottom:40px; border:1px solid rgba(255,255,255,0.1);">
-        <h3 style="margin-top:0; color:#FFD700;">Start New Event</h3>
-        <form method="POST" style="display:flex; gap:10px; flex-wrap:wrap;">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="create">
-            <input type="text" name="name" placeholder="Event Name (e.g. Raid Black Dragon)" required
-                style="flex-grow:2; padding:12px;">
-            <input type="text" name="code" placeholder="Code (e.g. BDR1)" required style="width:150px; padding:12px;">
-            <input type="number" name="value" placeholder="Pts" value="10" required style="width:80px; padding:12px;">
-            <button type="submit" class="btn-gold">START EVENT</button>
-        </form>
+    <!-- ===== BOSS TABS PANEL ===== -->
+    <div class="boss-tab-wrapper">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+            <h3 style="margin:0;"><i class="fas fa-skull-crossbones" style="margin-right:10px;"></i>Start New Boss Event</h3>
+            <button type="button" class="btn-settings-toggle" onclick="toggleSettings()">
+                <i class="fas fa-sliders" style="margin-right:5px;"></i>Boss Point Settings
+            </button>
+        </div>
+        <!-- Settings Panel -->
+        <div id="bossSettingsPanel" class="settings-panel">
+            <div class="settings-section-title"><i class="fas fa-dragon" style="margin-right:6px;"></i>Raid Boss</div>
+            <div class="settings-boss-grid" id="sg-raid"></div>
+            <div class="settings-section-title" style="margin-top:16px;"><i class="fas fa-chess-rook" style="margin-right:6px;"></i>Territory Boss</div>
+            <div class="settings-boss-grid" id="sg-territory"></div>
+            <div class="settings-section-title" style="margin-top:16px;"><i class="fas fa-globe" style="margin-right:6px;"></i>World Boss</div>
+            <div class="settings-boss-grid" id="sg-world"></div>
+            <div class="settings-section-title" style="margin-top:16px;"><i class="fas fa-circle-nodes" style="margin-right:6px;"></i>Rift Boss</div>
+            <div class="settings-boss-grid" id="sg-rift"></div>
+            <button type="button" class="btn-save-settings" onclick="saveSettings()"><i class="fas fa-save" style="margin-right:6px;"></i>Save Settings</button>
+            <span id="settings-saved-msg" style="color:#2ecc71; font-size:0.82rem; margin-left:12px; display:none;">âœ“ Saved!</span>
+        </div>
+
+        <div class="tab-nav">
+            <button class="tab-btn active" data-tab="raid" type="button">
+                <i class="fas fa-dragon" style="margin-right:6px;"></i>Raid Boss
+            </button>
+            <button class="tab-btn" data-tab="territory" type="button">
+                <i class="fas fa-chess-rook" style="margin-right:6px;"></i>Territory Boss
+            </button>
+            <button class="tab-btn" data-tab="world" type="button">
+                <i class="fas fa-globe" style="margin-right:6px;"></i>World Boss
+            </button>
+            <button class="tab-btn" data-tab="rift" type="button">
+                <i class="fas fa-circle-nodes" style="margin-right:6px;"></i>Rift Boss
+            </button>
+        </div>
+
+        <!-- ============================
+             TAB: RAID BOSS
+             ============================ -->
+        <div id="tab-raid" class="tab-content active">
+            <form method="POST" onsubmit="return buildBossForm(this)">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create">
+                <input type="hidden" name="boss_type" value="Raid Boss">
+                <input type="hidden" name="name" id="raid-name-hidden">
+                <input type="hidden" name="code" value="">
+
+                <!-- Gludio -->
+                <div class="region-group open">
+                    <div class="region-header" onclick="toggleRegion(this)">
+                        <i class="fas fa-map-marker-alt ri"></i>
+                        <span>Gludio</span>
+                        <i class="fas fa-chevron-down chevron"></i>
+                    </div>
+                    <div class="region-body">
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Chertuba"><span class="check-icon"></span><span>Chertuba</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Kelsus"><span class="check-icon"></span><span>Kelsus</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Basilla"><span class="check-icon"></span><span>Basilla</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Savan"><span class="check-icon"></span><span>Savan</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Tromba"><span class="check-icon"></span><span>Tromba</span></label>
+                    </div>
+                </div>
+
+                <!-- Dion -->
+                <div class="region-group">
+                    <div class="region-header" onclick="toggleRegion(this)">
+                        <i class="fas fa-map-marker-alt ri"></i>
+                        <span>Dion</span>
+                        <i class="fas fa-chevron-down chevron"></i>
+                    </div>
+                    <div class="region-body">
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Felis"><span class="check-icon"></span><span>Felis</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Sarka"><span class="check-icon"></span><span>Sarka</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Timitris"><span class="check-icon"></span><span>Timitris</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Talakin"><span class="check-icon"></span><span>Talakin</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Enkura"><span class="check-icon"></span><span>Enkura</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Contaminated Cruma"><span class="check-icon"></span><span>Contaminated Cruma</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Katan"><span class="check-icon"></span><span>Katan</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Stonegheist"><span class="check-icon"></span><span>Stonegheist</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Pan Dryad"><span class="check-icon"></span><span>Pan Dryad</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Gahareth"><span class="check-icon"></span><span>Gahareth</span></label>
+                    </div>
+                </div>
+
+                <!-- Giran -->
+                <div class="region-group">
+                    <div class="region-header" onclick="toggleRegion(this)">
+                        <i class="fas fa-map-marker-alt ri"></i>
+                        <span>Giran</span>
+                        <i class="fas fa-chevron-down chevron"></i>
+                    </div>
+                    <div class="region-body">
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Breka"><span class="check-icon"></span><span>Breka</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Medusa"><span class="check-icon"></span><span>Medusa</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Pan Narod"><span class="check-icon"></span><span>Pan Narod</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Matura"><span class="check-icon"></span><span>Matura</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Black Lily"><span class="check-icon"></span><span>Black Lily</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Behemoth"><span class="check-icon"></span><span>Behemoth</span></label>
+                    </div>
+                </div>
+
+                <!-- Oren -->
+                <div class="region-group">
+                    <div class="region-header" onclick="toggleRegion(this)">
+                        <i class="fas fa-map-marker-alt ri"></i>
+                        <span>Oren</span>
+                        <i class="fas fa-chevron-down chevron"></i>
+                    </div>
+                    <div class="region-body">
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Balbo"><span class="check-icon"></span><span>Balbo</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Talkin"><span class="check-icon"></span><span>Talkin</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Timiniel"><span class="check-icon"></span><span>Timiniel</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Selu"><span class="check-icon"></span><span>Selu</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Repiro"><span class="check-icon"></span><span>Repiro</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Coroon"><span class="check-icon"></span><span>Coroon</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Samuel"><span class="check-icon"></span><span>Samuel</span></label>
+                    </div>
+                </div>
+
+                <!-- Aden -->
+                <div class="region-group">
+                    <div class="region-header" onclick="toggleRegion(this)">
+                        <i class="fas fa-map-marker-alt ri"></i>
+                        <span>Aden</span>
+                        <i class="fas fa-chevron-down chevron"></i>
+                    </div>
+                    <div class="region-body">
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Hisilrome"><span class="check-icon"></span><span>Hisilrome</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Mirror of Oblivion"><span class="check-icon"></span><span>Mirror of Oblivion</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Randor"><span class="check-icon"></span><span>Randor</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Glaki"><span class="check-icon"></span><span>Glaki</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Cabrio"><span class="check-icon"></span><span>Cabrio</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Flynt"><span class="check-icon"></span><span>Flynt</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Haff"><span class="check-icon"></span><span>Haff</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Phoenix"><span class="check-icon"></span><span>Phoenix</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Andras"><span class="check-icon"></span><span>Andras</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Thanatos"><span class="check-icon"></span><span>Thanatos</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Rahha"><span class="check-icon"></span><span>Rahha</span></label>
+                    </div>
+                </div>
+
+                <!-- Innadril -->
+                <div class="region-group">
+                    <div class="region-header" onclick="toggleRegion(this)">
+                        <i class="fas fa-map-marker-alt ri"></i>
+                        <span>Innadril</span>
+                        <i class="fas fa-chevron-down chevron"></i>
+                    </div>
+                    <div class="region-body" style="display:flex;">
+                        <p style="color:#555; font-size:0.85rem; margin:0;">â€” No boss listed â€”</p>
+                    </div>
+                </div>
+
+                <!-- Points display (read-only) + participant section -->
+                <div class="submit-row" style="margin-top:18px; border-top:1px solid #2a2a2a; padding-top:18px;">
+                    <div class="pts-display-box">
+                        <span class="pts-label"><i class="fas fa-coins" style="color:#FFD700; margin-right:5px;"></i>Points:</span>
+                        <span class="pts-value-badge" id="pts-badge-raid">—</span>
+                    </div>
+                    <span class="selected-summary" id="raid-summary">Select a boss above to continue.</span>
+                </div>
+                <input type="hidden" name="value" id="pts-hidden-raid" value="10">
+
+                <!-- Participant Selection -->
+                <div class="participant-section" id="part-section-raid">
+                    <div class="participant-section-header">
+                        <span class="participant-section-title"><i class="fas fa-users" style="margin-right:8px;"></i>Who participated?</span>
+                        <div class="participant-actions">
+                            <button type="button" class="btn-part-action" onclick="selectAllParts(this)">Select All</button>
+                            <button type="button" class="btn-part-action" onclick="clearParts(this)">Clear</button>
+                        </div>
+                    </div>
+                    <div class="participant-grid">
+                        {% for p in profiles %}
+                        <label class="part-pill" onclick="togglePart(this)">
+                            <input type="checkbox" name="participant_ids" value="{{ p.id }}">
+                            <span class="part-check"></span>
+                            <span>{{ p.character.name }}</span>
+                        </label>
+                        {% empty %}
+                        <span style="color:#555;">No characters registered yet.</span>
+                        {% endfor %}
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
+                        <span class="part-counter" id="part-counter-raid">0 selected</span>
+                        <button type="submit" class="btn-gold" style="padding:12px 28px; font-size:0.95rem;">
+                            <i class="fas fa-save" style="margin-right:6px;"></i>SAVE ACTIVITY
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- ============================
+             TAB: TERRITORY BOSS
+             ============================ -->
+        <div id="tab-territory" class="tab-content">
+            <form method="POST" onsubmit="return buildBossForm(this)">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create">
+                <input type="hidden" name="boss_type" value="Territory Boss">
+                <input type="hidden" name="name" id="territory-name-hidden">
+                <input type="hidden" name="code" value="">
+
+                <div class="flat-boss-list">
+                    <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Queen Ant"><span class="check-icon"></span><span>Queen Ant</span></label>
+                    <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Mutated Cruma"><span class="check-icon"></span><span>Mutated Cruma</span></label>
+                    <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Core Susceptor"><span class="check-icon"></span><span>Core Susceptor</span></label>
+                    <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Dragon Beast"><span class="check-icon"></span><span>Dragon Beast</span></label>
+                    <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Orfen"><span class="check-icon"></span><span>Orfen</span></label>
+                    <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Olkuth"><span class="check-icon"></span><span>Olkuth</span></label>
+                </div>
+
+                <div class="submit-row" style="margin-top:18px; border-top:1px solid #2a2a2a; padding-top:18px;">
+                    <div class="pts-display-box">
+                        <span class="pts-label"><i class="fas fa-coins" style="color:#FFD700; margin-right:5px;"></i>Points:</span>
+                        <span class="pts-value-badge" id="pts-badge-territory">—</span>
+                    </div>
+                    <span class="selected-summary" id="territory-summary">Select a boss above to continue.</span>
+                </div>
+                <input type="hidden" name="value" id="pts-hidden-territory" value="10">
+
+                <div class="participant-section" id="part-section-territory">
+                    <div class="participant-section-header">
+                        <span class="participant-section-title"><i class="fas fa-users" style="margin-right:8px;"></i>Who participated?</span>
+                        <div class="participant-actions">
+                            <button type="button" class="btn-part-action" onclick="selectAllParts(this)">Select All</button>
+                            <button type="button" class="btn-part-action" onclick="clearParts(this)">Clear</button>
+                        </div>
+                    </div>
+                    <div class="participant-grid">
+                        {% for p in profiles %}
+                        <label class="part-pill" onclick="togglePart(this)">
+                            <input type="checkbox" name="participant_ids" value="{{ p.id }}">
+                            <span class="part-check"></span>
+                            <span>{{ p.character.name }}</span>
+                        </label>
+                        {% empty %}
+                        <span style="color:#555;">No characters registered yet.</span>
+                        {% endfor %}
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
+                        <span class="part-counter" id="part-counter-territory">0 selected</span>
+                        <button type="submit" class="btn-gold" style="padding:12px 28px; font-size:0.95rem;">
+                            <i class="fas fa-save" style="margin-right:6px;"></i>SAVE ACTIVITY
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- ============================
+             TAB: WORLD BOSS
+             ============================ -->
+        <div id="tab-world" class="tab-content">
+            <form method="POST" onsubmit="return buildBossForm(this)">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create">
+                <input type="hidden" name="boss_type" value="World Boss">
+                <input type="hidden" name="name" id="world-name-hidden">
+                <input type="hidden" name="code" value="">
+
+                <!-- Veora Ruins -->
+                <div class="region-group open">
+                    <div class="region-header" onclick="toggleRegion(this)">
+                        <i class="fas fa-dungeon ri"></i>
+                        <span>Veora Ruins</span>
+                        <i class="fas fa-chevron-down chevron"></i>
+                    </div>
+                    <div class="region-body">
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Shila"><span class="check-icon"></span><span>Shila</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Moof"><span class="check-icon"></span><span>Moof</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Normus"><span class="check-icon"></span><span>Normus</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Ukanba"><span class="check-icon"></span><span>Ukanba</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Selihoden"><span class="check-icon"></span><span>Selihoden</span></label>
+                    </div>
+                </div>
+
+                <!-- Tower of Insolence -->
+                <div class="region-group">
+                    <div class="region-header" onclick="toggleRegion(this)">
+                        <i class="fas fa-tower-observation ri"></i>
+                        <span>Tower of Insolence</span>
+                        <i class="fas fa-chevron-down chevron"></i>
+                    </div>
+                    <div class="region-body">
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Ramdal"><span class="check-icon"></span><span>Ramdal</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Mardil"><span class="check-icon"></span><span>Mardil</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Kernon"><span class="check-icon"></span><span>Kernon</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Tarim"><span class="check-icon"></span><span>Tarim</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Halate"><span class="check-icon"></span><span>Halate</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Vella"><span class="check-icon"></span><span>Vella</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Shuriel"><span class="check-icon"></span><span>Shuriel</span></label>
+                        <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Galaxia"><span class="check-icon"></span><span>Galaxia</span></label>
+                    </div>
+                </div>
+
+                <div class="submit-row" style="margin-top:18px; border-top:1px solid #2a2a2a; padding-top:18px;">
+                    <div class="pts-display-box">
+                        <span class="pts-label"><i class="fas fa-coins" style="color:#FFD700; margin-right:5px;"></i>Points:</span>
+                        <span class="pts-value-badge" id="pts-badge-world">—</span>
+                    </div>
+                    <span class="selected-summary" id="world-summary">Select a boss above to continue.</span>
+                </div>
+                <input type="hidden" name="value" id="pts-hidden-world" value="10">
+
+                <div class="participant-section" id="part-section-world">
+                    <div class="participant-section-header">
+                        <span class="participant-section-title"><i class="fas fa-users" style="margin-right:8px;"></i>Who participated?</span>
+                        <div class="participant-actions">
+                            <button type="button" class="btn-part-action" onclick="selectAllParts(this)">Select All</button>
+                            <button type="button" class="btn-part-action" onclick="clearParts(this)">Clear</button>
+                        </div>
+                    </div>
+                    <div class="participant-grid">
+                        {% for p in profiles %}
+                        <label class="part-pill" onclick="togglePart(this)">
+                            <input type="checkbox" name="participant_ids" value="{{ p.id }}">
+                            <span class="part-check"></span>
+                            <span>{{ p.character.name }}</span>
+                        </label>
+                        {% empty %}
+                        <span style="color:#555;">No characters registered yet.</span>
+                        {% endfor %}
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
+                        <span class="part-counter" id="part-counter-world">0 selected</span>
+                        <button type="submit" class="btn-gold" style="padding:12px 28px; font-size:0.95rem;">
+                            <i class="fas fa-save" style="margin-right:6px;"></i>SAVE ACTIVITY
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- ============================
+             TAB: RIFT BOSS
+             ============================ -->
+        <div id="tab-rift" class="tab-content">
+            <form method="POST" onsubmit="return buildBossForm(this)">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create">
+                <input type="hidden" name="boss_type" value="Rift Boss">
+                <input type="hidden" name="name" id="rift-name-hidden">
+                <input type="hidden" name="code" value="">
+
+                <div class="flat-boss-list">
+                    <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Maluk"><span class="check-icon"></span><span>Maluk</span></label>
+                    <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Mirmax"><span class="check-icon"></span><span>Mirmax</span></label>
+                    <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Typhoon"><span class="check-icon"></span><span>Typhoon</span></label>
+                </div>
+
+                <div class="submit-row" style="margin-top:18px; border-top:1px solid #2a2a2a; padding-top:18px;">
+                    <div class="pts-display-box">
+                        <span class="pts-label"><i class="fas fa-coins" style="color:#FFD700; margin-right:5px;"></i>Points:</span>
+                        <span class="pts-value-badge" id="pts-badge-rift">—</span>
+                    </div>
+                    <span class="selected-summary" id="rift-summary">Select a boss above to continue.</span>
+                </div>
+                <input type="hidden" name="value" id="pts-hidden-rift" value="10">
+
+                <div class="participant-section" id="part-section-rift">
+                    <div class="participant-section-header">
+                        <span class="participant-section-title"><i class="fas fa-users" style="margin-right:8px;"></i>Who participated?</span>
+                        <div class="participant-actions">
+                            <button type="button" class="btn-part-action" onclick="selectAllParts(this)">Select All</button>
+                            <button type="button" class="btn-part-action" onclick="clearParts(this)">Clear</button>
+                        </div>
+                    </div>
+                    <div class="participant-grid">
+                        {% for p in profiles %}
+                        <label class="part-pill" onclick="togglePart(this)">
+                            <input type="checkbox" name="participant_ids" value="{{ p.id }}">
+                            <span class="part-check"></span>
+                            <span>{{ p.character.name }}</span>
+                        </label>
+                        {% empty %}
+                        <span style="color:#555;">No characters registered yet.</span>
+                        {% endfor %}
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
+                        <span class="part-counter" id="part-counter-rift">0 selected</span>
+                        <button type="submit" class="btn-gold" style="padding:12px 28px; font-size:0.95rem;">
+                            <i class="fas fa-save" style="margin-right:6px;"></i>SAVE ACTIVITY
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
+    <!-- END BOSS TABS -->
 
-    <h3 style="color:#FFD700;">Recent Events</h3>
+    <h3 style="color:#FFD700;">Recent Activities</h3>
     <table class="leaderboard-table">
         <thead>
             <tr>
-                <th>Event Name</th>
+                <th>Activity</th>
                 <th>Points</th>
+                <th>Participants</th>
                 <th>Date</th>
-                <th>Status</th>
                 <th>Action</th>
             </tr>
         </thead>
@@ -388,49 +666,20 @@
             {% for e in events %}
             <tr>
                 <td style="font-weight:bold; color:white;">{{ e.name }}</td>
-                <td style="color:#FFD700;">{{ e.points_to_award }}</td>
+                <td style="color:#FFD700;">{{ e.points_to_award }} pts</td>
+                <td><span style="color:#81c784;">{{ e.attendances.count }} users</span></td>
                 <td>{{ e.date|date:"d M H:i" }}</td>
                 <td>
-                    {% if e.is_active %}
-                    <span
-                        style="background:rgba(76, 175, 80, 0.2); color:#4CAF50; padding:2px 8px; border-radius:4px; font-size:0.8rem;">ACTIVE</span>
-                    {% else %}
-                    <span
-                        style="background:rgba(255, 255, 255, 0.1); color:#888; padding:2px 8px; border-radius:4px; font-size:0.8rem;">CLOSED</span>
-                    {% endif %}
-                </td>
-                <td style="display: flex; align-items: center; gap: 5px;">
-                    <!-- Toggle -->
-                    <form method="POST" style="display:inline; margin:0;">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="toggle">
-                        <input type="hidden" name="event_id" value="{{ e.id }}">
-                        {% if e.is_active %}
-                        <button type="submit"
-                            style="background:#d32f2f; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size: 0.75rem;">END</button>
-                        {% else %}
-                        <button type="submit"
-                            style="background:#4CAF50; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size: 0.75rem;">OPEN</button>
-                        {% endif %}
-                    </form>
-
-                    <!-- Verify -->
-                    <a href="{% url 'web-dkp-attendance' e.id %}"
-                        style="background:#1976D2; color:white; padding:6px 10px; border-radius:4px; text-decoration:none; font-weight:bold; font-size: 0.75rem;">
-                        Check ({{ e.attendances.count }})
-                    </a>
-
-                    <!-- Delete Button -->
                     <button type="button" class="delete-event-btn"
-                        onclick="showDeleteModal('{{ e.id }}', '{{ e.name|escapejs }}', '{{ e.points_to_award }}', '{{ e.date|date:'d M H:i' }}')">
+                        data-eid="{{ e.id }}" data-ename="{{ e.name|escapejs }}" data-epoints="{{ e.points_to_award }}" data-edate="{{ e.date|date:'d M H:i' }}"
+                        onclick="showDeleteModal(this)">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="6" style="text-align:center; padding:20px; color:#555;">No events found. Start one above!
-                </td>
+                <td colspan="5" style="text-align:center; padding:20px; color:#555;">No activities recorded yet.</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -438,7 +687,7 @@
 </div>
 
 <!-- Hidden form for delete -->
-<form id="deleteEventForm" method="POST" style="display: none;">
+<form id="deleteEventForm" method="POST" style="display:none;">
     {% csrf_token %}
     <input type="hidden" name="action" value="delete">
     <input type="hidden" name="event_id" id="deleteEventId">
@@ -449,38 +698,21 @@
     <div class="custom-modal">
         <div class="modal-glow"></div>
         <button class="modal-close" onclick="closeDeleteModal()"><i class="fas fa-times"></i></button>
-
         <div class="modal-header">
             <h2><i class="fas fa-trash-alt"></i> Delete DKP Event</h2>
         </div>
-
         <div class="modal-body">
             <p>Are you sure you want to permanently delete this event?</p>
-
             <div class="event-preview">
-                <div class="event-preview-item">
-                    <i class="fas fa-scroll"></i>
-                    <span>Event:</span>
-                    <strong id="previewName">-</strong>
-                </div>
-                <div class="event-preview-item">
-                    <i class="fas fa-coins"></i>
-                    <span>Points:</span>
-                    <span class="event-points-badge" id="previewPoints">-</span>
-                </div>
-                <div class="event-preview-item">
-                    <i class="fas fa-calendar"></i>
-                    <span>Date:</span>
-                    <strong id="previewDate">-</strong>
-                </div>
+                <div class="event-preview-item"><i class="fas fa-scroll"></i><span>Event:</span><strong id="previewName">-</strong></div>
+                <div class="event-preview-item"><i class="fas fa-coins"></i><span>Points:</span><span class="event-points-badge" id="previewPoints">-</span></div>
+                <div class="event-preview-item"><i class="fas fa-calendar"></i><span>Date:</span><strong id="previewDate">-</strong></div>
             </div>
-
             <div class="warning-box">
                 <i class="fas fa-exclamation-triangle"></i>
                 <span>This action cannot be undone. All attendance records for this event will also be deleted.</span>
             </div>
         </div>
-
         <div class="modal-footer">
             <button class="btn-modal btn-modal-cancel" onclick="closeDeleteModal()">Cancel</button>
             <button class="btn-modal btn-modal-delete" onclick="confirmDelete()">
@@ -491,40 +723,209 @@
 </div>
 
 <script>
-    let currentEventId = null;
+// ===== BOSS POINTS CONFIG =====
+var DEFAULT_PTS = {
+    'Chertuba':5,'Kelsus':5,'Basilla':5,'Savan':5,'Tromba':5,
+    'Felis':5,'Sarka':5,'Timitris':5,'Talakin':5,'Enkura':5,'Contaminated Cruma':5,'Katan':5,'Stonegheist':5,'Pan Dryad':5,'Gahareth':5,
+    'Breka':5,'Medusa':5,'Pan Narod':5,'Matura':5,'Black Lily':5,'Behemoth':5,
+    'Balbo':5,'Talkin':5,'Timiniel':5,'Selu':5,'Repiro':5,'Coroon':5,'Samuel':5,
+    'Hisilrome':10,'Mirror of Oblivion':10,'Randor':10,'Glaki':10,'Cabrio':10,'Flynt':10,'Haff':10,'Phoenix':10,'Andras':10,'Thanatos':10,'Rahha':10,
+    'Queen Ant':20,'Mutated Cruma':20,'Core Susceptor':20,'Dragon Beast':20,'Orfen':20,'Olkuth':20,
+    'Shila':30,'Moof':30,'Normus':30,'Ukanba':30,'Selihoden':30,
+    'Ramdal':50,'Mardil':50,'Kernon':50,'Tarim':50,'Halate':50,'Vella':50,'Shuriel':50,'Galaxia':50,
+    'Maluk':40,'Mirmax':40,'Typhoon':40
+};
+var BOSS_GROUPS = {
+    'sg-raid':['Chertuba','Kelsus','Basilla','Savan','Tromba','Felis','Sarka','Timitris','Talakin','Enkura','Contaminated Cruma','Katan','Stonegheist','Pan Dryad','Gahareth','Breka','Medusa','Pan Narod','Matura','Black Lily','Behemoth','Balbo','Talkin','Timiniel','Selu','Repiro','Coroon','Samuel','Hisilrome','Mirror of Oblivion','Randor','Glaki','Cabrio','Flynt','Haff','Phoenix','Andras','Thanatos','Rahha'],
+    'sg-territory':['Queen Ant','Mutated Cruma','Core Susceptor','Dragon Beast','Orfen','Olkuth'],
+    'sg-world':['Shila','Moof','Normus','Ukanba','Selihoden','Ramdal','Mardil','Kernon','Tarim','Halate','Vella','Shuriel','Galaxia'],
+    'sg-rift':['Maluk','Mirmax','Typhoon']
+};
+var bossPoints = {};
 
-    function showDeleteModal(eventId, name, points, date) {
-        currentEventId = eventId;
-        document.getElementById('previewName').textContent = name;
-        document.getElementById('previewPoints').textContent = points + ' pts';
-        document.getElementById('previewDate').textContent = date;
-        document.getElementById('deleteModal').classList.add('active');
-    }
-
-    function closeDeleteModal() {
-        document.getElementById('deleteModal').classList.remove('active');
-        currentEventId = null;
-    }
-
-    function confirmDelete() {
-        if (currentEventId) {
-            document.getElementById('deleteEventId').value = currentEventId;
-            document.getElementById('deleteEventForm').submit();
-        }
-    }
-
-    // Close modal on outside click
-    document.getElementById('deleteModal').addEventListener('click', function (e) {
-        if (e.target === this) {
-            closeDeleteModal();
-        }
+function loadBossPoints() {
+    var stored = localStorage.getItem('dkp_boss_points');
+    if (stored) { try { bossPoints = JSON.parse(stored); } catch(e) {} }
+    Object.keys(DEFAULT_PTS).forEach(function(k) {
+        if (!(k in bossPoints)) bossPoints[k] = DEFAULT_PTS[k];
     });
+}
 
-    // Close modal on Escape key
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') {
-            closeDeleteModal();
-        }
+function buildSettingsPanel() {
+    Object.keys(BOSS_GROUPS).forEach(function(gridId) {
+        var grid = document.getElementById(gridId);
+        if (!grid) return;
+        BOSS_GROUPS[gridId].forEach(function(boss) {
+            var row = document.createElement('div');
+            row.className = 'settings-boss-row';
+            row.innerHTML = '<span title="'+boss+'">'+boss+'</span><input type="number" min="0" data-boss="'+boss+'" value="'+(bossPoints[boss]||10)+'">';
+            grid.appendChild(row);
+        });
     });
+}
+
+function saveSettings() {
+    document.querySelectorAll('#bossSettingsPanel input[data-boss]').forEach(function(inp) {
+        var pts = parseInt(inp.value, 10);
+        bossPoints[inp.dataset.boss] = isNaN(pts) ? 0 : pts;
+    });
+    localStorage.setItem('dkp_boss_points', JSON.stringify(bossPoints));
+    var msg = document.getElementById('settings-saved-msg');
+    msg.style.display = 'inline';
+    setTimeout(function() { msg.style.display = 'none'; }, 2000);
+}
+
+function toggleSettings() {
+    document.getElementById('bossSettingsPanel').classList.toggle('open');
+}
+
+// ===== TAB SWITCHING =====
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var tab = btn.getAttribute('data-tab');
+        document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+        document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+        btn.classList.add('active');
+        document.getElementById('tab-' + tab).classList.add('active');
+    });
+});
+
+// ===== REGION ACCORDION =====
+function toggleRegion(header) {
+    var group = header.closest('.region-group');
+    group.classList.toggle('open');
+    var body = group.querySelector('.region-body');
+    body.style.display = group.classList.contains('open') ? 'flex' : 'none';
+}
+
+// ===== BOSS PILL TOGGLE (radio - single select) =====
+function togglePill(label) {
+    setTimeout(function() {
+        var form = label.closest('form');
+        var tabContent = form.closest('.tab-content');
+        var tabId = tabContent ? tabContent.id.replace('tab-', '') : '';
+
+        // Deselect all pills
+        form.querySelectorAll('.boss-pill').forEach(function(p) {
+            p.classList.remove('selected');
+            p.querySelector('.check-icon').textContent = '';
+        });
+
+        var rb = label.querySelector('input[type="radio"]');
+        if (rb && rb.checked) {
+            label.classList.add('selected');
+            label.querySelector('.check-icon').textContent = '\u2713';
+
+            // Get points from settings
+            var pts = bossPoints[rb.value] !== undefined ? bossPoints[rb.value] : 10;
+
+            // Update read-only badge
+            var badge = document.getElementById('pts-badge-' + tabId);
+            if (badge) badge.textContent = pts + ' pts';
+
+            // Set hidden input
+            var hiddenPts = document.getElementById('pts-hidden-' + tabId);
+            if (hiddenPts) hiddenPts.value = pts;
+
+            // Show participant section
+            var partSection = document.getElementById('part-section-' + tabId);
+            if (partSection) partSection.style.display = 'block';
+
+            // Update summary
+            var summaryEl = tabContent.querySelector('.selected-summary');
+            if (summaryEl) summaryEl.textContent = '\u2714 ' + rb.value + ' \u2014 ' + pts + ' pts per participant';
+        }
+    }, 0);
+}
+
+// ===== PARTICIPANT TOGGLE =====
+function togglePart(label) {
+    setTimeout(function() {
+        var cb = label.querySelector('input[type="checkbox"]');
+        if (cb.checked) {
+            label.classList.add('checked');
+            label.querySelector('.part-check').textContent = '\u2713';
+        } else {
+            label.classList.remove('checked');
+            label.querySelector('.part-check').textContent = '';
+        }
+        updatePartCounter(label.closest('form'));
+    }, 0);
+}
+
+function selectAllParts(btn) {
+    var section = btn.closest('.participant-section');
+    section.querySelectorAll('.part-pill').forEach(function(pill) {
+        var cb = pill.querySelector('input[type="checkbox"]');
+        cb.checked = true;
+        pill.classList.add('checked');
+        pill.querySelector('.part-check').textContent = '\u2713';
+    });
+    updatePartCounter(section.closest('form'));
+}
+
+function clearParts(btn) {
+    var section = btn.closest('.participant-section');
+    section.querySelectorAll('.part-pill').forEach(function(pill) {
+        var cb = pill.querySelector('input[type="checkbox"]');
+        cb.checked = false;
+        pill.classList.remove('checked');
+        pill.querySelector('.part-check').textContent = '';
+    });
+    updatePartCounter(section.closest('form'));
+}
+
+function updatePartCounter(form) {
+    var tabContent = form.closest('.tab-content');
+    if (!tabContent) return;
+    var tabId = tabContent.id.replace('tab-', '');
+    var count = form.querySelectorAll('.participant-section input[type="checkbox"]:checked').length;
+    var counter = document.getElementById('part-counter-' + tabId);
+    if (counter) counter.textContent = count + ' selected';
+}
+
+// ===== BUILD FORM & VALIDATE =====
+function buildBossForm(form) {
+    var rb = form.querySelector('input[type="radio"]:checked');
+    if (!rb) { alert('Please select a boss first!'); return false; }
+
+    var checked = form.querySelectorAll('.participant-section input[type="checkbox"]:checked');
+    if (checked.length === 0) { alert('Please select at least one participant!'); return false; }
+
+    form.querySelector('input[name="name"]').value = rb.value;
+    return true;
+}
+var currentEventId = null;
+
+function showDeleteModal(btn) {
+    currentEventId = btn.dataset.eid;
+    document.getElementById('previewName').textContent = btn.dataset.ename;
+    document.getElementById('previewPoints').textContent = btn.dataset.epoints + ' pts';
+    document.getElementById('previewDate').textContent = btn.dataset.edate;
+    document.getElementById('deleteModal').classList.add('active');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('active');
+    currentEventId = null;
+}
+
+function confirmDelete() {
+    if (currentEventId) {
+        document.getElementById('deleteEventId').value = currentEventId;
+        document.getElementById('deleteEventForm').submit();
+    }
+}
+
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) closeDeleteModal();
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeDeleteModal();
+});
+
+// ===== INIT =====
+loadBossPoints();
+buildSettingsPanel();
 </script>
 {% endblock %}

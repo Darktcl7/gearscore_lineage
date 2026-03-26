@@ -24,7 +24,7 @@ from discord import app_commands
 from discord.ext import commands
 import aiohttp
 import os
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -132,7 +132,7 @@ class AltoBot(commands.Cog):
                 alarms = alarm_result.get('alarms', [])
 
             # 3. Check Alarms
-            now = datetime.now()
+            now = datetime.now(timezone(timedelta(hours=7)))  # WIB (GMT+7)
             current_day = now.weekday()
             current_time = now.strftime("%H:%M")
             

@@ -1,6 +1,6 @@
 from django import forms
 # IMPOR MODEL BARU
-from .models import Item, Character, SubclassStats, LegendaryClass, CharacterAttributes, CharacteristicsStats, LegendaryAgathion, LegendaryMount, MythicClass, InheritorBook, CLASS_CHOICES 
+from .models import Item, Character, SubclassStats, LegendaryClass, CharacterAttributes, CharacteristicsStats, LegendaryAgathion, LegendaryMount, MythicClass, LegendarySkin, InheritorBook, CLASS_CHOICES 
 from django.forms import ModelForm
 from django.db.models import Case, When, Value, IntegerField
 
@@ -58,6 +58,7 @@ class CharacterForm(forms.ModelForm):
         fields = [
             'name', 'clan', 'level', 'character_class', 
             'mythic_classes',
+            'legendary_skins',
             'legendary_classes', # Added this field
             'legendary_agathions',
             'legendary_mounts',
@@ -74,6 +75,7 @@ class CharacterForm(forms.ModelForm):
             'level': 'Your LvL',
             'character_class': 'Your Class',
             'mythic_classes': 'What Mythic classes do you have?',
+            'legendary_skins': 'What Legendary Skins do you have?',
             'legendary_classes': 'What legendary classes do you have?',
             'legendary_agathions': 'What legendary agathions do you have?',
             'legendary_mounts': 'What legendary mount do you have?',
@@ -93,6 +95,7 @@ class CharacterForm(forms.ModelForm):
         widgets = {
             'character_class': forms.Select(choices=CLASS_CHOICES),
             'mythic_classes': forms.CheckboxSelectMultiple,
+            'legendary_skins': forms.CheckboxSelectMultiple,
             'legendary_classes': forms.CheckboxSelectMultiple, # Use checkboxes
             'legendary_agathions': forms.CheckboxSelectMultiple,
             'legendary_mounts': forms.CheckboxSelectMultiple,
@@ -128,6 +131,14 @@ class CharacterForm(forms.ModelForm):
             )
         ).order_by('sort_order', 'id')
 
+        self.fields['legendary_skins'].queryset = LegendarySkin.objects.annotate(
+            sort_order=Case(
+                When(name="No legendary skin", then=Value(0)),
+                default=Value(1),
+                output_field=IntegerField()
+            )
+        ).order_by('sort_order', 'id')
+
         self.fields['legendary_classes'].queryset = LegendaryClass.objects.annotate(
             sort_order=Case(
                 When(name="No legendary class", then=Value(0)),
@@ -155,8 +166,8 @@ class CharacterForm(forms.ModelForm):
         # Tambahkan opsi '----' (None) di awal queryset yang di-filter
         for field_name, field in self.fields.items():
             field.required = False # MAKE EVERYTHING OPTIONAL SO IT DOES NOT BLOCK SAVE
-            # Only apply to dropdowns (ModelChoiceField), and explicitly exclude legendary_classes and agathions
-            if field_name not in ['mythic_classes', 'legendary_classes', 'legendary_agathions', 'legendary_mounts'] and isinstance(field, forms.ModelChoiceField):
+            # Only apply to dropdowns (ModelChoiceField), and explicitly exclude checkboxes
+            if field_name not in ['mythic_classes', 'legendary_skins', 'legendary_classes', 'legendary_agathions', 'legendary_mounts'] and isinstance(field, forms.ModelChoiceField):
                 field.empty_label = "--- Pilih Item ---"
 
 # ----------------------------------------------------
@@ -335,6 +346,7 @@ class CharacterAttributesForm(ModelForm):
             'soul_prog_attack': 'What are your soul progression attack effects?',
             'soul_prog_defense': 'What are your soul progression defense effects?',
             'soul_prog_blessing': 'What are your soul progression blessings effects?',
+            'soul_prog_accuracy': 'What are your soul progression Accuracy effects?',
             'enchant_bracelet_holy_prot': 'Enchant Bracelet of Holy Protection',
             'enchant_bracelet_influence': 'Enchant Bracelet of Influence',
             'enchant_earring_earth': "Enchant Earth Dragon's Earring",
@@ -378,7 +390,7 @@ class CharacterAttributesForm(ModelForm):
             'exp_orb': 'Orb Skill',
             'exp_dual_axe': 'Dual Axe Skill',
             'exp_soul_breaker': 'Soul Breaker Skill',
-            'aster_erafone': 'Aster (Erafone)',
+            'aster_erafone': 'Aster (Eratone)',
         }
         
         widgets = {
@@ -403,6 +415,12 @@ class CharacterAttributesForm(ModelForm):
             
         if 'unlocked_skills' in self.fields:
             self.fields['unlocked_skills'].label = ''
+            
+        # Remove the '---------' empty option from soul progression dropdowns
+        for field_name in ['soul_prog_attack', 'soul_prog_defense', 'soul_prog_blessing', 'soul_prog_accuracy']:
+            if field_name in self.fields and hasattr(self.fields[field_name], 'choices'):
+                # Extract choices and filter out the empty one
+                self.fields[field_name].choices = [c for c in self.fields[field_name].choices if str(c[0]) != '']
 
 # ----------------------------------------------------
 # 6. FORM FOR DETAIL CHARACTERISTICS (100+ Fields)

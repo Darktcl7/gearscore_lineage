@@ -7,54 +7,36 @@
 
 {% block extra_head %}
 <style>
-    html,
-    body {
+    html, body {
         height: 100%;
         margin: 0;
         padding: 0;
-        /* overflow: hidden; */
         background: #0c0c0c;
         font-family: 'Outfit', sans-serif;
     }
 
-    #fog-background {
-        position: fixed !important;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: -2;
-    }
-
     .activity-container {
-        min-height: 80vh;
-        margin-bottom: 60px;
-        margin-top: 80px;
+        height: calc(100vh - var(--header-height) - 40px);
+        margin-top: 20px;
         display: flex;
         flex-direction: column;
         background: rgba(18, 18, 18, 0.65);
         border-radius: 20px;
         box-shadow: 0 10px 35px rgba(0, 0, 0, 0.8);
-        position: relative;
         backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.08);
         margin-left: 10px;
         margin-right: 10px;
-        margin-bottom: 50px;
-        /* footer spacing */
-        padding: 5px 0;
-        /* slight padding */
+        overflow: hidden;
     }
 
     .activity-header {
-        padding: 15px 30px;
+        padding: 20px 30px;
         background: linear-gradient(135deg, rgba(58, 58, 58, 0.4), rgba(42, 42, 42, 0.4));
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        position: relative;
-        overflow: hidden;
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        gap: 15px;
     }
 
     .activity-header h1 {
@@ -63,18 +45,34 @@
         font-size: 1.6rem;
         font-weight: 700;
         text-shadow: 0 0 20px rgba(197, 168, 0, 0.3);
-        letter-spacing: 0.5px;
     }
 
     .current-month-badge {
-        padding: 4px 12px;
+        padding: 6px 15px;
         background: rgba(255, 215, 0, 0.15);
         border: 1px solid rgba(255, 215, 0, 0.3);
         color: #FFD700;
         border-radius: 20px;
-        font-size: 0.8rem;
+        font-size: 0.9rem;
         font-weight: 600;
         box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
+    }
+
+    .btn-reset {
+        background: rgba(231, 76, 60, 0.2);
+        border: 1px solid #e74c3c;
+        color: #e74c3c;
+        padding: 8px 15px;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .btn-reset:hover {
+        background: rgba(231, 76, 60, 0.4);
     }
 
     .activity-content {
@@ -82,45 +80,48 @@
         display: flex;
         gap: 20px;
         padding: 20px 30px;
-        /* overflow-y: auto; */
+        overflow: hidden;
     }
 
-    .leaderboard-section {
+    .main-column {
         flex: 7;
+        overflow-y: auto;
+        padding-right: 10px;
         display: flex;
         flex-direction: column;
+        gap: 20px;
     }
 
-    .sidebar-section {
+    .sidebar-column {
         flex: 3;
+        overflow-y: auto;
+        padding-right: 10px;
         display: flex;
         flex-direction: column;
-        gap: 15px;
-        min-width: 280px;
+        gap: 20px;
     }
 
     .glass-card {
         background: linear-gradient(160deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
         border-radius: 12px;
-        padding: 15px;
+        padding: 20px;
         border: 1px solid rgba(255, 255, 255, 0.08);
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     }
 
     .glass-card h3 {
-        margin: 0 0 12px 0;
+        margin: 0 0 15px 0;
         color: #DAA520;
-        font-size: 1rem;
+        font-size: 1.1rem;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
         text-transform: uppercase;
         letter-spacing: 1px;
         border-bottom: 1px solid rgba(218, 165, 32, 0.2);
-        padding-bottom: 8px;
+        padding-bottom: 10px;
     }
 
-    /* Table Styling */
     .leaderboard-table {
         width: 100%;
         border-collapse: separate;
@@ -128,85 +129,65 @@
     }
 
     .leaderboard-table th {
-        padding: 6px 12px;
+        padding: 8px 12px;
         text-align: left;
         color: #888;
         font-weight: 600;
         text-transform: uppercase;
-        font-size: 0.7rem;
+        font-size: 0.75rem;
         letter-spacing: 1px;
     }
 
     .leaderboard-table td {
-        padding: 10px 12px;
+        padding: 12px 12px;
         background: rgba(255, 255, 255, 0.02);
         border-top: 1px solid rgba(255, 255, 255, 0.05);
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         color: #ddd;
-        font-size: 0.9rem;
-        transition: all 0.3s ease;
+        font-size: 0.95rem;
     }
 
     .leaderboard-table td:first-child {
         border-left: 1px solid rgba(255, 255, 255, 0.05);
-        border-top-left-radius: 10px;
-        border-bottom-left-radius: 10px;
+        border-top-left-radius: 8px;
+        border-bottom-left-radius: 8px;
+        text-align: center;
     }
 
     .leaderboard-table td:last-child {
         border-right: 1px solid rgba(255, 255, 255, 0.05);
-        border-top-right-radius: 10px;
-        border-bottom-right-radius: 10px;
+        border-top-right-radius: 8px;
+        border-bottom-right-radius: 8px;
     }
 
     .leaderboard-table tr:hover td {
         background: rgba(218, 165, 32, 0.05);
-        transform: scale(1.01);
-        border-color: rgba(218, 165, 32, 0.2);
     }
 
-    /* Rank Badges */
     .rank-badge {
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 36px;
-        height: 36px;
+        width: 32px;
+        height: 32px;
         border-radius: 50%;
         font-weight: 800;
-        font-size: 1rem;
+        font-size: 0.9rem;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
     }
 
-    .rank-1 {
-        background: linear-gradient(135deg, #FFD700, #FDB931);
-        color: #333;
-        border: 2px solid #FFF8DC;
-        box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
-        font-size: 1.2rem;
+    .rank-1 { background: linear-gradient(135deg, #FFD700, #FDB931); color: #333; border: 2px solid #FFF8DC; box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
+    .rank-2 { background: linear-gradient(135deg, #E0E0E0, #B0B0B0); color: #333; border: 2px solid #F5F5F5; }
+    .rank-3 { background: linear-gradient(135deg, #CD7F32, #A0522D); color: #FFF; border: 2px solid #DEB887; }
+    .rank-other { background: rgba(255, 255, 255, 0.05); color: #888; font-size: 0.8rem; }
+
+    .score-cell {
+        font-family: 'Courier New', monospace;
+        font-weight: 700;
+        color: #fff;
+        font-size: 1.1rem;
     }
 
-    .rank-2 {
-        background: linear-gradient(135deg, #E0E0E0, #B0B0B0);
-        color: #333;
-        border: 2px solid #F5F5F5;
-        box-shadow: 0 0 15px rgba(192, 192, 192, 0.3);
-    }
-
-    .rank-3 {
-        background: linear-gradient(135deg, #CD7F32, #A0522D);
-        color: #FFF;
-        border: 2px solid #DEB887;
-        box-shadow: 0 0 15px rgba(205, 127, 50, 0.3);
-    }
-
-    .rank-other {
-        background: rgba(255, 255, 255, 0.05);
-        color: #888;
-        font-size: 0.9rem;
-    }
-
-    /* Tier Highlights */
     .tier-badge {
         display: inline-flex;
         align-items: center;
@@ -219,97 +200,46 @@
         letter-spacing: 0.5px;
     }
 
-    .tier-elite {
-        color: #FFD700;
-        background: rgba(255, 215, 0, 0.1);
-        border: 1px solid rgba(255, 215, 0, 0.2);
-    }
+    .tier-core { color: #FFD700; background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.3); }
+    .tier-elite { color: #9B59B6; background: rgba(155, 89, 182, 0.1); border: 1px solid rgba(155, 89, 182, 0.3); }
+    .tier-active { color: #3498DB; background: rgba(52, 152, 219, 0.1); border: 1px solid rgba(52, 152, 219, 0.3); }
+    .tier-inactive { color: #95a5a6; background: rgba(149, 165, 166, 0.1); border: 1px solid rgba(149, 165, 166, 0.3); }
 
-    .tier-core {
-        color: #9B59B6;
-        background: rgba(155, 89, 182, 0.1);
-        border: 1px solid rgba(155, 89, 182, 0.2);
-    }
-
-    .tier-active {
-        color: #3498DB;
-        background: rgba(52, 152, 219, 0.1);
-        border: 1px solid rgba(52, 152, 219, 0.2);
-    }
-
-    .tier-casual {
-        color: #95a5a6;
-        background: rgba(149, 165, 166, 0.1);
-        border: 1px solid rgba(149, 165, 166, 0.2);
-    }
-
-    .score-cell {
-        font-family: 'Courier New', monospace;
-        font-weight: 700;
-        color: #fff;
-        font-size: 1.1rem;
-    }
-
-    .prize-cell {
-        font-weight: 600;
-        letter-spacing: 0.5px;
-    }
-
-    /* Sidebar Widgets */
-    .tier-stats {
+    .stats-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 15px;
     }
 
-    .tier-stat-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
+    .stat-box {
+        background: rgba(0, 0, 0, 0.3);
         padding: 15px;
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.03);
-        transition: transform 0.3s;
+        border-radius: 10px;
+        text-align: center;
+        border: 1px solid rgba(255, 255, 255, 0.05);
     }
-
-    .tier-stat-item:hover {
-        background: rgba(255, 255, 255, 0.05);
-        transform: translateY(-3px);
-    }
-
-    .tier-stat-item .count {
-        font-size: 1.8rem;
+    .stat-box .count {
+        font-size: 2rem;
         font-weight: 700;
         line-height: 1;
         margin-bottom: 5px;
     }
+    .stat-box.core .count { color: #FFD700; }
+    .stat-box.elite .count { color: #9B59B6; }
+    .stat-box.active .count { color: #3498DB; }
+    .stat-box.inactive .count { color: #95a5a6; }
 
-    .ts-elite .count {
-        color: #FFD700;
-        text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-    }
-
-    .ts-core .count {
-        color: #9B59B6;
-        text-shadow: 0 0 10px rgba(155, 89, 182, 0.3);
-    }
-
-    .ts-active .count {
-        color: #3498DB;
-        text-shadow: 0 0 10px rgba(52, 152, 219, 0.3);
-    }
-
-    .ts-casual .count {
-        color: #95a5a6;
-    }
-
-    .tier-stat-item .label {
+    .stat-box .label {
         font-size: 0.75rem;
         color: #888;
         text-transform: uppercase;
         letter-spacing: 1px;
+    }
+    
+    .recent-events-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
     }
 
     .recent-events-list li {
@@ -320,6 +250,10 @@
         align-items: center;
     }
 
+    .recent-events-list li:last-child {
+        border-bottom: none;
+    }
+
     .event-type-badge {
         padding: 4px 10px;
         border-radius: 4px;
@@ -327,261 +261,503 @@
         font-weight: 700;
         text-transform: uppercase;
     }
-
-    .event-invasion {
-        background: rgba(231, 76, 60, 0.2);
-        color: #e74c3c;
-        border: 1px solid rgba(231, 76, 60, 0.3);
-    }
-
-    .event-boss_rush {
-        background: rgba(155, 89, 182, 0.2);
-        color: #9b59b6;
-        border: 1px solid rgba(155, 89, 182, 0.3);
-    }
-
-    .event-catacombs {
-        background: rgba(52, 152, 219, 0.2);
-        color: #3498db;
-        border: 1px solid rgba(52, 152, 219, 0.3);
-    }
-
-    .user-stats-highlight {
-        background: linear-gradient(135deg, rgba(218, 165, 32, 0.15), rgba(0, 0, 0, 0.3));
-        border: 1px solid rgba(218, 165, 32, 0.3);
-        box-shadow: 0 0 20px rgba(218, 165, 32, 0.1);
-    }
-
+    .event-invasion { background: #e74c3c; color: #fff; }
+    .event-boss_rush { background: #9b59b6; color: #fff; }
+    .event-catacombs { background: #3498db; color: #fff; }
+    .event-dimensional { background: #1abc9c; color: #fff; }
+    .event-isle_awakening { background: #f39c12; color: #fff; }
+    .event-custom { background: #7f8c8d; color: #fff; }
+    
     /* Scrollbar */
-    .activity-content::-webkit-scrollbar {
-        width: 6px;
-    }
+    .main-column::-webkit-scrollbar, .sidebar-column::-webkit-scrollbar { width: 6px; }
+    .main-column::-webkit-scrollbar-thumb, .sidebar-column::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
 
-    .activity-content::-webkit-scrollbar-thumb {
-        background: #555;
-        border-radius: 3px;
+    /* AP Buttons and Modal */
+    .ap-btn {
+        width: 30px; height: 30px; border-radius: 6px; border: none;
+        cursor: pointer; display: inline-flex; align-items: center;
+        justify-content: center; color: white; font-size: 0.9rem;
+        transition: all 0.2s; margin: 0 2px;
     }
+    .ap-btn.give { background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.3); }
+    .ap-btn.give:hover { background: rgba(46, 204, 113, 0.4); }
+    .ap-btn.remove { background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.3); }
+    .ap-btn.remove:hover { background: rgba(231, 76, 60, 0.4); }
 
-    .activity-content::-webkit-scrollbar-track {
-        background: transparent;
+    .ap-modal-backdrop {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px);
+        display: none; align-items: center; justify-content: center; z-index: 1000;
     }
+    .ap-modal {
+        background: linear-gradient(145deg, #1e1e1e, #141414);
+        border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;
+        padding: 25px; width: 400px; box-shadow: 0 15px 50px rgba(0,0,0,0.5);
+    }
+    .ap-modal h3 { margin-top: 0; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; }
+    .ap-modal .form-group { margin-bottom: 15px; }
+    .ap-modal label { display: block; color: #bbb; margin-bottom: 8px; font-size: 0.9rem; }
+    .ap-modal input { width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 6px; box-sizing: border-box; }
+    .ap-modal .btn-group { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .ap-modal .btn { padding: 8px 15px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; }
+    .ap-modal .btn-cancel { background: #555; color: #fff; }
+    .ap-modal .btn-submit.give { background: #2ecc71; color: #fff; }
+    .ap-modal .btn-submit.remove { background: #e74c3c; color: #fff; }
+
+    /* Bulk action bar */
+    .bulk-bar {
+        display: flex; align-items: center; gap: 10px;
+        padding: 8px 12px; margin-bottom: 10px;
+        background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 8px;
+    }
+    .bulk-bar label { color: #aaa; font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .bulk-bar input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+    .bulk-bar .divider { width: 1px; height: 24px; background: rgba(255,255,255,0.15); }
+    .bulk-bar .bbtn {
+        padding: 6px 14px; border-radius: 6px; border: none;
+        cursor: pointer; font-weight: 600; font-size: 0.8rem;
+        display: flex; align-items: center; gap: 5px; transition: all 0.2s;
+    }
+    .bulk-bar .bbtn-add { background: rgba(46,204,113,0.15); color: #2ecc71; border: 1px solid rgba(46,204,113,0.3); }
+    .bulk-bar .bbtn-add:hover { background: rgba(46,204,113,0.35); }
+    .bulk-bar .bbtn-sub { background: rgba(231,76,60,0.15); color: #e74c3c; border: 1px solid rgba(231,76,60,0.3); }
+    .bulk-bar .bbtn-sub:hover { background: rgba(231,76,60,0.35); }
+    .bulk-bar .sel-count { color: #888; font-size: 0.8rem; font-style: italic; margin-left: auto; }
+    .row-cb { width: 16px; height: 16px; cursor: pointer; }
+
+    /* Ranking Tabs */
+    .ranking-tabs {
+        display: flex; gap: 0; margin-bottom: 18px;
+        border-bottom: 2px solid rgba(255,255,255,0.08);
+    }
+    .ranking-tab {
+        padding: 10px 24px; cursor: pointer; font-weight: 600;
+        font-size: 0.95rem; color: #888; border: none; background: none;
+        border-bottom: 3px solid transparent; transition: all 0.25s;
+        display: flex; align-items: center; gap: 8px;
+    }
+    .ranking-tab:hover { color: #ccc; }
+    .ranking-tab.active {
+        color: #FFD700; border-bottom-color: #FFD700;
+        text-shadow: 0 0 12px rgba(255,215,0,0.3);
+    }
+    .ranking-tab .tab-count {
+        background: rgba(255,255,255,0.08); padding: 2px 8px;
+        border-radius: 10px; font-size: 0.75rem; color: #aaa;
+    }
+    .ranking-tab.active .tab-count {
+        background: rgba(255,215,0,0.15); color: #FFD700;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="activity-container">
     <div class="activity-header">
-        <h1><i class="fas fa-trophy" style="color: #FFD700;"></i> Leaderboard</h1>
-        <div class="current-month-badge">
-            <i class="far fa-calendar-alt"></i> {{ current_month|date:"F Y" }}
+        <h1><i class="fas fa-trophy" style="color: #FFD700;"></i> Activity Leaderboard</h1>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <div class="current-month-badge" title="Current Month">
+                <i class="far fa-calendar-alt"></i> {{ current_month }}
+            </div>
+            {% if is_admin %}
+            <form action="{% url 'reset-leaderboard-data' %}" method="POST" onsubmit="return confirm('Reset WEEKLY Data? This will permanently delete ALL activities and events matching this week!');">
+                {% csrf_token %}
+                <input type="hidden" name="type" value="weekly">
+                <button type="submit" class="btn-reset" title="Reset Weekly">
+                    <i class="fas fa-calendar-week"></i> Reset Weekly
+                </button>
+            </form>
+            <form action="{% url 'reset-leaderboard-data' %}" method="POST" onsubmit="return confirm('Reset MONTHLY Data? This will permanently delete ALL activities and events matching this month!');">
+                {% csrf_token %}
+                <input type="hidden" name="type" value="monthly">
+                <button type="submit" class="btn-reset" title="Reset Monthly">
+                    <i class="fas fa-calendar-alt"></i> Reset Monthly
+                </button>
+            </form>
+            {% endif %}
         </div>
     </div>
 
     <div class="activity-content">
-        <!-- Main Leaderboard -->
-        <div class="leaderboard-section">
-            <div class="glass-card" style="flex: 1; display: flex; flex-direction: column;">
-                <h3><i class="fas fa-crown"></i> Monthly Ranking</h3>
-
-                {% if monthly_reports %}
-                <div style="flex: 1; overflow-y: auto;">
-                    <table class="leaderboard-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 80px; text-align: center;">Rank</th>
-                                <th>Guardian</th>
-                                <th>Total Score</th>
-                                <th>Tier Status</th>
-                                <th>Reward</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for report in monthly_reports %}
-                            <tr>
-                                <td style="text-align: center;">
-                                    {% if forloop.counter == 1 %}
-                                    <div class="rank-badge rank-1">1</div>
-                                    {% elif forloop.counter == 2 %}
-                                    <div class="rank-badge rank-2">2</div>
-                                    {% elif forloop.counter == 3 %}
-                                    <div class="rank-badge rank-3">3</div>
-                                    {% else %}
-                                    <div class="rank-badge rank-other">{{ forloop.counter }}</div>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <div style="font-weight: 600; color: #fff;">{{ report.player.name }}</div>
-                                    <div style="font-size: 0.8rem; color: #666;">
-                                        Level {{ report.player.level }}
-                                        {% if report.player.character_class %}
-                                        - {{ report.player.character_class }}
-                                        {% endif %}
-                                    </div>
-                                </td>
-                                <td class="score-cell">{{ report.total_score }} <span
-                                        style="font-size: 0.8rem; color: #888; font-weight: normal;">pts</span></td>
-                                <td>
-                                    <span class="tier-badge tier-{{ report.tier|lower }}">
-                                        {% if report.tier == 'ELITE' %}👑
-                                        {% elif report.tier == 'CORE' %}🛡️
-                                        {% elif report.tier == 'ACTIVE' %}⚔️
-                                        {% else %}🌱{% endif %}
-                                        {{ report.get_tier_display }}
-                                    </span>
-                                </td>
-                                <td class="prize-cell">
-                                    {% if report.is_qualified %}
-                                    <div style="color: #2ecc71; display: flex; align-items: center; gap: 5px;">
-                                        <i class="fas fa-gem"></i> {{ report.prize_amount }}
-                                    </div>
-                                    {% else %}
-                                    <div style="color: #666; font-size: 0.9rem;">To be qualified</div>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+        <!-- MATN COLUMN: RANKINGS -->
+        <div class="main-column">
+            
+            <div class="glass-card">
+                <!-- Tab buttons -->
+                <div class="ranking-tabs">
+                    <button class="ranking-tab active" onclick="switchTab('monthly')">
+                        <i class="fas fa-calendar-alt"></i> Monthly Ranking
+                        <span class="tab-count">{{ monthly_ranking|length }}</span>
+                    </button>
+                    <button class="ranking-tab" onclick="switchTab('weekly')">
+                        <i class="fas fa-calendar-week"></i> Weekly Ranking
+                        <span class="tab-count">{{ weekly_ranking|length }}</span>
+                    </button>
                 </div>
-                {% else %}
-                <div class="no-data">
-                    <img src="https://cdni.iconscout.com/illustration/premium/thumb/empty-state-2130362-1800926.png"
-                        alt="No Data" style="width: 200px; opacity: 0.5;">
-                    <p>No seasoned warriors found this month.</p>
-                    {% if is_admin %}
-                    <a href="{% url 'create-event' %}" class="btn-create"
-                        style="margin-top: 15px; background: #DAA520; color: #000; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
-                        <i class="fas fa-plus"></i> Create First Event
-                    </a>
-                    {% endif %}
+
+                <!-- MONTHLY TAB -->
+                <div class="tab-panel active" id="tab-monthly">
+                {% if monthly_ranking %}
+                {% if is_admin %}
+                <div class="bulk-bar">
+                    <label><input type="checkbox" onchange="toggleAll(this,'m-cb')" /> Select All</label>
+                    <span class="divider"></span>
+                    <button class="bbtn bbtn-add" onclick="openBulkScore('m-cb','add')"><i class="fas fa-plus"></i> Add Score</button>
+                    <button class="bbtn bbtn-sub" onclick="openBulkScore('m-cb','subtract')"><i class="fas fa-minus"></i> Subtract Score</button>
+                    <span class="sel-count" id="m-cb-count">0 selected</span>
                 </div>
                 {% endif %}
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            {% if is_admin %}<th style="width:40px;"></th>{% endif %}
+                            <th style="width: 70px;">Rank</th>
+                            <th>Guardian</th>
+                            <th>Total Score</th>
+                            <th>Tier Status</th>
+                            {% if is_admin %}
+                            <th style="text-align: center;">AP</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in monthly_ranking %}
+                        <tr>
+                            {% if is_admin %}
+                            <td style="text-align:center;"><input type="checkbox" class="row-cb m-cb" value="{{ row.id }}" data-name="{{ row.name }}" onchange="updateCount('m-cb')"></td>
+                            {% endif %}
+                            <td>
+                                {% if row.rank == 1 %} <div class="rank-badge rank-1">1</div>
+                                {% elif row.rank == 2 %} <div class="rank-badge rank-2">2</div>
+                                {% elif row.rank == 3 %} <div class="rank-badge rank-3">3</div>
+                                {% else %} <div class="rank-badge rank-other">{{ row.rank }}</div> {% endif %}
+                            </td>
+                            <td style="font-weight: 600; color: #fff;">{{ row.name }}</td>
+                            <td>
+                                <span class="score-cell">{{ row.total_score }}</span>
+                                <span style="font-size: 0.8rem; color: #888;">pts</span>
+                            </td>
+                            <td>
+                                <span class="tier-badge tier-{{ row.tier_class }}">
+                                    {% if row.tier == 'Core' %}👑{% elif row.tier == 'Elite' %}🛡️{% elif row.tier == 'Active' %}⚔️{% else %}💤{% endif %}
+                                    {{ row.tier }}
+                                </span>
+                            </td>
+                            {% if is_admin %}
+                            <td style="text-align: center;">
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                    <button onclick="openApModal('{{ row.id }}', '{{ row.name }}', 'give')" class="ap-btn give" style="width:24px;height:24px;font-size:0.7rem;" title="Give AP"><i class="fas fa-plus"></i></button>
+                                    <span style="color: {% if row.ap_points > 0 %}#2ecc71{% elif row.ap_points < 0 %}#e74c3c{% else %}#888{% endif %}; font-weight: 700; font-size: 1.05rem; min-width: 30px; text-align: center;">{{ row.ap_points }}</span>
+                                    <button onclick="openApModal('{{ row.id }}', '{{ row.name }}', 'remove')" class="ap-btn remove" style="width:24px;height:24px;font-size:0.7rem;" title="Remove AP"><i class="fas fa-minus"></i></button>
+                                </div>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div style="text-align: center; color: #888; padding: 20px;">No monthly data recorded yet.</div>
+                {% endif %}
+                </div>
+
+                <!-- WEEKLY TAB -->
+                <div class="tab-panel" id="tab-weekly">
+                {% if weekly_ranking %}
+                {% if is_admin %}
+                <div class="bulk-bar">
+                    <label><input type="checkbox" onchange="toggleAll(this,'w-cb')" /> Select All</label>
+                    <span class="divider"></span>
+                    <button class="bbtn bbtn-add" onclick="openBulkScore('w-cb','add')"><i class="fas fa-plus"></i> Add Score</button>
+                    <button class="bbtn bbtn-sub" onclick="openBulkScore('w-cb','subtract')"><i class="fas fa-minus"></i> Subtract Score</button>
+                    <span class="sel-count" id="w-cb-count">0 selected</span>
+                </div>
+                {% endif %}
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            {% if is_admin %}<th style="width:40px;"></th>{% endif %}
+                            <th style="width: 70px;">Rank</th>
+                            <th>Guardian</th>
+                            <th>Total Score</th>
+                            <th>Tier Status</th>
+                            {% if is_admin %}
+                            <th style="text-align: center;">AP</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in weekly_ranking %}
+                        <tr>
+                            {% if is_admin %}
+                            <td style="text-align:center;"><input type="checkbox" class="row-cb w-cb" value="{{ row.id }}" data-name="{{ row.name }}" onchange="updateCount('w-cb')"></td>
+                            {% endif %}
+                            <td>
+                                {% if row.rank == 1 %} <div class="rank-badge rank-1">1</div>
+                                {% elif row.rank == 2 %} <div class="rank-badge rank-2">2</div>
+                                {% elif row.rank == 3 %} <div class="rank-badge rank-3">3</div>
+                                {% else %} <div class="rank-badge rank-other">{{ row.rank }}</div> {% endif %}
+                            </td>
+                            <td style="font-weight: 600; color: #fff;">{{ row.name }}</td>
+                            <td>
+                                <span class="score-cell">{{ row.total_score }}</span>
+                                <span style="font-size: 0.8rem; color: #888;">pts</span>
+                            </td>
+                            <td>
+                                <span class="tier-badge tier-{{ row.tier_class }}">
+                                    {% if row.tier == 'Core' %}👑{% elif row.tier == 'Elite' %}🛡️{% elif row.tier == 'Active' %}⚔️{% else %}💤{% endif %}
+                                    {{ row.tier }}
+                                </span>
+                            </td>
+                            {% if is_admin %}
+                            <td style="text-align: center;">
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                    <button onclick="openApModal('{{ row.id }}', '{{ row.name }}', 'give')" class="ap-btn give" style="width:24px;height:24px;font-size:0.7rem;" title="Give AP"><i class="fas fa-plus"></i></button>
+                                    <span style="color: {% if row.ap_points > 0 %}#2ecc71{% elif row.ap_points < 0 %}#e74c3c{% else %}#888{% endif %}; font-weight: 700; font-size: 1.05rem; min-width: 30px; text-align: center;">{{ row.ap_points }}</span>
+                                    <button onclick="openApModal('{{ row.id }}', '{{ row.name }}', 'remove')" class="ap-btn remove" style="width:24px;height:24px;font-size:0.7rem;" title="Remove AP"><i class="fas fa-minus"></i></button>
+                                </div>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div style="text-align: center; color: #888; padding: 20px;">No weekly data recorded yet.</div>
+                {% endif %}
+                </div>
+
             </div>
+            
         </div>
 
-        <!-- Sidebar -->
-        <div class="sidebar-section">
-            <!-- User Stats Removed as requested -->
-
-            {% if is_admin %}
-            <!-- Tier Distribution -->
+        <!-- SIDEBAR: STATS & EVENTS -->
+        <div class="sidebar-column">
+            
             <div class="glass-card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h3 style="margin:0; border:none;"><i class="fas fa-chart-pie"></i> Guild Statistics</h3>
-                    {% if is_admin %}
-                    <button onclick="openConfigModal()"
-                        style="background:none; border:none; color:#DAA520; cursor:pointer;" title="Edit Prize Pool">
-                        <i class="fas fa-cog"></i>
-                    </button>
-                    {% endif %}
-                </div>
-
-                <div class="tier-stats">
-                    <div class="tier-stat-item ts-core">
-                        <span class="count">{{ tier_counts.CORE }}</span>
-                        <span class="label">Core ({{ tier_percentages.CORE }}%)</span>
+                <h3><i class="fas fa-chart-pie"></i> Guild Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-box core">
+                        <div class="count">{{ guild_stats.core }}</div>
+                        <div class="label">Core Member{% if is_admin %}<br>(&gt; 950 pts){% endif %}</div>
                     </div>
-                    <div class="tier-stat-item ts-elite">
-                        <span class="count">{{ tier_counts.ELITE }}</span>
-                        <span class="label">Elite ({{ tier_percentages.ELITE }}%)</span>
+                    <div class="stat-box elite">
+                        <div class="count">{{ guild_stats.elite }}</div>
+                        <div class="label">Elite Member{% if is_admin %}<br>(676 - 950 pts){% endif %}</div>
                     </div>
-                    <div class="tier-stat-item ts-active">
-                        <span class="count">{{ tier_counts.ACTIVE }}</span>
-                        <span class="label">Active ({{ tier_percentages.ACTIVE }}%)</span>
+                    <div class="stat-box active">
+                        <div class="count">{{ guild_stats.active }}</div>
+                        <div class="label">Active Member{% if is_admin %}<br>(401 - 675 pts){% endif %}</div>
                     </div>
-                    <div class="tier-stat-item ts-casual">
-                        <span class="count">{{ tier_counts.CASUAL }}</span>
-                        <span class="label">Casual ({{ tier_percentages.CASUAL }}%)</span>
+                    <div class="stat-box inactive">
+                        <div class="count">{{ guild_stats.inactive }}</div>
+                        <div class="label">Inactive Member{% if is_admin %}<br>(0 - 400 pts){% endif %}</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Config Modal -->
-            <div id="configModal" class="custom-modal"
-                style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center;">
-                <div class="modal-content"
-                    style="background:#222; border:1px solid #444; width:350px; padding:20px; border-radius:12px; position:relative;">
-                    <span onclick="closeConfigModal()"
-                        style="position:absolute; top:15px; right:15px; cursor:pointer; color:#888;"><i
-                            class="fas fa-times"></i></span>
-                    <h3 style="margin-top:0; color:#fff;">Prize Pool Config</h3>
-
-                    <form action="{% url 'update-prize-config' %}" method="POST">
-                        {% csrf_token %}
-                        <div style="margin-bottom:15px;">
-                            <label style="color:#bbb; display:block; margin-bottom:5px;">Core %</label>
-                            <input type="number" name="core" value="{{ tier_percentages.CORE }}"
-                                style="width:100%; padding:8px; background:#333; border:1px solid #555; color:#fff; border-radius:5px;">
-                        </div>
-                        <div style="margin-bottom:15px;">
-                            <label style="color:#bbb; display:block; margin-bottom:5px;">Elite %</label>
-                            <input type="number" name="elite" value="{{ tier_percentages.ELITE }}"
-                                style="width:100%; padding:8px; background:#333; border:1px solid #555; color:#fff; border-radius:5px;">
-                        </div>
-                        <div style="margin-bottom:15px;">
-                            <label style="color:#bbb; display:block; margin-bottom:5px;">Active %</label>
-                            <input type="number" name="active" value="{{ tier_percentages.ACTIVE }}"
-                                style="width:100%; padding:8px; background:#333; border:1px solid #555; color:#fff; border-radius:5px;">
-                        </div>
-                        <div style="margin-bottom:20px;">
-                            <label style="color:#bbb; display:block; margin-bottom:5px;">Casual %</label>
-                            <input type="number" name="casual" value="{{ tier_percentages.CASUAL }}"
-                                style="width:100%; padding:8px; background:#333; border:1px solid #555; color:#fff; border-radius:5px;">
-                        </div>
-                        <button type="submit"
-                            style="width:100%; padding:10px; background:#DAA520; color:#000; border:none; font-weight:bold; border-radius:5px; cursor:pointer;">Save
-                            Changes</button>
-                    </form>
-                </div>
-            </div>
-
-            <script>
-                function openConfigModal() {
-                    document.getElementById('configModal').style.display = 'flex';
-                }
-                function closeConfigModal() {
-                    document.getElementById('configModal').style.display = 'none';
-                }
-                // Close on outside click
-                window.onclick = function (event) {
-                    var modal = document.getElementById('configModal');
-                    if (event.target == modal) {
-                        modal.style.display = "none";
-                    }
-                }
-            </script>
-            {% endif %}
-
-            <!-- Recent Events -->
-            <div class="glass-card" style="flex: 1;">
+            <div class="glass-card">
                 <h3><i class="fas fa-history"></i> Recent Events</h3>
                 {% if recent_events %}
                 <ul class="recent-events-list">
                     {% for event in recent_events %}
                     <li>
-                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                            <span style="color: #eee; font-weight: 500;">{{ event.name }}</span>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <span style="color: #eee; font-weight: 500;">
+                                {% if event.is_completed %}
+                                <i class="fas fa-check-circle" style="color: #2ecc71;" title="Completed"></i>
+                                {% else %}
+                                <i class="fas fa-clock" style="color: #f39c12;" title="Pending"></i>
+                                {% endif %}
+                                {{ event.name }}
+                            </span>
                             <div style="display: flex; gap: 8px; align-items: center;">
                                 <span class="event-type-badge event-{{ event.event_type|lower }}">
                                     {{ event.get_event_type_display }}
                                 </span>
-                                <span style="font-size: 0.75rem; color: #888;">{{ event.date|date:"M d" }}</span>
+                                <span style="font-size: 0.75rem; color: #888;"><i class="fas fa-calendar"></i> {{ event.date|date:"M d, Y" }}</span>
                             </div>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="font-weight: 700; color: #fff;">{{ event.participants.count }}</div>
-                            <div style="font-size: 0.7rem; color: #888;">Joined</div>
                         </div>
                     </li>
                     {% endfor %}
                 </ul>
                 {% else %}
                 <div style="text-align: center; padding: 20px 0; color: #666; font-size: 0.9rem;">
-                    No recent battle logs.
+                    No recent events.
                 </div>
                 {% endif %}
             </div>
+
         </div>
     </div>
 </div>
+
+{% if is_admin %}
+<!-- AP Adjustment Modal -->
+<div class="ap-modal-backdrop" id="apModal">
+    <div class="ap-modal">
+        <h3 id="apModalTitle">Adjust AP</h3>
+        <form action="{% url 'adjust_ap' %}" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="player_id" id="apPlayerId">
+            <input type="hidden" name="action" id="apAction">
+            
+            <div class="form-group">
+                <label>Amount of AP:</label>
+                <input type="number" name="points" min="1" max="1000" value="10" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Reason / Description:</label>
+                <input type="text" name="reason" placeholder="e.g. Guild Contribution, Warning Penalty" required>
+            </div>
+            
+            <div class="btn-group">
+                <button type="button" class="btn btn-cancel" onclick="closeApModal()">Cancel</button>
+                <button type="submit" class="btn btn-submit" id="apSubmitBtn">Submit</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Score Adjustment Modal (bulk) -->
+<div class="ap-modal-backdrop" id="scoreModal">
+    <div class="ap-modal">
+        <h3 id="scoreModalTitle">Adjust Score</h3>
+        <div id="scoreSelectedInfo" style="margin-bottom:12px;padding:8px;background:rgba(255,215,0,0.1);border-radius:6px;color:#FFD700;font-size:0.85rem;"></div>
+        <form id="bulkScoreForm" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="action" id="scoreAction">
+            
+            <div class="form-group">
+                <label>Amount of Points:</label>
+                <input type="number" name="points" min="1" max="10000" value="10" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Reason:</label>
+                <input type="text" name="reason" placeholder="e.g. Score Correction, Bonus Points" required>
+            </div>
+            
+            <div class="btn-group">
+                <button type="button" class="btn btn-cancel" onclick="closeScoreModal()">Cancel</button>
+                <button type="submit" class="btn btn-submit" id="scoreSubmitBtn">Submit</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    var pendingBulkIds = [];
+
+    // Tab switching
+    function switchTab(which) {
+        document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+        document.querySelectorAll('.ranking-tab').forEach(function(t) { t.classList.remove('active'); });
+        document.getElementById('tab-' + which).classList.add('active');
+        // Activate the clicked tab button
+        var tabs = document.querySelectorAll('.ranking-tab');
+        if (which === 'monthly') { tabs[0].classList.add('active'); }
+        else { tabs[1].classList.add('active'); }
+    }
+
+    function openApModal(playerId, playerName, action) {
+        document.getElementById('apPlayerId').value = playerId;
+        document.getElementById('apAction').value = action;
+        var titleEl = document.getElementById('apModalTitle');
+        var submitBtn = document.getElementById('apSubmitBtn');
+        if (action === 'give') {
+            titleEl.innerHTML = '<i class="fas fa-plus-circle" style="color:#2ecc71;"></i> Give AP to ' + playerName;
+            submitBtn.className = 'btn btn-submit give';
+            submitBtn.textContent = 'Give AP';
+        } else {
+            titleEl.innerHTML = '<i class="fas fa-minus-circle" style="color:#e74c3c;"></i> Remove AP from ' + playerName;
+            submitBtn.className = 'btn btn-submit remove';
+            submitBtn.textContent = 'Remove AP';
+        }
+        document.getElementById('apModal').style.display = 'flex';
+    }
+    function closeApModal() { document.getElementById('apModal').style.display = 'none'; }
+
+    // Checkbox helpers
+    function toggleAll(masterCb, cls) {
+        document.querySelectorAll('.' + cls).forEach(function(cb) { cb.checked = masterCb.checked; });
+        updateCount(cls);
+    }
+    function updateCount(cls) {
+        var checked = document.querySelectorAll('.' + cls + ':checked');
+        var el = document.getElementById(cls + '-count');
+        if (el) el.textContent = checked.length + ' selected';
+    }
+
+    // Bulk score modal
+    function openBulkScore(cls, action) {
+        var checked = document.querySelectorAll('.' + cls + ':checked');
+        if (checked.length === 0) { alert('Please select at least one player!'); return; }
+
+        pendingBulkIds = [];
+        var names = [];
+        checked.forEach(function(cb) {
+            pendingBulkIds.push(cb.value);
+            names.push(cb.dataset.name);
+        });
+
+        document.getElementById('scoreAction').value = action;
+        var titleEl = document.getElementById('scoreModalTitle');
+        var submitBtn = document.getElementById('scoreSubmitBtn');
+        var info = document.getElementById('scoreSelectedInfo');
+        info.textContent = 'Selected: ' + names.join(', ') + ' (' + pendingBulkIds.length + ' players)';
+
+        if (action === 'add') {
+            titleEl.innerHTML = '<i class="fas fa-plus-circle" style="color:#2ecc71;"></i> Add Score to Selected';
+            submitBtn.className = 'btn btn-submit give';
+            submitBtn.textContent = 'Add Score';
+        } else {
+            titleEl.innerHTML = '<i class="fas fa-minus-circle" style="color:#e74c3c;"></i> Subtract Score from Selected';
+            submitBtn.className = 'btn btn-submit remove';
+            submitBtn.textContent = 'Subtract Score';
+        }
+        document.getElementById('scoreModal').style.display = 'flex';
+    }
+    function closeScoreModal() { document.getElementById('scoreModal').style.display = 'none'; pendingBulkIds = []; }
+
+    // Submit bulk score: one form per player
+    document.getElementById('bulkScoreForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (pendingBulkIds.length === 0) return;
+        var action = document.getElementById('scoreAction').value;
+        var points = this.querySelector('input[name="points"]').value;
+        var reason = this.querySelector('input[name="reason"]').value;
+        var csrfToken = this.querySelector('input[name="csrfmiddlewaretoken"]').value;
+        var targetUrl = '{% url "adjust_score" %}';
+        var completed = 0;
+        var total = pendingBulkIds.length;
+
+        pendingBulkIds.forEach(function(pid) {
+            var fd = new FormData();
+            fd.append('csrfmiddlewaretoken', csrfToken);
+            fd.append('player_id', pid);
+            fd.append('action', action);
+            fd.append('points', points);
+            fd.append('reason', reason);
+
+            fetch(targetUrl, {
+                method: 'POST',
+                body: fd,
+            }).then(function() {
+                completed++;
+                if (completed === total) { window.location.reload(); }
+            });
+        });
+    });
+
+    window.onclick = function(event) {
+        if (event.target == document.getElementById('apModal')) closeApModal();
+        if (event.target == document.getElementById('scoreModal')) closeScoreModal();
+    }
+</script>
+{% endif %}
 {% endblock %}

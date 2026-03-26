@@ -35,3 +35,33 @@ staticfiles/
 
 # Gemini/Agent files
 .gemini/
+
+# Temp/Test/Helper scripts
+test_*.py
+temp_*.html
+fix_*.py
+populate_*.py
+process_skins.py
+update_*.py
+inspect_*.py
+import_*.py
+generate_*.py
+resize_*.py
+replace_images.py
+migrate_pvp_values.py
+setup_settings.py
+sync_valkyrie.py
+post_test.py
+
+# Archives
+*.zip
+*.tar.gz
+
+# SSH/Deploy
+ssh_pass.bat
+
+# OS
+.DS_Store
+
+# Static root (collected)
+static/

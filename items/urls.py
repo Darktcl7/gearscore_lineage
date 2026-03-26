@@ -22,11 +22,16 @@ from .views import (
     manage_events,
     create_event,
     record_attendance,
+    duplicate_event,
+    toggle_event_repeatable,
     # Discord Link
     link_discord,
     reset_password_admin, # Admin Reset Password
     toggle_admin, # Admin Toggle Admin Status
     update_prize_config, # Activity Views - Update Config
+    admin_adjust_score, # Activity Views - Admin Score Adjustment
+    reset_leaderboard_data,
+    reset_monthly_rewards, # Admin Reset Monthly Rewards
     discord_dashboard, # Discord Management
 ) 
 
@@ -37,6 +42,12 @@ urlpatterns = [
     
     # URL: /items/activity/config/update/ -> Update Prize Config
     path('activity/config/update/', update_prize_config, name='update-prize-config'),
+    
+    # URL: /items/activity/adjust-score/ -> Admin Adjust Score
+    path('activity/adjust-score/', admin_adjust_score, name='admin-adjust-score'),
+    
+    # URL: /items/activity/reset-data/ -> Admin Reset Data
+    path('activity/reset-data/', reset_leaderboard_data, name='reset-leaderboard-data'),
     
     # URL: /items/items/ -> Menampilkan daftar semua item
     path('items/', item_list, name='item-list'), 
@@ -106,14 +117,29 @@ urlpatterns = [
     # URL: /items/activity/my/ -> My Activity (User's own stats)
     path('activity/my/', my_activity, name='my-activity'),
     
+    # URL: /items/activity/rewards/reset/ -> Admin: Reset Monthly Rewards
+    path('activity/rewards/reset/', reset_monthly_rewards, name='reset-monthly-rewards'),
+    
     # URL: /items/activity/events/ -> Admin: Manage Events
     path('activity/events/', manage_events, name='manage-events'),
+    
+    # URL: /items/activity/ap_adjust/ -> Admin: Adjust AP manually
+    path('activity/ap_adjust/', __import__('items.views', fromlist=['adjust_ap']).adjust_ap, name='adjust_ap'),
+    
+    # URL: /items/activity/score_adjust/ -> Admin: Adjust Score manually
+    path('activity/score_adjust/', __import__('items.views', fromlist=['adjust_score']).adjust_score, name='adjust_score'),
     
     # URL: /items/activity/events/new/ -> Admin: Create Event
     path('activity/events/new/', create_event, name='create-event'),
     
     # URL: /items/activity/events/1/attendance/ -> Admin: Record Attendance
     path('activity/events/<int:event_pk>/attendance/', record_attendance, name='record-attendance'),
+
+    # URL: /items/activity/events/1/duplicate/ -> Admin: Duplicate Event
+    path('activity/events/<int:event_pk>/duplicate/', duplicate_event, name='duplicate-event'),
+
+    # URL: /items/activity/events/1/toggle-repeat/ -> Admin: Toggle Repeatable
+    path('activity/events/<int:event_pk>/toggle-repeat/', toggle_event_repeatable, name='toggle-event-repeatable'),
 
     # URL: /items/manage/discord/ -> Discord Control Center
     path('manage/discord/', discord_dashboard, name='discord-dashboard'),

@@ -653,6 +653,18 @@ class MythicClass(models.Model):
 
 
 
+class LegendarySkin(models.Model):
+
+    name = models.CharField("Nama", max_length=100)
+
+    icon_file = models.CharField("File Ikon", max_length=100, blank=True)
+
+    def __str__(self):
+
+        return self.name
+
+
+
 class LegendaryAgathion(models.Model):
 
     name = models.CharField("Nama", max_length=100)
@@ -711,6 +723,8 @@ class Character(models.Model):
     mythic_classes = models.ManyToManyField(MythicClass, verbose_name="Kelas Mythic", blank=True)
 
     legendary_classes = models.ManyToManyField(LegendaryClass, verbose_name="Kelas Legendaris", blank=True)
+
+    legendary_skins = models.ManyToManyField(LegendarySkin, verbose_name="Legendary Skins", blank=True)
 
     legendary_agathions = models.ManyToManyField(LegendaryAgathion, verbose_name="Agathion Legendaris", blank=True)
 
@@ -817,10 +831,6 @@ class Character(models.Model):
     def calculate_gear_score(self):
         breakdown = self.calculate_gear_score_breakdown()
         return breakdown['total_score']
-
-
-
-
 
 
 
@@ -1040,7 +1050,6 @@ EXPERTISE_CHOICES = [
 ]
 
 
-
 WEAPON_CHOICES = [
     ('', 'No weapon selected'),
     ('bow|Akatt Longbow', 'Akatt Longbow'), ('bow|Amenance Bow', 'Amenance Bow'), ('bow|Archangel Bow', 'Archangel Bow'), ('bow|Bow of Oblivion', 'Bow of Oblivion'), ('bow|Bow of the Shingung', 'Bow of the Shingung'), ('bow|Bow of the Soul', 'Bow of the Soul'), ('bow|Carnium Bow', 'Carnium Bow'), ('bow|Devils Bow', 'Devils Bow'), ('bow|Elemental Bow', 'Elemental Bow'), ('bow|Giants Bow', 'Giants Bow'), ('bow|Hazard Bow', 'Hazard Bow'), ('bow|Ice Crystal Bow', 'Ice Crystal Bow'), ('bow|Moonlight Bow', 'Moonlight Bow'), ('bow|Plasma Bow', 'Plasma Bow'),
@@ -1069,6 +1078,7 @@ class CharacterAttributes(models.Model):
     soul_prog_attack = models.CharField("Soul Progression Attack", max_length=10, choices=SOUL_PROGRESSION_CHOICES, blank=True)
     soul_prog_defense = models.CharField("Soul Progression Defense", max_length=10, choices=SOUL_PROGRESSION_CHOICES, blank=True)
     soul_prog_blessing = models.CharField("Soul Progression Blessing", max_length=10, choices=SOUL_PROGRESSION_CHOICES, blank=True)
+    soul_prog_accuracy = models.CharField("Soul Progression Accuracy", max_length=10, choices=SOUL_PROGRESSION_CHOICES, blank=True)
 
     enchant_bracelet_holy_prot = models.IntegerField("Enchant Bracelet of Holy Protection", choices=ENCHANT_CHOICES, default=0)
     enchant_bracelet_influence = models.IntegerField("Enchant Bracelet of Influence", choices=ENCHANT_CHOICES, default=0)
@@ -1119,7 +1129,7 @@ class CharacterAttributes(models.Model):
     pvp_belt = models.CharField("PvP Belt", max_length=100, choices=PVP_BELT_CHOICES, blank=True)
     pvp_belt_enchant = models.IntegerField("PvP Belt Enchant Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(11)])
 
-    # OLD STAT FIELDS (kept for DB compatibility - will be removed after migration)
+    # OLD STAT FIELDS (kept for DB compatibility)
     soulshot_level = models.IntegerField("Soulshot Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(13)], blank=True)
     valor_level = models.IntegerField("Valor Level", default=0, validators=[MinValueValidator(0), MaxValueValidator(13)], blank=True)
     stat_dmg = models.IntegerField("DMG (Damage)", default=0)
@@ -1218,8 +1228,6 @@ class GearScoreLog(models.Model):
         return f"GS Log {self.character.name}: {self.total_score} ({self.timestamp})"
 
 
-# (GearScoreLog model omitted for brevity)
-
 class CharacteristicsStats(models.Model):
     character = models.OneToOneField(Character, on_delete=models.CASCADE, related_name='characteristics_stats')
 
@@ -1317,153 +1325,196 @@ class CharacteristicsStats(models.Model):
         return f"Characteristics Stats for {self.character.name}"
 
 
-# ======================================================
-# ACTIVITY TRACKING MODELS
-# ======================================================
+
 
 class ActivityEvent(models.Model):
-    """Model untuk menyimpan data event guild (Invasion, Boss Rush, Catacombs)"""
+    """Model untuk event/aktivitas guild"""
     EVENT_TYPE_CHOICES = (
-        ('INVASION', 'Invasion'),
-        ('BOSS_RUSH', 'Boss Rush'),
-        ('CATACOMBS', 'Catacombs'),
-        ('DIMENSIONAL_SIEGE', 'Dimensional Siege'),
-        ('CUSTOM', 'Custom Event'),
+        ('INVASION', '⚔️ Invasion'),
+        ('BOSS_RUSH', '🐉 Boss Rush'),
+        ('CATACOMBS', '🏰 Catacombs'),
+        ('DIMENSIONAL', '🌀 Dimensional Siege'),
+        ('ISLE_AWAKENING', '🏝️ Isle of Awakening'),
+        ('CUSTOM', '📋 Custom'),
     )
 
-    event_id = models.CharField("Event ID", max_length=50, unique=True, blank=True, help_text="Unique ID dari Discord/System")
-    name = models.CharField("Nama Event", max_length=100)
+    # Default points per event type (used in create_event view)
+    DEFAULT_POINTS = {
+        'INVASION': 0,        # INVASION uses boss_point_config, no flat points
+        'BOSS_RUSH': 100,
+        'CATACOMBS': 50,
+        'DIMENSIONAL': 100,
+        'ISLE_AWAKENING': 100,
+        'CUSTOM': 10,
+    }
+
+    event_id = models.CharField("Event ID", max_length=50, unique=True, blank=True)
+    name = models.CharField("Nama Event", max_length=200)
     event_type = models.CharField("Tipe Event", max_length=20, choices=EVENT_TYPE_CHOICES)
-    date = models.DateTimeField("Waktu Event")
+    date = models.DateTimeField("Tanggal Event")
+    description = models.TextField("Deskripsi", blank=True)
+    
+    # Event Configuration
+    base_points = models.IntegerField("Base Points", default=5, help_text="Poin dasar untuk attendance")
+    max_points = models.IntegerField("Max Points", default=25, help_text="Poin maksimum yang bisa didapat")
+    is_mandatory = models.BooleanField("Mandatory Event", default=False, help_text="Wajib diikuti semua member")
+    mandatory_penalty = models.IntegerField("Penalty Poin", default=0, help_text="Penalty jika tidak hadir di event mandatory")
+    is_repeatable = models.BooleanField("Repeatable", default=False, help_text="Event bisa diulang setiap minggu")
+    
+    # Results (filled after event)
     is_completed = models.BooleanField("Selesai", default=False)
-    is_win = models.BooleanField("Menang", default=False, help_text="Untuk Boss Rush & Catacombs")
-    is_finalized = models.BooleanField("Finalized", default=False)
-    bosses_killed = models.JSONField("Boss Terbunuh", default=dict, blank=True,
-        help_text="Format: {'dragon_beast': true, 'carnifex': true, 'orfen': false}")
-    custom_points = models.IntegerField("Custom Points", default=0, blank=True)
+    is_finalized = models.BooleanField("Finalized", default=False, help_text="Jika True, poin tidak bisa diubah")
+    
+    # Boss Rush & Invasion specific
+    boss_killed_count = models.IntegerField("Boss Terbunuh", default=0)
+    total_bosses = models.IntegerField("Total Boss", default=0)
+    
+    # Dimensional Siege specific
+    is_win = models.BooleanField("Menang", default=False)
+    win_bonus = models.IntegerField("Bonus Menang", default=10)
 
-    # Boss-specific points
-    carnifex_points = models.IntegerField("Carnifex Points", default=2)
-    orfen_points = models.IntegerField("Orfen Points", default=2)
-    dragon_beast_points = models.IntegerField("Dragon Beast Points", default=2)
-    latana_points = models.IntegerField("Latana Points", default=2)
-    kain_van_halter_points = models.IntegerField("Kain Van Halter Points", default=3)
-    balthazar_points = models.IntegerField("Balthazar Points", default=3)
-    core_points = models.IntegerField("Core Points", default=3)
-
+    # Boss point config for INVASION
+    boss_point_config = models.JSONField("Boss Point Config", default=dict, blank=True,
+        help_text="Config poin per boss, contoh: {'boss1': 5, 'boss2': 10}")
+    
+    # Custom event reward checkboxes
+    reward_diamond = models.BooleanField("Reward Diamond", default=False)
+    reward_diamond_points = models.IntegerField("Diamond Points", default=0)
+    reward_key = models.BooleanField("Reward Key", default=False)
+    reward_key_points = models.IntegerField("Key Points", default=0)
+    reward_membership = models.BooleanField("Reward Membership", default=False)
+    reward_membership_points = models.IntegerField("Membership Points", default=0)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.event_id:
+            import random, string
+            self.event_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        super().save(*args, **kwargs)
+
+    def calculate_max_points(self):
+        """Calculate max points based on event type and results"""
+        if self.event_type == 'INVASION':
+            # INVASION: sum of all boss point values
+            boss_points = 0
+            if self.boss_point_config:
+                for boss, points in self.boss_point_config.items():
+                    boss_points += points
+            return boss_points
+        else:
+            # All other events: just return max_points (editable per event)
+            return self.max_points
+
+    @property
+    def is_upcoming(self):
+        from django.utils import timezone
+        return self.date > timezone.now()
+
+    @property
+    def attended_count(self):
+        """Returns the number of players who actually attended the event."""
+        return self.participants.filter(status='ATTENDED').count()
 
     class Meta:
         ordering = ['-date']
         verbose_name = "Activity Event"
         verbose_name_plural = "Activity Events"
-        indexes = [
-            models.Index(fields=['-date']),
-            models.Index(fields=['is_completed', '-date']),
-            models.Index(fields=['event_type', '-date']),
-        ]
-
-    def save(self, *args, **kwargs):
-        if not self.event_id:
-            import uuid
-            self.event_id = str(uuid.uuid4())[:8]
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name} ({self.get_event_type_display()}) - {self.date.strftime('%Y-%m-%d')}"
 
-    def calculate_max_points(self):
-        """Hitung poin maksimal yang bisa didapat dari event ini"""
-        if self.event_type == 'INVASION':
-            base = 5
-            boss_points = 0
-            boss_point_map = {
-                'carnifex': self.carnifex_points,
-                'orfen': self.orfen_points,
-                'dragon_beast': self.dragon_beast_points,
-                'latana': self.latana_points,
-                'kain_van_halter': self.kain_van_halter_points,
-                'balthazar': self.balthazar_points,
-                'core': self.core_points,
-            }
-            if self.bosses_killed:
-                for boss, killed in self.bosses_killed.items():
-                    if killed:
-                        boss_points += boss_point_map.get(boss, 0)
-            return base + boss_points
-        elif self.event_type == 'BOSS_RUSH':
-            return 10 if self.is_win else 5
-        elif self.event_type == 'CATACOMBS':
-            return 10 if self.is_win else 5
-        elif self.event_type == 'DIMENSIONAL_SIEGE':
-            return 15 if self.is_win else 8
-        elif self.event_type == 'CUSTOM':
-            return self.custom_points
-        return 5
-
 
 class PlayerActivity(models.Model):
-    """Model untuk tracking partisipasi player di setiap event"""
+    """Model untuk mencatat kehadiran player di setiap event"""
     STATUS_CHOICES = (
-        ('ATTENDED', 'Hadir'),
-        ('ABSENT', 'Tidak Hadir'),
+        ('ATTENDED', '✅ Attended'),
+        ('ABSENT', '❌ Absent'),
     )
 
-    player = models.ForeignKey(
-        Character,
-        on_delete=models.CASCADE,
-        related_name='activities',
-        verbose_name="Karakter"
-    )
-    event = models.ForeignKey(
-        ActivityEvent,
-        on_delete=models.CASCADE,
-        related_name='participants',
-        verbose_name="Event"
-    )
-    discord_user_id = models.CharField("Discord User ID", max_length=50, blank=True)
+    player = models.ForeignKey(Character, on_delete=models.CASCADE, related_name='activities', verbose_name="Karakter")
+    event = models.ForeignKey(ActivityEvent, on_delete=models.CASCADE, related_name='participants', verbose_name="Event")
     status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default='ATTENDED')
     points_earned = models.IntegerField("Poin Didapat", default=0)
-    checked_in_at = models.DateTimeField("Waktu Check-In", auto_now_add=True)
-    bosses_killed = models.JSONField(
-        "Boss Terbunuh (Individual)",
-        default=dict,
-        blank=True,
-        help_text="Spesifik untuk player ini: {'dragon_beast': true, 'carnifex': false, ...}"
-    )
+    checked_in_at = models.DateTimeField("Check-in Time", null=True, blank=True)
+    discord_user_id = models.CharField("Discord User ID", max_length=100, blank=True)
+    
+    # Boss kills tracking for INVASION events
+    bosses_killed = models.JSONField("Bosses Killed", default=dict, blank=True,
+        help_text="Track individual boss kills: {'boss1': true, 'boss2': false}")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ['player', 'event']
         ordering = ['-event__date']
         verbose_name = "Player Activity"
         verbose_name_plural = "Player Activities"
-        indexes = [
-            models.Index(fields=['player', 'status']),
-            models.Index(fields=['event', 'status']),
-        ]
 
     def save(self, *args, **kwargs):
-        if self.status == 'ATTENDED' and self.points_earned == 0:
-            self.points_earned = self.event.calculate_max_points()
+        # Skip automatic point calculation for manual adjustments
+        if self.event.name.startswith('AP Adjustment:') or self.event.name.startswith('Score Adjustment:'):
+            super().save(*args, **kwargs)
+            return
+            
+        if self.status == 'ATTENDED':
+            # For INVASION events, points come ONLY from boss kills (no base attendance)
+            if self.event.event_type == 'INVASION':
+                boss_points = 0
+                boss_point_map = self.event.boss_point_config or {}
+                if self.bosses_killed:
+                    for boss, killed in self.bosses_killed.items():
+                        if killed:
+                            boss_points += boss_point_map.get(boss, 0)
+                self.points_earned = boss_points
+            else:
+                self.points_earned = self.event.calculate_max_points()
+        elif self.status == 'ABSENT':
+            # Deduct points if it's a mandatory event, otherwise 0
+            if self.event.is_mandatory:
+                self.points_earned = -abs(self.event.mandatory_penalty)
+            else:
+                self.points_earned = 0
+                
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.player.name} - {self.event.name} ({self.get_status_display()})"
 
+    @property
+    def is_adjustment(self):
+        return self.event.name.startswith('AP Adjustment:') or self.event.name.startswith('Score Adjustment:')
+
+    @property
+    def adjustment_type(self):
+        if self.event.name.startswith('AP Adjustment:'):
+            return "AP Adjustment"
+        elif self.event.name.startswith('Score Adjustment:'):
+            return "Score Adjustment"
+        return ""
+
+    @property
+    def adjustment_reason(self):
+        if self.is_adjustment:
+            parts = self.event.name.split(':', 1)
+            if len(parts) > 1:
+                return parts[1].strip()
+        return ""
+
 
 class PrizePoolConfig(models.Model):
     """Configuration for Prize Pool calculation."""
     total_pool = models.IntegerField("Total Prize Pool", default=10000)
-    elite_percentage = models.FloatField("Elite %", default=0.70)
-    core_percentage = models.FloatField("Core %", default=0.20)
-    active_percentage = models.FloatField("Active %", default=0.10)
+    elite_percentage = models.FloatField("Elite %", default=0.20)
+    core_percentage = models.FloatField("Core %", default=0.80)
     casual_percentage = models.FloatField("Casual %", default=0.00)
     updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.CharField(max_length=100, blank=True)
 
     def save(self, *args, **kwargs):
-        total = self.elite_percentage + self.core_percentage + self.active_percentage + self.casual_percentage
+        total = self.elite_percentage + self.core_percentage + self.casual_percentage
         if abs(total - 1.0) > 0.01:
             pass
         super().save(*args, **kwargs)
@@ -1476,6 +1527,25 @@ class PrizePoolConfig(models.Model):
         return f"Prize Pool: {self.total_pool}"
 
 
+class LeaderboardConfig(models.Model):
+    """Singleton config for leaderboard reset timestamps."""
+    weekly_reset_at = models.DateTimeField("Weekly Reset At", null=True, blank=True,
+        help_text="Timestamp of the last weekly reset. Weekly ranking only shows events after this time.")
+
+    class Meta:
+        verbose_name = "Leaderboard Configuration"
+        verbose_name_plural = "Leaderboard Configurations"
+
+    def __str__(self):
+        return f"Leaderboard Config (weekly reset: {self.weekly_reset_at})"
+
+    @classmethod
+    def get_config(cls):
+        """Get or create the singleton config."""
+        config, _ = cls.objects.get_or_create(pk=1)
+        return config
+
+
 # ======================================================
 # MONTHLY RECAPS FOR DKP SYSTEM
 # ======================================================
@@ -1485,7 +1555,6 @@ class MonthlyReport(models.Model):
     TIER_CHOICES = (
         ('ELITE', '🏆 Elite'),
         ('CORE', '⚔️ Core'),
-        ('ACTIVE', '🛡️ Active'),
         ('CASUAL', '🌱 Casual'),
     )
 
@@ -1497,6 +1566,8 @@ class MonthlyReport(models.Model):
     activity_score = models.IntegerField("Skor Aktivitas", default=0)
     consistency_bonus = models.IntegerField("Bonus Konsistensi", default=0)
     decay_penalty = models.IntegerField("Decay Penalty", default=0)
+    mandatory_penalty = models.IntegerField("Mandatory Penalty", default=0, help_text="Penalty dari event mandatory yang tidak dihadiri")
+    score_adjustment = models.IntegerField("Score Adjustment", default=0, help_text="Penyesuaian manual oleh admin")
     total_score = models.IntegerField("Total Skor", default=0)
     tier = models.CharField("Tier", max_length=20, choices=TIER_CHOICES, default='CASUAL')
     is_qualified = models.BooleanField("Qualified untuk Reward", default=False)
@@ -1505,17 +1576,22 @@ class MonthlyReport(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def calculate_tier(self):
-        """Determine tier based on total score"""
-        if self.attendance_rate >= 0.8 and self.total_score >= 80:
-            return 'ELITE'
-        elif self.attendance_rate >= 0.6 and self.total_score >= 50:
+        """Determine tier based on number of attended activities"""
+        # Core: 40+ activities
+        if self.attended_events >= 40:
             return 'CORE'
-        elif self.attendance_rate >= 0.3:
-            return 'ACTIVE'
+        # Elite: 20-39 activities
+        elif self.attended_events >= 20:
+            return 'ELITE'
+        # Casual: 1-19 activities
         return 'CASUAL'
 
     def calculate_consistency_bonus(self):
-        """Calculate consistency bonus based on attendance rate"""
+        """Calculate consistency bonus based on attendance rate.
+        Require at least 3 events in the month to prove 'consistency'."""
+        if self.total_events < 3:
+            return 0
+            
         if self.attendance_rate >= 0.9:
             return 20
         elif self.attendance_rate >= 0.8:
@@ -1527,10 +1603,10 @@ class MonthlyReport(models.Model):
         return 0
 
     def save(self, *args, **kwargs):
-        self.tier = self.calculate_tier()
         self.consistency_bonus = self.calculate_consistency_bonus()
-        self.total_score = self.activity_score + self.consistency_bonus - self.decay_penalty
-        self.is_qualified = self.tier in ['ELITE', 'CORE', 'ACTIVE']
+        self.total_score = self.activity_score + self.consistency_bonus - self.decay_penalty - self.mandatory_penalty + getattr(self, 'score_adjustment', 0)
+        self.tier = self.calculate_tier()
+        self.is_qualified = self.tier in ['ELITE', 'CORE']
         super().save(*args, **kwargs)
 
     def __str__(self):
