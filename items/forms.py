@@ -129,7 +129,7 @@ class CharacterForm(forms.ModelForm):
                 default=Value(1),
                 output_field=IntegerField()
             )
-        ).order_by('sort_order', 'id')
+        ).order_by('sort_order', 'name')
 
         self.fields['legendary_skins'].queryset = LegendarySkin.objects.annotate(
             sort_order=Case(
@@ -137,7 +137,7 @@ class CharacterForm(forms.ModelForm):
                 default=Value(1),
                 output_field=IntegerField()
             )
-        ).order_by('sort_order', 'id')
+        ).order_by('sort_order', 'name')
 
         self.fields['legendary_classes'].queryset = LegendaryClass.objects.annotate(
             sort_order=Case(
@@ -145,7 +145,7 @@ class CharacterForm(forms.ModelForm):
                 default=Value(1),
                 output_field=IntegerField()
             )
-        ).order_by('sort_order', 'id')
+        ).order_by('sort_order', 'name')
 
         self.fields['legendary_agathions'].queryset = LegendaryAgathion.objects.annotate(
             sort_order=Case(
@@ -153,7 +153,7 @@ class CharacterForm(forms.ModelForm):
                 default=Value(1),
                 output_field=IntegerField()
             )
-        ).order_by('sort_order', 'id')
+        ).order_by('sort_order', 'name')
 
         self.fields['legendary_mounts'].queryset = LegendaryMount.objects.annotate(
             sort_order=Case(
@@ -161,7 +161,7 @@ class CharacterForm(forms.ModelForm):
                 default=Value(1),
                 output_field=IntegerField()
             )
-        ).order_by('sort_order', 'id')
+        ).order_by('sort_order', 'name')
 
         # Tambahkan opsi '----' (None) di awal queryset yang di-filter
         for field_name, field in self.fields.items():
