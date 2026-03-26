@@ -1122,7 +1122,7 @@ def record_attendance(request, event_pk):
     
     event = get_object_or_404(ActivityEvent, pk=event_pk)
     # Optimized: prefetch related data
-    all_characters = Character.objects.all().select_related('owner').only('id', 'name', 'level', 'character_class', 'owner_id')
+    all_characters = Character.objects.all().select_related('owner').only('id', 'name', 'level', 'character_class', 'owner_id').order_by('name')
     
     # Get existing attendance details
     attendance_map = {}
