@@ -63,5 +63,5 @@ ssh_pass.bat
 # OS
 .DS_Store
 
-# Static root (collected)
-static/
+# Static root (collected) - only top-level
+/static/
