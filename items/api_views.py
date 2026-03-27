@@ -491,6 +491,24 @@ def api_toggle_event_status(request, event_pk):
                     boss_point_config=event.boss_point_config,
                 )
         
+        # Auto-announce to Discord when event is COMPLETED
+        if event.is_completed:
+            participant_count = event.participants.filter(status='ATTENDED').count()
+            max_pts = event.calculate_max_points()
+            result_text = "WIN" if event.is_win else "LOSE"
+            
+            announcement_msg = (
+                f"[NOTIFICATION]@everyone 📢 **The event has ended!**\n\n"
+                f"🏆 **EVENT COMPLETED!**\n"
+                f"**{event.name}** has been completed.\n\n"
+                f"🔴 **Status:** COMPLETED - Check-in closed\n"
+                f"⭐ **Max Points:** {max_pts} pts\n"
+                f"👥 **Participants:** {participant_count} players\n"
+                f"🏅 **Result:** {'✅ ' + result_text if event.is_win else '❌ ' + result_text}\n\n"
+                f"*Points have been calculated and added to the leaderboard!*"
+            )
+            DiscordAnnouncement.objects.create(message=announcement_msg)
+        
         status_text = "Completed" if event.is_completed else "Re-opened"
         return JsonResponse({
             'success': True, 

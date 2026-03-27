@@ -181,9 +181,9 @@ class AltoBot(commands.Cog):
         if result.get('success') and result.get('events'):
             # Create dropdown menu
             view = EventSelectView(result['events'], self)
-            await interaction.followup.send("Pilih event yang ingin di-post:", view=view)
+            await interaction.followup.send("Select an event to post:", view=view)
         else:
-            await interaction.followup.send("❌ Tidak ada event aktif di website. Silakan buat event di website terlebih dahulu.", ephemeral=True)
+            await interaction.followup.send("❌ No active events on the website. Please create an event on the website first.", ephemeral=True)
 
 
     
@@ -224,16 +224,16 @@ class AltoBot(commands.Cog):
         
         if result.get('success'):
             embed = discord.Embed(
-                title="🏆 EVENT SELESAI!",
-                description=f"Event `{event_id}` telah diselesaikan.",
+                title="🏆 EVENT COMPLETED!",
+                description=f"Event `{event_id}` has been completed.",
                 color=discord.Color.gold()
             )
-            embed.add_field(name="Status", value="🔴 SELESAI - Check-in ditutup", inline=False)
+            embed.add_field(name="Status", value="🔴 COMPLETED - Check-in closed", inline=False)
             embed.add_field(name="Max Points", value=f"{result['max_points']} pts", inline=True)
-            embed.add_field(name="Peserta", value=f"{result['participants']} player", inline=True)
-            embed.add_field(name="Hasil", value="✅ WIN" if win else "❌ LOSE", inline=True)
-            embed.set_footer(text="Poin sudah dihitung dan ditambahkan ke leaderboard!")
-            await interaction.followup.send(embed=embed)
+            embed.add_field(name="Participants", value=f"{result['participants']} players", inline=True)
+            embed.add_field(name="Result", value="✅ WIN" if win else "❌ LOSE", inline=True)
+            embed.set_footer(text="Points have been calculated and added to the leaderboard!")
+            await interaction.followup.send("@everyone 📢 **The event has ended!**", embed=embed)
         else:
             await interaction.followup.send(f"❌ Error: {result.get('error', 'Unknown error')}", ephemeral=True)
     
@@ -258,7 +258,7 @@ class AltoBot(commands.Cog):
             await interaction.followup.send(embed=embed, ephemeral=True)
         elif result.get('error') == 'Discord not linked to any Character':
             await interaction.followup.send(
-                "❌ **Discord belum ter-link!**\nSilakan link Discord di website profile terlebih dahulu.",
+                "❌ **Discord not linked!**\nPlease link your Discord in website profile first.",
                 ephemeral=True
             )
         else:
@@ -315,13 +315,13 @@ class AltoBot(commands.Cog):
         
         if result.get('success'):
             if not result['events']:
-                await interaction.followup.send("ℹ️ Tidak ada event DKP yang aktif saat ini.", ephemeral=True)
+                await interaction.followup.send("ℹ️ No active DKP events at this time.", ephemeral=True)
                 return
             
             msg = "**⚔️ Active DKP Events:**\n"
             for e in result['events']:
                 msg += f"• **{e['name']}** (ID: {e['id']}) - Reward: {e['points']} DKP\n"
-            msg += "\nGunakan `/dkp checkin <event_id> <character_name>` untuk absen."
+            msg += "\nUse `/dkp checkin <event_id> <character_name>` to check in."
             await interaction.followup.send(msg, ephemeral=True)
         else:
             await interaction.followup.send(f"❌ Error: {result.get('error', 'Connection failed')}", ephemeral=True)
@@ -343,7 +343,7 @@ class AltoBot(commands.Cog):
             )
         elif result.get('error') == 'Discord not linked to any Character':
             await interaction.followup.send(
-                "❌ **Discord belum ter-link!**\nSilakan link Discord di website profile terlebih dahulu.",
+                "❌ **Discord not linked!**\nPlease link your Discord in website profile first.",
                 ephemeral=True
             )
         else:
@@ -358,9 +358,9 @@ class AltoBot(commands.Cog):
         
         if result.get('success') and result.get('events'):
             view = DKPEventSelectView(result['events'], self)
-            await interaction.followup.send("Pilih Event DKP yang ingin diposting:", view=view)
+            await interaction.followup.send("Select a DKP Event to post:", view=view)
         else:
-            await interaction.followup.send("❌ Tidak ada event DKP aktif.", ephemeral=True)
+            await interaction.followup.send("❌ No active DKP events.", ephemeral=True)
 
     @dkp_group.command(name="leaderboard", description="Top DKP Holders")
     async def dkp_leaderboard(self, interaction: discord.Interaction):
@@ -417,14 +417,14 @@ class EventSelect(discord.ui.Select):
         elif event_type == "CATACOMBS": type_emoji = "🏛️"
         
         embed = discord.Embed(
-            title=f"{type_emoji} EVENT DIBUAT!",
+            title=f"{type_emoji} EVENT CREATED!",
             description=f"**{event_name}**",
             color=discord.Color.green()
         )
         embed.add_field(name="Event ID", value=f"`{event_id}`", inline=True)
         embed.add_field(name="Type", value=event_type.replace('_', ' '), inline=True)
-        embed.add_field(name="Status", value="🟢 AKTIF - Check-in dibuka!", inline=False)
-        embed.set_footer(text="⬇️ Klik tombol Check In di bawah untuk bergabung!")
+        embed.add_field(name="Status", value="🟢 ACTIVE - Check-in open!", inline=False)
+        embed.set_footer(text="⬇️ Click the Check In button below to join!")
         
         view = CheckInView(event_id, self.cog)
         await interaction.response.send_message(embed=embed, view=view)
@@ -454,27 +454,27 @@ class CheckInView(discord.ui.View):
         if result.get('success'):
             if result.get('already_checked_in'):
                 await interaction.followup.send(
-                    f"⚠️ **{result['character']}** sudah check-in sebelumnya! (Poin tidak bertambah)",
+                    f"⚠️ **{result['character']}** already checked in! (No extra points)",
                     ephemeral=True
                 )
             else:
                 await interaction.followup.send(
-                    f"✅ **{result['character']}** berhasil check-in! (+{result['points']} pts)",
+                    f"✅ **{result['character']}** successfully checked in! (+{result['points']} pts)",
                     ephemeral=True
                 )
         elif result.get('error') == 'Discord not linked':
             await interaction.followup.send(
-                "❌ **Discord belum ter-link!**\n\n"
-                "Silakan link Discord kamu di website terlebih dahulu:\n"
-                "1. Buka website → Character Profile\n"
-                "2. Klik tombol **Link Discord**\n"
-                "3. Masukkan Discord ID kamu\n"
-                "4. Coba Check In lagi",
+                "❌ **Discord not linked!**\n\n"
+                "Please link your Discord on the website first:\n"
+                "1. Go to website → Character Profile\n"
+                "2. Click **Link Discord** button\n"
+                "3. Enter your Discord ID\n"
+                "4. Try Check In again",
                 ephemeral=True
             )
         else:
             await interaction.followup.send(
-                f"❌ {result.get('message', result.get('error', 'Check-in gagal'))}",
+                f"❌ {result.get('message', result.get('error', 'Check-in failed'))}",
                 ephemeral=True
             )
 
@@ -506,7 +506,7 @@ class DKPEventSelect(discord.ui.Select):
         
         embed = discord.Embed(
             title="⚔️ DKP RAID EVENT",
-            description=f"**{name}**\n\nKlik tombol di bawah untuk Check-in kehadiran!\nPoin akan masuk setelah diverifikasi Leader.",
+            description=f"**{name}**\n\nClick the button below to check in!\nPoints will be added after Leader verification.",
             color=discord.Color.gold()
         )
         embed.set_footer(text="Only verified characters will receive DKP.")
@@ -537,40 +537,42 @@ class DKPCheckInButtonView(discord.ui.View):
             char_name = result.get('character', 'Unknown')
             
             if result.get('already_checked_in'):
-                 msg = f"⚠️ **{char_name}** sudah check-in sebelumnya! (Poin tidak bertambah)"
+                 msg = f"⚠️ **{char_name}** already checked in! (No extra points)"
             elif status == 'Verified':
-                msg = f"✅ **{char_name}** sudah terverifikasi!"
+                msg = f"✅ **{char_name}** has been verified!"
             else:
-                msg = f"⏳ **{char_name}** berhasil absen!\nStatus: **Pending Verification** (Menunggu Admin)."
+                msg = f"⏳ **{char_name}** successfully checked in!\nStatus: **Pending Verification** (Awaiting Admin)."
                 
             await interaction.followup.send(msg, ephemeral=True)
         elif result.get('error') == 'Discord not linked':
-            await interaction.followup.send("❌ Discord belum terhubung ke karakter website!", ephemeral=True)
+            await interaction.followup.send("❌ Discord not linked to any website character!", ephemeral=True)
         else:
-            await interaction.followup.send(f"❌ Gagal: {result.get('error')}", ephemeral=True)
+            await interaction.followup.send(f"❌ Failed: {result.get('error')}", ephemeral=True)
 
 
 @bot.event
 async def on_ready():
-    print(f'✅ {bot.user} is now running!')
-    print(f'📡 API URL: {API_BASE_URL}')
+    print(f'[OK] {bot.user} is now running!')
+    print(f'[API] API URL: {API_BASE_URL}')
+    print(f'[GUILDS] Connected to {len(bot.guilds)} server(s):')
+    for g in bot.guilds:
+        print(f'  - {g.name} (ID: {g.id})')
     
     # Sync slash commands
     try:
         alto_cog = AltoBot(bot)
         await bot.add_cog(alto_cog)
         
-        # Sync Global Commands (Includes DKP Group inside AltoBot)
         synced = await bot.tree.sync()
-        print(f'⚡ Synced {len(synced)} commands (AltoBot)')
+        print(f'[SYNC] Synced {len(synced)} commands (Global)')
     except Exception as e:
-        print(f'❌ Error syncing commands: {e}')
+        print(f'[ERROR] Error syncing commands: {e}')
 
 
 def run_bot():
     """Run the Discord bot"""
     if DISCORD_TOKEN == 'YOUR_BOT_TOKEN_HERE':
-        print("❌ Please set DISCORD_BOT_TOKEN environment variable!")
+        print("[ERROR] Please set DISCORD_BOT_TOKEN environment variable!")
         print("   Example: set DISCORD_BOT_TOKEN=your_token_here")
         return
     
