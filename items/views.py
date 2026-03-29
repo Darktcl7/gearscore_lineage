@@ -1067,12 +1067,32 @@ def complete_event(request, event_pk):
         return HttpResponseForbidden("Only administrators can manage events.")
     
     if request.method == 'POST':
-        from items.models import ActivityEvent
+        from items.models import ActivityEvent, PlayerActivity, DiscordAnnouncement
         event = get_object_or_404(ActivityEvent, pk=event_pk)
         result = request.POST.get('result', 'win')
         event.is_completed = True
         event.is_win = (result == 'win')
         event.save()
+        
+        # Count participants
+        participant_count = PlayerActivity.objects.filter(event=event).count()
+        result_text = "✅ WIN" if event.is_win else "❌ LOSE"
+        
+        # Create Discord announcement
+        announcement_msg = (
+            f"@everyone 📢 **The event has ended!**\n\n"
+            f"🏆 **EVENT COMPLETED!**\n"
+            f"**{event.name}** has been completed.\n\n"
+            f"🔴 **Status:** COMPLETED - Check-in closed\n"
+            f"⭐ **Max Points:** {event.max_points} pts\n"
+            f"👥 **Participants:** {participant_count} players\n"
+            f"🏅 **Result:** {result_text}\n\n"
+            f"Points have been calculated and added to the leaderboard!"
+        )
+        try:
+            DiscordAnnouncement.objects.create(message=announcement_msg)
+        except Exception:
+            pass
         
         # Recalculate win streak bonuses
         try:
