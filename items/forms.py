@@ -347,6 +347,7 @@ class CharacterAttributesForm(ModelForm):
             'soul_prog_defense': 'What are your soul progression defense effects?',
             'soul_prog_blessing': 'What are your soul progression blessings effects?',
             'soul_prog_accuracy': 'What are your soul progression Accuracy effects?',
+            'soul_prog_duel': 'What are your soul progression Duel effects?',
             'enchant_bracelet_holy_prot': 'Enchant Bracelet of Holy Protection',
             'enchant_bracelet_influence': 'Enchant Bracelet of Influence',
             'enchant_earring_earth': "Enchant Earth Dragon's Earring",
@@ -417,7 +418,7 @@ class CharacterAttributesForm(ModelForm):
             self.fields['unlocked_skills'].label = ''
             
         # Remove the '---------' empty option from soul progression dropdowns
-        for field_name in ['soul_prog_attack', 'soul_prog_defense', 'soul_prog_blessing', 'soul_prog_accuracy']:
+        for field_name in ['soul_prog_attack', 'soul_prog_defense', 'soul_prog_blessing', 'soul_prog_accuracy', 'soul_prog_duel']:
             if field_name in self.fields and hasattr(self.fields[field_name], 'choices'):
                 # Extract choices and filter out the empty one
                 self.fields[field_name].choices = [c for c in self.fields[field_name].choices if str(c[0]) != '']

@@ -456,14 +456,11 @@
                         {% if not event.is_completed %}
                         <span style="color: #666;">-</span>
                         {% else %}
-                        <button onclick="toggleEventResult('{{ event.pk }}')"
-                            style="background:none;border:none;cursor:pointer;padding:0;">
                             {% if event.is_win %}
                             <span class="win-badge"><i class="fas fa-trophy"></i> Win</span>
                             {% else %}
                             <span class="lose-badge"><i class="fas fa-times"></i> Lose</span>
                             {% endif %}
-                        </button>
                         {% endif %}
                     </td>
                     <td>
@@ -570,11 +567,38 @@
                 }
                 else if (actionType === 'complete') {
                     title.innerHTML = '<i class="fas fa-check-circle"></i> Complete Event';
-                    message.innerHTML = `Mark event <strong>${eventName}</strong> as Completed?`;
+                    message.innerHTML = 'Mark event <strong>' + eventName + '</strong> as Completed?' +
+                        '<div style="margin-top:16px; display:flex; gap:16px; justify-content:center;">' +
+                        '<label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:10px 20px; border:2px solid #2ecc71; border-radius:8px; color:#2ecc71; font-weight:600;">' +
+                        '<input type="radio" name="event_result" value="win" checked style="width:16px;height:16px;"> <i class="fas fa-trophy"></i> Win</label>' +
+                        '<label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:10px 20px; border:2px solid #e74c3c; border-radius:8px; color:#e74c3c; font-weight:600;">' +
+                        '<input type="radio" name="event_result" value="lose" style="width:16px;height:16px;"> <i class="fas fa-skull"></i> Lose</label>' +
+                        '</div>';
                     confirmBtn.innerText = 'Complete Event';
                     confirmBtn.classList.add('btn-complete');
-                    // Toggle uses PK (Integer)
-                    confirmBtn.onclick = function () { toggleEventStatus(pk); };
+                    confirmBtn.onclick = function () {
+                        var radio = document.querySelector('input[name="event_result"]:checked');
+                        var resultVal = radio ? radio.value : 'win';
+                        
+                        var form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = '/portal/activity/events/' + pk + '/complete/';
+                        
+                        var csrf = document.createElement('input');
+                        csrf.type = 'hidden';
+                        csrf.name = 'csrfmiddlewaretoken';
+                        csrf.value = getCookie('csrftoken');
+                        form.appendChild(csrf);
+                        
+                        var res = document.createElement('input');
+                        res.type = 'hidden';
+                        res.name = 'result';
+                        res.value = resultVal;
+                        form.appendChild(res);
+                        
+                        document.body.appendChild(form);
+                        form.submit();
+                    };
                 }
                 else if (actionType === 'reopen') {
                     title.innerHTML = '<i class="fas fa-undo"></i> Reopen Event';
@@ -680,6 +704,40 @@
                         alert('Error updating status');
                         console.error(err);
                     });
+            }
+
+            // Complete event + set Win/Lose result (single API call)
+            function completeEventWithResult(eventPk) {
+                var resultRadio = document.querySelector('input[name="event_result"]:checked');
+                var isWin = resultRadio ? resultRadio.value === 'win' : true;
+                
+                console.log('Completing event:', eventPk, 'isWin:', isWin);
+                
+                fetch('/portal/api/activity/event/' + eventPk + '/toggle-status/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': 'alto-discord-bot-key-2026'
+                    },
+                    body: JSON.stringify({ is_win: isWin })
+                })
+                .then(function(r) {
+                    console.log('Response status:', r.status);
+                    return r.json();
+                })
+                .then(function(data) {
+                    console.log('Response data:', data);
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert('Error: ' + (data.error || 'Unknown error'));
+                        closeActionModal();
+                    }
+                })
+                .catch(function(err) { 
+                    console.error('Fetch error:', err);
+                    alert('Error completing event: ' + err.message); 
+                });
             }
 
             // Existing toggleEventResult (for Win/Lose button)

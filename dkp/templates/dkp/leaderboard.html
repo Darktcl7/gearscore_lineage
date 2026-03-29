@@ -357,11 +357,56 @@
             <p style="color:#666; margin:5px 0 0 0;">Dragon Kill Points System • Raid Distribution Currency</p>
         </div>
         <div style="display:flex; gap:10px; align-items:center;">
+            {% if is_admin %}
+            <form action="{% url 'dkp-reset-lifetime' %}" method="POST" onsubmit="return confirm('Reset ALL Lifetime Earned to 0?\nThis action cannot be undone!');" style="margin:0;">
+                {% csrf_token %}
+                <button type="submit" style="
+                    background: rgba(231, 76, 60, 0.2);
+                    border: 1px solid #e74c3c;
+                    color: #e74c3c;
+                    padding: 8px 15px;
+                    border-radius: 8px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 0.85rem;
+                " onmouseover="this.style.background='rgba(231,76,60,0.4)'" onmouseout="this.style.background='rgba(231,76,60,0.2)'">
+                    <i class="fas fa-undo"></i> Reset Lifetime
+                </button>
+            </form>
+            {% endif %}
             <span
                 style="background:rgba(255,215,0,0.1); border:1px solid rgba(255,215,0,0.3); padding:5px 15px; border-radius:20px; color:#FFD700; font-size:0.9rem;">
                 System Status: Active
             </span>
         </div>
+    </div>
+
+    <!-- Clan Filter -->
+    <div style="display: flex; gap: 8px; padding: 10px 0; margin-bottom: 10px; align-items: center;">
+        <span style="color: #888; font-size: 0.85rem; margin-right: 5px;"><i class="fas fa-shield-alt"></i> Clan:</span>
+        {% for clan in clan_choices %}
+        <a href="?clan={{ clan }}" style="
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+            {% if selected_clan == clan %}
+                background: linear-gradient(135deg, #FFD700, #b8860b);
+                color: #000;
+                box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+            {% else %}
+                background: rgba(255,255,255,0.08);
+                color: #aaa;
+                border: 1px solid rgba(255,255,255,0.1);
+            {% endif %}
+        ">{{ clan }}</a>
+        {% endfor %}
     </div>
 
     <div class="table-wrapper">

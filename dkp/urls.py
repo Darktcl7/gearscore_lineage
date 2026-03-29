@@ -19,8 +19,12 @@ urlpatterns = [
     path('board/give-selected/', views.dkp_give_selected, name='dkp-give-selected'),
     path('board/remove-selected/', views.dkp_remove_selected, name='dkp-remove-selected'),
     path('board/decay-selected/', views.dkp_decay_selected, name='dkp-decay-selected'),
+    path('board/reset-lifetime/', views.dkp_reset_lifetime, name='dkp-reset-lifetime'),
     path('my-profile/', views.dkp_my_profile, name='web-dkp-my-profile'),
     path('profile/<int:user_id>/', views.dkp_user_profile, name='web-dkp-user-profile'),
     path('manage/', views.dkp_manage, name='web-dkp-manage'),
+    path('manage/boss-config/', views.boss_point_config_get, name='boss-config-get'),
+    path('manage/boss-config/save/', views.boss_point_config_save, name='boss-config-save'),
     path('manage/event/<int:event_id>/attendance/', views.dkp_attendance_list, name='web-dkp-attendance'),
+    path('reset-data/', views.dkp_reset_data, name='reset-dkp-data'),
 ]

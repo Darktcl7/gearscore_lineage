@@ -698,8 +698,8 @@
                 <div class="dropdown">
                     <a href="#" class="dropbtn" style="cursor: default;">Activity Event ▾</a>
                     <div class="dropdown-content">
-                        <!-- 1. Battle Command (Admin Only) -->
-                        {% if user.is_staff %}
+                        <!-- 1. Battle Command (Admin/Sub Admin) -->
+                        {% if user.is_staff or "Sub Admin" in user.groups.all|join:", " %}
                         <a href="{% url 'manage-events' %}" style="color: #FF7777;">Battle Command</a>
                         {% endif %}
 
@@ -717,8 +717,8 @@
                 <div class="dropdown">
                     <a href="#" class="dropbtn" style="cursor: default;">DKP System ▾</a>
                     <div class="dropdown-content">
-                        <!-- 1. DKP Control (Admin Only) -->
-                        {% if user.is_staff %}
+                        <!-- 1. DKP Control (Admin/Sub Admin) -->
+                        {% if user.is_staff or "Sub Admin" in user.groups.all|join:", " %}
                         <a href="{% url 'web-dkp-manage' %}" style="color: #FF7777;">DKP Control</a>
                         {% endif %}
 
@@ -732,7 +732,7 @@
                     </div>
                 </div>
 
-                {% if user.is_staff %}
+                {% if user.is_staff or "Sub Admin" in user.groups.all|join:", " %}
                 <a href="{% url 'item-list' %}"
                     class="{% if request.resolver_match.url_name == 'item-list' %}active{% endif %}">Armory</a>
 
@@ -741,7 +741,9 @@
                     <a href="#" class="dropbtn" style="cursor: default;">Admin Panel ▾</a>
                     <div class="dropdown-content">
                         <a href="{% url 'character-management' %}">Character Management</a>
+                        {% if user.is_staff %}
                         <a href="{% url 'discord-dashboard' %}">Discord Control</a>
+                        {% endif %}
                     </div>
                 </div>
                 {% endif %}

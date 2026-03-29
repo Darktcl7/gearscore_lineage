@@ -462,6 +462,7 @@ def api_get_active_events(request):
 def api_toggle_event_status(request, event_pk):
     """
     Toggle event status (Open/Completed).
+    Accepts optional JSON body: { "is_win": true/false }
     """
     if not verify_api_key(request):
         return JsonResponse({'error': 'Invalid API key'}, status=401)
@@ -469,6 +470,16 @@ def api_toggle_event_status(request, event_pk):
     try:
         event = ActivityEvent.objects.get(pk=event_pk)
         event.is_completed = not event.is_completed
+        
+        # Accept is_win from request body when completing
+        if event.is_completed:
+            try:
+                data = json.loads(request.body) if request.body else {}
+                if 'is_win' in data:
+                    event.is_win = data['is_win']
+            except (json.JSONDecodeError, ValueError):
+                pass
+        
         event.save()
         
         # Auto-repeat logic 
@@ -508,6 +519,12 @@ def api_toggle_event_status(request, event_pk):
                 f"*Points have been calculated and added to the leaderboard!*"
             )
             DiscordAnnouncement.objects.create(message=announcement_msg)
+            
+            # Recalculate win streak bonuses
+            try:
+                recalculate_win_streak_bonuses()
+            except Exception:
+                pass
         
         status_text = "Completed" if event.is_completed else "Re-opened"
         return JsonResponse({
@@ -540,6 +557,9 @@ def api_toggle_event_result(request, event_pk):
         # Recalculate points for all participants because result changed points
         recalculate_event_points(event)
         
+        # Recalculate win streak bonuses for all players
+        recalculate_win_streak_bonuses()
+        
         # Also need to update monthly reports since points changed
         calculate_monthly_reports(event.date.year, event.date.month)
 
@@ -554,6 +574,63 @@ def api_toggle_event_result(request, event_pk):
         return JsonResponse({'error': 'Event not found'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+
+
+def recalculate_win_streak_bonuses():
+    """
+    Recalculate win streak bonuses for ALL players across ALL completed events.
+    For each player, walk ALL completed events chronologically:
+    - Player attended + event Win → streak += 1, bonus = max(0, streak - 1)
+    - Player attended + event Lose → streak = 0, bonus = 0
+    - Player did NOT attend → streak = 0 (non-participation = streak reset)
+    """
+    from items.models import PlayerActivity, ActivityEvent, Character
+    
+    # Get all completed events (excluding adjustments), ordered by date
+    completed_events = ActivityEvent.objects.filter(
+        is_completed=True,
+    ).exclude(
+        name__startswith='AP Adjustment:'
+    ).exclude(
+        name__startswith='Score Adjustment:'
+    ).order_by('date')
+    
+    # Get all players who have any activity
+    player_ids = PlayerActivity.objects.filter(
+        status='ATTENDED'
+    ).exclude(
+        event__name__startswith='AP Adjustment:'
+    ).exclude(
+        event__name__startswith='Score Adjustment:'
+    ).values_list('player_id', flat=True).distinct()
+    
+    for player_id in player_ids:
+        # Build a set of event IDs this player attended
+        attended_event_ids = set(
+            PlayerActivity.objects.filter(
+                player_id=player_id,
+                status='ATTENDED',
+            ).values_list('event_id', flat=True)
+        )
+        
+        streak = 0
+        for event in completed_events:
+            attended = event.pk in attended_event_ids
+            
+            if attended and event.is_win:
+                streak += 1
+                bonus = max(0, streak - 1)
+            else:
+                # Lose OR not attended → reset streak
+                streak = 0
+                bonus = 0
+            
+            # Update PlayerActivity record if player attended this event
+            if attended:
+                PlayerActivity.objects.filter(
+                    player_id=player_id,
+                    event=event,
+                ).exclude(win_streak_bonus=bonus).update(win_streak_bonus=bonus)
 
 
 @csrf_exempt

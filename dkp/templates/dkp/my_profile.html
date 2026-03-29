@@ -135,8 +135,15 @@
             </div>
         </div>
 
-        <h4 style="margin:0 0 10px 0; color:#666; text-transform:uppercase; font-size:0.85rem; letter-spacing:1px;">
-            Transaction History</h4>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h4 style="margin:0 0 10px 0; color:#666; text-transform:uppercase; font-size:0.85rem; letter-spacing:1px;">
+                Transaction History</h4>
+            {% if user.is_staff %}
+            <button onclick="confirmResetDKP()" style="background:rgba(231,76,60,0.15); color:#e74c3c; border:1px solid rgba(231,76,60,0.3); padding:5px 14px; border-radius:6px; cursor:pointer; font-size:0.78rem; font-weight:600;">
+                <i class="fas fa-trash-alt"></i> Reset History
+            </button>
+            {% endif %}
+        </div>
         <table class="log-table">
             <thead>
                 <tr>
@@ -184,4 +191,36 @@
     {% endfor %}
     {% endif %}
 </div>
+
+{% if user.is_staff %}
+<!-- Reset DKP Modal -->
+<div id="resetDKPModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter:blur(5px); align-items:center; justify-content:center;">
+    <div style="background:linear-gradient(145deg,#1e1e1e,#252525); border:1px solid #e74c3c; box-shadow:0 0 30px rgba(231,76,60,0.2); max-width:420px; width:90%; border-radius:12px; overflow:hidden;">
+        <div style="background:rgba(0,0,0,0.2); padding:20px 25px; border-bottom:1px solid rgba(255,255,255,0.05);">
+            <h2 style="margin:0; font-size:1.3rem; color:#fff; display:flex; align-items:center; gap:10px;">
+                <i class="fas fa-exclamation-triangle" style="color:#e74c3c;"></i> Reset DKP History
+            </h2>
+        </div>
+        <div style="padding:25px;">
+            <p style="color:#ccc; margin-bottom:20px; line-height:1.5;">This will <strong style="color:#e74c3c;">permanently delete</strong> all DKP transaction logs, attendance records, and reset all DKP points to 0.</p>
+            <p style="font-size:0.9rem; color:#e74c3c; background:rgba(231,76,60,0.1); padding:12px; border-radius:6px; border-left:3px solid #e74c3c; display:flex; align-items:center; gap:10px;">
+                <i class="fas fa-exclamation-triangle"></i> This action cannot be undone!
+            </p>
+        </div>
+        <div style="padding:15px 25px; background:rgba(0,0,0,0.2); display:flex; justify-content:flex-end; gap:10px;">
+            <button onclick="document.getElementById('resetDKPModal').style.display='none'" style="background:transparent; color:#aaa; border:1px solid #444; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:500;">Cancel</button>
+            <form method="POST" action="{% url 'reset-dkp-data' %}" style="margin:0;">
+                {% csrf_token %}
+                <input type="hidden" name="reset_type" value="all_history">
+                <button type="submit" style="border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:600; color:white; background:linear-gradient(135deg,#e74c3c,#c0392b);">Reset All DKP</button>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+function confirmResetDKP() {
+    document.getElementById('resetDKPModal').style.display = 'flex';
+}
+</script>
+{% endif %}
 {% endblock %}

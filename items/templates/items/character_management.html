@@ -139,7 +139,12 @@
     <div class="admin-panel">
         <div class="admin-header">
             <h1><i class="fas fa-users-cog"></i> Character Management</h1>
-            <a href="{% url 'create-character' %}" class="btn-gold-outline"><i class="fas fa-plus"></i> Add New</a>
+            <div style="position:relative;">
+                <input type="text" id="charSearch" placeholder="Search character or owner..." 
+                    style="background:rgba(0,0,0,0.4); border:1px solid #444; color:#fff; padding:8px 15px 8px 35px; border-radius:6px; font-size:0.9rem; width:250px;"
+                    oninput="filterCharacters()">
+                <i class="fas fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#666;"></i>
+            </div>
         </div>
 
         <div class="admin-content">
@@ -171,13 +176,15 @@
                                 style="color: #4CAF50; margin-right: 15px; text-decoration: none;"
                                 title="Edit Character"><i class="fas fa-edit"></i></a>
 
-                            <!-- Reset Password Button -->
+                            <!-- Reset Password: Super Admin sees all, Sub Admin sees only non-staff -->
+                            {% if is_super_admin or not character.owner.is_staff %}
                             <a href="#"
                                 onclick="resetPassword('{{ character.owner.pk }}', '{{ character.owner.username }}')"
                                 style="color: #FFC107; margin-right: 15px; text-decoration: none;"
                                 title="Reset User Password">
                                 <i class="fas fa-key"></i>
                             </a>
+                            {% endif %}
 
                             <!-- DKP Wallet Button -->
                             <a href="{% url 'web-dkp-user-profile' character.owner.pk %}"
@@ -186,6 +193,7 @@
                                 <i class="fas fa-wallet"></i>
                             </a>
 
+                            {% if is_super_admin %}
                             <!-- Toggle Admin Button -->
                             <a href="#"
                                 style="color: {% if character.owner.is_staff %}#FFD700{% else %}#666{% endif %}; margin-right: 15px; text-decoration: none;"
@@ -194,9 +202,20 @@
                                 <i class="fas fa-shield-alt"></i>
                             </a>
 
+                            <!-- Toggle Sub Admin Button -->
+                            {% if not character.owner.is_staff %}
+                            <a href="#"
+                                style="color: {% if character.owner.pk in sub_admin_ids %}#1abc9c{% else %}#666{% endif %}; margin-right: 15px; text-decoration: none;"
+                                title="{% if character.owner.pk in sub_admin_ids %}Remove Sub Admin{% else %}Make Sub Admin{% endif %}"
+                                onclick="showSubAdminConfirm('{{ character.owner.username }}', '{% url 'toggle-sub-admin' character.owner.pk %}', {% if character.owner.pk in sub_admin_ids %}true{% else %}false{% endif %})">
+                                <i class="fas fa-user-shield"></i>
+                            </a>
+                            {% endif %}
+
                             <a href="{% url 'delete-character' character.pk %}"
                                 style="color: #E74C3C; text-decoration: none;" title="Delete Character"><i
                                     class="fas fa-trash"></i></a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -742,6 +761,36 @@
     }
 
     // =========================================
+    // SUB ADMIN CONFIRM (reuse admin modal)
+    // =========================================
+    function showSubAdminConfirm(username, url, isCurrentlySubAdmin) {
+        adminToggleUrl = url;
+
+        const circle = document.getElementById('confirmIconCircle');
+        const title = document.getElementById('confirmTitle');
+        const msg = document.getElementById('confirmMessage');
+        const yesBtn = document.getElementById('confirmYesBtn');
+
+        if (isCurrentlySubAdmin) {
+            circle.className = 'confirm-icon-circle demote';
+            title.textContent = 'Remove Sub Admin';
+            msg.innerHTML = 'Remove Sub Admin role from <span class="username-highlight">' + username + '</span>?<br><small style="color:#666">This user will lose access to management features.</small>';
+            yesBtn.className = 'btn-yes-demote';
+            yesBtn.textContent = 'Remove Sub Admin';
+        } else {
+            circle.className = 'confirm-icon-circle promote';
+            circle.style.background = 'rgba(26,188,156,0.15)';
+            title.textContent = 'Promote to Sub Admin';
+            msg.innerHTML = 'Grant Sub Admin privileges to <span class="username-highlight">' + username + '</span>?<br><small style="color:#666">This user can manage events, DKP, and characters.</small>';
+            yesBtn.className = 'btn-yes-promote';
+            yesBtn.style.background = 'linear-gradient(135deg, #1abc9c, #16a085)';
+            yesBtn.textContent = 'Make Sub Admin';
+        }
+
+        document.getElementById('adminConfirmModal').style.display = 'flex';
+    }
+
+    // =========================================
     // PASSWORD RESET MODAL
     // =========================================
     let currentUserId = null;
@@ -794,6 +843,23 @@
             closeAdminConfirm();
         }
     });
+    // =========================================
+    // CHARACTER SEARCH FILTER
+    // =========================================
+    function filterCharacters() {
+        var query = document.getElementById('charSearch').value.toLowerCase();
+        var rows = document.querySelectorAll('.admin-content tbody tr');
+        rows.forEach(function(row) {
+            var name = (row.cells[0] && row.cells[0].textContent || '').toLowerCase();
+            var owner = (row.cells[1] && row.cells[1].textContent || '').toLowerCase();
+            var cls = (row.cells[2] && row.cells[2].textContent || '').toLowerCase();
+            if (name.indexOf(query) > -1 || owner.indexOf(query) > -1 || cls.indexOf(query) > -1) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
 </script>
 
 {% endblock %}

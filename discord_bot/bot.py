@@ -114,12 +114,17 @@ class AltoBot(commands.Cog):
                         await channel.send(clean_msg)
                         print(f"Notification sent: {clean_msg[:20]}...")
                     else:
-                        embed = discord.Embed(
-                            description=msg_content,
-                            color=discord.Color.blue()
-                        )
-                        await channel.send("📢 **ANNOUNCEMENT**", embed=embed)
-                        print(f"Broadcast sent: {msg_content[:20]}...")
+                        # If message contains @everyone, send as plain content (embed won't ping)
+                        if '@everyone' in msg_content:
+                            await channel.send(msg_content)
+                            print(f"Broadcast sent (@everyone): {msg_content[:30]}...")
+                        else:
+                            embed = discord.Embed(
+                                description=msg_content,
+                                color=discord.Color.blue()
+                            )
+                            await channel.send("📢 **ANNOUNCEMENT**", embed=embed)
+                            print(f"Broadcast sent: {msg_content[:20]}...")
                 
                 # Small delay to prevent rate limits
                 import asyncio

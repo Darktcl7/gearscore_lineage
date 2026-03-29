@@ -123,9 +123,8 @@ CLASS_SKILLS_DATA = {
 
 
 CLAN_CHOICES = (
-
     ('Valkyrie', 'Valkyrie'),
-
+    ('Einherjar', 'Einherjar'),
 )
 
 
@@ -194,6 +193,15 @@ SOUL_PROGRESSION_CHOICES = (
 
     ('15', '15'),
 
+)
+
+SOUL_PROGRESSION_DUEL_CHOICES = (
+    ('1-4', '1-4'),
+    ('5-9', '5-9'),
+    ('10', '10'),
+    ('10.1', '10.1'),
+    ('10.2', '10.2'),
+    ('10.3', '10.3'),
 )
 
 
@@ -1079,6 +1087,7 @@ class CharacterAttributes(models.Model):
     soul_prog_defense = models.CharField("Soul Progression Defense", max_length=10, choices=SOUL_PROGRESSION_CHOICES, blank=True)
     soul_prog_blessing = models.CharField("Soul Progression Blessing", max_length=10, choices=SOUL_PROGRESSION_CHOICES, blank=True)
     soul_prog_accuracy = models.CharField("Soul Progression Accuracy", max_length=10, choices=SOUL_PROGRESSION_CHOICES, blank=True)
+    soul_prog_duel = models.CharField("Soul Progression Duel", max_length=10, choices=SOUL_PROGRESSION_DUEL_CHOICES, blank=True)
 
     enchant_bracelet_holy_prot = models.IntegerField("Enchant Bracelet of Holy Protection", choices=ENCHANT_CHOICES, default=0)
     enchant_bracelet_influence = models.IntegerField("Enchant Bracelet of Influence", choices=ENCHANT_CHOICES, default=0)
@@ -1443,6 +1452,9 @@ class PlayerActivity(models.Model):
     # Boss kills tracking for INVASION events
     bosses_killed = models.JSONField("Bosses Killed", default=dict, blank=True,
         help_text="Track individual boss kills: {'boss1': true, 'boss2': false}")
+
+    # Win Streak bonus (calculated per player per event)
+    win_streak_bonus = models.IntegerField("Win Streak Bonus", default=0)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -9,7 +9,16 @@ from .forms import ItemForm, CharacterForm, SubclassStatsForm, CharacterAttribut
 
 # Helper function to check if user is admin
 def is_admin(user):
+    """Super Admin only (staff/superuser)"""
     return user.is_staff or user.is_superuser
+
+def is_sub_admin(user):
+    """Check if user is in 'Sub Admin' group"""
+    return user.groups.filter(name='Sub Admin').exists()
+
+def is_any_admin(user):
+    """Super Admin OR Sub Admin"""
+    return is_admin(user) or is_sub_admin(user)
 
 # ======================================================
 # CHARACTER VIEWS
@@ -26,18 +35,24 @@ def character_list(request):
 # FUNGSI: Manajemen Karakter (Admin Only) -> Table View
 @login_required
 def character_management(request):
-    if not is_admin(request.user):
+    if not is_any_admin(request.user):
         return HttpResponseForbidden("You are not authorized to view this page.")
     
     # Optimized: select_related for owner and attributes, prefetch for ManyToMany
-    characters = Character.objects.all().select_related('owner', 'attributes', 'subclass_stats', 'characteristics_stats').prefetch_related('mythic_classes', 'legendary_classes', 'legendary_skins')
+    characters = Character.objects.all().select_related('owner', 'attributes', 'subclass_stats', 'characteristics_stats').prefetch_related('mythic_classes', 'legendary_classes', 'legendary_skins', 'owner__groups')
     # Get pending users (registered but not yet approved)
-    from django.contrib.auth.models import User
+    from django.contrib.auth.models import User, Group
     pending_users = User.objects.filter(is_active=False, is_staff=False).order_by('-date_joined')
+    
+    # Get list of Sub Admin user IDs
+    sub_admin_group = Group.objects.filter(name='Sub Admin').first()
+    sub_admin_ids = list(sub_admin_group.user_set.values_list('id', flat=True)) if sub_admin_group else []
     
     return render(request, 'items/character_management.html', {
         'characters': characters,
         'pending_users': pending_users,
+        'is_super_admin': is_admin(request.user),
+        'sub_admin_ids': sub_admin_ids,
     })
 
 # FUNGSI: Halaman Profil Karakter (character_profile)
@@ -480,17 +495,28 @@ def activity_leaderboard(request):
     """
     today = timezone.now()
     
+    # ── CLAN FILTER ──
+    selected_clan = request.GET.get('clan', 'Valkyrie')
+    clan_choices = ['Valkyrie', 'Einherjar']
+    
     # ── MONTHLY RANKING ──
     # Total Score = event points only (EXCLUDE AP adjustments)
+    from django.db.models import Q
+    monthly_qs = PlayerActivity.objects.filter(
+        event__date__year=today.year,
+        event__date__month=today.month
+    ).exclude(event__name__startswith='AP Adjustment:')
+    
+    if selected_clan == 'Valkyrie':
+        monthly_qs = monthly_qs.filter(Q(player__clan='Valkyrie') | Q(player__clan='') | Q(player__clan__isnull=True))
+    else:
+        monthly_qs = monthly_qs.filter(player__clan=selected_clan)
+    
     monthly_data = (
-        PlayerActivity.objects.filter(
-            event__date__year=today.year,
-            event__date__month=today.month
-        )
-        .exclude(event__name__startswith='AP Adjustment:')
+        monthly_qs
         .values('player__id', 'player__name')
         .annotate(
-            total_score=Sum('points_earned'),
+            total_score=Sum('points_earned') + Sum('win_streak_bonus'),
         )
         .order_by('-total_score')
     )
@@ -529,14 +555,20 @@ def activity_leaderboard(request):
     if lb_config.weekly_reset_at and lb_config.weekly_reset_at > start_of_week:
         weekly_cutoff = lb_config.weekly_reset_at
     
+    weekly_qs = PlayerActivity.objects.filter(
+        event__date__gte=weekly_cutoff
+    ).exclude(event__name__startswith='AP Adjustment:')
+    
+    if selected_clan == 'Valkyrie':
+        weekly_qs = weekly_qs.filter(Q(player__clan='Valkyrie') | Q(player__clan='') | Q(player__clan__isnull=True))
+    else:
+        weekly_qs = weekly_qs.filter(player__clan=selected_clan)
+    
     weekly_data = (
-        PlayerActivity.objects.filter(
-            event__date__gte=weekly_cutoff
-        )
-        .exclude(event__name__startswith='AP Adjustment:')
+        weekly_qs
         .values('player__id', 'player__name')
         .annotate(
-            total_score=Sum('points_earned'),
+            total_score=Sum('points_earned') + Sum('win_streak_bonus'),
         )
         .order_by('-total_score')
     )
@@ -562,13 +594,38 @@ def activity_leaderboard(request):
             'tier_class': tier.lower().replace(' ', '_'),
         })
     
-    # ── GUILD STATISTICS ──
-    # Use monthly scores for guild stats
+    # ── GUILD STATISTICS (slot-based tiers) ──
+    # Tier assignment: sorted by score, then assigned top-down with slot caps
+    # Core: > 950 pts, max 15 | Elite: > 675 pts, max 15 | Active: > 400 pts, max 20 | Inactive: rest
+    core_count = 0
+    elite_count = 0
+    active_count = 0
+    inactive_count = 0
+    
+    for r in monthly_ranking:
+        score = r['total_score']
+        if score > 950 and core_count < 15:
+            r['tier'] = 'Core'
+            r['tier_class'] = 'core'
+            core_count += 1
+        elif score > 675 and elite_count < 15:
+            r['tier'] = 'Elite'
+            r['tier_class'] = 'elite'
+            elite_count += 1
+        elif score > 400 and active_count < 20:
+            r['tier'] = 'Active'
+            r['tier_class'] = 'active'
+            active_count += 1
+        else:
+            r['tier'] = 'Inactive'
+            r['tier_class'] = 'inactive'
+            inactive_count += 1
+    
     guild_stats = {
-        'core': sum(1 for r in monthly_ranking if r['total_score'] > 950),
-        'elite': sum(1 for r in monthly_ranking if 675 < r['total_score'] <= 950),
-        'active': sum(1 for r in monthly_ranking if 400 < r['total_score'] <= 675),
-        'inactive': sum(1 for r in monthly_ranking if r['total_score'] <= 400),
+        'core': core_count,
+        'elite': elite_count,
+        'active': active_count,
+        'inactive': inactive_count,
         'total': len(monthly_ranking),
     }
     
@@ -587,6 +644,8 @@ def activity_leaderboard(request):
         'current_month': today.strftime('%B %Y'),
         'current_week': f"01 {today.strftime('%b')} - {__import__('calendar').monthrange(today.year, today.month)[1]} {today.strftime('%b %Y')}",
         'is_admin': is_admin(request.user),
+        'selected_clan': selected_clan,
+        'clan_choices': clan_choices,
     }
     return render(request, 'items/activity_leaderboard.html', context)
 
@@ -844,9 +903,15 @@ def my_activity(request):
     ).select_related('event').order_by('-event__date')
     
     # Calculate quick stats
-    total_points = activities.exclude(
+    total_points_base = activities.exclude(
         event__name__startswith='AP Adjustment:'
     ).aggregate(total=Sum('points_earned'))['total'] or 0
+    
+    total_streak_bonus = activities.exclude(
+        event__name__startswith='AP Adjustment:'
+    ).aggregate(total=Sum('win_streak_bonus'))['total'] or 0
+    
+    total_points = total_points_base + total_streak_bonus
     
     ap_points = activities.filter(
         event__name__startswith='AP Adjustment:'
@@ -976,14 +1041,16 @@ def manage_events(request):
     """
     Admin page to manage events
     """
-    if not is_admin(request.user):
+    if not is_any_admin(request.user):
         return HttpResponseForbidden("Only administrators can manage events.")
     
-    # Get all actual events (excluding manual point adjustments), ordered by date
+    # Get all actual events (excluding manual point adjustments & War Day DKP events), ordered by date
     events = ActivityEvent.objects.exclude(
         name__startswith='AP Adjustment:'
     ).exclude(
         name__startswith='Score Adjustment:'
+    ).exclude(
+        name__contains='War Day:'
     ).order_by('-date')[:50]
     
     context = {
@@ -994,11 +1061,34 @@ def manage_events(request):
 
 
 @login_required
+def complete_event(request, event_pk):
+    """Complete event with Win/Lose result via form POST."""
+    if not is_any_admin(request.user):
+        return HttpResponseForbidden("Only administrators can manage events.")
+    
+    if request.method == 'POST':
+        from items.models import ActivityEvent
+        event = get_object_or_404(ActivityEvent, pk=event_pk)
+        result = request.POST.get('result', 'win')
+        event.is_completed = True
+        event.is_win = (result == 'win')
+        event.save()
+        
+        # Recalculate win streak bonuses
+        try:
+            from items.api_views import recalculate_win_streak_bonuses
+            recalculate_win_streak_bonuses()
+        except Exception:
+            pass
+    
+    return redirect('manage-events')
+
+@login_required
 def create_event(request):
     """
     Admin page to create new event
     """
-    if not is_admin(request.user):
+    if not is_any_admin(request.user):
         return HttpResponseForbidden("Only administrators can create events.")
     
     if request.method == 'POST':
@@ -1117,7 +1207,7 @@ def record_attendance(request, event_pk):
     """
     Admin page to record attendance for an event
     """
-    if not is_admin(request.user):
+    if not is_any_admin(request.user):
         return HttpResponseForbidden("Only administrators can record attendance.")
     
     event = get_object_or_404(ActivityEvent, pk=event_pk)
@@ -1227,7 +1317,7 @@ def duplicate_event(request, event_pk):
     """
     Duplicate an event exactly 7 days later
     """
-    if not is_admin(request.user):
+    if not is_any_admin(request.user):
         return HttpResponseForbidden("Only administrators can duplicate events.")
     
     event = get_object_or_404(ActivityEvent, pk=event_pk)
@@ -1258,7 +1348,7 @@ def toggle_event_repeatable(request, event_pk):
     """
     Toggle the is_repeatable status of an event
     """
-    if not is_admin(request.user):
+    if not is_any_admin(request.user):
         return HttpResponseForbidden("Only administrators can manage events.")
     
     event = get_object_or_404(ActivityEvent, pk=event_pk)
@@ -1320,11 +1410,15 @@ from django.contrib.auth.models import User
 
 @login_required
 def reset_password_admin(request, user_pk):
-    """Admin only: Reset password for any user"""
-    if not is_admin(request.user):
+    """Admin/Sub Admin: Reset password for users"""
+    if not is_any_admin(request.user):
         return HttpResponseForbidden("Only administrators can reset passwords.")
     
     target_user = get_object_or_404(User, pk=user_pk)
+    
+    # Sub Admin cannot reset Super Admin passwords
+    if not is_admin(request.user) and target_user.is_staff:
+        return HttpResponseForbidden("Sub Admins cannot reset Super Admin passwords.")
     
     # Redirect back to management page
     if request.method == 'POST':
@@ -1363,6 +1457,36 @@ def toggle_admin(request, user_pk):
     
     return redirect('character-management')
 
+@login_required
+def toggle_sub_admin(request, user_pk):
+    """Super Admin only: Toggle Sub Admin group for a user"""
+    if not is_admin(request.user):
+        return HttpResponseForbidden("Only super administrators can manage Sub Admin status.")
+    
+    from django.contrib.auth.models import Group
+    target_user = get_object_or_404(User, pk=user_pk)
+    
+    # Don't allow on yourself
+    if target_user == request.user:
+        messages.error(request, "You cannot change your own Sub Admin status.")
+        return redirect('character-management')
+    
+    # Don't allow on super admins
+    if target_user.is_staff:
+        messages.error(request, "Super Admins don't need Sub Admin role.")
+        return redirect('character-management')
+    
+    sub_admin_group, _ = Group.objects.get_or_create(name='Sub Admin')
+    
+    if sub_admin_group in target_user.groups.all():
+        target_user.groups.remove(sub_admin_group)
+        messages.success(request, f"{target_user.username} removed from Sub Admin.")
+    else:
+        target_user.groups.add(sub_admin_group)
+        messages.success(request, f"{target_user.username} promoted to Sub Admin.")
+    
+    return redirect('character-management')
+
 # ======================================================
 # DISCORD MANAGEMENT
 # ======================================================
@@ -1389,7 +1513,10 @@ def discord_dashboard(request):
             
         elif action == 'send_broadcast':
             message = request.POST.get('broadcast_message')
+            mention = request.POST.get('mention_everyone')
             if message:
+                if mention:
+                    message = '@everyone\n' + message
                 DiscordAnnouncement.objects.create(message=message)
                 
         return redirect('discord-dashboard')

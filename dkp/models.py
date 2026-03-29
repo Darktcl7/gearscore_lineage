@@ -49,3 +49,20 @@ class DKPLog(models.Model):
 
     def __str__(self):
         return f"{self.profile.character.name}: {self.amount} ({self.reason})"
+
+class BossPointConfig(models.Model):
+    """Singleton model to store boss point settings in database (synced across all clients)"""
+    config = models.JSONField("Boss Points Config", default=dict)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.CharField(max_length=100, blank=True)
+
+    class Meta:
+        verbose_name = "Boss Point Config"
+
+    def __str__(self):
+        return f"Boss Point Config (updated: {self.updated_at})"
+
+    @classmethod
+    def get_config(cls):
+        obj, _ = cls.objects.get_or_create(pk=1, defaults={'config': {}})
+        return obj

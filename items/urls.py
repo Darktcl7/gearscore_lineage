@@ -33,6 +33,8 @@ from .views import (
     reset_leaderboard_data,
     reset_monthly_rewards, # Admin Reset Monthly Rewards
     discord_dashboard, # Discord Management
+    complete_event, # Complete Event with result
+    toggle_sub_admin, # Toggle Sub Admin
 ) 
 
 urlpatterns = [
@@ -63,6 +65,9 @@ urlpatterns = [
 
     # URL: /items/manage/toggle-admin/1/ -> Toggle Admin Status
     path('manage/toggle-admin/<int:user_pk>/', toggle_admin, name='toggle-admin'),
+
+    # URL: /items/manage/toggle-sub-admin/1/ -> Toggle Sub Admin Status
+    path('manage/toggle-sub-admin/<int:user_pk>/', toggle_sub_admin, name='toggle-sub-admin'),
     
     # URL: /items/item/1/ -> Menampilkan detail satu item
     path('item/<int:pk>/', item_detail, name='item-detail'),
@@ -140,6 +145,9 @@ urlpatterns = [
 
     # URL: /items/activity/events/1/toggle-repeat/ -> Admin: Toggle Repeatable
     path('activity/events/<int:event_pk>/toggle-repeat/', toggle_event_repeatable, name='toggle-event-repeatable'),
+
+    # URL: /items/activity/events/1/complete/ -> Admin: Complete Event with result
+    path('activity/events/<int:event_pk>/complete/', complete_event, name='complete-event'),
 
     # URL: /items/manage/discord/ -> Discord Control Center
     path('manage/discord/', discord_dashboard, name='discord-dashboard'),

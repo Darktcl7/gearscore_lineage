@@ -415,7 +415,12 @@
             <textarea name="broadcast_message" rows="3"
                 style="width: 100%; background: rgba(0,0,0,0.3); color: white; border: 1px solid #555; padding: 15px; border-radius: 5px; font-size: 1rem;"
                 placeholder="Ex: Prepare for battle! The GM is summoning everyone..."></textarea>
-            <div style="text-align: right; margin-top: 10px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #aaa; font-size: 0.9rem;">
+                    <input type="checkbox" name="mention_everyone" value="1" checked
+                        style="width: 18px; height: 18px; accent-color: #7289da; cursor: pointer;">
+                    <span><strong style="color: #7289da;">@everyone</strong> — Mention all members</span>
+                </label>
                 <button type="submit"
                     style="background: #7289da; color: white; border: none; padding: 10px 25px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background 0.2s;">
                     SEND NOW <i class="fas fa-paper-plane"></i>

@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
-from .models import DKPEvent, DKPAttendance, DKPProfile, DKPLog
+from .models import DKPEvent, DKPAttendance, DKPProfile, DKPLog, BossPointConfig
 from items.models import Character, DiscordAnnouncement
 import json
 import os
@@ -129,9 +129,24 @@ def api_dkp_leaderboard(request):
     })
 
 def dkp_leaderboard_web(request):
-    profiles = DKPProfile.objects.select_related('character').order_by('-current_dkp')
+    selected_clan = request.GET.get('clan', 'Valkyrie')
+    clan_choices = ['Valkyrie', 'Einherjar']
+    
+    from django.db.models import Q
+    profiles = DKPProfile.objects.select_related('character')
+    if selected_clan == 'Valkyrie':
+        profiles = profiles.filter(Q(character__clan='Valkyrie') | Q(character__clan='') | Q(character__clan__isnull=True))
+    else:
+        profiles = profiles.filter(character__clan=selected_clan)
+    profiles = profiles.order_by('-current_dkp')
+    
     is_admin = request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser)
-    return render(request, 'dkp/leaderboard.html', {'profiles': profiles, 'is_admin': is_admin})
+    return render(request, 'dkp/leaderboard.html', {
+        'profiles': profiles,
+        'is_admin': is_admin,
+        'selected_clan': selected_clan,
+        'clan_choices': clan_choices,
+    })
 
 @login_required(login_url='/login/')
 def dkp_decay(request):
@@ -290,6 +305,26 @@ def dkp_remove_all(request):
                     reason=reason,
                     created_by=request.user
                 )
+    
+    return redirect('web-dkp-leaderboard')
+
+@login_required(login_url='/login/')
+def dkp_reset_lifetime(request):
+    """Reset Lifetime Earned for all players"""
+    if not (request.user.is_staff or request.user.is_superuser):
+        return redirect('web-dkp-leaderboard')
+    
+    if request.method == 'POST':
+        profiles = DKPProfile.objects.all()
+        for profile in profiles:
+            profile.total_earned = 0
+            profile.save()
+            DKPLog.objects.create(
+                profile=profile,
+                amount=0,
+                reason='Lifetime Earned Reset',
+                created_by=request.user
+            )
     
     return redirect('web-dkp-leaderboard')
 
@@ -508,7 +543,8 @@ def dkp_all_wallets(request):
 
 @login_required(login_url='/login/')
 def dkp_manage(request):
-    if not request.user.is_staff:
+    from items.views import is_any_admin
+    if not is_any_admin(request.user):
         return redirect('index')
     
     if request.method == 'POST':
@@ -519,6 +555,7 @@ def dkp_manage(request):
             boss_type = request.POST.get('boss_type', '').strip()
             value = request.POST.get('value')
             participant_ids = request.POST.getlist('participant_ids')
+            is_war_day = request.POST.get('war_day') == 'on'
 
             if name and value:
                 try:
@@ -537,6 +574,20 @@ def dkp_manage(request):
                     is_closed=True,
                     is_finalized=True
                 )
+
+                # WAR DAY: Also create Activity event if checked (Raid Boss & Territory Boss only)
+                activity_event = None
+                if is_war_day and boss_type in ('Raid Boss', 'Territory Boss'):
+                    from items.models import ActivityEvent, PlayerActivity
+                    activity_event = ActivityEvent.objects.create(
+                        name=f"⚔️ War Day: {final_name}",
+                        event_type='CUSTOM',
+                        date=timezone.now(),
+                        base_points=points,
+                        max_points=points,
+                        is_completed=True,
+                        is_finalized=True,
+                    )
 
                 # Distribute points immediately to selected participants
                 if participant_ids and points > 0:
@@ -557,6 +608,16 @@ def dkp_manage(request):
                                 reason=f"Activity: {final_name}",
                                 created_by=request.user
                             )
+                            
+                            # WAR DAY: Also add to Activity Leaderboard
+                            if activity_event:
+                                from items.models import PlayerActivity
+                                PlayerActivity.objects.create(
+                                    player=profile.character,
+                                    event=activity_event,
+                                    status='ATTENDED',
+                                    points_earned=points,
+                                )
                         except (DKPProfile.DoesNotExist, ValueError):
                             pass
 
@@ -577,7 +638,12 @@ def dkp_manage(request):
             
     events = DKPEvent.objects.order_by('-date')
     profiles = DKPProfile.objects.select_related('character').order_by('character__name')
-    return render(request, 'dkp/manage.html', {'events': events, 'profiles': profiles})
+    from items.views import is_admin
+    return render(request, 'dkp/manage.html', {
+        'events': events,
+        'profiles': profiles,
+        'is_super_admin': is_admin(request.user),
+    })
 
 @login_required(login_url='/login/')
 def dkp_attendance_list(request, event_id):
@@ -657,3 +723,46 @@ def dkp_attendance_list(request, event_id):
 
     attendances = DKPAttendance.objects.filter(event=event).select_related('character').order_by('is_verified', '-check_in_time')
     return render(request, 'dkp/attendance.html', {'event': event, 'attendances': attendances})
+
+@login_required(login_url='/login/')
+def boss_point_config_get(request):
+    """Load boss point config from database"""
+    config = BossPointConfig.get_config()
+    return JsonResponse({'success': True, 'config': config.config})
+
+@login_required(login_url='/login/')
+def boss_point_config_save(request):
+    """Save boss point config to database"""
+    if not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            config = BossPointConfig.get_config()
+            config.config = data.get('config', {})
+            config.updated_by = request.user.username
+            config.save()
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    
+    return JsonResponse({'error': 'POST required'}, status=405)
+
+
+@login_required
+def dkp_reset_data(request):
+    """Reset all DKP history data (admin only)."""
+    if not request.user.is_staff:
+        return redirect('index')
+    
+    if request.method == 'POST':
+        reset_type = request.POST.get('reset_type', '')
+        
+        if reset_type == 'all_history':
+            # Only delete transaction logs (preserve points, events, leaderboard)
+            DKPLog.objects.all().delete()
+        
+        return redirect('web-dkp-my-profile')
+    
+    return redirect('web-dkp-my-profile')

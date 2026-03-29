@@ -386,6 +386,30 @@
         <div class="main-column">
             
             <div class="glass-card">
+                <!-- Clan Filter -->
+                <div style="display: flex; gap: 8px; padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.06); align-items: center;">
+                    <span style="color: #888; font-size: 0.85rem; margin-right: 5px;"><i class="fas fa-shield-alt"></i> Clan:</span>
+                    {% for clan in clan_choices %}
+                    <a href="?clan={{ clan }}" style="
+                        padding: 5px 14px;
+                        border-radius: 20px;
+                        font-size: 0.8rem;
+                        font-weight: 600;
+                        text-decoration: none;
+                        transition: all 0.3s;
+                        {% if selected_clan == clan %}
+                            background: linear-gradient(135deg, #FFD700, #b8860b);
+                            color: #000;
+                            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+                        {% else %}
+                            background: rgba(255,255,255,0.08);
+                            color: #aaa;
+                            border: 1px solid rgba(255,255,255,0.1);
+                        {% endif %}
+                    ">{{ clan }}</a>
+                    {% endfor %}
+                </div>
+
                 <!-- Tab buttons -->
                 <div class="ranking-tabs">
                     <button class="ranking-tab active" onclick="switchTab('monthly')">
@@ -542,15 +566,15 @@
                 <div class="stats-grid">
                     <div class="stat-box core">
                         <div class="count">{{ guild_stats.core }}</div>
-                        <div class="label">Core Member{% if is_admin %}<br>(&gt; 950 pts){% endif %}</div>
+                        <div class="label">Core Member{% if is_admin %}<br>(&gt; 950 pts, max 15){% endif %}</div>
                     </div>
                     <div class="stat-box elite">
                         <div class="count">{{ guild_stats.elite }}</div>
-                        <div class="label">Elite Member{% if is_admin %}<br>(676 - 950 pts){% endif %}</div>
+                        <div class="label">Elite Member{% if is_admin %}<br>(676 - 950 pts, max 15){% endif %}</div>
                     </div>
                     <div class="stat-box active">
                         <div class="count">{{ guild_stats.active }}</div>
-                        <div class="label">Active Member{% if is_admin %}<br>(401 - 675 pts){% endif %}</div>
+                        <div class="label">Active Member{% if is_admin %}<br>(401 - 675 pts, max 20){% endif %}</div>
                     </div>
                     <div class="stat-box inactive">
                         <div class="count">{{ guild_stats.inactive }}</div>
@@ -594,6 +618,18 @@
         </div>
     </div>
 </div>
+
+<!-- Tab switching script (available for all users) -->
+<script>
+    function switchTab(which) {
+        document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+        document.querySelectorAll('.ranking-tab').forEach(function(t) { t.classList.remove('active'); });
+        document.getElementById('tab-' + which).classList.add('active');
+        var tabs = document.querySelectorAll('.ranking-tab');
+        if (which === 'monthly') { tabs[0].classList.add('active'); }
+        else { tabs[1].classList.add('active'); }
+    }
+</script>
 
 {% if is_admin %}
 <!-- AP Adjustment Modal -->
@@ -652,17 +688,6 @@
 
 <script>
     var pendingBulkIds = [];
-
-    // Tab switching
-    function switchTab(which) {
-        document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
-        document.querySelectorAll('.ranking-tab').forEach(function(t) { t.classList.remove('active'); });
-        document.getElementById('tab-' + which).classList.add('active');
-        // Activate the clicked tab button
-        var tabs = document.querySelectorAll('.ranking-tab');
-        if (which === 'monthly') { tabs[0].classList.add('active'); }
-        else { tabs[1].classList.add('active'); }
-    }
 
     function openApModal(playerId, playerName, action) {
         document.getElementById('apPlayerId').value = playerId;
