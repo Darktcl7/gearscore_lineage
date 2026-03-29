@@ -313,7 +313,7 @@
 
             <div class="form-group" id="event-points-group" style="display:none;">
                 <label for="event_points" id="event-points-label">Attendance Points</label>
-                <input type="number" name="event_points" id="event_points" value="100" min="1" max="9999"
+                <input type="number" name="event_points" id="event_points" value="100" min="0" max="9999"
                     placeholder="Points for attending">
                 <small style="color: #888; margin-top: 5px; display: block; font-size: 0.8rem;" id="event-points-hint"></small>
             </div>
@@ -437,7 +437,7 @@
         // Points field - show for all except INVASION (which uses boss config)
         if (evType && evType !== 'INVASION') {
             pointsGroup.style.display = 'block';
-            var defaultPts = DEFAULT_POINTS[evType] || 10;
+            var defaultPts = (evType in DEFAULT_POINTS) ? DEFAULT_POINTS[evType] : 0;
             pointsInput.value = defaultPts;
             pointsHint.textContent = 'Default: ' + defaultPts + ' pts (you can edit this)';
         } else {

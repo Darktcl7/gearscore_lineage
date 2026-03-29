@@ -581,7 +581,7 @@ def dkp_manage(request):
                     from items.models import ActivityEvent, PlayerActivity
                     activity_event = ActivityEvent.objects.create(
                         name=f"⚔️ War Day: {final_name}",
-                        event_type='CUSTOM',
+                        event_type='WAR_DAY',
                         date=timezone.now(),
                         base_points=points,
                         max_points=points,

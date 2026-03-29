@@ -1344,6 +1344,7 @@ class ActivityEvent(models.Model):
         ('CATACOMBS', '🏰 Catacombs'),
         ('DIMENSIONAL', '🌀 Dimensional Siege'),
         ('ISLE_AWAKENING', '🏝️ Isle of Awakening'),
+        ('WAR_DAY', '⚔️ War Day'),
         ('CUSTOM', '📋 Custom'),
     )
 
@@ -1354,7 +1355,7 @@ class ActivityEvent(models.Model):
         'CATACOMBS': 50,
         'DIMENSIONAL': 100,
         'ISLE_AWAKENING': 100,
-        'CUSTOM': 10,
+        'CUSTOM': 0,
     }
 
     event_id = models.CharField("Event ID", max_length=50, unique=True, blank=True)

@@ -586,13 +586,15 @@ def recalculate_win_streak_bonuses():
     """
     from items.models import PlayerActivity, ActivityEvent, Character
     
-    # Get all completed events (excluding adjustments), ordered by date
+    # Get all completed events (excluding adjustments and War Day), ordered by date
     completed_events = ActivityEvent.objects.filter(
         is_completed=True,
     ).exclude(
         name__startswith='AP Adjustment:'
     ).exclude(
         name__startswith='Score Adjustment:'
+    ).exclude(
+        name__contains='War Day:'
     ).order_by('date')
     
     # Get all players who have any activity

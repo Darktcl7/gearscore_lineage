@@ -1074,8 +1074,8 @@ def complete_event(request, event_pk):
         event.is_win = (result == 'win')
         event.save()
         
-        # Count participants
-        participant_count = PlayerActivity.objects.filter(event=event).count()
+        # Count participants (only ATTENDED)
+        participant_count = PlayerActivity.objects.filter(event=event, status='ATTENDED').count()
         result_text = "✅ WIN" if event.is_win else "❌ LOSE"
         
         # Create Discord announcement
@@ -1215,7 +1215,7 @@ def create_event(request):
     
     import json
     context = {
-        'event_types': ActivityEvent.EVENT_TYPE_CHOICES,
+        'event_types': [(v, l) for v, l in ActivityEvent.EVENT_TYPE_CHOICES if v != 'WAR_DAY'],
         'default_points': json.dumps(ActivityEvent.DEFAULT_POINTS),
         'is_admin': True,
     }
