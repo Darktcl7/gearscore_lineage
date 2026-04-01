@@ -497,14 +497,15 @@ def activity_leaderboard(request):
     
     # ── CLAN FILTER ──
     selected_clan = request.GET.get('clan', 'Valkyrie')
-    clan_choices = ['Valkyrie', 'Einherjar']
+    clan_choices = ['Valkyrie', 'Valhalla']
     
     # ── MONTHLY RANKING ──
     # Total Score = event points only (EXCLUDE AP adjustments)
     from django.db.models import Q
     monthly_qs = PlayerActivity.objects.filter(
         event__date__year=today.year,
-        event__date__month=today.month
+        event__date__month=today.month,
+        event__is_completed=True
     ).exclude(event__name__startswith='AP Adjustment:')
     
     if selected_clan == 'Valkyrie':
@@ -556,7 +557,8 @@ def activity_leaderboard(request):
         weekly_cutoff = lb_config.weekly_reset_at
     
     weekly_qs = PlayerActivity.objects.filter(
-        event__date__gte=weekly_cutoff
+        event__date__gte=weekly_cutoff,
+        event__is_completed=True
     ).exclude(event__name__startswith='AP Adjustment:')
     
     if selected_clan == 'Valkyrie':
@@ -899,7 +901,8 @@ def my_activity(request):
     month_ago = today - timedelta(days=30)
     activities = PlayerActivity.objects.filter(
         player=character,
-        event__date__gte=month_ago
+        event__date__gte=month_ago,
+        event__is_completed=True
     ).select_related('event').order_by('-event__date')
     
     # Calculate quick stats

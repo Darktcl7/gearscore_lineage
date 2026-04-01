@@ -346,6 +346,32 @@
     .bulk-bar .bbtn-decay { background: rgba(231,76,60,0.15); color: #e74c3c; border: 1px solid rgba(231,76,60,0.3); }
     .bulk-bar .bbtn-decay:hover { background: rgba(231,76,60,0.35); }
     .bulk-bar .sel-count { color: #888; font-size: 0.8rem; font-style: italic; margin-left: auto; }
+
+    /* ── MOBILE RESPONSIVE ── */
+    @media (max-width: 768px) {
+        .activity-container {
+            margin: 0;
+            margin-top: 80px;
+            border-radius: 0;
+            border: none;
+            padding: 12px;
+            min-height: auto;
+        }
+
+        h1 { font-size: 1.3rem; }
+
+        table th, table td {
+            padding: 8px 5px;
+            font-size: 0.75rem;
+        }
+
+        .bulk-bar {
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .bulk-bar .bbtn { font-size: 0.75rem; padding: 6px 10px; }
+        .bulk-bar .divider { display: none; }
+    }
 </style>
 {% endblock %}
 

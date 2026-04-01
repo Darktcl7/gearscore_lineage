@@ -124,7 +124,7 @@ CLASS_SKILLS_DATA = {
 
 CLAN_CHOICES = (
     ('Valkyrie', 'Valkyrie'),
-    ('Einherjar', 'Einherjar'),
+    ('Valhalla', 'Valhalla'),
 )
 
 

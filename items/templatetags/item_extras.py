@@ -339,6 +339,7 @@ def get_field_image(field_label):
         "soul progression defense": "Icon_SoulStone_Option_Icon_04.png",
         "soul progression blessing": "Icon_SoulStone_Option_Icon_07.png",
         "soul progression accuracy": "soul_progression_accuracy-removebg-preview.png",
+        "soul progression duel": "soul_progression_duel-removebg-preview.png",
         
         # Enchant Accessories
         "bracelet of holy protection": "Icon_ACC_BMBracelet_G0_003.png",
