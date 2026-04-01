@@ -130,7 +130,7 @@ def api_dkp_leaderboard(request):
 
 def dkp_leaderboard_web(request):
     selected_clan = request.GET.get('clan', 'Valkyrie')
-    clan_choices = ['Valkyrie', 'Einherjar']
+    clan_choices = ['Valkyrie', 'Valhalla']
     
     from django.db.models import Q
     profiles = DKPProfile.objects.select_related('character')
