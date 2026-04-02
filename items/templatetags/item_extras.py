@@ -44,8 +44,9 @@ def get_weapon_media_url(value):
         return None
     
     weapon_type, weapon_name = value.split('|', 1)
-    # Return path relative to MEDIA_ROOT
-    return f"items/weapons/{weapon_type}/{weapon_name}.png"
+    # Replace spaces for LiteSpeed compatibility
+    safe_name = weapon_name.replace(' ', '_') if weapon_name == 'Talum Dual Sword' else weapon_name
+    return f"items/weapons/{weapon_type}/{safe_name}.png"
 
 @register.filter
 def is_gearscore_field(field_name):
