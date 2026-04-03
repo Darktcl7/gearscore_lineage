@@ -1,0 +1,228 @@
+{% extends 'items/base.html' %}
+
+{% block title %}Manage Hall of Fame{% endblock %}
+
+{% block extra_head %}
+<style>
+    .manage-container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 0 20px;
+        color: #fff;
+    }
+    
+    .panel-card {
+        background: rgba(20, 20, 20, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        margin-bottom: 30px;
+    }
+    
+    .panel-card h2 {
+        color: #ECC771;
+        margin-top: 0;
+        border-bottom: 1px solid rgba(236, 199, 113, 0.2);
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+
+    form {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+
+    label {
+        color: #ccc;
+        font-size: 0.9rem;
+    }
+
+    input, select, button {
+        background: rgba(0,0,0,0.4);
+        border: 1px solid rgba(255,255,255,0.1);
+        padding: 10px 15px;
+        border-radius: 6px;
+        color: #fff;
+        font-family: inherit;
+        font-size: 1rem;
+    }
+
+    input[type="file"] {
+        padding: 8px;
+        background: transparent;
+        border: 1px dashed rgba(255,255,255,0.2);
+    }
+
+    button[type="submit"] {
+        background: #ECC771;
+        color: #111;
+        font-weight: bold;
+        border: none;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    button[type="submit"]:hover {
+        background: #f6d890;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    .data-table th, .data-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .data-table th {
+        color: #888;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        background: rgba(0,0,0,0.3);
+    }
+    .data-table tr:hover {
+        background: rgba(255,255,255,0.02);
+    }
+
+    .btn-delete {
+        background: rgba(231, 76, 60, 0.2);
+        color: #e74c3c;
+        border: 1px solid rgba(231, 76, 60, 0.4);
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85rem;
+    }
+    .btn-delete:hover {
+        background: #e74c3c;
+        color: #fff;
+    }
+
+    .thumb {
+        width: 40px; height: 40px;
+        object-fit: cover;
+        border-radius: 4px;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    @media(max-width: 768px) {
+        form { grid-template-columns: 1fr; }
+        .data-table { display: block; overflow-x: auto; white-space: nowrap; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="manage-container">
+    
+    <div class="panel-card">
+        <h2><i class="fas fa-plus-circle"></i> Add New Hall of Fame Member</h2>
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add">
+            
+            <div class="form-group">
+                <label>Player Name (IGN)</label>
+                <input type="text" name="name" list="character-names" required placeholder="e.g. SirLancelot" autocomplete="off">
+                <datalist id="character-names">
+                    {% for char_name in characters %}
+                    <option value="{{ char_name }}"></option>
+                    {% endfor %}
+                </datalist>
+            </div>
+
+            <div class="form-group">
+                <label>Rank (Title)</label>
+                <select name="rank" required>
+                    <option value="Master">Master</option>
+                    <option value="Guardian">Guardian</option>
+                    <option value="Member">Member</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Clan</label>
+                <select name="clan" required>
+                    <option value="Valkyrie">Valkyrie</option>
+                    <option value="Valhalla">Valhalla</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Contribution Points</label>
+                <input type="number" name="contribution" value="0" required>
+            </div>
+
+            <div class="form-group full-width">
+                <label>Character Upload Image (Portrait Format Recommended)</label>
+                <input type="file" name="image" accept="image/*" required>
+            </div>
+
+            <div class="form-group full-width" style="margin-top: 10px;">
+                <button type="submit"><i class="fas fa-save"></i> Add to Hall of Fame</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="panel-card">
+        <h2><i class="fas fa-list"></i> Current Hall of Fame Members</h2>
+        
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Image</th>
+                    <th>Name</th>
+                    <th>Rank</th>
+                    <th>Clan</th>
+                    <th>Points</th>
+                    <th>Date Added</th>
+                    <th style="text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mem in members %}
+                <tr>
+                    <td>
+                        {% if mem.image %}
+                        <img src="{{ mem.image.url }}" class="thumb" alt="{{ mem.name }}">
+                        {% else %}
+                        <span style="color:#555;">No Img</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-weight: 600;">{{ mem.name }}</td>
+                    <td>{{ mem.rank }}</td>
+                    <td>{{ mem.clan }}</td>
+                    <td>{{ mem.contribution }}</td>
+                    <td style="color:#888; font-size:0.85rem;">{{ mem.created_at|date:"M d, Y" }}</td>
+                    <td style="text-align: right;">
+                        <form method="POST" onsubmit="return confirm('Silahkan konfirmasi untuk MENGHAPUS {{ mem.name }} dari Hall of Fame secara permanen?');" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="member_id" value="{{ mem.id }}">
+                            <button type="submit" class="btn-delete"><i class="fas fa-trash"></i> Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: #777; padding: 20px;">No members yet in Hall of Fame.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

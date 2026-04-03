@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Item, Character, SubclassStats, ActivityEvent, PlayerActivity, MonthlyReport
+from .models import Item, Character, SubclassStats, ActivityEvent, PlayerActivity, MonthlyReport, UniversalPowerRank, HallOfFame
 from django.contrib import messages
 from django.utils import timezone
 from django import forms
@@ -118,3 +118,23 @@ admin.site.register(PlayerActivity, PlayerActivityAdmin)
 
 # Register other models if needed
 admin.site.register(MonthlyReport, MonthlyReportAdmin)
+
+
+# Universal Power Rank Admin
+class UniversalPowerRankAdmin(admin.ModelAdmin):
+    list_display = ('character', 'server', 'power_class', 'level', 'gear_score', 'updated_at')
+    list_filter = ('server',)
+    search_fields = ('character__name', 'power_class')
+    ordering = ['-gear_score']
+    readonly_fields = ('gear_score', 'updated_at')
+
+admin.site.register(UniversalPowerRank, UniversalPowerRankAdmin)
+
+# Hall of Fame Admin
+class HallOfFameAdmin(admin.ModelAdmin):
+    list_display = ('name', 'rank', 'clan', 'contribution', 'is_active', 'created_at')
+    list_filter = ('clan', 'rank', 'is_active')
+    search_fields = ('name',)
+    ordering = ['-contribution']
+
+admin.site.register(HallOfFame, HallOfFameAdmin)

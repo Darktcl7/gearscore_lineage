@@ -1555,3 +1555,161 @@ def discord_dashboard(request):
         'days': DiscordAlarm.DAYS,
     }
     return render(request, 'items/discord_dashboard.html', context)
+
+
+# ======================================================
+# UNIVERSAL POWER RANK VIEWS
+# ======================================================
+from .models import UniversalPowerRank
+
+@login_required
+def power_rank_leaderboard(request):
+    """
+    Universal Power Rank leaderboard - shows all characters ranked by gear score.
+    """
+    selected_clan = request.GET.get('clan', 'Valkyrie')
+    clan_choices = ['Valkyrie', 'Valhalla']
+
+    rankings_qs = UniversalPowerRank.objects.select_related('character').all()
+
+    if selected_clan == 'Valkyrie':
+        from django.db.models import Q
+        rankings_qs = rankings_qs.filter(
+            Q(character__clan='Valkyrie') | Q(character__clan='') | Q(character__clan__isnull=True)
+        )
+    else:
+        rankings_qs = rankings_qs.filter(character__clan=selected_clan)
+
+    rankings_qs = rankings_qs.order_by('-gear_score')
+
+    leaderboard = []
+    for i, pr in enumerate(rankings_qs, 1):
+        leaderboard.append({
+            'rank': i,
+            'power_rank': pr,
+            'character': pr.character,
+        })
+
+    # Check if current user has a character with power rank data
+    user_power_rank = None
+    user_characters = Character.objects.filter(owner=request.user)
+    for char in user_characters:
+        try:
+            user_power_rank = char.power_rank
+            break
+        except UniversalPowerRank.DoesNotExist:
+            pass
+
+    context = {
+        'leaderboard': leaderboard,
+        'selected_clan': selected_clan,
+        'clan_choices': clan_choices,
+        'user_power_rank': user_power_rank,
+        'is_admin': is_admin(request.user),
+    }
+    return render(request, 'items/power_rank_leaderboard.html', context)
+
+
+@login_required
+def edit_power_rank(request, character_pk):
+    """
+    Edit Universal Power Rank stats for a character.
+    Members input their own data.
+    """
+    character = get_object_or_404(Character, pk=character_pk)
+
+    # Permission check: admin can edit any, user can only edit their own
+    if not is_admin(request.user) and character.owner != request.user:
+        return HttpResponseForbidden("You can only edit your own characters.")
+
+    power_rank, created = UniversalPowerRank.objects.get_or_create(character=character)
+
+    if request.method == 'POST':
+        try:
+            power_rank.server = request.POST.get('server', power_rank.server)
+            power_rank.power_class = request.POST.get('power_class', '')
+            power_rank.level = float(request.POST.get('level', 0) or 0)
+            power_rank.dmg = float(request.POST.get('dmg', 0) or 0)
+            power_rank.acc = float(request.POST.get('acc', 0) or 0)
+            power_rank.defense = float(request.POST.get('defense', 0) or 0)
+            power_rank.dmg_reduct = float(request.POST.get('dmg_reduct', 0) or 0)
+            power_rank.skill_resist = float(request.POST.get('skill_resist', 0) or 0)
+            power_rank.skill_dmg_boost = float(request.POST.get('skill_dmg_boost', 0) or 0)
+            power_rank.weapon_dmg_boost = float(request.POST.get('weapon_dmg_boost', 0) or 0)
+            power_rank.soulshot = float(request.POST.get('soulshot', 0) or 0)
+            power_rank.valor = float(request.POST.get('valor', 0) or 0)
+            power_rank.guardian = float(request.POST.get('guardian', 0) or 0)
+            power_rank.conquer = float(request.POST.get('conquer', 0) or 0)
+            power_rank.duel = float(request.POST.get('duel', 0) or 0)
+            power_rank.purple_class_aga = float(request.POST.get('purple_class_aga', 0) or 0)
+            power_rank.save()  # gear_score auto-calculated in save()
+            messages.success(request, f"Power stats for {character.name} updated successfully!")
+            return redirect('power-rank-leaderboard')
+        except (ValueError, TypeError) as e:
+            messages.error(request, f"Invalid input: {e}")
+
+    context = {
+        'character': character,
+        'power_rank': power_rank,
+        'server_choices': [('K1', 'K1'), ('K5', 'K5'), ('K9', 'K9'), ('T8', 'T8')],
+    }
+    return render(request, 'items/power_rank_form.html', context)
+
+
+# ======================================================
+# HALL OF FAME VIEW
+# ======================================================
+from .models import HallOfFame
+
+def hall_of_fame_view(request):
+    members = HallOfFame.objects.filter(is_active=True).order_for_presentation() if hasattr(HallOfFame.objects, 'order_for_presentation') else HallOfFame.objects.filter(is_active=True).order_by('-contribution', 'name')
+    context = {
+        'members': members,
+    }
+    return render(request, 'items/hall_of_fame.html', context)
+
+# ======================================================
+# HALL OF FAME MANAGEMENT (ADMIN)
+# ======================================================
+@login_required
+def manage_hall_of_fame(request):
+    if not request.user.is_staff and not request.user.groups.filter(name='Sub Admin').exists():
+        messages.error(request, 'You do not have permission to manage the Hall of Fame.')
+        return redirect('item-list')
+        
+    if request.method == "POST":
+        action = request.POST.get('action')
+        
+        if action == "add":
+            name = request.POST.get('name')
+            rank = request.POST.get('rank')
+            clan = request.POST.get('clan')
+            contribution = request.POST.get('contribution', 0)
+            image = request.FILES.get('image')
+            
+            if name:
+                HallOfFame.objects.create(
+                    name=name,
+                    rank=rank,
+                    clan=clan,
+                    contribution=contribution,
+                    image=image
+                )
+                messages.success(request, f"Successfully added {name} to Hall of Fame!")
+            return redirect('manage-hall-of-fame')
+            
+        elif action == "delete":
+            pk = request.POST.get('member_id')
+            member = get_object_or_404(HallOfFame, pk=pk)
+            member.delete()
+            messages.success(request, "Member successfully deleted from Hall of Fame.")
+            return redirect('manage-hall-of-fame')
+            
+    members = HallOfFame.objects.all().order_by('-created_at')
+    from items.models import Character
+    characters = Character.objects.values_list('name', flat=True).order_by('name')
+    context = {
+        'members': members,
+        'characters': characters,
+    }
+    return render(request, 'items/manage_hall_of_fame.html', context)

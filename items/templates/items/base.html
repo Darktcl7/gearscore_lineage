@@ -694,6 +694,9 @@
                 <a href="{% url 'character-list' %}"
                     class="{% if request.resolver_match.url_name == 'character-list' %}active{% endif %}">Guardians</a>
 
+                <a href="{% url 'power-rank-leaderboard' %}"
+                    class="{% if request.resolver_match.url_name == 'power-rank-leaderboard' %}active{% endif %}">Power Rank</a>
+
                 <!-- EVENT MENU (DROPDOWN) -->
                 <div class="dropdown">
                     <a href="#" class="dropbtn" style="cursor: default;">Activity Event ▾</a>
@@ -732,6 +735,9 @@
                     </div>
                 </div>
 
+                <a href="{% url 'hall-of-fame-list' %}"
+                    class="{% if request.resolver_match.url_name == 'hall-of-fame-list' %}active{% endif %}">Hall of Fame</a>
+
                 {% if user.is_staff or "Sub Admin" in user.groups.all|join:", " %}
                 <a href="{% url 'item-list' %}"
                     class="{% if request.resolver_match.url_name == 'item-list' %}active{% endif %}">Armory</a>
@@ -741,6 +747,7 @@
                     <a href="#" class="dropbtn" style="cursor: default;">Admin Panel ▾</a>
                     <div class="dropdown-content">
                         <a href="{% url 'character-management' %}">Character Management</a>
+                        <a href="{% url 'manage-hall-of-fame' %}">Hall of Fame Mgmt</a>
                         {% if user.is_staff %}
                         <a href="{% url 'discord-dashboard' %}">Discord Control</a>
                         {% endif %}

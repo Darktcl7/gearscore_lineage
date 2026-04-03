@@ -1,0 +1,495 @@
+{% extends 'items/base.html' %}
+{% load static %}
+
+{% block title %}Universal Power Rank{% endblock %}
+
+{% block extra_body_attributes %}class="fullscreen-page"{% endblock %}
+
+{% block extra_head %}
+<style>
+    .activity-container {
+        min-height: 80vh;
+        margin: 0 10px 50px 10px;
+        display: flex;
+        flex-direction: column;
+        background: rgba(18, 18, 18, 0.65);
+        border-radius: 20px;
+        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 5px 0;
+    }
+
+    .activity-header {
+        padding: 20px 30px;
+        background: linear-gradient(135deg, rgba(80, 40, 120, 0.3), rgba(40, 20, 80, 0.4));
+        border-bottom: 1px solid rgba(150, 100, 255, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 15px;
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+    }
+
+    .activity-header h1 {
+        margin: 0;
+        color: #ffffff;
+        font-size: 1.5rem;
+        font-weight: 700;
+        text-shadow: 0 0 20px rgba(150, 100, 255, 0.4);
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .activity-header h1 i {
+        color: #b88aff;
+        font-size: 1.3rem;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* Clan Filter */
+    .clan-filter {
+        display: flex;
+        gap: 0;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .clan-btn {
+        padding: 8px 20px;
+        background: rgba(255, 255, 255, 0.05);
+        color: #888;
+        text-decoration: none;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s;
+        border: none;
+        cursor: pointer;
+        font-family: 'Cinzel', serif;
+    }
+
+    .clan-btn:hover {
+        background: rgba(150, 100, 255, 0.15);
+        color: #ccc;
+    }
+
+    .clan-btn.active {
+        background: linear-gradient(135deg, rgba(150, 100, 255, 0.3), rgba(100, 60, 200, 0.3));
+        color: #fff;
+        text-shadow: 0 0 8px rgba(150, 100, 255, 0.5);
+    }
+
+    .btn-update-stats {
+        padding: 8px 20px;
+        background: linear-gradient(135deg, rgba(150, 100, 255, 0.3), rgba(100, 60, 200, 0.4));
+        color: #d4bbff;
+        text-decoration: none;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-radius: 8px;
+        border: 1px solid rgba(150, 100, 255, 0.3);
+        transition: all 0.3s;
+        font-family: 'Cinzel', serif;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-update-stats:hover {
+        background: linear-gradient(135deg, rgba(150, 100, 255, 0.5), rgba(100, 60, 200, 0.6));
+        color: #fff;
+        box-shadow: 0 0 20px rgba(150, 100, 255, 0.3);
+        transform: translateY(-1px);
+    }
+
+    .activity-content {
+        flex: 1;
+        padding: 20px 30px;
+    }
+
+    .glass-card {
+        background: linear-gradient(160deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+        border-radius: 12px;
+        padding: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    .glass-card h3 {
+        margin: 0 0 12px 0;
+        color: #b88aff;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-bottom: 1px solid rgba(150, 100, 255, 0.2);
+        padding-bottom: 8px;
+    }
+
+    /* Table */
+    .leaderboard-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 4px;
+    }
+
+    .leaderboard-table th {
+        padding: 8px 12px;
+        text-align: left;
+        color: #888;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.65rem;
+        letter-spacing: 1px;
+    }
+
+    .leaderboard-table td {
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.02);
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        color: #ddd;
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+    }
+
+    .leaderboard-table td:first-child {
+        border-left: 1px solid rgba(255, 255, 255, 0.05);
+        border-top-left-radius: 10px;
+        border-bottom-left-radius: 10px;
+    }
+
+    .leaderboard-table td:last-child {
+        border-right: 1px solid rgba(255, 255, 255, 0.05);
+        border-top-right-radius: 10px;
+        border-bottom-right-radius: 10px;
+    }
+
+    .leaderboard-table tr:hover td {
+        background: rgba(150, 100, 255, 0.06);
+        transform: scale(1.005);
+        border-color: rgba(150, 100, 255, 0.2);
+    }
+
+    /* Rank badges */
+    .rank-badge {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        font-weight: 800;
+        font-size: 1rem;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .rank-1 {
+        background: linear-gradient(135deg, #FFD700, #FDB931);
+        color: #333;
+        border: 2px solid #FFF8DC;
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+        font-size: 1.2rem;
+    }
+
+    .rank-2 {
+        background: linear-gradient(135deg, #E0E0E0, #B0B0B0);
+        color: #333;
+        border: 2px solid #F5F5F5;
+        box-shadow: 0 0 15px rgba(192, 192, 192, 0.3);
+    }
+
+    .rank-3 {
+        background: linear-gradient(135deg, #CD7F32, #A0522D);
+        color: #FFF;
+        border: 2px solid #DEB887;
+        box-shadow: 0 0 15px rgba(205, 127, 50, 0.3);
+    }
+
+    .rank-other {
+        background: rgba(255, 255, 255, 0.05);
+        color: #888;
+        font-size: 0.9rem;
+    }
+
+    .score-cell {
+        font-family: 'Courier New', monospace;
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+
+    .score-high { color: #FFD700; text-shadow: 0 0 8px rgba(255, 215, 0, 0.3); }
+    .score-mid { color: #b88aff; }
+    .score-low { color: #ddd; }
+
+    .stat-mini {
+        font-size: 0.75rem;
+        color: #999;
+        padding: 2px 6px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 4px;
+        display: inline-block;
+        margin: 1px;
+    }
+
+    .stat-mini .stat-label { color: #666; }
+    .stat-mini .stat-val { color: #ccc; font-weight: 600; }
+
+    .player-name {
+        font-weight: 600;
+        color: #fff;
+        text-decoration: none;
+        transition: color 0.3s;
+    }
+
+    .player-name:hover {
+        color: #b88aff;
+        text-shadow: 0 0 8px rgba(150, 100, 255, 0.4);
+    }
+
+    .player-class {
+        font-size: 0.75rem;
+        color: #777;
+        margin-top: 2px;
+    }
+
+    .player-server {
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .server-K1 { background: rgba(255, 100, 100, 0.15); color: #ff8888; }
+    .server-K5 { background: rgba(100, 200, 255, 0.15); color: #88ccff; }
+    .server-K9 { background: rgba(100, 255, 150, 0.15); color: #88ffaa; }
+    .server-T8 { background: rgba(255, 200, 100, 0.15); color: #ffcc88; }
+
+    /* Responsive table wrapper */
+    .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -15px; /* Slight negative margin on mobile */
+        padding: 0 15px;
+    }
+
+    .table-wrapper::-webkit-scrollbar { height: 8px; }
+    .table-wrapper::-webkit-scrollbar-thumb { background: rgba(150, 100, 255, 0.4); border-radius: 4px; }
+    .table-wrapper::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
+
+    /* For Sticky Name Column */
+    .sticky-col {
+        position: sticky;
+        left: 0;
+        background: inherit;
+        z-index: 2;
+        min-width: 120px;
+        box-shadow: 2px 0 5px -2px rgba(0,0,0,0.5);
+    }
+    .leaderboard-table th.sticky-col {
+        background: #1e132c;
+        z-index: 3;
+    }
+    /* We ensure row hover state updates the sticky column background */
+    .leaderboard-table tr:hover td.sticky-col {
+        background: #2b1f41; 
+    }
+    
+    .leaderboard-table th {
+        white-space: nowrap;
+    }
+    .leaderboard-table td {
+        white-space: nowrap;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-state i { font-size: 3rem; color: #444; margin-bottom: 15px; }
+    .empty-state p { color: #888; font-size: 1.1rem; }
+
+    /* Mobile Optimizations */
+    @media (max-width: 900px) {
+        .activity-container {
+            margin: 0;
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+        }
+        .activity-header { 
+            padding: 15px 20px; 
+            flex-direction: column;
+            align-items: flex-start;
+            border-radius: 0;
+        }
+        .header-actions {
+            width: 100%;
+            justify-content: space-between;
+        }
+        .btn-update-stats {
+            width: 100%;
+            justify-content: center;
+            margin-top: 5px;
+        }
+        .clan-filter {
+            width: 100%;
+            display: flex;
+        }
+        .clan-btn {
+            flex: 1;
+            text-align: center;
+        }
+        .activity-content { padding: 15px 10px; }
+        .glass-card { padding: 10px; border-radius: 8px;}
+        .leaderboard-table td, .leaderboard-table th { padding: 8px 10px; font-size: 0.8rem; }
+        
+        /* Stop hiding stats! Allow scroll instead */
+        .hide-mobile { display: table-cell; }
+        
+        .score-cell { font-size: 1rem; }
+    }
+
+    /* Mobile: stagger animation for nav */
+    nav#nav-menu.active a:nth-child(6) { transition-delay: 0.35s; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="activity-container">
+    <div class="activity-header">
+        <h1><i class="fas fa-bolt"></i> Universal Power Rank</h1>
+        <div class="header-actions">
+            <!-- Clan Filter -->
+            <div class="clan-filter">
+                {% for clan in clan_choices %}
+                <a href="?clan={{ clan }}"
+                   class="clan-btn {% if selected_clan == clan %}active{% endif %}">{{ clan }}</a>
+                {% endfor %}
+            </div>
+            <!-- Update My Stats Button -->
+            {% if user.is_authenticated %}
+                {% for char in user.characters.all %}
+                    <a href="{% url 'edit-power-rank' char.pk %}" class="btn-update-stats">
+                        <i class="fas fa-edit"></i> Update Stats ({{ char.name }})
+                    </a>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="activity-content">
+        <div class="glass-card">
+            <h3><i class="fas fa-crown"></i> Overall Power Ranking — {{ selected_clan }}</h3>
+
+            {% if leaderboard %}
+            <div class="table-wrapper">
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th style="width:60px; text-align:center;">Rank</th>
+                            <th class="sticky-col">IGN</th>
+                            <th>Server</th>
+                            <th class="hide-mobile">Lvl</th>
+                            <th class="hide-mobile" title="Damage">DMG</th>
+                            <th class="hide-mobile" title="Accuracy">ACC</th>
+                            <th class="hide-mobile" title="Defense">DEF</th>
+                            <th class="hide-mobile" title="Damage Reduction">DMG Red.</th>
+                            <th class="hide-mobile" title="Skill Resistance">Skill Res.</th>
+                            <th class="hide-mobile" title="Skill Damage Boost">Skill DMG</th>
+                            <th class="hide-mobile" title="Weapon Damage Boost">Wpn DMG</th>
+                            <th class="hide-mobile" title="Soulshot">SS</th>
+                            <th class="hide-mobile" title="Valor">Valor</th>
+                            <th class="hide-mobile" title="Guardian">Guard.</th>
+                            <th class="hide-mobile" title="Conquer">Conq.</th>
+                            <th class="hide-mobile" title="Duel">Duel</th>
+                            <th class="hide-mobile" title="Purple Class/Agathion">Prpl</th>
+                            <th style="text-align:right;">Gear Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in leaderboard %}
+                        <tr>
+                            <td style="text-align: center;">
+                                {% if item.rank == 1 %}
+                                <div class="rank-badge rank-1">1</div>
+                                {% elif item.rank == 2 %}
+                                <div class="rank-badge rank-2">2</div>
+                                {% elif item.rank == 3 %}
+                                <div class="rank-badge rank-3">3</div>
+                                {% else %}
+                                <div class="rank-badge rank-other">{{ item.rank }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="sticky-col" style="background: rgba(30, 30, 30, 0.4);">
+                                <a href="{% url 'character-profile' item.character.pk %}" class="player-name">
+                                    {{ item.character.name }}
+                                </a>
+                                <div class="player-class">{{ item.power_rank.power_class|default:"—" }}</div>
+                            </td>
+                            <td>
+                                <span class="player-server server-{{ item.power_rank.server }}">
+                                    {{ item.power_rank.server }}
+                                </span>
+                            </td>
+                            <td class="hide-mobile">{{ item.power_rank.level|floatformat:0 }}</td>
+                            <td class="hide-mobile">{{ item.power_rank.dmg|floatformat:0 }}</td>
+                            <td class="hide-mobile">{{ item.power_rank.acc|floatformat:0 }}</td>
+                            <td class="hide-mobile">{{ item.power_rank.defense|floatformat:0 }}</td>
+                            <td class="hide-mobile">{{ item.power_rank.dmg_reduct|floatformat:0 }}</td>
+                            <td class="hide-mobile">{{ item.power_rank.skill_resist|floatformat:0 }}</td>
+                            <td class="hide-mobile">{{ item.power_rank.skill_dmg_boost|floatformat:0 }}</td>
+                            <td class="hide-mobile">{{ item.power_rank.weapon_dmg_boost|floatformat:0 }}</td>
+                            <td class="hide-mobile">{{ item.power_rank.soulshot|floatformat:1 }}</td>
+                            <td class="hide-mobile">{{ item.power_rank.valor|floatformat:1 }}</td>
+                            <td class="hide-mobile">{{ item.power_rank.guardian|floatformat:1 }}</td>
+                            <td class="hide-mobile">{{ item.power_rank.conquer|floatformat:1 }}</td>
+                            <td class="hide-mobile">{{ item.power_rank.duel|floatformat:1 }}</td>
+                            <td class="hide-mobile">{{ item.power_rank.purple_class_aga|floatformat:0 }}</td>
+                            <td style="text-align: right;">
+                                <span class="score-cell {% if item.power_rank.gear_score >= 2000 %}score-high{% elif item.power_rank.gear_score >= 1500 %}score-mid{% else %}score-low{% endif %}">
+                                    {{ item.power_rank.gear_score }}
+                                </span>
+                                <span style="font-size: 0.75rem; color: #666; font-weight: normal;">pts</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-shield-alt"></i>
+                <p>No power rank data yet. Be the first to update your stats!</p>
+                {% if user.is_authenticated %}
+                    {% for char in user.characters.all %}
+                    <a href="{% url 'edit-power-rank' char.pk %}" class="btn-update-stats" style="margin-top: 15px; display: inline-flex;">
+                        <i class="fas fa-plus"></i> Add My Power Stats
+                    </a>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

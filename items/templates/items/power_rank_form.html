@@ -1,0 +1,369 @@
+{% extends 'items/base.html' %}
+{% load static %}
+
+{% block title %}Update Power Stats — {{ character.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .form-container {
+        max-width: 900px;
+        margin: 0 auto 50px auto;
+        background: rgba(18, 18, 18, 0.75);
+        border-radius: 20px;
+        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+    }
+
+    .form-header {
+        padding: 25px 30px;
+        background: linear-gradient(135deg, rgba(80, 40, 120, 0.3), rgba(40, 20, 80, 0.4));
+        border-bottom: 1px solid rgba(150, 100, 255, 0.15);
+    }
+
+    .form-header h1 {
+        margin: 0;
+        color: #fff;
+        font-size: 1.4rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-shadow: 0 0 20px rgba(150, 100, 255, 0.4);
+    }
+
+    .form-header h1 i { color: #b88aff; }
+
+    .form-header p {
+        margin: 8px 0 0 0;
+        color: #999;
+        font-size: 0.9rem;
+    }
+
+    .form-body {
+        padding: 30px;
+    }
+
+    /* Section groups */
+    .stat-section {
+        margin-bottom: 25px;
+    }
+
+    .stat-section h3 {
+        color: #b88aff;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin: 0 0 15px 0;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(150, 100, 255, 0.15);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .stat-section h3 i { font-size: 0.85rem; }
+
+    /* Grid layout */
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 15px;
+    }
+
+    .stat-grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        font-size: 0.75rem;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 5px;
+        font-weight: 600;
+    }
+
+    .form-group input,
+    .form-group select {
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 12px 14px;
+        color: #fff;
+        font-size: 1rem;
+        border-radius: 8px;
+        transition: all 0.3s;
+        font-family: 'Roboto', sans-serif;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: rgba(150, 100, 255, 0.5);
+        background: rgba(0, 0, 0, 0.6);
+        box-shadow: 0 0 15px rgba(150, 100, 255, 0.15);
+    }
+
+    .form-group input[type="number"] {
+        -moz-appearance: textfield;
+    }
+
+    .form-group input::-webkit-outer-spin-button,
+    .form-group input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .form-group .hint {
+        font-size: 0.7rem;
+        color: #666;
+        margin-top: 3px;
+    }
+
+    /* Action buttons */
+    .form-actions {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .btn-save {
+        flex: 1;
+        padding: 14px 30px;
+        background: linear-gradient(135deg, rgba(150, 100, 255, 0.4), rgba(100, 60, 200, 0.5));
+        color: #fff;
+        border: 1px solid rgba(150, 100, 255, 0.4);
+        border-radius: 10px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-family: 'Cinzel', serif;
+    }
+
+    .btn-save:hover {
+        background: linear-gradient(135deg, rgba(150, 100, 255, 0.6), rgba(100, 60, 200, 0.7));
+        box-shadow: 0 5px 25px rgba(150, 100, 255, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .btn-cancel {
+        padding: 14px 30px;
+        background: rgba(255, 255, 255, 0.05);
+        color: #888;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        text-decoration: none;
+        text-align: center;
+        transition: all 0.3s;
+        font-family: 'Cinzel', serif;
+    }
+
+    .btn-cancel:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #ccc;
+    }
+
+    /* Messages */
+    .alert {
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+    }
+    .alert-success {
+        background: rgba(50, 200, 100, 0.15);
+        border: 1px solid rgba(50, 200, 100, 0.3);
+        color: #88ffaa;
+    }
+    .alert-error {
+        background: rgba(255, 80, 80, 0.15);
+        border: 1px solid rgba(255, 80, 80, 0.3);
+        color: #ff8888;
+    }
+
+    /* Gear Score Preview */
+    .gs-preview {
+        text-align: center;
+        padding: 20px;
+        background: linear-gradient(135deg, rgba(150, 100, 255, 0.08), rgba(80, 40, 120, 0.1));
+        border-radius: 12px;
+        border: 1px solid rgba(150, 100, 255, 0.15);
+        margin-top: 20px;
+    }
+
+    .gs-preview .gs-label {
+        font-size: 0.8rem;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .gs-preview .gs-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        font-family: 'Courier New', monospace;
+        color: #FFD700;
+        text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        margin-top: 5px;
+    }
+
+    .gs-preview .gs-note {
+        font-size: 0.75rem;
+        color: #666;
+        margin-top: 5px;
+    }
+
+    @media (max-width: 600px) {
+        .form-body { padding: 20px; }
+        .stat-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+        .stat-grid-2 { grid-template-columns: 1fr; }
+        .form-actions { flex-direction: column; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-header">
+        <h1><i class="fas fa-bolt"></i> Update Power Stats</h1>
+        <p>Character: <strong style="color: #fff;">{{ character.name }}</strong> — Fill in your in-game stats below</p>
+    </div>
+
+    <div class="form-body">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <!-- Basic Info -->
+            <div class="stat-section">
+                <h3><i class="fas fa-user"></i> Basic Information</h3>
+                <div class="stat-grid-2">
+                    <div class="form-group">
+                        <label>Server</label>
+                        <select name="server">
+                            {% for val, display in server_choices %}
+                            <option value="{{ val }}" {% if power_rank.server == val %}selected{% endif %}>{{ display }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Class</label>
+                        <input type="text" name="power_class" value="{{ power_rank.power_class }}" placeholder="e.g. GS, DB, Orb, Staff/Orb...">
+                        <span class="hint">Your main class or combo, e.g. GS / All Job</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Level</label>
+                        <input type="number" name="level" value="{{ power_rank.level|floatformat:0 }}" step="1" min="1" max="99">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Core Combat Stats -->
+            <div class="stat-section">
+                <h3><i class="fas fa-swords"></i> Combat Stats</h3>
+                <div class="stat-grid">
+                    <div class="form-group">
+                        <label>DMG</label>
+                        <input type="number" name="dmg" value="{{ power_rank.dmg|floatformat:0 }}" step="any" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>ACC</label>
+                        <input type="number" name="acc" value="{{ power_rank.acc|floatformat:0 }}" step="any" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>DEF</label>
+                        <input type="number" name="defense" value="{{ power_rank.defense|floatformat:0 }}" step="any" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>DMG Reduct</label>
+                        <input type="number" name="dmg_reduct" value="{{ power_rank.dmg_reduct|floatformat:0 }}" step="any" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Skill Resist</label>
+                        <input type="number" name="skill_resist" value="{{ power_rank.skill_resist|floatformat:0 }}" step="any" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Skill DMG Boost</label>
+                        <input type="number" name="skill_dmg_boost" value="{{ power_rank.skill_dmg_boost|floatformat:0 }}" step="any" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Weapon DMG Boost</label>
+                        <input type="number" name="weapon_dmg_boost" value="{{ power_rank.weapon_dmg_boost|floatformat:0 }}" step="any" min="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progression Stats -->
+            <div class="stat-section">
+                <h3><i class="fas fa-arrow-up"></i> Progression Stats</h3>
+                <div class="stat-grid">
+                    <div class="form-group">
+                        <label>Soulshot</label>
+                        <input type="number" name="soulshot" value="{{ power_rank.soulshot|floatformat:1 }}" step="0.1" min="0">
+                        <span class="hint">e.g. 10, 9, 8</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Valor</label>
+                        <input type="number" name="valor" value="{{ power_rank.valor|floatformat:1 }}" step="0.1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Guardian</label>
+                        <input type="number" name="guardian" value="{{ power_rank.guardian|floatformat:1 }}" step="0.1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Conquer</label>
+                        <input type="number" name="conquer" value="{{ power_rank.conquer|floatformat:1 }}" step="0.1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Duel</label>
+                        <input type="number" name="duel" value="{{ power_rank.duel|floatformat:1 }}" step="0.1" min="0">
+                        <span class="hint">Duel progression level</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Purple Class/Aga</label>
+                        <input type="number" name="purple_class_aga" value="{{ power_rank.purple_class_aga|floatformat:0 }}" step="1" min="0">
+                        <span class="hint">Number of purple class or agathion</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gear Score Preview -->
+            <div class="gs-preview">
+                <div class="gs-label">Current Gear Score</div>
+                <div class="gs-value" id="gs-display">{{ power_rank.gear_score }}</div>
+                <div class="gs-note">Gear score will be recalculated upon save</div>
+            </div>
+
+            <!-- Actions -->
+            <div class="form-actions">
+                <button type="submit" class="btn-save">
+                    <i class="fas fa-save"></i> Save Power Stats
+                </button>
+                <a href="{% url 'power-rank-leaderboard' %}" class="btn-cancel">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

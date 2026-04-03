@@ -1,0 +1,329 @@
+{% extends 'items/base.html' %}
+{% load static %}
+
+{% block title %}Hall of Fame{% endblock %}
+
+{% block extra_body_attributes %}class="fullscreen-page"{% endblock %}
+
+{% block extra_head %}
+<!-- Google Fonts for High Fantasy Feel -->
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Cormorant+Garamond:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+
+<style>
+    .hof-container {
+        min-height: 80vh;
+        margin: 0 20px 60px 20px;
+        padding-top: 20px;
+    }
+
+    /* Page Header */
+    .hof-title-section {
+        text-align: center;
+        margin-bottom: 50px;
+        position: relative;
+    }
+
+    .hof-title-section h1 {
+        font-family: 'Cinzel', serif;
+        font-size: 3.5rem;
+        color: #ECC771;
+        text-transform: uppercase;
+        letter-spacing: 5px;
+        margin: 0;
+        text-shadow: 0 0 20px rgba(236, 199, 113, 0.4), 0 5px 10px rgba(0,0,0,0.8);
+        background: -webkit-linear-gradient(top, #FFFBEB 0%, #ECC771 50%, #B88A44 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .hof-title-section p {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.5rem;
+        color: #e0d5c1;
+        font-style: italic;
+        margin-top: 10px;
+        letter-spacing: 2px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    }
+
+    .hof-title-divider {
+        width: 300px;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #ECC771, transparent);
+        margin: 20px auto;
+        position: relative;
+    }
+    .hof-title-divider::before {
+        content: '❖';
+        position: absolute;
+        top: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #ECC771;
+        font-size: 1.2rem;
+        text-shadow: 0 0 10px rgba(236, 199, 113, 0.8);
+    }
+
+    /* Grid Layout */
+    .hof-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 40px;
+        padding: 0 20px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    /* Character Card (Lineage 2M Style) */
+    .hof-card {
+        background: #0f0a14;
+        border-radius: 4px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.4s ease, box-shadow 0.4s ease;
+        overflow: hidden;
+        /* The ornate border */
+        box-shadow: 0 0 0 1px rgba(255,255,255,0.05),
+                    0 15px 35px rgba(0,0,0,0.8);
+    }
+
+    .hof-card::before {
+        content: '';
+        position: absolute;
+        top: 2px; left: 2px; right: 2px; bottom: 2px;
+        border: 1px solid rgba(236, 199, 113, 0.15);
+        pointer-events: none;
+        z-index: 5;
+    }
+
+    .hof-card:hover {
+        transform: translateY(-8px);
+    }
+
+    /* Ranks Styling */
+    .rank-master {
+        box-shadow: 0 0 0 1px rgba(236, 199, 113, 0.5), 0 20px 40px rgba(0,0,0,0.9), 0 0 20px rgba(236, 199, 113, 0.2);
+    }
+    .rank-master:hover {
+        box-shadow: 0 0 0 1px #ECC771, 0 20px 40px rgba(0,0,0,0.9), 0 0 35px rgba(236, 199, 113, 0.4);
+    }
+    
+    .rank-guardian {
+        box-shadow: 0 0 0 1px rgba(184, 138, 255, 0.4), 0 20px 40px rgba(0,0,0,0.9), 0 0 20px rgba(138, 43, 226, 0.2);
+    }
+    .rank-guardian:hover {
+        box-shadow: 0 0 0 1px #b88aff, 0 20px 40px rgba(0,0,0,0.9), 0 0 35px rgba(138, 43, 226, 0.4);
+    }
+
+    .rank-member {
+        box-shadow: 0 0 0 1px rgba(150, 160, 175, 0.3), 0 20px 40px rgba(0,0,0,0.9);
+    }
+    .rank-member:hover {
+        box-shadow: 0 0 0 1px rgba(200, 210, 225, 0.5), 0 20px 40px rgba(0,0,0,0.9), 0 0 20px rgba(150, 160, 175, 0.2);
+    }
+
+
+    /* Image Area */
+    .hof-image-wrapper {
+        width: 100%;
+        height: 480px;
+        position: relative;
+        background: #1a1224;
+        overflow: hidden;
+    }
+
+    .hof-image-wrapper::after {
+        content: '';
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 60%;
+        background: linear-gradient(to top, #0f0a14 0%, transparent 100%);
+        z-index: 2;
+    }
+
+    .hof-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center top;
+        transition: transform 0.6s ease;
+    }
+
+    .hof-card:hover .hof-image {
+        transform: scale(1.05);
+    }
+    
+    .no-image {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: rgba(255,255,255,0.1);
+        font-size: 5rem;
+    }
+
+    /* Content Area */
+    .hof-info {
+        padding: 20px;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 3;
+    }
+
+    .hof-name {
+        font-family: 'Cinzel', serif;
+        font-size: 1.8rem;
+        color: #fff;
+        margin: 0 0 5px 0;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+    }
+
+    .hof-rank-clan {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .badge {
+        padding: 4px 10px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-radius: 2px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    }
+
+    /* Rank Badges */
+    .badge-master {
+        background: linear-gradient(135deg, #4a3600, #241a00);
+        color: #ECC771;
+        border: 1px solid rgba(236, 199, 113, 0.4);
+    }
+    .badge-guardian {
+        background: linear-gradient(135deg, #2b114d, #140727);
+        color: #d8b8ff;
+        border: 1px solid rgba(184, 138, 255, 0.4);
+    }
+    .badge-member {
+        background: linear-gradient(135deg, #1c2331, #0a0e14);
+        color: #aebfd4;
+        border: 1px solid rgba(174, 191, 212, 0.3);
+    }
+
+    /* Clan Badges */
+    .badge-valkyrie {
+        background: rgba(180, 20, 20, 0.15);
+        color: #ff6b6b;
+        border: 1px solid rgba(255, 107, 107, 0.3);
+    }
+    .badge-valhalla {
+        background: rgba(20, 100, 180, 0.15);
+        color: #6bc2ff;
+        border: 1px solid rgba(107, 194, 255, 0.3);
+    }
+
+    /* Contribution */
+    .hof-contribution {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid rgba(255,255,255,0.08);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .hof-contrib-label {
+        font-size: 0.8rem;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .hof-contrib-value {
+        font-family: 'Cinzel', serif;
+        font-size: 1.4rem;
+        color: #ECC771;
+        font-weight: 800;
+        text-shadow: 0 0 10px rgba(236, 199, 113, 0.2);
+    }
+
+    .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 80px 20px;
+        background: rgba(0,0,0,0.5);
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 4px;
+    }
+    .empty-state i {
+        font-size: 4rem;
+        color: #333;
+        margin-bottom: 20px;
+    }
+    .empty-state p {
+        font-size: 1.2rem;
+        color: #888;
+        font-family: 'Cormorant Garamond', serif;
+    }
+
+    @media (max-width: 768px) {
+        .hof-title-section h1 { font-size: 2.5rem; }
+        .hof-title-section p { font-size: 1.2rem; }
+        .hof-image-wrapper { height: 400px; }
+        .hof-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; padding: 0 10px;}
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hof-container">
+    
+    <div class="hof-title-section">
+        <h1>Hall of Fame</h1>
+        <div class="hof-title-divider"></div>
+        <p>Honor and Glory forever remembered</p>
+    </div>
+
+    <div class="hof-grid">
+        {% for member in members %}
+        <div class="hof-card rank-{{ member.rank|lower }}">
+            
+            <div class="hof-image-wrapper">
+                {% if member.image %}
+                    <img src="{{ member.image.url }}" alt="{{ member.name }}" class="hof-image">
+                {% else %}
+                    <div class="no-image"><i class="fas fa-user-ninja"></i></div>
+                {% endif %}
+            </div>
+
+            <div class="hof-info">
+                <h2 class="hof-name">{{ member.name }}</h2>
+                <div class="hof-rank-clan">
+                    <span class="badge badge-{{ member.rank|lower }}"><i class="fas fa-star" style="font-size:0.6rem; margin-right:3px;"></i> {{ member.rank }}</span>
+                    <span class="badge badge-{{ member.clan|lower }}">{{ member.clan }}</span>
+                </div>
+                
+                <div class="hof-contribution">
+                    <span class="hof-contrib-label">Contribution Points</span>
+                    <span class="hof-contrib-value">{{ member.contribution|default:"0" }}</span>
+                </div>
+            </div>
+
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <i class="fas fa-monument"></i>
+            <p>The Hall of Fame awaits its first legend.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

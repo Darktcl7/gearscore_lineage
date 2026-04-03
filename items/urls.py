@@ -35,6 +35,13 @@ from .views import (
     discord_dashboard, # Discord Management
     complete_event, # Complete Event with result
     toggle_sub_admin, # Toggle Sub Admin
+    # Universal Power Rank
+    power_rank_leaderboard,
+    edit_power_rank,
+    
+    # Hall of Fame
+    hall_of_fame_view,
+    manage_hall_of_fame,
 ) 
 
 urlpatterns = [
@@ -229,5 +236,25 @@ urlpatterns = [
     # URL: /items/profile/1/discord/ -> Link Discord to Character
     # URL: /items/profile/1/discord/ -> Link Discord to Character
     path('profile/<int:character_pk>/discord/', link_discord, name='link-discord'),
+
+    # ===============================================
+    # 7. UNIVERSAL POWER RANK
+    # ===============================================
+    
+    # URL: /portal/power-rank/ -> Power Rank Leaderboard
+    path('power-rank/', power_rank_leaderboard, name='power-rank-leaderboard'),
+    
+    # URL: /portal/power-rank/edit/1/ -> Edit Power Rank Stats
+    path('power-rank/edit/<int:character_pk>/', edit_power_rank, name='edit-power-rank'),
+
+    # ===============================================
+    # 8. HALL OF FAME
+    # ===============================================
+    
+    # URL: /portal/hall-of-fame/ -> Hall of Fame Page
+    path('hall-of-fame/', hall_of_fame_view, name='hall-of-fame-list'),
+    
+    # URL: /items/manage/hall-of-fame/ -> Admin Manage Hall of Fame
+    path('manage/hall-of-fame/', manage_hall_of_fame, name='manage-hall-of-fame'),
 
 ]

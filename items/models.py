@@ -1630,3 +1630,115 @@ class MonthlyReport(models.Model):
         ordering = ['-month', '-total_score']
         verbose_name = "Monthly Report"
         verbose_name_plural = "Monthly Reports"
+
+
+# ============================================================
+# UNIVERSAL POWER RANK
+# ============================================================
+
+SERVER_CHOICES = [
+    ('K1', 'K1'),
+    ('K5', 'K5'),
+    ('K9', 'K9'),
+    ('T8', 'T8'),
+]
+
+class UniversalPowerRank(models.Model):
+    """
+    Stores the universal power stats for a character.
+    Members input their own data. Gear Score is auto-calculated.
+    """
+    character = models.OneToOneField(
+        Character, on_delete=models.CASCADE, related_name='power_rank'
+    )
+    server = models.CharField("Server", max_length=10, choices=SERVER_CHOICES, default='K5')
+    power_class = models.CharField("Class", max_length=100, blank=True,
+        help_text="e.g. GS, DB, Orb, Staff, Sword/GS, etc.")
+    level = models.FloatField("Level", default=1)
+    dmg = models.FloatField("DMG", default=0)
+    acc = models.FloatField("ACC", default=0)
+    defense = models.FloatField("DEF", default=0)
+    dmg_reduct = models.FloatField("DMG Reduct", default=0)
+    skill_resist = models.FloatField("Skill Resist", default=0)
+    skill_dmg_boost = models.FloatField("Skill DMG Boost", default=0)
+    weapon_dmg_boost = models.FloatField("Weapon DMG Boost", default=0)
+    soulshot = models.FloatField("Soulshot", default=0)
+    valor = models.FloatField("Valor", default=0)
+    guardian = models.FloatField("Guardian", default=0)
+    conquer = models.FloatField("Conquer", default=0)
+    duel = models.FloatField("Duel", default=0,
+        help_text="Duel progression level")
+    purple_class_aga = models.FloatField("Purple Class/Aga", default=0,
+        help_text="Number of purple class or agathion")
+    gear_score = models.IntegerField("Gear Score", default=0,
+        help_text="Auto-calculated from stats")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def calculate_gear_score(self):
+        """
+        Calculate gear score based on all power stats.
+        Formula is a weighted sum designed to match the Excel reference data.
+        """
+        score = 0
+        # Exact calculation matching Excel formula:
+        # =DMG + ACC + DEF + (DMG RED*3) + SKILL RES + (SKILL DMG*2) + WPN DMG 
+        # + (SS*10) + (VALOR*10) + (GUARD*10) + (CONQ*10) + (DUEL*10)
+        score += self.dmg * 1.0
+        score += self.acc * 1.0
+        score += self.defense * 1.0
+        score += self.dmg_reduct * 3.0
+        score += self.skill_resist * 1.0
+        score += self.skill_dmg_boost * 2.0
+        score += self.weapon_dmg_boost * 1.0
+        score += self.soulshot * 10.0
+        score += self.valor * 10.0
+        score += self.guardian * 10.0
+        score += self.conquer * 10.0
+        score += self.duel * 10.0
+        
+        # Level and Purple Class are tracked but not added to the score in the original excel
+        return int(score)
+
+    def save(self, *args, **kwargs):
+        self.gear_score = self.calculate_gear_score()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.character.name} - GS: {self.gear_score}"
+
+    class Meta:
+        ordering = ['-gear_score']
+        verbose_name = "Universal Power Rank"
+        verbose_name_plural = "Universal Power Rankings"
+
+
+# ======================================================
+# HALL OF FAME
+# ======================================================
+class HallOfFame(models.Model):
+    RANK_CHOICES = [
+        ('Master', 'Master'),
+        ('Guardian', 'Guardian'),
+        ('Member', 'Member'),
+    ]
+    CLAN_CHOICES = [
+        ('Valkyrie', 'Valkyrie'),
+        ('Valhalla', 'Valhalla'),
+    ]
+    
+    name = models.CharField(max_length=100, help_text="Nama player (IGN)")
+    rank = models.CharField(max_length=50, choices=RANK_CHOICES, default='Member')
+    clan = models.CharField(max_length=50, choices=CLAN_CHOICES, default='Valkyrie')
+    contribution = models.IntegerField(default=0, help_text="Poin kontribusi")
+    image = models.ImageField(upload_to='hall_of_fame/', null=True, blank=True, help_text="Gambar karakter/player (aspect ratio Portrait disarankan)")
+    
+    is_active = models.BooleanField(default=True, help_text="Tampilkan di halaman Hall of Fame")
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.name} - {self.rank} ({self.clan})"
+        
+    class Meta:
+        ordering = ['-contribution', 'name']
+        verbose_name = "Hall of Fame Player"
+        verbose_name_plural = "Hall of Fame"

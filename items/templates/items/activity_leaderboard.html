@@ -396,6 +396,20 @@
             font-size: 0.75rem;
         }
 
+        .leaderboard-table {
+            display: block;
+            overflow-x: auto;
+            white-space: nowrap;
+            width: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .bulk-bar {
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .bbtn { padding: 4px 8px; font-size: 0.7rem; }
+        
         .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
         .stat-item { padding: 10px; }
         .stat-value { font-size: 1.3rem; }
@@ -407,7 +421,7 @@
 <div class="activity-container">
     <div class="activity-header">
         <h1><i class="fas fa-trophy" style="color: #FFD700;"></i> Activity Leaderboard</h1>
-        <div style="display: flex; gap: 15px; align-items: center;">
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
             <div class="current-month-badge" title="Current Month">
                 <i class="far fa-calendar-alt"></i> {{ current_month }}
             </div>
@@ -436,7 +450,7 @@
             
             <div class="glass-card">
                 <!-- Clan Filter -->
-                <div style="display: flex; gap: 8px; padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.06); align-items: center;">
+                <div style="display: flex; gap: 8px; padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.06); align-items: center; flex-wrap: wrap;">
                     <span style="color: #888; font-size: 0.85rem; margin-right: 5px;"><i class="fas fa-shield-alt"></i> Clan:</span>
                     {% for clan in clan_choices %}
                     <a href="?clan={{ clan }}" style="
