@@ -404,11 +404,36 @@
             -webkit-overflow-scrolling: touch;
         }
 
+        .ranking-tabs {
+            margin-bottom: 12px;
+            width: 100%;
+        }
+        .ranking-tab {
+            padding: 8px 5px;
+            font-size: 0.75rem;
+            flex: 1;
+            justify-content: center;
+        }
+        .ranking-tab .tab-count {
+            padding: 2px 5px;
+            font-size: 0.65rem;
+        }
+
         .bulk-bar {
             flex-wrap: wrap;
             gap: 5px;
+            padding: 6px 8px;
         }
-        .bbtn { padding: 4px 8px; font-size: 0.7rem; }
+        .bulk-bar label {
+            font-size: 0.75rem;
+        }
+        .bulk-bar .sel-count {
+            width: 100%;
+            text-align: left;
+            margin-top: 2px;
+            font-size: 0.7rem;
+        }
+        .bbtn { padding: 4px 6px; font-size: 0.65rem; }
         
         .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
         .stat-item { padding: 10px; }
