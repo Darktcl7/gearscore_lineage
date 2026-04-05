@@ -552,13 +552,6 @@
     <div class="activity-header">
         <h1><i class="fas fa-bolt"></i> Universal Power Rank</h1>
         <div class="header-actions">
-            <!-- Clan Filter -->
-            <div class="clan-filter">
-                {% for clan in clan_choices %}
-                <a href="?clan={{ clan }}"
-                   class="clan-btn {% if selected_clan == clan %}active{% endif %}">{{ clan }}</a>
-                {% endfor %}
-            </div>
             <!-- Update My Stats Button -->
             {% if user.is_authenticated %}
                 {% for char in user.characters.all %}
@@ -572,7 +565,7 @@
 
     <div class="activity-content">
         <div class="glass-card">
-            <h3><i class="fas fa-crown"></i> Overall Power Ranking — {{ selected_clan }}</h3>
+            <h3><i class="fas fa-crown"></i> Overall Power Ranking</h3>
 
             {% if leaderboard %}
             <div class="table-wrapper">
@@ -582,6 +575,7 @@
                             <th style="width:60px; text-align:center;">Rank</th>
                             <th class="sticky-col">IGN</th>
                             <th>Server</th>
+                            <th>Clan</th>
                             <th class="hide-mobile">Lvl</th>
                             <th class="hide-mobile" title="Damage">DMG</th>
                             <th class="hide-mobile" title="Accuracy">ACC</th>
@@ -624,6 +618,9 @@
                                 <span class="player-server server-{{ item.power_rank.server }}">
                                     {{ item.power_rank.server }}
                                 </span>
+                            </td>
+                            <td style="color: #bbb; font-size: 0.8rem; font-weight: 600;">
+                                {{ item.character.clan|default:"—" }}
                             </td>
                             <td class="hide-mobile">{{ item.power_rank.level|floatformat:0 }}</td>
                             <td class="hide-mobile">{{ item.power_rank.dmg|floatformat:0 }}</td>

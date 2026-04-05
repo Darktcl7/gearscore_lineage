@@ -1616,21 +1616,9 @@ from .models import UniversalPowerRank
 @login_required
 def power_rank_leaderboard(request):
     """
-    Universal Power Rank leaderboard - shows all characters ranked by gear score.
+    Universal Power Rank leaderboard - shows all characters ranked by gear score combined.
     """
-    selected_clan = request.GET.get('clan', 'Valkyrie')
-    clan_choices = ['Valkyrie', 'Valhalla']
-
     rankings_qs = UniversalPowerRank.objects.select_related('character').prefetch_related('screenshots').all()
-
-    if selected_clan == 'Valkyrie':
-        from django.db.models import Q
-        rankings_qs = rankings_qs.filter(
-            Q(character__clan='Valkyrie') | Q(character__clan='') | Q(character__clan__isnull=True)
-        )
-    else:
-        rankings_qs = rankings_qs.filter(character__clan=selected_clan)
-
     rankings_qs = rankings_qs.order_by('-gear_score')
 
     leaderboard = []
@@ -1653,8 +1641,6 @@ def power_rank_leaderboard(request):
 
     context = {
         'leaderboard': leaderboard,
-        'selected_clan': selected_clan,
-        'clan_choices': clan_choices,
         'user_power_rank': user_power_rank,
         'is_admin': is_admin(request.user),
     }
