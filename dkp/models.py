@@ -22,10 +22,12 @@ class DKPEvent(models.Model):
     is_active = models.BooleanField("Open Check-in", default=True) 
     is_closed = models.BooleanField("Check-in Closed", default=False)
     is_finalized = models.BooleanField("Points Distributed", default=False)
+    is_war_day = models.BooleanField("War Day", default=False)
     
     points_to_award = models.IntegerField("Points Reward", default=10)
     
     description = models.TextField(blank=True)
+    note = models.TextField("Catatan", blank=True, default='')
 
     def __str__(self):
         return f"{self.name} ({self.date.strftime('%d/%m/%Y')})"
@@ -44,6 +46,8 @@ class DKPLog(models.Model):
     profile = models.ForeignKey(DKPProfile, on_delete=models.CASCADE, related_name='logs')
     amount = models.IntegerField("Jumlah")
     reason = models.CharField("Alasan", max_length=255)
+    note = models.TextField("Catatan", blank=True, default='')
+    is_war_day = models.BooleanField("War Day", default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 

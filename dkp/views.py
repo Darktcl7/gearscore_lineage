@@ -574,6 +574,7 @@ def dkp_manage(request):
             value = request.POST.get('value')
             participant_ids = request.POST.getlist('participant_ids')
             is_war_day = request.POST.get('war_day') == 'on'
+            activity_note = request.POST.get('activity_note', '').strip()
 
             if name and value:
                 try:
@@ -590,7 +591,9 @@ def dkp_manage(request):
                     points_to_award=points,
                     is_active=False,
                     is_closed=True,
-                    is_finalized=True
+                    is_finalized=True,
+                    is_war_day=is_war_day,
+                    note=activity_note,
                 )
 
                 # WAR DAY: Also create Activity event if checked (Raid Boss & Territory Boss only)
@@ -624,6 +627,8 @@ def dkp_manage(request):
                                 profile=profile,
                                 amount=points,
                                 reason=f"Activity: {final_name}",
+                                note=activity_note,
+                                is_war_day=is_war_day,
                                 created_by=request.user
                             )
                             

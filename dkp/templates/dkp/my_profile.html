@@ -157,7 +157,11 @@
                 {% for log in p.recent_logs %}
                 <tr>
                     <td style="color:#666;">{{ log.created_at|date:"d M Y, H:i" }}</td>
-                    <td>{{ log.reason }}</td>
+                    <td>
+                        {{ log.reason }}
+                        {% if log.is_war_day %}<span style="display:inline-flex; align-items:center; gap:4px; background:rgba(231,76,60,0.15); border:1px solid rgba(231,76,60,0.3); color:#e74c3c; font-size:0.72rem; font-weight:600; padding:2px 8px; border-radius:12px; margin-left:6px; vertical-align:middle;">⚔️ War Day</span>{% endif %}
+                        {% if log.note %}<span style="color:#888; font-size:0.8rem; font-style:italic; margin-top:4px; display:block;"><i class="fas fa-sticky-note" style="margin-right:4px;"></i>{{ log.note }}</span>{% endif %}
+                    </td>
                     <td style="color:#888;">
                         {% if 'Decay' in log.reason or 'decay' in log.reason %}
                             {% if log.amount > 0 %}
