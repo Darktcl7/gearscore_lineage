@@ -503,8 +503,11 @@ def dkp_my_profile(request):
     if user_chars.exists():
         for char in user_chars:
             p, _ = DKPProfile.objects.get_or_create(character=char)
-            # Fetch logs too?
-            p.recent_logs = p.logs.order_by('-created_at')
+            all_logs = p.logs.order_by('-created_at')
+            from django.core.paginator import Paginator
+            paginator = Paginator(all_logs, 20)
+            page_number = request.GET.get('page')
+            p.recent_logs = paginator.get_page(page_number)
             profiles.append(p)
             
             
@@ -529,7 +532,11 @@ def dkp_user_profile(request, user_id):
     if user_chars.exists():
         for char in user_chars:
             p, _ = DKPProfile.objects.get_or_create(character=char)
-            p.recent_logs = p.logs.order_by('-created_at')
+            all_logs = p.logs.order_by('-created_at')
+            from django.core.paginator import Paginator
+            paginator = Paginator(all_logs, 20)
+            page_number = request.GET.get('page')
+            p.recent_logs = paginator.get_page(page_number)
             profiles.append(p)
     
     return render(request, 'dkp/my_profile.html', {
@@ -647,7 +654,12 @@ def dkp_manage(request):
 
         return redirect('web-dkp-manage')
             
-    events = DKPEvent.objects.order_by('-date')
+    all_events = DKPEvent.objects.order_by('-date')
+    from django.core.paginator import Paginator
+    paginator = Paginator(all_events, 20)
+    page_number = request.GET.get('page')
+    events = paginator.get_page(page_number)
+    
     profiles = DKPProfile.objects.select_related('character').order_by('character__name')
     from items.views import is_admin
     return render(request, 'dkp/manage.html', {

@@ -696,6 +696,25 @@
                     </li>
                     {% endfor %}
                 </ul>
+                
+                {% if recent_events.has_other_pages %}
+                <div style="display:flex; justify-content:center; margin-top:20px; gap: 5px;">
+                    {% if recent_events.has_previous %}
+                        <a href="?clan={{ selected_clan }}&page={{ recent_events.previous_page_number }}" style="padding: 5px 10px; font-size: 0.8rem; background: rgba(218,165,32,0.1); color: #DAA520; border: 1px solid rgba(218,165,32,0.3); border-radius: 4px; text-decoration: none;">&laquo; Prev</a>
+                    {% else %}
+                        <span style="padding: 5px 10px; font-size: 0.8rem; background: rgba(255,255,255,0.05); color: #555; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">&laquo; Prev</span>
+                    {% endif %}
+
+                    <span style="padding: 5px 10px; font-size: 0.8rem; color: #ccc;">{{ recent_events.number }} / {{ recent_events.paginator.num_pages }}</span>
+
+                    {% if recent_events.has_next %}
+                        <a href="?clan={{ selected_clan }}&page={{ recent_events.next_page_number }}" style="padding: 5px 10px; font-size: 0.8rem; background: rgba(218,165,32,0.1); color: #DAA520; border: 1px solid rgba(218,165,32,0.3); border-radius: 4px; text-decoration: none;">Next &raquo;</a>
+                    {% else %}
+                        <span style="padding: 5px 10px; font-size: 0.8rem; background: rgba(255,255,255,0.05); color: #555; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">Next &raquo;</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
                 {% else %}
                 <div style="text-align: center; padding: 20px 0; color: #666; font-size: 0.9rem;">
                     No recent events.

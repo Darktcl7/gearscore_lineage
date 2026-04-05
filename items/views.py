@@ -634,11 +634,16 @@ def activity_leaderboard(request):
     }
     
     # ── RECENT EVENTS ──
-    recent_events = ActivityEvent.objects.filter(date__lte=today).exclude(
+    recent_events_query = ActivityEvent.objects.filter(date__lte=today).exclude(
         name__startswith='AP Adjustment:'
     ).exclude(
         name__startswith='Score Adjustment:'
-    ).order_by('-date')[:10]
+    ).order_by('-date')
+    
+    from django.core.paginator import Paginator
+    paginator = Paginator(recent_events_query, 20)
+    page_number = request.GET.get('page')
+    recent_events = paginator.get_page(page_number)
     
     context = {
         'monthly_ranking': monthly_ranking,
@@ -996,10 +1001,15 @@ def my_activity(request, character_pk=None):
         'membership_count': membership_count,
     }
     
+    from django.core.paginator import Paginator
+    paginator = Paginator(activities, 20)
+    page_number = request.GET.get('page')
+    paginated_activities = paginator.get_page(page_number)
+    
     context = {
         'character': character,
         'monthly_report': monthly_report,
-        'activities': activities,
+        'activities': paginated_activities,
         'total_points': total_points,
         'ap_points': ap_points,
         'penalty_total': penalty_total,

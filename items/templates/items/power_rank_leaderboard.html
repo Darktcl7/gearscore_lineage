@@ -259,6 +259,36 @@
         transition: color 0.3s;
     }
 
+    .clan-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .clan-valkyrie {
+        background: rgba(255, 215, 0, 0.15);
+        color: #FFD700;
+        border: 1px solid rgba(255, 215, 0, 0.3);
+    }
+
+    .clan-valhalla {
+        background: rgba(155, 89, 182, 0.15);
+        color: #c39bd3;
+        border: 1px solid rgba(155, 89, 182, 0.3);
+    }
+
+    .clan-none {
+        background: rgba(255, 255, 255, 0.05);
+        color: #888;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
     .player-name:hover {
         color: #b88aff;
         text-shadow: 0 0 8px rgba(150, 100, 255, 0.4);
@@ -619,8 +649,14 @@
                                     {{ item.power_rank.server }}
                                 </span>
                             </td>
-                            <td style="color: #bbb; font-size: 0.8rem; font-weight: 600;">
-                                {{ item.character.clan|default:"—" }}
+                            <td>
+                                {% if item.character.clan == 'Valkyrie' %}
+                                <span class="clan-badge clan-valkyrie">Valkyrie</span>
+                                {% elif item.character.clan == 'Valhalla' %}
+                                <span class="clan-badge clan-valhalla">Valhalla</span>
+                                {% else %}
+                                <span class="clan-badge clan-none">—</span>
+                                {% endif %}
                             </td>
                             <td class="hide-mobile">{{ item.power_rank.level|floatformat:0 }}</td>
                             <td class="hide-mobile">{{ item.power_rank.dmg|floatformat:0 }}</td>

@@ -501,6 +501,25 @@
                         {% endfor %}
                     </tbody>
                 </table>
+                
+                {% if activities.has_other_pages %}
+                <div style="display:flex; justify-content:center; margin-top:20px; gap: 5px; padding-bottom: 20px;">
+                    {% if activities.has_previous %}
+                        <a href="?page={{ activities.previous_page_number }}" style="padding: 5px 12px; background: rgba(218,165,32,0.1); color: #DAA520; border: 1px solid rgba(218,165,32,0.3); border-radius: 4px; text-decoration: none;">&laquo; Prev</a>
+                    {% else %}
+                        <span style="padding: 5px 12px; background: rgba(255,255,255,0.05); color: #555; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">&laquo; Prev</span>
+                    {% endif %}
+
+                    <span style="padding: 5px 12px; color: #ccc;">Page {{ activities.number }} of {{ activities.paginator.num_pages }}</span>
+
+                    {% if activities.has_next %}
+                        <a href="?page={{ activities.next_page_number }}" style="padding: 5px 12px; background: rgba(218,165,32,0.1); color: #DAA520; border: 1px solid rgba(218,165,32,0.3); border-radius: 4px; text-decoration: none;">Next &raquo;</a>
+                    {% else %}
+                        <span style="padding: 5px 12px; background: rgba(255,255,255,0.05); color: #555; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">Next &raquo;</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
                 {% else %}
                 <div style="text-align: center; padding: 40px; color: #888;">
                     <i class="fas fa-calendar-times" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.3;"></i>

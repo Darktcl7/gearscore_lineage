@@ -183,6 +183,24 @@
                 {% endfor %}
             </tbody>
         </table>
+        
+        {% if p.recent_logs.has_other_pages %}
+        <div style="display:flex; justify-content:center; margin-top:20px; gap: 5px;">
+            {% if p.recent_logs.has_previous %}
+                <a href="?page={{ p.recent_logs.previous_page_number }}" style="padding: 5px 12px; background: rgba(255,215,0,0.1); color: #FFD700; border: 1px solid rgba(255,215,0,0.3); border-radius: 4px; text-decoration: none;">&laquo; Prev</a>
+            {% else %}
+                <span style="padding: 5px 12px; background: rgba(255,255,255,0.05); color: #555; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">&laquo; Prev</span>
+            {% endif %}
+
+            <span style="padding: 5px 12px; color: #ccc;">Page {{ p.recent_logs.number }} of {{ p.recent_logs.paginator.num_pages }}</span>
+
+            {% if p.recent_logs.has_next %}
+                <a href="?page={{ p.recent_logs.next_page_number }}" style="padding: 5px 12px; background: rgba(255,215,0,0.1); color: #FFD700; border: 1px solid rgba(255,215,0,0.3); border-radius: 4px; text-decoration: none;">Next &raquo;</a>
+            {% else %}
+                <span style="padding: 5px 12px; background: rgba(255,255,255,0.05); color: #555; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">Next &raquo;</span>
+            {% endif %}
+        </div>
+        {% endif %}
 
         <div style="margin-top: 15px; text-align: right; color: #555; font-size: 0.8rem;">
             Lifetime Earned: {{ p.total_earned }} DKP
