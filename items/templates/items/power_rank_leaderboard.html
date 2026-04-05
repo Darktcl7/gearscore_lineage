@@ -367,6 +367,179 @@
         .hide-mobile { display: table-cell; }
         
         .score-cell { font-size: 1rem; }
+        
+        /* Reduce rank badge size on mobile */
+        .rank-badge {
+            width: 28px;
+            height: 28px;
+            font-size: 0.85rem;
+        }
+        .rank-1 {
+            font-size: 0.95rem;
+            border-width: 1px;
+        }
+        .rank-2, .rank-3 {
+            border-width: 1px;
+        }
+        .rank-other {
+            font-size: 0.8rem;
+        }
+    }
+
+    /* Proof/Screenshot icon */
+    .proof-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 0.8rem;
+    }
+
+    .proof-icon.has-proof {
+        background: rgba(50, 200, 100, 0.15);
+        color: #88ffaa;
+        border: 1px solid rgba(50, 200, 100, 0.3);
+    }
+
+    .proof-icon.has-proof:hover {
+        background: rgba(50, 200, 100, 0.3);
+        transform: scale(1.15);
+        box-shadow: 0 0 12px rgba(50, 200, 100, 0.3);
+    }
+
+    .proof-icon.no-proof {
+        background: rgba(255, 255, 255, 0.03);
+        color: #555;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        cursor: default;
+    }
+
+    /* Screenshot Modal */
+    .ss-modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(8px);
+    }
+
+    .ss-modal-overlay.active {
+        display: flex;
+    }
+
+    .ss-modal-content {
+        position: relative;
+        max-width: 90vw;
+        max-height: 85vh;
+        text-align: center;
+    }
+
+    .ss-modal-content img {
+        max-width: 100%;
+        max-height: 80vh;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .ss-modal-name {
+        margin-top: 12px;
+        color: #ccc;
+        font-size: 0.9rem;
+    }
+
+    .ss-modal-close {
+        position: absolute;
+        top: -15px;
+        right: -15px;
+        width: 36px;
+        height: 36px;
+        background: rgba(255, 60, 60, 0.8);
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        z-index: 10000;
+    }
+
+    .ss-modal-close:hover {
+        background: #ff2222;
+        transform: scale(1.1);
+    }
+
+    /* Gallery navigation */
+    .ss-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 40px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        z-index: 10000;
+    }
+
+    .ss-nav:hover {
+        background: rgba(150, 100, 255, 0.4);
+        border-color: rgba(150, 100, 255, 0.6);
+    }
+
+    .ss-nav-prev { left: -55px; }
+    .ss-nav-next { right: -55px; }
+
+    .ss-modal-counter {
+        margin-top: 6px;
+        color: #888;
+        font-size: 0.8rem;
+    }
+
+    /* Proof count badge */
+    .proof-icon {
+        position: relative;
+    }
+
+    .proof-count {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        min-width: 16px;
+        height: 16px;
+        background: #b88aff;
+        color: #fff;
+        font-size: 0.55rem;
+        font-weight: 700;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 3px;
+    }
+
+    @media (max-width: 600px) {
+        .ss-nav-prev { left: 5px; }
+        .ss-nav-next { right: 5px; }
+        .ss-nav { width: 32px; height: 32px; font-size: 0.8rem; }
     }
 
     /* Mobile: stagger animation for nav */
@@ -424,6 +597,7 @@
                             <th class="hide-mobile" title="Duel">Duel</th>
                             <th class="hide-mobile" title="Purple Class/Agathion">Prpl</th>
                             <th style="text-align:right;">Gear Score</th>
+                            <th style="text-align:center; width:50px;" title="Screenshot Bukti">Proof</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -471,6 +645,24 @@
                                 </span>
                                 <span style="font-size: 0.75rem; color: #666; font-weight: normal;">pts</span>
                             </td>
+                            <td style="text-align: center;">
+                                {% with screenshots=item.power_rank.screenshots.all %}
+                                {% if screenshots %}
+                                <span class="proof-icon has-proof" 
+                                    onclick="openGallery('{{ item.character.name }}', [{% for ss in screenshots %}'{{ ss.image.url }}'{% if not forloop.last %},{% endif %}{% endfor %}])" 
+                                    title="View {{ screenshots|length }} screenshot{{ screenshots|length|pluralize }}">
+                                    <i class="fas fa-images"></i>
+                                    {% if screenshots|length > 1 %}
+                                    <span class="proof-count">{{ screenshots|length }}</span>
+                                    {% endif %}
+                                </span>
+                                {% else %}
+                                <span class="proof-icon no-proof" title="No screenshots">
+                                    <i class="fas fa-minus"></i>
+                                </span>
+                                {% endif %}
+                                {% endwith %}
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -492,4 +684,75 @@
         </div>
     </div>
 </div>
+
+<!-- Screenshot Gallery Modal -->
+<div class="ss-modal-overlay" id="ssModal" onclick="closeGallery(event)">
+    <div class="ss-modal-content">
+        <button class="ss-modal-close" onclick="closeGalleryBtn()">
+            <i class="fas fa-times"></i>
+        </button>
+        <button class="ss-nav ss-nav-prev" id="ssPrev" onclick="prevImage(event)">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <img src="" alt="Screenshot" id="ssModalImg">
+        <button class="ss-nav ss-nav-next" id="ssNext" onclick="nextImage(event)">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+        <div class="ss-modal-name" id="ssModalName"></div>
+        <div class="ss-modal-counter" id="ssCounter"></div>
+    </div>
+</div>
+
+<script>
+let galleryImages = [];
+let galleryIndex = 0;
+let galleryName = '';
+
+function openGallery(name, images) {
+    galleryImages = images;
+    galleryIndex = 0;
+    galleryName = name;
+    showGalleryImage();
+    document.getElementById('ssModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function showGalleryImage() {
+    document.getElementById('ssModalImg').src = galleryImages[galleryIndex];
+    document.getElementById('ssModalName').textContent = 'Stat Screenshots — ' + galleryName;
+    document.getElementById('ssCounter').textContent = (galleryIndex + 1) + ' / ' + galleryImages.length;
+    document.getElementById('ssPrev').style.display = galleryImages.length > 1 ? 'flex' : 'none';
+    document.getElementById('ssNext').style.display = galleryImages.length > 1 ? 'flex' : 'none';
+}
+
+function prevImage(e) {
+    e.stopPropagation();
+    galleryIndex = (galleryIndex - 1 + galleryImages.length) % galleryImages.length;
+    showGalleryImage();
+}
+
+function nextImage(e) {
+    e.stopPropagation();
+    galleryIndex = (galleryIndex + 1) % galleryImages.length;
+    showGalleryImage();
+}
+
+function closeGallery(e) {
+    if (e.target === document.getElementById('ssModal')) {
+        closeGalleryBtn();
+    }
+}
+
+function closeGalleryBtn() {
+    document.getElementById('ssModal').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeGalleryBtn();
+    if (e.key === 'ArrowLeft') prevImage(e);
+    if (e.key === 'ArrowRight') nextImage(e);
+});
+</script>
 {% endblock %}
+

@@ -116,10 +116,18 @@
         border-radius: 4px;
         border: 1px solid rgba(255,255,255,0.1);
     }
+    
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 
     @media(max-width: 768px) {
+        .manage-container { margin: 20px auto; padding: 0 10px; }
+        .panel-card { padding: 15px; }
         form { grid-template-columns: 1fr; }
-        .data-table { display: block; overflow-x: auto; white-space: nowrap; }
+        .data-table th, .data-table td { white-space: nowrap; }
     }
 </style>
 {% endblock %}
@@ -179,49 +187,51 @@
     <div class="panel-card">
         <h2><i class="fas fa-list"></i> Current Hall of Fame Members</h2>
         
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Image</th>
-                    <th>Name</th>
-                    <th>Rank</th>
-                    <th>Clan</th>
-                    <th>Points</th>
-                    <th>Date Added</th>
-                    <th style="text-align: right;">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for mem in members %}
-                <tr>
-                    <td>
-                        {% if mem.image %}
-                        <img src="{{ mem.image.url }}" class="thumb" alt="{{ mem.name }}">
-                        {% else %}
-                        <span style="color:#555;">No Img</span>
-                        {% endif %}
-                    </td>
-                    <td style="font-weight: 600;">{{ mem.name }}</td>
-                    <td>{{ mem.rank }}</td>
-                    <td>{{ mem.clan }}</td>
-                    <td>{{ mem.contribution }}</td>
-                    <td style="color:#888; font-size:0.85rem;">{{ mem.created_at|date:"M d, Y" }}</td>
-                    <td style="text-align: right;">
-                        <form method="POST" onsubmit="return confirm('Silahkan konfirmasi untuk MENGHAPUS {{ mem.name }} dari Hall of Fame secara permanen?');" style="display:inline;">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="delete">
-                            <input type="hidden" name="member_id" value="{{ mem.id }}">
-                            <button type="submit" class="btn-delete"><i class="fas fa-trash"></i> Delete</button>
-                        </form>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7" style="text-align: center; color: #777; padding: 20px;">No members yet in Hall of Fame.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Name</th>
+                        <th>Rank</th>
+                        <th>Clan</th>
+                        <th>Points</th>
+                        <th>Date Added</th>
+                        <th style="text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mem in members %}
+                    <tr>
+                        <td>
+                            {% if mem.image %}
+                            <img src="{{ mem.image.url }}" class="thumb" alt="{{ mem.name }}">
+                            {% else %}
+                            <span style="color:#555;">No Img</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-weight: 600;">{{ mem.name }}</td>
+                        <td>{{ mem.rank }}</td>
+                        <td>{{ mem.clan }}</td>
+                        <td>{{ mem.contribution }}</td>
+                        <td style="color:#888; font-size:0.85rem;">{{ mem.created_at|date:"M d, Y" }}</td>
+                        <td style="text-align: right;">
+                            <form method="POST" onsubmit="return confirm('Silahkan konfirmasi untuk MENGHAPUS {{ mem.name }} dari Hall of Fame secara permanen?');" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="member_id" value="{{ mem.id }}">
+                                <button type="submit" class="btn-delete"><i class="fas fa-trash"></i> Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: #777; padding: 20px;">No members yet in Hall of Fame.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
 </div>

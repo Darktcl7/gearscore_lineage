@@ -212,6 +212,13 @@
                             </a>
                             {% endif %}
 
+                            <!-- View Activity Button (Super Admin Only) -->
+                            <a href="{% url 'member-activity' character.pk %}"
+                                style="color: #3498db; margin-right: 15px; text-decoration: none;"
+                                title="View Activity for {{ character.name }}">
+                                <i class="fas fa-chart-line"></i>
+                            </a>
+
                             <a href="{% url 'delete-character' character.pk %}"
                                 style="color: #E74C3C; text-decoration: none;" title="Delete Character"><i
                                     class="fas fa-trash"></i></a>

@@ -282,7 +282,26 @@ class AltoBot(commands.Cog):
                 color=discord.Color.gold()
             )
             
-            if result['leaderboard']:
+            if 'leaderboards_by_clan' in result:
+                for clan_name, clan_board in result['leaderboards_by_clan'].items():
+                    if clan_board:
+                        leaderboard_text = ""
+                        for entry in clan_board:
+                            rank = entry['rank']
+                            if rank == 1:
+                                medal = "🥇"
+                            elif rank == 2:
+                                medal = "🥈"
+                            elif rank == 3:
+                                medal = "🥉"
+                            else:
+                                medal = f"#{rank}"
+                            leaderboard_text += f"{medal} **{entry['player']}** - {entry['score']} pts ({entry['tier']})\n"
+                        embed.add_field(name=f"🛡️ Clan {clan_name}", value=leaderboard_text, inline=False)
+                
+                if len(embed.fields) == 0:
+                    embed.description = "No activity data yet this month."
+            elif result.get('leaderboard'):
                 leaderboard_text = ""
                 for entry in result['leaderboard']:
                     rank = entry['rank']
@@ -301,7 +320,7 @@ class AltoBot(commands.Cog):
             else:
                 embed.description = "No activity data yet this month."
             
-            embed.set_footer(text="Use /myscore <character> to see your stats!")
+            embed.set_footer(text="Use /event_myscore to see your stats!")
             await interaction.followup.send(embed=embed)
         else:
             await interaction.followup.send(f"❌ Error: {result.get('error', 'Unknown error')}")
@@ -373,10 +392,21 @@ class AltoBot(commands.Cog):
         result = await self.api_request('GET', '/dkp/api/leaderboard/')
         
         if result.get('success'):
-            msg = "🏆 **DKP Leaderboard (Top 20)** 🏆\n```"
-            for p in result['leaderboard']:
-                msg += f"{p['rank']:2}. {p['character']:<15} {p['dkp']} DKP\n"
-            msg += "```"
+            msg = "🏆 **DKP Leaderboard (Top 20)** 🏆\n"
+            if 'leaderboards_by_clan' in result:
+                for clan_name, clan_board in result['leaderboards_by_clan'].items():
+                    if clan_board:
+                        msg += f"\n🛡️ **Clan {clan_name}**\n```\n"
+                        for p in clan_board:
+                            msg += f"{p['rank']:2}. {p['character']:<15} {p['dkp']} DKP\n"
+                        msg += "```\n"
+            elif result.get('leaderboard'):
+                msg += "```\n"
+                for p in result['leaderboard']:
+                    msg += f"{p['rank']:2}. {p['character']:<15} {p['dkp']} DKP\n"
+                msg += "```"
+            else:
+                msg += "\nNo DKP data available."
             await interaction.followup.send(msg)
         else:
             await interaction.followup.send(f"❌ Error: {result.get('error')}")

@@ -1673,6 +1673,12 @@ class UniversalPowerRank(models.Model):
     gear_score = models.IntegerField("Gear Score", default=0,
         help_text="Auto-calculated from stats")
     updated_at = models.DateTimeField(auto_now=True)
+    stat_screenshot = models.ImageField(
+        "Stat Screenshot",
+        upload_to='power_rank_screenshots/',
+        null=True, blank=True,
+        help_text="Screenshot dari in-game stat sebagai bukti data valid"
+    )
 
     def calculate_gear_score(self):
         """
@@ -1710,6 +1716,26 @@ class UniversalPowerRank(models.Model):
         ordering = ['-gear_score']
         verbose_name = "Universal Power Rank"
         verbose_name_plural = "Universal Power Rankings"
+
+
+class PowerRankScreenshot(models.Model):
+    """Multiple screenshot proofs for a power rank entry."""
+    power_rank = models.ForeignKey(
+        UniversalPowerRank,
+        on_delete=models.CASCADE,
+        related_name='screenshots'
+    )
+    image = models.ImageField(
+        "Screenshot",
+        upload_to='power_rank_screenshots/',
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Screenshot for {self.power_rank.character.name} ({self.uploaded_at:%Y-%m-%d})"
+
+    class Meta:
+        ordering = ['-uploaded_at']
 
 
 # ======================================================

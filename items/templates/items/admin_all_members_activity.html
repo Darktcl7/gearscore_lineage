@@ -1,0 +1,366 @@
+{% extends 'items/base.html' %}
+{% load static %}
+
+{% block title %}All Members Activity{% endblock %}
+
+{% block extra_body_attributes %}class="fullscreen-page"{% endblock %}
+
+{% block extra_head %}
+<style>
+    html,
+    body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: #0c0c0c;
+    }
+
+    #site-content {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    main {
+        flex: 1;
+        overflow: hidden;
+    }
+
+    .members-container {
+        height: calc(100% - 90px);
+        margin-top: 0;
+        display: flex;
+        flex-direction: column;
+        background: rgba(18, 18, 18, 0.85);
+        border-radius: 20px;
+        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
+        overflow: hidden;
+        position: relative;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        margin-left: 10px;
+        margin-right: 10px;
+        margin-bottom: 10px;
+    }
+
+    .members-header {
+        padding: 25px;
+        background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        position: relative;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .members-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background: linear-gradient(90deg, #3498db, #9b59b6, #3498db);
+        background-size: 200% 200%;
+        animation: gradientShift 3s ease infinite;
+    }
+
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .members-header h1 {
+        margin: 0;
+        color: #ffffff;
+        font-size: 1.8rem;
+    }
+
+    .members-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+    }
+
+    .members-body::-webkit-scrollbar { width: 6px; }
+    .members-body::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+
+    .search-box {
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+    .search-box input {
+        width: 100%;
+        padding: 12px 18px 12px 42px;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        color: #fff;
+        font-size: 0.95rem;
+        box-sizing: border-box;
+        transition: all 0.3s;
+    }
+
+    .search-box input:focus {
+        outline: none;
+        border-color: rgba(52, 152, 219, 0.5);
+        box-shadow: 0 0 15px rgba(52, 152, 219, 0.15);
+    }
+
+    .search-box i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #666;
+    }
+
+    .members-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 4px;
+    }
+
+    .members-table th {
+        padding: 10px 15px;
+        text-align: left;
+        color: #888;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+    }
+
+    .members-table td {
+        padding: 14px 15px;
+        background: rgba(255, 255, 255, 0.02);
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        color: #ddd;
+        font-size: 0.95rem;
+    }
+
+    .members-table td:first-child {
+        border-left: 1px solid rgba(255, 255, 255, 0.05);
+        border-top-left-radius: 8px;
+        border-bottom-left-radius: 8px;
+        text-align: center;
+        width: 60px;
+    }
+
+    .members-table td:last-child {
+        border-right: 1px solid rgba(255, 255, 255, 0.05);
+        border-top-right-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
+
+    .members-table tr:hover td {
+        background: rgba(52, 152, 219, 0.06);
+    }
+
+    .rank-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        font-weight: 800;
+        font-size: 0.85rem;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .rank-1 { background: linear-gradient(135deg, #FFD700, #FDB931); color: #333; border: 2px solid #FFF8DC; box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
+    .rank-2 { background: linear-gradient(135deg, #E0E0E0, #B0B0B0); color: #333; border: 2px solid #F5F5F5; }
+    .rank-3 { background: linear-gradient(135deg, #CD7F32, #A0522D); color: #FFF; border: 2px solid #DEB887; }
+    .rank-other { background: rgba(255, 255, 255, 0.05); color: #888; font-size: 0.8rem; }
+
+    .tier-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .tier-core { color: #FFD700; background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.3); }
+    .tier-elite { color: #9B59B6; background: rgba(155, 89, 182, 0.1); border: 1px solid rgba(155, 89, 182, 0.3); }
+    .tier-active { color: #3498DB; background: rgba(52, 152, 219, 0.1); border: 1px solid rgba(52, 152, 219, 0.3); }
+    .tier-inactive { color: #95a5a6; background: rgba(149, 165, 166, 0.1); border: 1px solid rgba(149, 165, 166, 0.3); }
+
+    .view-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        background: rgba(52, 152, 219, 0.15);
+        border: 1px solid rgba(52, 152, 219, 0.3);
+        border-radius: 8px;
+        color: #3498db;
+        text-decoration: none;
+        font-size: 0.8rem;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .view-btn:hover {
+        background: rgba(52, 152, 219, 0.3);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+    }
+
+    .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 10px;
+        color: #aaa;
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .back-btn:hover {
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff;
+    }
+
+    .member-count {
+        padding: 5px 14px;
+        background: rgba(52, 152, 219, 0.15);
+        border: 1px solid rgba(52, 152, 219, 0.3);
+        border-radius: 20px;
+        color: #3498db;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+        html, body { overflow: auto; }
+        #site-content { height: auto; overflow: auto; }
+        main { overflow: auto; }
+
+        .members-container {
+            height: auto;
+            margin: 0;
+            border-radius: 0;
+            border: none;
+        }
+
+        .members-header { padding: 15px; flex-wrap: wrap; gap: 8px; }
+        .members-header h1 { font-size: 1.2rem; }
+        .members-body { padding: 10px; }
+
+        .members-table {
+            display: block;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .members-table th, .members-table td {
+            padding: 8px 6px;
+            font-size: 0.8rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="members-container">
+    <div class="members-header">
+        <h1><i class="fas fa-users" style="color: #3498db;"></i> All Members Activity</h1>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <span class="member-count"><i class="fas fa-user"></i> {{ members|length }} members</span>
+            <a href="{% url 'my-activity' %}" class="back-btn">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <div class="members-body">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="memberSearch" placeholder="Search member name..." onkeyup="filterMembers()">
+        </div>
+
+        {% if members %}
+        <table class="members-table" id="membersTable">
+            <thead>
+                <tr>
+                    <th style="width: 60px;">#</th>
+                    <th>Guardian</th>
+                    <th>Total Score</th>
+                    <th>Events Joined</th>
+                    <th>Tier</th>
+                    <th style="text-align: center;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in members %}
+                <tr class="member-row">
+                    <td>
+                        {% if forloop.counter == 1 %}<div class="rank-badge rank-1">1</div>
+                        {% elif forloop.counter == 2 %}<div class="rank-badge rank-2">2</div>
+                        {% elif forloop.counter == 3 %}<div class="rank-badge rank-3">3</div>
+                        {% else %}<div class="rank-badge rank-other">{{ forloop.counter }}</div>{% endif %}
+                    </td>
+                    <td style="font-weight: 600; color: #fff;" class="member-name">{{ m.character.name }}</td>
+                    <td>
+                        <span style="font-family: 'Courier New', monospace; font-weight: 700; color: #fff; font-size: 1.1rem;">{{ m.total_points }}</span>
+                        <span style="font-size: 0.8rem; color: #888;">pts</span>
+                    </td>
+                    <td style="color: #aaa;">{{ m.attended }} events</td>
+                    <td>
+                        <span class="tier-badge tier-{% if m.tier == 'Core' %}core{% elif m.tier == 'Elite' %}elite{% elif m.tier == 'Active' %}active{% else %}inactive{% endif %}">
+                            {% if m.tier == 'Core' %}👑{% elif m.tier == 'Elite' %}🛡️{% elif m.tier == 'Active' %}⚔️{% else %}💤{% endif %}
+                            {{ m.tier }}
+                        </span>
+                    </td>
+                    <td style="text-align: center;">
+                        <a href="{% url 'member-activity' m.character.pk %}" class="view-btn" title="View Activity">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="text-align: center; padding: 60px; color: #888;">
+            <i class="fas fa-users-slash" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.3;"></i>
+            <p>No members found.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function filterMembers() {
+    var input = document.getElementById('memberSearch');
+    var filter = input.value.toLowerCase();
+    var rows = document.querySelectorAll('.member-row');
+
+    rows.forEach(function(row) {
+        var name = row.querySelector('.member-name').textContent.toLowerCase();
+        if (name.indexOf(filter) > -1) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+</script>
+{% endblock %}

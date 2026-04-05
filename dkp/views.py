@@ -111,21 +111,32 @@ def api_dkp_me_discord(request, discord_id):
 def api_dkp_leaderboard(request):
     if not verify_api_key(request): return JsonResponse({'error': 'Unauthorized'}, status=401)
     
-    profiles = DKPProfile.objects.order_by('-current_dkp')[:20]
-    data = []
-    rank = 1
-    for p in profiles:
-        data.append({
-            'rank': rank,
-            'character': p.character.name,
-            'dkp': p.current_dkp
-        })
-        rank += 1
-        
+    from django.db.models import Q
+    profiles = DKPProfile.objects.select_related('character').order_by('-current_dkp')
+    
+    leaderboards_by_clan = {
+        'Valkyrie': [],
+        'Valhalla': []
+    }
+    
+    for clan_name in leaderboards_by_clan.keys():
+        if clan_name == 'Valkyrie':
+            clan_profiles = profiles.filter(Q(character__clan='Valkyrie') | Q(character__clan='') | Q(character__clan__isnull=True))[:10]
+        else:
+            clan_profiles = profiles.filter(character__clan=clan_name)[:10]
+            
+        rank = 1
+        for p in clan_profiles:
+            leaderboards_by_clan[clan_name].append({
+                'rank': rank,
+                'character': p.character.name,
+                'dkp': p.current_dkp
+            })
+            rank += 1
 
     return JsonResponse({
         'success': True,
-        'leaderboard': data
+        'leaderboards_by_clan': leaderboards_by_clan
     })
 
 def dkp_leaderboard_web(request):
@@ -493,7 +504,7 @@ def dkp_my_profile(request):
         for char in user_chars:
             p, _ = DKPProfile.objects.get_or_create(character=char)
             # Fetch logs too?
-            p.recent_logs = p.logs.order_by('-created_at')[:10]
+            p.recent_logs = p.logs.order_by('-created_at')
             profiles.append(p)
             
             
@@ -518,7 +529,7 @@ def dkp_user_profile(request, user_id):
     if user_chars.exists():
         for char in user_chars:
             p, _ = DKPProfile.objects.get_or_create(character=char)
-            p.recent_logs = p.logs.order_by('-created_at')[:10]
+            p.recent_logs = p.logs.order_by('-created_at')
             profiles.append(p)
     
     return render(request, 'dkp/my_profile.html', {
@@ -534,7 +545,7 @@ def dkp_all_wallets(request):
     profiles = DKPProfile.objects.select_related('character', 'character__owner').order_by('-current_dkp')
     
     for p in profiles:
-        p.recent_logs = p.logs.order_by('-created_at')[:5]
+        p.recent_logs = p.logs.order_by('-created_at')
     
     return render(request, 'dkp/all_wallets.html', {'profiles': profiles})
 

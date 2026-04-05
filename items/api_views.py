@@ -295,27 +295,40 @@ def api_get_leaderboard(request):
     
     try:
         from django.utils import timezone
+        from django.db.models import Q
         today = timezone.now()
         
-        reports = MonthlyReport.objects.filter(
+        base_reports = MonthlyReport.objects.filter(
             month__year=today.year,
             month__month=today.month
-        ).select_related('player').order_by('-total_score')[:10]
+        ).select_related('player').order_by('-total_score')
         
-        leaderboard = []
-        for i, report in enumerate(reports, 1):
-            leaderboard.append({
-                'rank': i,
-                'player': report.player.name,
-                'score': report.total_score,
-                'tier': report.get_tier_display(),
-                'prize': report.prize_amount if report.is_qualified else 0,
-            })
+        leaderboards_by_clan = {
+            'Valkyrie': [],
+            'Valhalla': []
+        }
+        
+        for clan_name in leaderboards_by_clan.keys():
+            if clan_name == 'Valkyrie':
+                clan_reports = base_reports.filter(Q(player__clan='Valkyrie') | Q(player__clan='') | Q(player__clan__isnull=True))[:10]
+            else:
+                clan_reports = base_reports.filter(player__clan=clan_name)[:10]
+            
+            rank = 1
+            for report in clan_reports:
+                leaderboards_by_clan[clan_name].append({
+                    'rank': rank,
+                    'player': report.player.name,
+                    'score': report.total_score,
+                    'tier': report.get_tier_display(),
+                    'prize': report.prize_amount if report.is_qualified else 0,
+                })
+                rank += 1
         
         return JsonResponse({
             'success': True,
             'month': today.strftime('%B %Y'),
-            'leaderboard': leaderboard
+            'leaderboards_by_clan': leaderboards_by_clan
         })
     
     except Exception as e:

@@ -230,11 +230,166 @@
         margin-top: 5px;
     }
 
+    /* Screenshot upload */
+    .screenshot-section {
+        margin-top: 10px;
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 12px;
+        border: 1px dashed rgba(150, 100, 255, 0.25);
+    }
+
+    .screenshot-preview {
+        margin-top: 12px;
+        position: relative;
+        display: inline-block;
+    }
+
+    .screenshot-preview img {
+        max-width: 200px;
+        max-height: 150px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        object-fit: cover;
+    }
+
+    .screenshot-remove {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 24px;
+        height: 24px;
+        background: rgba(255, 60, 60, 0.9);
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 0.7rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+    .screenshot-remove:hover {
+        background: #ff2222;
+        transform: scale(1.1);
+    }
+
+    .file-input-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+    .file-input-wrapper input[type="file"] {
+        position: absolute;
+        left: 0; top: 0;
+        width: 100%; height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .file-input-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        background: rgba(150, 100, 255, 0.15);
+        border: 1px solid rgba(150, 100, 255, 0.3);
+        border-radius: 8px;
+        color: #b88aff;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .file-input-btn:hover {
+        background: rgba(150, 100, 255, 0.25);
+    }
+
+    .file-info {
+        font-size: 0.7rem;
+        color: #666;
+        margin-top: 8px;
+    }
+
+    .file-name {
+        font-size: 0.8rem;
+        color: #aaa;
+        margin-top: 6px;
+    }
+
+    /* Screenshot gallery */
+    .screenshot-gallery {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 8px;
+    }
+
+    .screenshot-thumb {
+        position: relative;
+        width: 100px;
+        height: 100px;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s;
+    }
+
+    .screenshot-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        cursor: pointer;
+        transition: transform 0.3s;
+    }
+
+    .screenshot-thumb:hover img {
+        transform: scale(1.05);
+    }
+
+    .screenshot-delete-check {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        cursor: pointer;
+    }
+
+    .screenshot-delete-check input {
+        display: none;
+    }
+
+    .screenshot-delete-check span {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.6);
+        color: #888;
+        font-size: 0.65rem;
+        transition: all 0.2s;
+    }
+
+    .screenshot-delete-check input:checked + span {
+        background: rgba(255, 50, 50, 0.9);
+        color: #fff;
+    }
+
+    .screenshot-delete-check:hover span {
+        background: rgba(255, 50, 50, 0.7);
+        color: #fff;
+    }
+
     @media (max-width: 600px) {
         .form-body { padding: 20px; }
         .stat-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
         .stat-grid-2 { grid-template-columns: 1fr; }
         .form-actions { flex-direction: column; }
+        .screenshot-thumb { width: 80px; height: 80px; }
     }
 </style>
 {% endblock %}
@@ -253,7 +408,7 @@
             {% endfor %}
         {% endif %}
 
-        <form method="POST">
+        <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
 
             <!-- Basic Info -->
@@ -345,6 +500,37 @@
                 </div>
             </div>
 
+            <!-- Screenshot Upload -->
+            <div class="stat-section">
+                <h3><i class="fas fa-camera"></i> In-Game Stat Screenshots</h3>
+                <div class="screenshot-section" id="screenshot-section">
+                    {% if screenshots %}
+                    <div class="screenshot-gallery" id="screenshot-gallery">
+                        {% for ss in screenshots %}
+                        <div class="screenshot-thumb" id="ss-{{ ss.id }}">
+                            <img src="{{ ss.image.url }}" alt="Screenshot" onclick="window.open('{{ ss.image.url }}', '_blank')">
+                            <button type="button" class="screenshot-remove" onclick="deleteScreenshot({{ ss.id }}, this)" title="Hapus screenshot">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div style="margin-top: 12px;"></div>
+                    {% endif %}
+                    <div class="file-input-wrapper">
+                        <div class="file-input-btn">
+                            <i class="fas fa-upload"></i> Add Screenshots
+                        </div>
+                        <input type="file" name="stat_screenshots" accept="image/*" multiple onchange="showFileNames(this)">
+                    </div>
+                    <div class="file-name" id="file-name"></div>
+                    <div class="file-info">JPG, PNG, WebP — Max 2MB per file — Select multiple</div>
+                    <div id="screenshot-error" style="display: none; margin-top: 10px; padding: 10px 15px; background: rgba(255,60,60,0.15); border: 1px solid rgba(255,60,60,0.3); border-radius: 8px; color: #ff8888; font-size: 0.85rem;">
+                        <i class="fas fa-exclamation-triangle"></i> Screenshot wajib! Upload minimal 1 screenshot In-Game Stat sebagai bukti.
+                    </div>
+                </div>
+            </div>
+
             <!-- Gear Score Preview -->
             <div class="gs-preview">
                 <div class="gs-label">Current Gear Score</div>
@@ -354,7 +540,7 @@
 
             <!-- Actions -->
             <div class="form-actions">
-                <button type="submit" class="btn-save">
+                <button type="submit" class="btn-save" id="btn-save" onclick="return validateScreenshots()">
                     <i class="fas fa-save"></i> Save Power Stats
                 </button>
                 <a href="{% url 'power-rank-leaderboard' %}" class="btn-cancel">Cancel</a>
@@ -362,4 +548,100 @@
         </form>
     </div>
 </div>
+
+<script>
+function showFileNames(input) {
+    const nameEl = document.getElementById('file-name');
+    if (input.files && input.files.length > 0) {
+        let html = '';
+        let hasError = false;
+        for (let i = 0; i < input.files.length; i++) {
+            const file = input.files[i];
+            const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+            if (file.size > 2 * 1024 * 1024) {
+                html += '<div style="color:#ff6666;">⚠ ' + file.name + ' (' + sizeMB + ' MB) — Too large!</div>';
+                hasError = true;
+            } else {
+                html += '<div>📎 ' + file.name + ' (' + sizeMB + ' MB)</div>';
+            }
+        }
+        nameEl.innerHTML = html;
+        // Hide error message if files are selected
+        document.getElementById('screenshot-error').style.display = 'none';
+    }
+}
+
+function validateScreenshots() {
+    // Count existing screenshots in the DOM
+    var existingScreenshots = document.querySelectorAll('.screenshot-thumb').length;
+    // Count newly selected files
+    var fileInput = document.querySelector('input[name="stat_screenshots"]');
+    var newFiles = fileInput && fileInput.files ? fileInput.files.length : 0;
+
+    if (existingScreenshots === 0 && newFiles === 0) {
+        document.getElementById('screenshot-error').style.display = 'block';
+        // Scroll to screenshot section
+        document.getElementById('screenshot-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+    }
+    return true;
+}
+
+function deleteScreenshot(screenshotId, btnElement) {
+    // Count remaining screenshots
+    var remaining = document.querySelectorAll('.screenshot-thumb').length;
+    if (remaining <= 1) {
+        alert('Tidak bisa hapus! Minimal 1 screenshot wajib ada.');
+        return;
+    }
+
+    if (!confirm('Hapus screenshot ini?')) return;
+
+    var thumbEl = document.getElementById('ss-' + screenshotId);
+    // Visual feedback: dim the element
+    thumbEl.style.opacity = '0.4';
+    thumbEl.style.pointerEvents = 'none';
+
+    // AJAX POST to delete
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    var formData = new FormData();
+    formData.append('screenshot_id', screenshotId);
+    formData.append('csrfmiddlewaretoken', csrfToken);
+
+    fetch('{% url "delete-power-rank-screenshot" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        if (data.success) {
+            // Animate removal
+            thumbEl.style.transition = 'all 0.3s ease';
+            thumbEl.style.transform = 'scale(0.5)';
+            thumbEl.style.opacity = '0';
+            setTimeout(function() {
+                thumbEl.remove();
+                // If gallery is empty, hide it
+                var gallery = document.getElementById('screenshot-gallery');
+                if (gallery && gallery.children.length === 0) {
+                    gallery.remove();
+                }
+            }, 300);
+        } else {
+            // Restore element
+            thumbEl.style.opacity = '1';
+            thumbEl.style.pointerEvents = 'auto';
+            alert(data.error || 'Gagal menghapus screenshot.');
+        }
+    })
+    .catch(function(err) {
+        thumbEl.style.opacity = '1';
+        thumbEl.style.pointerEvents = 'auto';
+        alert('Error: ' + err.message);
+    });
+}
+</script>
 {% endblock %}

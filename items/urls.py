@@ -38,6 +38,10 @@ from .views import (
     # Universal Power Rank
     power_rank_leaderboard,
     edit_power_rank,
+    delete_power_rank_screenshot,
+    
+    # Activity - Admin All Members
+    admin_all_members_activity,
     
     # Hall of Fame
     hall_of_fame_view,
@@ -128,6 +132,12 @@ urlpatterns = [
     
     # URL: /items/activity/my/ -> My Activity (User's own stats)
     path('activity/my/', my_activity, name='my-activity'),
+    
+    # URL: /items/activity/my/1/ -> Super Admin: View specific member's activity
+    path('activity/my/<int:character_pk>/', my_activity, name='member-activity'),
+    
+    # URL: /items/activity/all-members/ -> Super Admin: View all members list
+    path('activity/all-members/', admin_all_members_activity, name='admin-all-members-activity'),
     
     # URL: /items/activity/rewards/reset/ -> Admin: Reset Monthly Rewards
     path('activity/rewards/reset/', reset_monthly_rewards, name='reset-monthly-rewards'),
@@ -246,6 +256,9 @@ urlpatterns = [
     
     # URL: /portal/power-rank/edit/1/ -> Edit Power Rank Stats
     path('power-rank/edit/<int:character_pk>/', edit_power_rank, name='edit-power-rank'),
+    
+    # URL: /portal/power-rank/screenshot/delete/ -> AJAX: Delete Power Rank Screenshot
+    path('power-rank/screenshot/delete/', delete_power_rank_screenshot, name='delete-power-rank-screenshot'),
 
     # ===============================================
     # 8. HALL OF FAME

@@ -873,21 +873,28 @@ def admin_adjust_score(request):
 
 
 @login_required
-def my_activity(request):
+def my_activity(request, character_pk=None):
     """
-    Halaman detail aktivitas user sendiri
+    Halaman detail aktivitas user sendiri, atau admin melihat member lain
     """
-    # Get current user's characters
-    user_characters = Character.objects.filter(owner=request.user)
-    
-    if not user_characters.exists():
-        return render(request, 'items/my_activity.html', {
-            'no_character': True,
-            'is_admin': is_admin(request.user),
-        })
-    
-    # Get the first character (or allow selection later)
-    character = user_characters.first()
+    # If character_pk is provided, super admin can view any member
+    if character_pk:
+        if not is_admin(request.user):
+            return HttpResponseForbidden("Only super administrators can view other members' activity.")
+        character = get_object_or_404(Character, pk=character_pk)
+        viewing_other = True
+    else:
+        # Get current user's characters
+        user_characters = Character.objects.filter(owner=request.user)
+        
+        if not user_characters.exists():
+            return render(request, 'items/my_activity.html', {
+                'no_character': True,
+                'is_admin': is_admin(request.user),
+            })
+        
+        character = user_characters.first()
+        viewing_other = False
     
     # Get current month stats
     today = timezone.now()
@@ -1002,8 +1009,52 @@ def my_activity(request):
         'tier': tier,
         'monthly_rewards': monthly_rewards,
         'is_admin': is_admin(request.user),
+        'viewing_other': viewing_other,
     }
     return render(request, 'items/my_activity.html', context)
+
+
+@login_required
+def admin_all_members_activity(request):
+    """
+    Super Admin only: View list of all members to inspect their activity.
+    """
+    if not is_admin(request.user):
+        return HttpResponseForbidden("Only super administrators can access this page.")
+    
+    today = timezone.now()
+    month_ago = today - timedelta(days=30)
+    
+    characters = Character.objects.select_related('owner').all().order_by('name')
+    
+    members = []
+    for char in characters:
+        activities = PlayerActivity.objects.filter(
+            player=char,
+            event__date__gte=month_ago,
+            event__is_completed=True
+        ).exclude(event__name__startswith='AP Adjustment:').exclude(event__name__startswith='Score Adjustment:')
+        
+        total_points = (activities.aggregate(
+            total=Sum('points_earned'))['total'] or 0) + (activities.aggregate(
+            total=Sum('win_streak_bonus'))['total'] or 0)
+        
+        attended = activities.filter(status='ATTENDED').count()
+        
+        members.append({
+            'character': char,
+            'total_points': total_points,
+            'attended': attended,
+            'tier': _get_tier(total_points),
+        })
+    
+    members.sort(key=lambda x: x['total_points'], reverse=True)
+    
+    context = {
+        'members': members,
+        'is_admin': True,
+    }
+    return render(request, 'items/admin_all_members_activity.html', context)
 
 
 @login_required
@@ -1570,7 +1621,7 @@ def power_rank_leaderboard(request):
     selected_clan = request.GET.get('clan', 'Valkyrie')
     clan_choices = ['Valkyrie', 'Valhalla']
 
-    rankings_qs = UniversalPowerRank.objects.select_related('character').all()
+    rankings_qs = UniversalPowerRank.objects.select_related('character').prefetch_related('screenshots').all()
 
     if selected_clan == 'Valkyrie':
         from django.db.models import Q
@@ -1642,6 +1693,41 @@ def edit_power_rank(request, character_pk):
             power_rank.conquer = float(request.POST.get('conquer', 0) or 0)
             power_rank.duel = float(request.POST.get('duel', 0) or 0)
             power_rank.purple_class_aga = float(request.POST.get('purple_class_aga', 0) or 0)
+
+            # Handle multiple stat screenshot uploads (max 2MB each)
+            from .models import PowerRankScreenshot
+            uploaded_files = request.FILES.getlist('stat_screenshots')
+            valid_uploads = 0
+            for uploaded in uploaded_files:
+                if uploaded.size > 2 * 1024 * 1024:  # 2MB limit
+                    messages.error(request, f"'{uploaded.name}' too large! Max 2MB per file.")
+                else:
+                    PowerRankScreenshot.objects.create(
+                        power_rank=power_rank,
+                        image=uploaded
+                    )
+                    valid_uploads += 1
+
+            # Handle screenshot removal (individual by ID) - kept for backward compat
+            delete_ids = request.POST.getlist('delete_screenshots')
+            if delete_ids:
+                PowerRankScreenshot.objects.filter(
+                    id__in=delete_ids,
+                    power_rank=power_rank
+                ).delete()
+
+            # Validate: must have at least 1 screenshot after save
+            remaining_count = power_rank.screenshots.count()
+            if remaining_count == 0:
+                messages.error(request, "Screenshot wajib! Upload minimal 1 screenshot In-Game Stat sebagai bukti.")
+                context = {
+                    'character': character,
+                    'power_rank': power_rank,
+                    'screenshots': power_rank.screenshots.all(),
+                    'server_choices': [('K1', 'K1'), ('K5', 'K5'), ('K9', 'K9'), ('T8', 'T8')],
+                }
+                return render(request, 'items/power_rank_form.html', context)
+
             power_rank.save()  # gear_score auto-calculated in save()
             messages.success(request, f"Power stats for {character.name} updated successfully!")
             return redirect('power-rank-leaderboard')
@@ -1651,9 +1737,43 @@ def edit_power_rank(request, character_pk):
     context = {
         'character': character,
         'power_rank': power_rank,
+        'screenshots': power_rank.screenshots.all(),
         'server_choices': [('K1', 'K1'), ('K5', 'K5'), ('K9', 'K9'), ('T8', 'T8')],
     }
     return render(request, 'items/power_rank_form.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def delete_power_rank_screenshot(request):
+    """
+    AJAX endpoint: Instantly delete a power rank screenshot.
+    Super admin can delete any, users can only delete their own.
+    """
+    from django.http import JsonResponse
+    from .models import PowerRankScreenshot
+
+    screenshot_id = request.POST.get('screenshot_id')
+    if not screenshot_id:
+        return JsonResponse({'error': 'No screenshot_id provided'}, status=400)
+
+    screenshot = get_object_or_404(PowerRankScreenshot, pk=screenshot_id)
+    character = screenshot.power_rank.character
+
+    # Permission check
+    if not is_admin(request.user) and character.owner != request.user:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    # Check if this is the last screenshot - don't allow deletion
+    remaining = screenshot.power_rank.screenshots.count()
+    if remaining <= 1:
+        return JsonResponse({'error': 'Tidak bisa hapus! Minimal 1 screenshot wajib ada.'}, status=400)
+
+    # Delete the file and record
+    screenshot.image.delete(save=False)
+    screenshot.delete()
+
+    return JsonResponse({'success': True, 'remaining': remaining - 1})
 
 
 # ======================================================
