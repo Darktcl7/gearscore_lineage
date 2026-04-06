@@ -302,28 +302,35 @@ def api_get_leaderboard(request):
     
     try:
         from django.utils import timezone
-        from django.db.models import Q
-        today = timezone.now()
+        from django.db.models import Q, Sum
+        from .models import PlayerActivity
         
-        base_reports = MonthlyReport.objects.filter(
-            month__year=today.year,
-            month__month=today.month
-        ).select_related('player').order_by('-total_score')
+        today = timezone.now()
         
         leaderboards_by_clan = {
             'Valkyrie': [],
             'Valhalla': []
         }
         
+        monthly_qs = PlayerActivity.objects.filter(
+            event__date__year=today.year,
+            event__date__month=today.month,
+            event__is_completed=True
+        ).exclude(event__name__startswith='AP Adjustment:')
+        
         for clan_name in leaderboards_by_clan.keys():
             if clan_name == 'Valkyrie':
-                clan_reports = base_reports.filter(Q(player__clan='Valkyrie') | Q(player__clan='') | Q(player__clan__isnull=True))
+                clan_qs = monthly_qs.filter(Q(player__clan='Valkyrie') | Q(player__clan='') | Q(player__clan__isnull=True))
             else:
-                clan_reports = base_reports.filter(player__clan=clan_name)
+                clan_qs = monthly_qs.filter(player__clan=clan_name)
+                
+            clan_data = clan_qs.values('player__name', 'player__clan').annotate(
+                total_score=Sum('points_earned') + Sum('win_streak_bonus')
+            ).order_by('-total_score')
             
             rank = 1
-            for report in clan_reports:
-                total_score = report.total_score
+            for entry in clan_data:
+                total_score = entry['total_score'] or 0
                 
                 if total_score > 950:
                     tier_display = '👑 Core'
@@ -336,10 +343,10 @@ def api_get_leaderboard(request):
 
                 leaderboards_by_clan[clan_name].append({
                     'rank': rank,
-                    'player': report.player.name,
+                    'player': entry['player__name'],
                     'score': total_score,
                     'tier': tier_display,
-                    'prize': report.prize_amount if report.is_qualified else 0,
+                    'prize': 0,
                 })
                 rank += 1
         
