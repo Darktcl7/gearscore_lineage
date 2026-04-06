@@ -1819,6 +1819,10 @@ def manage_hall_of_fame(request):
             contribution = request.POST.get('contribution', 0)
             image = request.FILES.get('image')
             
+            if image and image.size > 2 * 1024 * 1024:
+                messages.error(request, 'Image file size must be under 2MB.')
+                return redirect('manage-hall-of-fame')
+            
             if name:
                 HallOfFame.objects.create(
                     name=name,

@@ -4,7 +4,7 @@
    ============================================== */
 
 /* ---- TABLET (max-width: 768px) ---- */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
 
     /* Allow scrolling on mobile - many pages set overflow:hidden */
     html,
@@ -22,8 +22,10 @@
     }
 
     main {
-        padding: 5px !important;
+        padding: 0 !important;
         overflow: visible !important;
+        width: 100% !important;
+        max-width: 100% !important;
     }
 
     /* Common containers: reduce margins */
@@ -149,10 +151,10 @@
     /* DKP pages: leaderboard & profile cards */
     .lb-container,
     .profile-container {
-        margin-left: 5px !important;
-        margin-right: 5px !important;
-        margin-top: 65px !important;
-        border-radius: 12px !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        margin-top:  65px !important;
+        border-radius: 0 !important;
         height: auto !important;
         overflow: visible !important;
     }
@@ -178,20 +180,20 @@
 
     /* DKP manage page */
     .dkp-manage-container {
-        margin-left: 5px !important;
-        margin-right: 5px !important;
-        margin-top: 65px !important;
-        border-radius: 12px !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        margin-top:  65px !important;
+        border-radius: 0 !important;
         height: auto !important;
         overflow: visible !important;
     }
 
     /* Character management page */
     .manage-container {
-        margin-left: 5px !important;
-        margin-right: 5px !important;
-        margin-top: 65px !important;
-        border-radius: 12px !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        margin-top:  65px !important;
+        border-radius: 0 !important;
         height: auto !important;
         overflow: visible !important;
     }
@@ -213,9 +215,10 @@
 
     /* Discord dashboard */
     .discord-container {
-        margin-left: 5px !important;
-        margin-right: 5px !important;
-        margin-top: 65px !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        margin-top:  65px !important;
+        border-radius: 0 !important;
         height: auto !important;
         overflow: visible !important;
     }
@@ -283,10 +286,10 @@
     .manage-container,
     .discord-container,
     .dkp-manage-container {
-        margin-left: 3px !important;
-        margin-right: 3px !important;
-        margin-top: 60px !important;
-        border-radius: 8px !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        margin-top:  60px !important;
+        border-radius: 0 !important;
     }
 
     .activity-header h1,
