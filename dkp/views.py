@@ -121,9 +121,9 @@ def api_dkp_leaderboard(request):
     
     for clan_name in leaderboards_by_clan.keys():
         if clan_name == 'Valkyrie':
-            clan_profiles = profiles.filter(Q(character__clan='Valkyrie') | Q(character__clan='') | Q(character__clan__isnull=True))[:10]
+            clan_profiles = profiles.filter(Q(character__clan='Valkyrie') | Q(character__clan='') | Q(character__clan__isnull=True))
         else:
-            clan_profiles = profiles.filter(character__clan=clan_name)[:10]
+            clan_profiles = profiles.filter(character__clan=clan_name)
             
         rank = 1
         for p in clan_profiles:

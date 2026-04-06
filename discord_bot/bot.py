@@ -302,7 +302,8 @@ class AltoBot(commands.Cog):
             if 'leaderboards_by_clan' in result:
                 for clan_name, clan_board in result['leaderboards_by_clan'].items():
                     if clan_board:
-                        leaderboard_text = ""
+                        chunked_text = ""
+                        part_num = 1
                         for entry in clan_board:
                             rank = entry['rank']
                             if rank == 1:
@@ -313,8 +314,19 @@ class AltoBot(commands.Cog):
                                 medal = "🥉"
                             else:
                                 medal = f"#{rank}"
-                            leaderboard_text += f"{medal} **{entry['player']}** - {entry['score']} pts ({entry['tier']})\n"
-                        embed.add_field(name=f"🛡️ Clan {clan_name}", value=leaderboard_text, inline=False)
+                            
+                            line = f"{medal} **{entry['player']}** - {entry['score']} pts ({entry['tier']})\n"
+                            if len(chunked_text) + len(line) > 1020:
+                                name_suffix = f" (Part {part_num})" if part_num > 1 else ""
+                                embed.add_field(name=f"🛡️ Clan {clan_name}{name_suffix}", value=chunked_text, inline=False)
+                                chunked_text = line
+                                part_num += 1
+                            else:
+                                chunked_text += line
+                        
+                        if chunked_text:
+                            name_suffix = f" (Part {part_num})" if part_num > 1 else ""
+                            embed.add_field(name=f"🛡️ Clan {clan_name}{name_suffix}", value=chunked_text, inline=False)
                 
                 if len(embed.fields) == 0:
                     embed.description = "No activity data yet this month."
@@ -393,22 +405,42 @@ class AltoBot(commands.Cog):
         result = await self.api_request('GET', '/dkp/api/leaderboard/')
         
         if result.get('success'):
-            msg = "🏆 **DKP Leaderboard (Top 20)** 🏆\n"
+            messages_to_send = []
+            msg = "🏆 **DKP Leaderboard** 🏆\n"
             if 'leaderboards_by_clan' in result:
                 for clan_name, clan_board in result['leaderboards_by_clan'].items():
                     if clan_board:
-                        msg += f"\n🛡️ **Clan {clan_name}**\n```\n"
+                        header = f"\n🛡️ **Clan {clan_name}**\n```\n"
+                        current_chunk = msg + header if msg else header
+                        msg = ""
                         for p in clan_board:
-                            msg += f"{p['rank']:2}. {p['character']:<15} {p['dkp']} DKP\n"
-                        msg += "```\n"
+                            line = f"{p['rank']:2}. {p['character']:<15} {p['dkp']} DKP\n"
+                            if len(current_chunk) + len(line) > 1900:
+                                current_chunk += "```\n"
+                                messages_to_send.append(current_chunk)
+                                current_chunk = f"🛡️ **Clan {clan_name} (Cont.)**\n```\n" + line
+                            else:
+                                current_chunk += line
+                        current_chunk += "```\n"
+                        messages_to_send.append(current_chunk)
             elif result.get('leaderboard'):
-                msg += "```\n"
+                current_chunk = msg + "```\n"
+                msg = ""
                 for p in result['leaderboard']:
-                    msg += f"{p['rank']:2}. {p['character']:<15} {p['dkp']} DKP\n"
-                msg += "```"
+                    line = f"{p['rank']:2}. {p['character']:<15} {p['dkp']} DKP\n"
+                    if len(current_chunk) + len(line) > 1900:
+                        current_chunk += "```\n"
+                        messages_to_send.append(current_chunk)
+                        current_chunk = "```\n" + line
+                    else:
+                        current_chunk += line
+                current_chunk += "```\n"
+                messages_to_send.append(current_chunk)
             else:
-                msg += "\nNo DKP data available."
-            await interaction.followup.send(msg)
+                messages_to_send.append(msg + "\nNo DKP data available.")
+                
+            for m in messages_to_send:
+                await interaction.followup.send(m)
         else:
             await interaction.followup.send(f"❌ Error: {result.get('error')}")
 

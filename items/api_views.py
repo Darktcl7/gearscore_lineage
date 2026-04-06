@@ -317,9 +317,9 @@ def api_get_leaderboard(request):
         
         for clan_name in leaderboards_by_clan.keys():
             if clan_name == 'Valkyrie':
-                clan_reports = base_reports.filter(Q(player__clan='Valkyrie') | Q(player__clan='') | Q(player__clan__isnull=True))[:10]
+                clan_reports = base_reports.filter(Q(player__clan='Valkyrie') | Q(player__clan='') | Q(player__clan__isnull=True))
             else:
-                clan_reports = base_reports.filter(player__clan=clan_name)[:10]
+                clan_reports = base_reports.filter(player__clan=clan_name)
             
             rank = 1
             for report in clan_reports:
