@@ -22,6 +22,7 @@
     }
 
     main {
+        padding: 5px !important;
         overflow: visible !important;
     }
 
