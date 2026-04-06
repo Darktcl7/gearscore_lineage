@@ -323,11 +323,22 @@ def api_get_leaderboard(request):
             
             rank = 1
             for report in clan_reports:
+                total_score = report.total_score
+                
+                if total_score > 950:
+                    tier_display = '👑 Core'
+                elif total_score > 675:
+                    tier_display = '🛡️ Elite'
+                elif total_score > 400:
+                    tier_display = '⚔️ Active'
+                else:
+                    tier_display = '💤 Inactive'
+
                 leaderboards_by_clan[clan_name].append({
                     'rank': rank,
                     'player': report.player.name,
-                    'score': report.total_score,
-                    'tier': report.get_tier_display(),
+                    'score': total_score,
+                    'tier': tier_display,
                     'prize': report.prize_amount if report.is_qualified else 0,
                 })
                 rank += 1
