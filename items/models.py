@@ -1383,6 +1383,22 @@ class ActivityEvent(models.Model):
     is_win = models.BooleanField("Menang", default=False)
     win_bonus = models.IntegerField("Bonus Menang", default=10)
 
+    # Per-clan Win/Lose for Boss Rush, Catacombs, Dimensional Siege
+    is_win_valkyrie = models.BooleanField("Valkyrie Menang", default=False)
+    is_win_valhalla = models.BooleanField("Valhalla Menang", default=False)
+
+    # Event types that track per-clan results
+    CLAN_RESULT_EVENT_TYPES = ('BOSS_RUSH', 'CATACOMBS', 'DIMENSIONAL')
+
+    def get_clan_result(self, clan_name):
+        """Get win/lose result for a specific clan. Returns True if win."""
+        if self.event_type in self.CLAN_RESULT_EVENT_TYPES:
+            if clan_name == 'Valhalla':
+                return self.is_win_valhalla
+            else:
+                return self.is_win_valkyrie
+        return self.is_win
+
     # Boss point config for INVASION
     boss_point_config = models.JSONField("Boss Point Config", default=dict, blank=True,
         help_text="Config poin per boss, contoh: {'boss1': 5, 'boss2': 10}")

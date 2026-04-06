@@ -457,10 +457,26 @@
                                 {% elif "War Day:" in activity.event.name %}
                                     <span style="color: #666;">-</span>
                                 {% elif activity.event.is_completed %}
-                                    {% if activity.event.is_win %}
-                                    <span style="color:#2ecc71; font-weight:600;"><i class="fas fa-trophy"></i> Win</span>
+                                    {% if activity.event.event_type == 'BOSS_RUSH' or activity.event.event_type == 'CATACOMBS' or activity.event.event_type == 'DIMENSIONAL' %}
+                                        {% if character.clan == 'Valhalla' %}
+                                            {% if activity.event.is_win_valhalla %}
+                                            <span style="color:#2ecc71; font-weight:600;"><i class="fas fa-trophy"></i> Win</span>
+                                            {% else %}
+                                            <span style="color:#e74c3c; font-weight:600;"><i class="fas fa-skull"></i> Lose</span>
+                                            {% endif %}
+                                        {% else %}
+                                            {% if activity.event.is_win_valkyrie %}
+                                            <span style="color:#2ecc71; font-weight:600;"><i class="fas fa-trophy"></i> Win</span>
+                                            {% else %}
+                                            <span style="color:#e74c3c; font-weight:600;"><i class="fas fa-skull"></i> Lose</span>
+                                            {% endif %}
+                                        {% endif %}
                                     {% else %}
-                                    <span style="color:#e74c3c; font-weight:600;"><i class="fas fa-skull"></i> Lose</span>
+                                        {% if activity.event.is_win %}
+                                        <span style="color:#2ecc71; font-weight:600;"><i class="fas fa-trophy"></i> Win</span>
+                                        {% else %}
+                                        <span style="color:#e74c3c; font-weight:600;"><i class="fas fa-skull"></i> Lose</span>
+                                        {% endif %}
                                     {% endif %}
                                 {% else %}
                                     <span style="color: #666;">-</span>

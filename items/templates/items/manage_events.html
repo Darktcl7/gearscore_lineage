@@ -455,6 +455,15 @@
                     <td>
                         {% if not event.is_completed %}
                         <span style="color: #666;">-</span>
+                        {% elif event.event_type == 'BOSS_RUSH' or event.event_type == 'CATACOMBS' or event.event_type == 'DIMENSIONAL' %}
+                            <div style="display:flex; flex-direction:column; gap:4px; font-size:0.85rem;">
+                                <span style="color: {% if event.is_win_valkyrie %}#2ecc71{% else %}#e74c3c{% endif %}; font-weight:600;">
+                                    <i class="fas fa-{% if event.is_win_valkyrie %}trophy{% else %}times{% endif %}"></i> VK: {% if event.is_win_valkyrie %}Win{% else %}Lose{% endif %}
+                                </span>
+                                <span style="color: {% if event.is_win_valhalla %}#2ecc71{% else %}#e74c3c{% endif %}; font-weight:600;">
+                                    <i class="fas fa-{% if event.is_win_valhalla %}trophy{% else %}times{% endif %}"></i> VH: {% if event.is_win_valhalla %}Win{% else %}Lose{% endif %}
+                                </span>
+                            </div>
                         {% else %}
                             {% if event.is_win %}
                             <span class="win-badge"><i class="fas fa-trophy"></i> Win</span>
@@ -475,7 +484,7 @@
 
                         {% if not event.is_completed %}
                         <button
-                            onclick="confirmAction('complete', '{{ event.pk }}', '{{ event.event_id }}', '{{ event.name|escapejs }}')"
+                            onclick="confirmAction('complete', '{{ event.pk }}', '{{ event.event_id }}', '{{ event.name|escapejs }}', '{{ event.event_type }}')"
                             class="action-btn-icon" title="Mark as Completed" style="color: #2ecc71;">
                             <i class="fas fa-check"></i>
                         </button>
@@ -543,7 +552,7 @@
             }
 
             // Generic Action Confirmation
-            function confirmAction(actionType, pk, eventId, eventName) {
+            function confirmAction(actionType, pk, eventId, eventName, eventType) {
                 const modal = document.getElementById('actionModal');
                 const title = document.getElementById('modalTitle');
                 const message = document.getElementById('modalMessage');
@@ -567,19 +576,41 @@
                 }
                 else if (actionType === 'complete') {
                     title.innerHTML = '<i class="fas fa-check-circle"></i> Complete Event';
-                    message.innerHTML = 'Mark event <strong>' + eventName + '</strong> as Completed?' +
-                        '<div style="margin-top:16px; display:flex; gap:16px; justify-content:center;">' +
-                        '<label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:10px 20px; border:2px solid #2ecc71; border-radius:8px; color:#2ecc71; font-weight:600;">' +
-                        '<input type="radio" name="event_result" value="win" checked style="width:16px;height:16px;"> <i class="fas fa-trophy"></i> Win</label>' +
-                        '<label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:10px 20px; border:2px solid #e74c3c; border-radius:8px; color:#e74c3c; font-weight:600;">' +
-                        '<input type="radio" name="event_result" value="lose" style="width:16px;height:16px;"> <i class="fas fa-skull"></i> Lose</label>' +
-                        '</div>';
+                    
+                    // Check if this is a clan-result event type
+                    var isClanEvent = (eventType === 'BOSS_RUSH' || eventType === 'CATACOMBS' || eventType === 'DIMENSIONAL');
+                    
+                    if (isClanEvent) {
+                        message.innerHTML = 'Mark event <strong>' + eventName + '</strong> as Completed?' +
+                            '<div style="margin-top:18px;">' +
+                            '<div style="display:flex; align-items:center; gap:12px; margin-bottom:12px; padding:12px 16px; background:rgba(255,255,255,0.05); border-radius:10px; border:1px solid rgba(255,255,255,0.1);">' +
+                            '<span style="font-weight:700; color:#DAA520; min-width:80px;">Valkyrie</span>' +
+                            '<label style="display:flex; align-items:center; gap:5px; cursor:pointer; padding:8px 16px; border:2px solid #2ecc71; border-radius:8px; color:#2ecc71; font-weight:600;">' +
+                            '<input type="radio" name="result_valkyrie" value="win" checked style="width:14px;height:14px;"> <i class="fas fa-trophy"></i> Win</label>' +
+                            '<label style="display:flex; align-items:center; gap:5px; cursor:pointer; padding:8px 16px; border:2px solid #e74c3c; border-radius:8px; color:#e74c3c; font-weight:600;">' +
+                            '<input type="radio" name="result_valkyrie" value="lose" style="width:14px;height:14px;"> <i class="fas fa-skull"></i> Lose</label>' +
+                            '</div>' +
+                            '<div style="display:flex; align-items:center; gap:12px; padding:12px 16px; background:rgba(255,255,255,0.05); border-radius:10px; border:1px solid rgba(255,255,255,0.1);">' +
+                            '<span style="font-weight:700; color:#9B59B6; min-width:80px;">Valhalla</span>' +
+                            '<label style="display:flex; align-items:center; gap:5px; cursor:pointer; padding:8px 16px; border:2px solid #2ecc71; border-radius:8px; color:#2ecc71; font-weight:600;">' +
+                            '<input type="radio" name="result_valhalla" value="win" checked style="width:14px;height:14px;"> <i class="fas fa-trophy"></i> Win</label>' +
+                            '<label style="display:flex; align-items:center; gap:5px; cursor:pointer; padding:8px 16px; border:2px solid #e74c3c; border-radius:8px; color:#e74c3c; font-weight:600;">' +
+                            '<input type="radio" name="result_valhalla" value="lose" style="width:14px;height:14px;"> <i class="fas fa-skull"></i> Lose</label>' +
+                            '</div>' +
+                            '</div>';
+                    } else {
+                        message.innerHTML = 'Mark event <strong>' + eventName + '</strong> as Completed?' +
+                            '<div style="margin-top:16px; display:flex; gap:16px; justify-content:center;">' +
+                            '<label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:10px 20px; border:2px solid #2ecc71; border-radius:8px; color:#2ecc71; font-weight:600;">' +
+                            '<input type="radio" name="event_result" value="win" checked style="width:16px;height:16px;"> <i class="fas fa-trophy"></i> Win</label>' +
+                            '<label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:10px 20px; border:2px solid #e74c3c; border-radius:8px; color:#e74c3c; font-weight:600;">' +
+                            '<input type="radio" name="event_result" value="lose" style="width:16px;height:16px;"> <i class="fas fa-skull"></i> Lose</label>' +
+                            '</div>';
+                    }
+                    
                     confirmBtn.innerText = 'Complete Event';
                     confirmBtn.classList.add('btn-complete');
                     confirmBtn.onclick = function () {
-                        var radio = document.querySelector('input[name="event_result"]:checked');
-                        var resultVal = radio ? radio.value : 'win';
-                        
                         var form = document.createElement('form');
                         form.method = 'POST';
                         form.action = '/portal/activity/events/' + pk + '/complete/';
@@ -590,11 +621,29 @@
                         csrf.value = getCookie('csrftoken');
                         form.appendChild(csrf);
                         
-                        var res = document.createElement('input');
-                        res.type = 'hidden';
-                        res.name = 'result';
-                        res.value = resultVal;
-                        form.appendChild(res);
+                        if (isClanEvent) {
+                            var rv = document.querySelector('input[name="result_valkyrie"]:checked');
+                            var rh = document.querySelector('input[name="result_valhalla"]:checked');
+                            
+                            var resV = document.createElement('input');
+                            resV.type = 'hidden';
+                            resV.name = 'result_valkyrie';
+                            resV.value = rv ? rv.value : 'win';
+                            form.appendChild(resV);
+                            
+                            var resH = document.createElement('input');
+                            resH.type = 'hidden';
+                            resH.name = 'result_valhalla';
+                            resH.value = rh ? rh.value : 'win';
+                            form.appendChild(resH);
+                        } else {
+                            var radio = document.querySelector('input[name="event_result"]:checked');
+                            var res = document.createElement('input');
+                            res.type = 'hidden';
+                            res.name = 'result';
+                            res.value = radio ? radio.value : 'win';
+                            form.appendChild(res);
+                        }
                         
                         document.body.appendChild(form);
                         form.submit();

@@ -1135,14 +1135,30 @@ def complete_event(request, event_pk):
     if request.method == 'POST':
         from items.models import ActivityEvent, PlayerActivity, DiscordAnnouncement
         event = get_object_or_404(ActivityEvent, pk=event_pk)
-        result = request.POST.get('result', 'win')
+        # Per-clan results for Boss Rush, Catacombs, Dimensional Siege
+        if event.event_type in ActivityEvent.CLAN_RESULT_EVENT_TYPES:
+            result_valkyrie = request.POST.get('result_valkyrie', 'win')
+            result_valhalla = request.POST.get('result_valhalla', 'win')
+            event.is_win_valkyrie = (result_valkyrie == 'win')
+            event.is_win_valhalla = (result_valhalla == 'win')
+            event.is_win = event.is_win_valkyrie or event.is_win_valhalla
+        else:
+            result = request.POST.get('result', 'win')
+            event.is_win = (result == 'win')
+            event.is_win_valkyrie = event.is_win
+            event.is_win_valhalla = event.is_win
         event.is_completed = True
-        event.is_win = (result == 'win')
         event.save()
         
         # Count participants (only ATTENDED)
         participant_count = PlayerActivity.objects.filter(event=event, status='ATTENDED').count()
-        result_text = "✅ WIN" if event.is_win else "❌ LOSE"
+        # Build result text per clan
+        if event.event_type in ActivityEvent.CLAN_RESULT_EVENT_TYPES:
+            vk_r = "✅ WIN" if event.is_win_valkyrie else "❌ LOSE"
+            vh_r = "✅ WIN" if event.is_win_valhalla else "❌ LOSE"
+            result_text = f"Valkyrie: {vk_r} | Valhalla: {vh_r}"
+        else:
+            result_text = "✅ WIN" if event.is_win else "❌ LOSE"
         
         # Create Discord announcement
         announcement_msg = (

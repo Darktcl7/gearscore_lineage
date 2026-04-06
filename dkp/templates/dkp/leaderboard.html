@@ -347,6 +347,102 @@
     .bulk-bar .bbtn-decay:hover { background: rgba(231,76,60,0.35); }
     .bulk-bar .sel-count { color: #888; font-size: 0.8rem; font-style: italic; margin-left: auto; }
 
+    /* ── SEARCH BOX ── */
+    .search-wrapper {
+        position: relative;
+        margin-bottom: 16px;
+    }
+    .search-wrapper i.search-icon {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #555;
+        font-size: 0.9rem;
+        pointer-events: none;
+        transition: color 0.3s;
+    }
+    .search-wrapper input.search-input {
+        width: 100%;
+        padding: 12px 42px 12px 44px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        color: #eee;
+        font-family: 'Outfit', sans-serif;
+        font-size: 0.95rem;
+        box-sizing: border-box;
+        transition: all 0.3s ease;
+    }
+    .search-wrapper input.search-input:focus {
+        outline: none;
+        border-color: rgba(255,215,0,0.4);
+        background: rgba(255,255,255,0.06);
+        box-shadow: 0 0 20px rgba(255,215,0,0.08);
+    }
+    .search-wrapper input.search-input:focus + i.search-icon,
+    .search-wrapper input.search-input:focus ~ i.search-icon {
+        color: #FFD700;
+    }
+    .search-wrapper input.search-input::placeholder {
+        color: #555;
+    }
+    .search-clear-btn {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(255,255,255,0.1);
+        border: none;
+        color: #888;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        transition: all 0.2s;
+    }
+    .search-clear-btn:hover {
+        background: rgba(255,255,255,0.2);
+        color: #fff;
+    }
+    .search-clear-btn.visible {
+        display: flex;
+    }
+    .search-no-results {
+        display: none;
+        text-align: center;
+        padding: 30px;
+        color: #555;
+        font-size: 0.95rem;
+    }
+    .search-no-results i {
+        display: block;
+        font-size: 2rem;
+        margin-bottom: 10px;
+        color: #333;
+    }
+    .search-result-count {
+        display: none;
+        color: #666;
+        font-size: 0.8rem;
+        margin-top: -10px;
+        margin-bottom: 10px;
+        font-style: italic;
+    }
+    .search-result-count.visible {
+        display: block;
+    }
+    .search-highlight {
+        background: rgba(255,215,0,0.25);
+        color: #FFD700;
+        border-radius: 3px;
+        padding: 0 2px;
+    }
+
     /* ── MOBILE RESPONSIVE ── */
     @media (max-width: 768px) {
         .activity-container {
@@ -371,6 +467,11 @@
         }
         .bulk-bar .bbtn { font-size: 0.75rem; padding: 6px 10px; }
         .bulk-bar .divider { display: none; }
+
+        .search-wrapper input.search-input {
+            font-size: 0.85rem;
+            padding: 10px 38px 10px 40px;
+        }
     }
 </style>
 {% endblock %}
@@ -435,6 +536,16 @@
         {% endfor %}
     </div>
 
+    <!-- Search Box -->
+    <div class="search-wrapper">
+        <input type="text" id="playerSearch" class="search-input" placeholder="🔍 Search player name..." autocomplete="off">
+        <i class="fas fa-search search-icon"></i>
+        <button type="button" class="search-clear-btn" id="searchClearBtn" onclick="clearSearch()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="search-result-count" id="searchResultCount"></div>
+
     <div class="table-wrapper">
         {% if is_admin %}
         <div class="bulk-bar">
@@ -490,8 +601,93 @@
                 {% endfor %}
             </tbody>
         </table>
+        <div class="search-no-results" id="searchNoResults">
+            <i class="fas fa-search"></i>
+            No players found.
+        </div>
     </div>
 </div>
+
+<script>
+// ===== SEARCH FILTER =====
+var searchInput = document.getElementById('playerSearch');
+var searchClearBtn = document.getElementById('searchClearBtn');
+var searchResultCount = document.getElementById('searchResultCount');
+var searchNoResults = document.getElementById('searchNoResults');
+var allRows = document.querySelectorAll('table tbody tr');
+
+// Store original name HTML for each row
+var originalNames = [];
+allRows.forEach(function(row) {
+    var nameCell = row.querySelector('td[style*="font-weight:bold"]');
+    originalNames.push(nameCell ? nameCell.textContent.trim() : '');
+});
+
+searchInput.addEventListener('input', function() {
+    var query = this.value.trim().toLowerCase();
+    searchClearBtn.classList.toggle('visible', query.length > 0);
+
+    var visibleCount = 0;
+    var totalRows = 0;
+
+    allRows.forEach(function(row, idx) {
+        var nameCell = row.querySelector('td[style*="font-weight:bold"]');
+        if (!nameCell) return;
+        totalRows++;
+        var name = originalNames[idx];
+
+        if (!query) {
+            row.style.display = '';
+            nameCell.innerHTML = name;
+            visibleCount++;
+        } else if (name.toLowerCase().indexOf(query) !== -1) {
+            row.style.display = '';
+            // Highlight match
+            var regex = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+            nameCell.innerHTML = name.replace(regex, '<span class="search-highlight">$1</span>');
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+            nameCell.innerHTML = name;
+        }
+    });
+
+    // Update rank numbers for visible rows
+    var visibleRank = 1;
+    allRows.forEach(function(row) {
+        if (row.style.display === 'none') return;
+        var rankCell = row.querySelector('.rank-cell');
+        if (rankCell) {
+            if (!query) {
+                // Restore original rank styling will happen naturally
+            }
+            rankCell.textContent = '#' + visibleRank;
+            visibleRank++;
+        }
+    });
+
+    // Show/hide no results
+    if (query && visibleCount === 0) {
+        searchNoResults.style.display = 'block';
+    } else {
+        searchNoResults.style.display = 'none';
+    }
+
+    // Show result count only when searching
+    if (query) {
+        searchResultCount.textContent = 'Showing ' + visibleCount + ' of ' + totalRows + ' players';
+        searchResultCount.classList.add('visible');
+    } else {
+        searchResultCount.classList.remove('visible');
+    }
+});
+
+function clearSearch() {
+    searchInput.value = '';
+    searchInput.dispatchEvent(new Event('input'));
+    searchInput.focus();
+}
+</script>
 
 {% if is_admin %}
 <script>

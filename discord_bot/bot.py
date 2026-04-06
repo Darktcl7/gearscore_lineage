@@ -198,6 +198,8 @@ class AltoBot(commands.Cog):
     @app_commands.describe(
         event_id="The Event ID to complete",
         win="Did the guild win?",
+        win_valkyrie="[Boss Rush/Catacombs/Dimensional] Did Valkyrie win?",
+        win_valhalla="[Boss Rush/Catacombs/Dimensional] Did Valhalla win?",
         dragon_beast="[Invasion] Dragon Beast killed?",
         carnifex="[Invasion] Carnifex killed?",
         orfen="[Invasion] Orfen killed?"
@@ -208,6 +210,8 @@ class AltoBot(commands.Cog):
         interaction: discord.Interaction, 
         event_id: str,
         win: bool = False,
+        win_valkyrie: bool = False,
+        win_valhalla: bool = False,
         dragon_beast: bool = False,
         carnifex: bool = False,
         orfen: bool = False
@@ -218,6 +222,8 @@ class AltoBot(commands.Cog):
         data = {
             'event_id': event_id,
             'is_win': win,
+            'is_win_valkyrie': win_valkyrie,
+            'is_win_valhalla': win_valhalla,
             'bosses_killed': {
                 'dragon_beast': dragon_beast,
                 'carnifex': carnifex,
@@ -236,7 +242,15 @@ class AltoBot(commands.Cog):
             embed.add_field(name="Status", value="🔴 COMPLETED - Check-in closed", inline=False)
             embed.add_field(name="Max Points", value=f"{result['max_points']} pts", inline=True)
             embed.add_field(name="Participants", value=f"{result['participants']} players", inline=True)
-            embed.add_field(name="Result", value="✅ WIN" if win else "❌ LOSE", inline=True)
+            
+            if win_valkyrie or win_valhalla or (not win and event_id.lower().startswith(('br_', 'cat_', 'ds_'))):
+                vk_result = "✅ WIN" if win_valkyrie else "❌ LOSE"
+                vh_result = "✅ WIN" if win_valhalla else "❌ LOSE"
+                embed.add_field(name="Valkyrie", value=vk_result, inline=True)
+                embed.add_field(name="Valhalla", value=vh_result, inline=True)
+            else:
+                embed.add_field(name="Result", value="✅ WIN" if win else "❌ LOSE", inline=True)
+                
             embed.set_footer(text="Points have been calculated and added to the leaderboard!")
             await interaction.followup.send("@everyone 📢 **The event has ended!**", embed=embed)
         else:
@@ -253,13 +267,16 @@ class AltoBot(commands.Cog):
         if result.get('success'):
             embed = discord.Embed(
                 title=f"📊 Stats for {result['player']}",
+                description=f"Clan: **{result.get('clan', '-')}**",
                 color=discord.Color.blue()
             )
-            embed.add_field(name="Total Score", value=f"**{result['total_score']}** pts", inline=True)
-            embed.add_field(name="Tier", value=result['tier'], inline=True)
-            embed.add_field(name="Attendance", value=result['attendance'], inline=True)
-            embed.add_field(name="Events Joined", value=f"{result['events_joined']}/{result['total_events']}", inline=True)
-            embed.add_field(name="Est. Prize", value=f"💎 {result['estimated_prize']}", inline=True)
+            embed.add_field(name="🎯 Total Score", value=f"**{result['total_score']}** pts", inline=True)
+            embed.add_field(name="🌟 Tier", value=result['tier'], inline=True)
+            embed.add_field(name="📅 Attendance", value=result['attendance'], inline=True)
+            embed.add_field(name="⚔️ Events Joined", value=f"{result['events_joined']}/{result['total_events']}", inline=True)
+            embed.add_field(name="🔥 Win Streak", value=f"{result.get('current_streak', 0)}x", inline=True)
+            embed.add_field(name="🏅 Streak Bonus", value=f"+{result.get('total_streak_bonus', 0)} pts", inline=True)
+            embed.add_field(name="⭐ AP Points", value=f"{result.get('ap_points', 0)} pts", inline=True)
             await interaction.followup.send(embed=embed, ephemeral=True)
         elif result.get('error') == 'Discord not linked to any Character':
             await interaction.followup.send(
@@ -332,23 +349,7 @@ class AltoBot(commands.Cog):
     
     dkp_group = app_commands.Group(name="dkp", description="Dragon Kill Points System")
 
-    @dkp_group.command(name="events", description="List active DKP events/raids")
-    async def dkp_events(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)
-        result = await self.api_request('GET', '/dkp/api/active/')
-        
-        if result.get('success'):
-            if not result['events']:
-                await interaction.followup.send("ℹ️ No active DKP events at this time.", ephemeral=True)
-                return
-            
-            msg = "**⚔️ Active DKP Events:**\n"
-            for e in result['events']:
-                msg += f"• **{e['name']}** (ID: {e['id']}) - Reward: {e['points']} DKP\n"
-            msg += "\nUse `/dkp checkin <event_id> <character_name>` to check in."
-            await interaction.followup.send(msg, ephemeral=True)
-        else:
-            await interaction.followup.send(f"❌ Error: {result.get('error', 'Connection failed')}", ephemeral=True)
+
 
 
 

@@ -234,7 +234,14 @@ def api_complete_event(request):
         
         # Update event results
         event.is_completed = True
-        event.is_win = data.get('is_win', False)
+        if event.event_type in ('BOSS_RUSH', 'CATACOMBS', 'DIMENSIONAL'):
+            event.is_win_valkyrie = data.get('is_win_valkyrie', data.get('is_win', False))
+            event.is_win_valhalla = data.get('is_win_valhalla', data.get('is_win', False))
+            event.is_win = event.is_win_valkyrie or event.is_win_valhalla
+        else:
+            event.is_win = data.get('is_win', False)
+            event.is_win_valkyrie = event.is_win
+            event.is_win_valhalla = event.is_win
         
         if 'bosses_killed' in data:
             event.bosses_killed = data.get('bosses_killed')
@@ -394,6 +401,7 @@ def api_player_stats(request, character_name):
 def api_player_stats_discord(request, discord_id):
     """
     Get a player's current month stats by Discord ID.
+    Calculates directly from PlayerActivity for accuracy.
     GET /api/activity/player/discord/<discord_id>/
     """
     if not verify_api_key(request):
@@ -401,41 +409,99 @@ def api_player_stats_discord(request, discord_id):
     
     try:
         from django.utils import timezone
+        from django.db.models import Sum
+        from datetime import timedelta
         today = timezone.now()
+        month_ago = today - timedelta(days=30)
         
         character = Character.objects.filter(discord_id=discord_id).first()
         
         if not character:
             return JsonResponse({'error': 'Discord not linked to any Character'}, status=404)
         
-        report = MonthlyReport.objects.filter(
+        # Calculate stats directly from PlayerActivity (like my_activity view)
+        activities = PlayerActivity.objects.filter(
             player=character,
-            month__year=today.year,
-            month__month=today.month
-        ).first()
+            event__date__gte=month_ago,
+            event__is_completed=True
+        ).select_related('event')
         
-        if report:
-            return JsonResponse({
-                'success': True,
-                'player': character.name,
-                'total_score': report.total_score,
-                'tier': report.get_tier_display(),
-                'attendance': f"{report.attendance_rate * 100:.1f}%",
-                'events_joined': report.attended_events,
-                'total_events': report.total_events,
-                'estimated_prize': report.prize_amount if report.is_qualified else 0,
-            })
+        # Base points (excluding AP adjustments)
+        total_points_base = activities.exclude(
+            event__name__startswith='AP Adjustment:'
+        ).aggregate(total=Sum('points_earned'))['total'] or 0
+        
+        total_streak_bonus = activities.exclude(
+            event__name__startswith='AP Adjustment:'
+        ).aggregate(total=Sum('win_streak_bonus'))['total'] or 0
+        
+        total_score = total_points_base + total_streak_bonus
+        
+        # AP points
+        ap_points = activities.filter(
+            event__name__startswith='AP Adjustment:'
+        ).aggregate(total=Sum('points_earned'))['total'] or 0
+        
+        # Attendance
+        attended_count = activities.exclude(
+            event__name__startswith='AP Adjustment:'
+        ).exclude(
+            event__name__startswith='Score Adjustment:'
+        ).filter(status='ATTENDED').count()
+        
+        total_events = ActivityEvent.objects.exclude(
+            name__startswith='AP Adjustment:'
+        ).exclude(
+            name__startswith='Score Adjustment:'
+        ).filter(
+            date__gte=month_ago,
+            is_completed=True
+        ).count()
+        
+        attendance_rate = (attended_count / total_events * 100) if total_events > 0 else 0
+        
+        # Current win streak
+        current_streak = 0
+        recent_activities = activities.exclude(
+            event__name__startswith='AP Adjustment:'
+        ).exclude(
+            event__name__startswith='Score Adjustment:'
+        ).filter(status='ATTENDED').order_by('-event__date')
+        
+        for act in recent_activities:
+            evt = act.event
+            if evt.event_type in ('BOSS_RUSH', 'CATACOMBS', 'DIMENSIONAL'):
+                is_win = evt.is_win_valhalla if character.clan == 'Valhalla' else evt.is_win_valkyrie
+            else:
+                is_win = evt.is_win
+            if is_win:
+                current_streak += 1
+            else:
+                break
+        
+        # Tier
+        if total_score > 950:
+            tier = '👑 Core'
+        elif total_score > 675:
+            tier = '🛡️ Elite'
+        elif total_score > 400:
+            tier = '⚔️ Active'
         else:
-            return JsonResponse({
-                'success': True,
-                'player': character.name,
-                'total_score': 0,
-                'tier': '🌱 Casual',
-                'attendance': '0%',
-                'events_joined': 0,
-                'total_events': 0,
-                'estimated_prize': 0,
-            })
+            tier = '💤 Inactive'
+        
+        return JsonResponse({
+            'success': True,
+            'player': character.name,
+            'clan': character.clan or 'Valkyrie',
+            'total_score': total_score,
+            'tier': tier,
+            'attendance': f"{attendance_rate:.1f}%",
+            'events_joined': attended_count,
+            'total_events': total_events,
+            'current_streak': current_streak,
+            'total_streak_bonus': total_streak_bonus,
+            'ap_points': ap_points,
+        })
     
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
@@ -488,8 +554,16 @@ def api_toggle_event_status(request, event_pk):
         if event.is_completed:
             try:
                 data = json.loads(request.body) if request.body else {}
-                if 'is_win' in data:
+                if event.event_type in ('BOSS_RUSH', 'CATACOMBS', 'DIMENSIONAL'):
+                    if 'is_win_valkyrie' in data:
+                        event.is_win_valkyrie = data['is_win_valkyrie']
+                    if 'is_win_valhalla' in data:
+                        event.is_win_valhalla = data['is_win_valhalla']
+                    event.is_win = event.is_win_valkyrie or event.is_win_valhalla
+                elif 'is_win' in data:
                     event.is_win = data['is_win']
+                    event.is_win_valkyrie = event.is_win
+                    event.is_win_valhalla = event.is_win
             except (json.JSONDecodeError, ValueError):
                 pass
         
@@ -519,7 +593,15 @@ def api_toggle_event_status(request, event_pk):
         if event.is_completed:
             participant_count = event.participants.filter(status='ATTENDED').count()
             max_pts = event.calculate_max_points()
-            result_text = "WIN" if event.is_win else "LOSE"
+            
+            # Per-clan result for Boss Rush, Catacombs, Dimensional Siege
+            if event.event_type in ('BOSS_RUSH', 'CATACOMBS', 'DIMENSIONAL'):
+                vk_r = "✅ WIN" if event.is_win_valkyrie else "❌ LOSE"
+                vh_r = "✅ WIN" if event.is_win_valhalla else "❌ LOSE"
+                result_text = f"Valkyrie: {vk_r} | Valhalla: {vh_r}"
+            else:
+                rt = "WIN" if event.is_win else "LOSE"
+                result_text = ('✅ ' + rt) if event.is_win else ('❌ ' + rt)
             
             announcement_msg = (
                 f"[NOTIFICATION]@everyone 📢 **The event has ended!**\n\n"
@@ -528,7 +610,7 @@ def api_toggle_event_status(request, event_pk):
                 f"🔴 **Status:** COMPLETED - Check-in closed\n"
                 f"⭐ **Max Points:** {max_pts} pts\n"
                 f"👥 **Participants:** {participant_count} players\n"
-                f"🏅 **Result:** {'✅ ' + result_text if event.is_win else '❌ ' + result_text}\n\n"
+                f"🏅 **Result:** {result_text}\n\n"
                 f"*Points have been calculated and added to the leaderboard!*"
             )
             DiscordAnnouncement.objects.create(message=announcement_msg)
@@ -592,15 +674,15 @@ def api_toggle_event_result(request, event_pk):
 def recalculate_win_streak_bonuses():
     """
     Recalculate win streak bonuses for ALL players across ALL completed events.
-    For each player, walk ALL completed events chronologically:
-    - Player attended + event Win → streak += 1, bonus = max(0, streak - 1)
-    - Player attended + event Lose → streak = 0, bonus = 0
-    - Player did NOT attend → streak = 0 (non-participation = streak reset)
+    For Boss Rush, Catacombs, Dimensional Siege: uses per-clan result (is_win_valkyrie/is_win_valhalla).
+    For other events: uses event.is_win for all players.
     """
     from items.models import PlayerActivity, ActivityEvent, Character
     
+    CLAN_RESULT_TYPES = ('BOSS_RUSH', 'CATACOMBS', 'DIMENSIONAL')
+    
     # Get all completed events (excluding adjustments and War Day), ordered by date
-    completed_events = ActivityEvent.objects.filter(
+    completed_events = list(ActivityEvent.objects.filter(
         is_completed=True,
     ).exclude(
         name__startswith='AP Adjustment:'
@@ -608,18 +690,22 @@ def recalculate_win_streak_bonuses():
         name__startswith='Score Adjustment:'
     ).exclude(
         name__contains='War Day:'
-    ).order_by('date')
+    ).order_by('date'))
     
-    # Get all players who have any activity
-    player_ids = PlayerActivity.objects.filter(
-        status='ATTENDED'
-    ).exclude(
-        event__name__startswith='AP Adjustment:'
-    ).exclude(
-        event__name__startswith='Score Adjustment:'
-    ).values_list('player_id', flat=True).distinct()
+    # Get all players who have any activity, with their clan
+    player_ids_clans = dict(
+        Character.objects.filter(
+            pk__in=PlayerActivity.objects.filter(
+                status='ATTENDED'
+            ).exclude(
+                event__name__startswith='AP Adjustment:'
+            ).exclude(
+                event__name__startswith='Score Adjustment:'
+            ).values_list('player_id', flat=True).distinct()
+        ).values_list('pk', 'clan')
+    )
     
-    for player_id in player_ids:
+    for player_id, player_clan in player_ids_clans.items():
         # Build a set of event IDs this player attended
         attended_event_ids = set(
             PlayerActivity.objects.filter(
@@ -632,11 +718,20 @@ def recalculate_win_streak_bonuses():
         for event in completed_events:
             attended = event.pk in attended_event_ids
             
-            if attended and event.is_win:
+            # Determine win for this player based on their clan
+            if event.event_type in CLAN_RESULT_TYPES:
+                if player_clan == 'Valhalla':
+                    event_is_win = event.is_win_valhalla
+                else:
+                    event_is_win = event.is_win_valkyrie
+            else:
+                event_is_win = event.is_win
+            
+            if attended and event_is_win:
                 streak += 1
                 bonus = max(0, streak - 1)
             else:
-                # Lose OR not attended → reset streak
+                # Lose OR not attended -> reset streak
                 streak = 0
                 bonus = 0
             

@@ -279,6 +279,31 @@
         color: #888; font-size: 0.8rem; font-style: italic;
         margin-top: 4px; display: block;
     }
+
+    /* Bulk delete bar for Recent Activities */
+    .activity-bulk-bar {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 15px; margin-bottom: 0; margin-top: 16px;
+        background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 10px 10px 0 0;
+    }
+    .activity-bulk-bar label {
+        color: #aaa; font-size: 0.85rem; cursor: pointer;
+        display: flex; align-items: center; gap: 6px; white-space: nowrap;
+    }
+    .activity-bulk-bar input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #e74c3c; }
+    .activity-bulk-bar .ab-divider { width: 1px; height: 24px; background: rgba(255,255,255,0.12); }
+    .activity-bulk-bar .ab-count { color: #888; font-size: 0.82rem; font-style: italic; margin-left: auto; }
+    .ab-delete-btn {
+        display: flex; align-items: center; gap: 6px;
+        padding: 7px 16px; border-radius: 8px; border: 1px solid rgba(231,76,60,0.3);
+        background: rgba(231,76,60,0.12); color: #e74c3c;
+        cursor: pointer; font-weight: 600; font-size: 0.85rem;
+        transition: all 0.2s;
+    }
+    .ab-delete-btn:hover { background: rgba(231,76,60,0.3); transform: translateY(-1px); }
+    .ab-delete-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .event-cb { width: 16px; height: 16px; cursor: pointer; accent-color: #e74c3c; }
 </style>
 {% endblock %}
 
@@ -588,6 +613,15 @@
                 <input type="hidden" name="name" id="world-name-hidden">
                 <input type="hidden" name="code" value="">
 
+                <!-- War Day Toggle -->
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px; padding:10px 16px; background:rgba(231,76,60,0.08); border:1px solid rgba(231,76,60,0.25); border-radius:10px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:#e74c3c; font-weight:600; font-size:0.9rem;">
+                        <input type="checkbox" name="war_day" style="width:18px; height:18px; cursor:pointer;">
+                        ⚔️ War Day
+                    </label>
+                    <span style="color:#888; font-size:0.78rem;">Points will also be added to Activity Score</span>
+                </div>
+
                 <!-- Veora Ruins -->
                 <div class="region-group open">
                     <div class="region-header" onclick="toggleRegion(this)">
@@ -731,19 +765,33 @@
     <!-- END BOSS TABS -->
 
     <h3 style="color:#FFD700;">Recent Activities</h3>
-    <table class="leaderboard-table">
+
+    <!-- Bulk Delete Bar -->
+    <div class="activity-bulk-bar">
+        <label><input type="checkbox" id="eventSelectAll" onchange="toggleEventSelectAll()"> Select All</label>
+        <span class="ab-divider"></span>
+        <button type="button" class="ab-delete-btn" id="bulkDeleteBtn" disabled onclick="showBulkDeleteModal()">
+            <i class="fas fa-trash"></i> Delete Selected
+        </button>
+        <span class="ab-count" id="eventSelCount">0 selected</span>
+    </div>
+
+    <table class="leaderboard-table" style="border-radius: 0 0 10px 10px;">
         <thead>
             <tr>
+                <th style="width:40px;"></th>
                 <th>Activity</th>
                 <th>Points</th>
                 <th>Participants</th>
                 <th>Date</th>
-                <th>Action</th>
             </tr>
         </thead>
         <tbody>
             {% for e in events %}
             <tr>
+                <td style="text-align:center;">
+                    <input type="checkbox" class="event-cb" value="{{ e.id }}" onchange="updateEventSelCount()">
+                </td>
                 <td style="font-weight:bold; color:white;">
                     {{ e.name }}
                     {% if e.is_war_day %}<span class="war-day-badge">⚔️ War Day</span>{% endif %}
@@ -752,13 +800,6 @@
                 <td style="color:#FFD700;">{{ e.points_to_award }} pts</td>
                 <td><span style="color:#81c784;">{{ e.attendances.count }} users</span></td>
                 <td>{{ e.date|date:"d M H:i" }}</td>
-                <td>
-                    <button type="button" class="delete-event-btn"
-                        data-eid="{{ e.id }}" data-ename="{{ e.name|escapejs }}" data-epoints="{{ e.points_to_award }}" data-edate="{{ e.date|date:'d M H:i' }}"
-                        onclick="showDeleteModal(this)">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
             </tr>
             {% empty %}
             <tr>
@@ -788,37 +829,37 @@
     
 </div>
 
-<!-- Hidden form for delete -->
-<form id="deleteEventForm" method="POST" style="display:none;">
+<!-- Hidden form for bulk delete -->
+<form id="bulkDeleteForm" method="POST" style="display:none;">
     {% csrf_token %}
-    <input type="hidden" name="action" value="delete">
-    <input type="hidden" name="event_id" id="deleteEventId">
+    <input type="hidden" name="action" value="bulk_delete">
+    <input type="hidden" name="event_ids" id="bulkDeleteIds">
 </form>
 
-<!-- Delete Confirmation Modal -->
+<!-- Bulk Delete Confirmation Modal -->
 <div id="deleteModal" class="custom-modal-overlay">
     <div class="custom-modal">
         <div class="modal-glow"></div>
         <button class="modal-close" onclick="closeDeleteModal()"><i class="fas fa-times"></i></button>
         <div class="modal-header">
-            <h2><i class="fas fa-trash-alt"></i> Delete DKP Event</h2>
+            <h2><i class="fas fa-trash-alt"></i> Delete Activities</h2>
         </div>
         <div class="modal-body">
-            <p>Are you sure you want to permanently delete this event?</p>
-            <div class="event-preview">
+            <p id="deleteModalMsg">Are you sure you want to delete the selected activities?</p>
+            <div class="event-preview" id="deletePreviewBox" style="display:none;">
                 <div class="event-preview-item"><i class="fas fa-scroll"></i><span>Event:</span><strong id="previewName">-</strong></div>
                 <div class="event-preview-item"><i class="fas fa-coins"></i><span>Points:</span><span class="event-points-badge" id="previewPoints">-</span></div>
                 <div class="event-preview-item"><i class="fas fa-calendar"></i><span>Date:</span><strong id="previewDate">-</strong></div>
             </div>
             <div class="warning-box">
                 <i class="fas fa-exclamation-triangle"></i>
-                <span>This action cannot be undone. All attendance records for this event will also be deleted.</span>
+                <span>This action cannot be undone. All attendance records for these events will also be deleted.</span>
             </div>
         </div>
         <div class="modal-footer">
             <button class="btn-modal btn-modal-cancel" onclick="closeDeleteModal()">Cancel</button>
-            <button class="btn-modal btn-modal-delete" onclick="confirmDelete()">
-                <i class="fas fa-trash"></i> Delete Event
+            <button class="btn-modal btn-modal-delete" onclick="confirmBulkDelete()">
+                <i class="fas fa-trash"></i> Delete
             </button>
         </div>
     </div>
@@ -1045,26 +1086,54 @@ function buildBossForm(form) {
     form.querySelector('input[name="name"]').value = rb.value;
     return true;
 }
-var currentEventId = null;
+// ===== BULK DELETE FOR RECENT ACTIVITIES =====
+function toggleEventSelectAll() {
+    var sa = document.getElementById('eventSelectAll');
+    document.querySelectorAll('.event-cb').forEach(function(cb) {
+        cb.checked = sa.checked;
+    });
+    updateEventSelCount();
+}
 
-function showDeleteModal(btn) {
-    currentEventId = btn.dataset.eid;
-    document.getElementById('previewName').textContent = btn.dataset.ename;
-    document.getElementById('previewPoints').textContent = btn.dataset.epoints + ' pts';
-    document.getElementById('previewDate').textContent = btn.dataset.edate;
+function updateEventSelCount() {
+    var checked = document.querySelectorAll('.event-cb:checked');
+    var total = document.querySelectorAll('.event-cb');
+    var el = document.getElementById('eventSelCount');
+    var btn = document.getElementById('bulkDeleteBtn');
+    var sa = document.getElementById('eventSelectAll');
+    if (el) el.textContent = checked.length + ' selected';
+    if (btn) btn.disabled = checked.length === 0;
+    // Sync select-all checkbox
+    if (sa) sa.checked = checked.length === total.length && total.length > 0;
+}
+
+function getSelectedEventIds() {
+    var ids = [];
+    document.querySelectorAll('.event-cb:checked').forEach(function(cb) {
+        ids.push(cb.value);
+    });
+    return ids;
+}
+
+function showBulkDeleteModal() {
+    var ids = getSelectedEventIds();
+    if (ids.length === 0) return;
+    var msg = document.getElementById('deleteModalMsg');
+    var previewBox = document.getElementById('deletePreviewBox');
+    previewBox.style.display = 'none';
+    msg.textContent = 'Are you sure you want to delete ' + ids.length + ' selected activities?';
     document.getElementById('deleteModal').classList.add('active');
 }
 
 function closeDeleteModal() {
     document.getElementById('deleteModal').classList.remove('active');
-    currentEventId = null;
 }
 
-function confirmDelete() {
-    if (currentEventId) {
-        document.getElementById('deleteEventId').value = currentEventId;
-        document.getElementById('deleteEventForm').submit();
-    }
+function confirmBulkDelete() {
+    var ids = getSelectedEventIds();
+    if (ids.length === 0) return;
+    document.getElementById('bulkDeleteIds').value = ids.join(',');
+    document.getElementById('bulkDeleteForm').submit();
 }
 
 document.getElementById('deleteModal').addEventListener('click', function(e) {

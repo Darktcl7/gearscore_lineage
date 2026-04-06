@@ -598,7 +598,7 @@ def dkp_manage(request):
 
                 # WAR DAY: Also create Activity event if checked (Raid Boss & Territory Boss only)
                 activity_event = None
-                if is_war_day and boss_type in ('Raid Boss', 'Territory Boss'):
+                if is_war_day and boss_type in ('Raid Boss', 'Territory Boss', 'World Boss'):
                     from items.models import ActivityEvent, PlayerActivity
                     activity_event = ActivityEvent.objects.create(
                         name=f"⚔️ War Day: {final_name}",
@@ -656,6 +656,13 @@ def dkp_manage(request):
         elif action == 'delete':
             event_id = request.POST.get('event_id')
             DKPEvent.objects.filter(id=event_id).delete()
+
+        elif action == 'bulk_delete':
+            event_ids_str = request.POST.get('event_ids', '')
+            if event_ids_str:
+                ids = [int(x.strip()) for x in event_ids_str.split(',') if x.strip().isdigit()]
+                if ids:
+                    DKPEvent.objects.filter(id__in=ids).delete()
 
         return redirect('web-dkp-manage')
             
