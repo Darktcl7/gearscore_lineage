@@ -48,11 +48,27 @@ def character_management(request):
     sub_admin_group = Group.objects.filter(name='Sub Admin').first()
     sub_admin_ids = list(sub_admin_group.user_set.values_list('id', flat=True)) if sub_admin_group else []
     
+    # Get AdminRole data for role management (Treasury feature)
+    from dkp.models import AdminRole
+    import json
+    admin_roles = {}
+    for role in AdminRole.objects.select_related('user').all():
+        admin_roles[role.user.pk] = {
+            'is_dkp_admin': role.is_dkp_admin,
+            'is_treasury_admin': role.is_treasury_admin,
+            'is_auction_admin': role.is_auction_admin,
+            'can_give_dkp': role.can_give_dkp,
+            'can_remove_dkp': role.can_remove_dkp,
+            'can_decay_dkp': role.can_decay_dkp,
+        }
+    admin_roles_json = json.dumps(admin_roles)
+    
     return render(request, 'items/character_management.html', {
         'characters': characters,
         'pending_users': pending_users,
         'is_super_admin': is_admin(request.user),
         'sub_admin_ids': sub_admin_ids,
+        'admin_roles_json': admin_roles_json,
     })
 
 # FUNGSI: Halaman Profil Karakter (character_profile)
@@ -1107,8 +1123,12 @@ def manage_events(request):
     """
     Admin page to manage events
     """
-    if not is_any_admin(request.user):
-        return HttpResponseForbidden("Only administrators can manage events.")
+    if not is_admin(request.user):
+        try:
+            if not request.user.admin_role.is_dkp_admin:
+                return HttpResponseForbidden("Only DKP administrators can manage events.")
+        except Exception:
+            return HttpResponseForbidden("Only administrators can manage events.")
     
     # Get all actual events (excluding manual point adjustments & War Day DKP events), ordered by date
     events = ActivityEvent.objects.exclude(
@@ -1582,12 +1602,54 @@ def toggle_sub_admin(request, user_pk):
     
     if sub_admin_group in target_user.groups.all():
         target_user.groups.remove(sub_admin_group)
+        
+        # Also clear all admin roles when removing Sub Admin
+        from dkp.models import AdminRole
+        try:
+            role = AdminRole.objects.get(user=target_user)
+            role.is_dkp_admin = False
+            role.is_treasury_admin = False
+            role.is_auction_admin = False
+            role.save()
+        except AdminRole.DoesNotExist:
+            pass
+        
         messages.success(request, f"{target_user.username} removed from Sub Admin.")
     else:
         target_user.groups.add(sub_admin_group)
         messages.success(request, f"{target_user.username} promoted to Sub Admin.")
     
     return redirect('character-management')
+
+@login_required
+def toggle_admin_role(request, user_pk):
+    """Super Admin only: Toggle granular admin roles (DKP, Treasury, Auction)"""
+    if not is_admin(request.user):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+    if request.method == 'POST':
+        from dkp.models import AdminRole
+        import json
+        
+        target_user = get_object_or_404(User, pk=user_pk)
+        data = json.loads(request.body)
+        
+        # Don't allow changing own permissions unless superuser
+        if target_user == request.user and not request.user.is_superuser:
+            return JsonResponse({'error': 'Cannot change own roles'}, status=400)
+            
+        role, _ = AdminRole.objects.get_or_create(user=target_user)
+        role.is_dkp_admin = data.get('is_dkp_admin', role.is_dkp_admin)
+        role.is_treasury_admin = data.get('is_treasury_admin', role.is_treasury_admin)
+        role.is_auction_admin = data.get('is_auction_admin', role.is_auction_admin)
+        role.can_give_dkp = data.get('can_give_dkp', role.can_give_dkp)
+        role.can_remove_dkp = data.get('can_remove_dkp', role.can_remove_dkp)
+        role.can_decay_dkp = data.get('can_decay_dkp', role.can_decay_dkp)
+        role.save()
+        
+        return JsonResponse({'success': True, 'message': f'Roles updated for {target_user.username}'})
+        
+    return JsonResponse({'error': 'POST required'}, status=405)
 
 # ======================================================
 # DISCORD MANAGEMENT

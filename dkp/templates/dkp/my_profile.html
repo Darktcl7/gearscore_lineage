@@ -136,8 +136,13 @@
         </div>
 
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h4 style="margin:0 0 10px 0; color:#666; text-transform:uppercase; font-size:0.85rem; letter-spacing:1px;">
-                Transaction History</h4>
+            <div>
+                <h4 style="margin:0 0 5px 0; color:#666; text-transform:uppercase; font-size:0.85rem; letter-spacing:1px;">
+                    Transaction History</h4>
+                <p style="color: #666; font-size: 0.75rem; margin: 0 0 10px 0; font-style: italic;">
+                    <i class="fas fa-info-circle"></i> Logs older than 3 days are automatically deleted.
+                </p>
+            </div>
             {% if user.is_staff %}
             <button onclick="confirmResetDKP()" style="background:rgba(231,76,60,0.15); color:#e74c3c; border:1px solid rgba(231,76,60,0.3); padding:5px 14px; border-radius:6px; cursor:pointer; font-size:0.78rem; font-weight:600;">
                 <i class="fas fa-trash-alt"></i> Reset History

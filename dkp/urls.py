@@ -27,4 +27,13 @@ urlpatterns = [
     path('manage/boss-config/save/', views.boss_point_config_save, name='boss-config-save'),
     path('manage/event/<int:event_id>/attendance/', views.dkp_attendance_list, name='web-dkp-attendance'),
     path('reset-data/', views.dkp_reset_data, name='reset-dkp-data'),
+
+    # TREASURY SYSTEM
+    path('treasury/', views.treasury_page, name='web-dkp-treasury'),
+    path('treasury/config/', views.treasury_config_get, name='treasury-config-get'),
+    path('treasury/config/save/', views.treasury_config_save, name='treasury-config-save'),
+    path('treasury/request/', views.treasury_request_item, name='treasury-request-item'),
+    path('treasury/reject/', views.treasury_reject_request, name='treasury-reject-request'),
+    path('treasury/assign/', views.treasury_assign, name='treasury-assign'),
+    path('treasury/delete-logs/', views.treasury_delete_logs, name='treasury-delete-logs'),
 ]

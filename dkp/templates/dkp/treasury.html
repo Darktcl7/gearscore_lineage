@@ -1,0 +1,1579 @@
+{% extends 'items/base.html' %}
+{% load static %}
+{% block title %}Treasury - Clan Loot Distribution{% endblock %}
+{% block extra_body_attributes %}class="fullscreen-page"{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+<style>
+    html, body {
+        height: 100%;
+        margin: 0;
+        background: #0c0c0c;
+        font-family: 'Outfit', sans-serif;
+        color: white;
+    }
+
+    .treasury-container {
+        min-height: 80vh;
+        margin-top: 100px;
+        margin-bottom: 60px;
+        display: flex;
+        flex-direction: column;
+        background: rgba(10, 10, 10, 0.85);
+        border-radius: 20px;
+        padding: 30px;
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        margin-left: max(20px, 5%);
+        margin-right: max(20px, 5%);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .treasury-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .treasury-header h1 {
+        margin: 0;
+        font-family: 'Cinzel', serif;
+        font-size: 2rem;
+        background: linear-gradient(135deg, #FFD700 0%, #f0c040 50%, #d4af37 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-shadow: none;
+    }
+
+    .treasury-subtitle {
+        color: #666;
+        margin: 5px 0 0 0;
+        font-size: 0.9rem;
+    }
+
+    .treasury-header-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .treasury-badge {
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(212, 175, 55, 0.1));
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        padding: 8px 20px;
+        border-radius: 25px;
+        color: #FFD700;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Clan Filter */
+    .clan-filter {
+        display: flex;
+        gap: 8px;
+        padding: 10px 0;
+        margin-bottom: 15px;
+        align-items: center;
+    }
+
+    .clan-filter-label {
+        color: #888;
+        font-size: 0.85rem;
+        margin-right: 5px;
+    }
+
+    .clan-btn {
+        padding: 6px 18px;
+        border-radius: 25px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s;
+        border: 1px solid transparent;
+    }
+
+    .clan-btn.active {
+        background: linear-gradient(135deg, #FFD700, #b8860b);
+        color: #000;
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+    }
+
+    .clan-btn:not(.active) {
+        background: rgba(255, 255, 255, 0.08);
+        color: #aaa;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .clan-btn:not(.active):hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+    }
+
+    /* Category Tabs */
+    .cat-tabs {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #333;
+        padding-bottom: 0;
+    }
+
+    .cat-tab {
+        background: transparent;
+        border: none;
+        color: #888;
+        font-family: 'Outfit', sans-serif;
+        font-size: 0.88rem;
+        font-weight: 600;
+        padding: 12px 20px;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -1px;
+        transition: all 0.25s;
+        border-radius: 10px 10px 0 0;
+        letter-spacing: 0.3px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .cat-tab:hover {
+        color: #ccc;
+        background: rgba(255, 255, 255, 0.04);
+    }
+
+    .cat-tab.active[data-cat="blue_books"] {
+        color: #5dade2;
+        border-bottom-color: #5dade2;
+        background: rgba(93, 173, 226, 0.08);
+    }
+
+    .cat-tab.active[data-cat="blue_equipment"] {
+        color: #58d68d;
+        border-bottom-color: #58d68d;
+        background: rgba(88, 214, 141, 0.08);
+    }
+
+    .cat-tab.active[data-cat="other_items"] {
+        color: #f39c12;
+        border-bottom-color: #f39c12;
+        background: rgba(243, 156, 18, 0.08);
+    }
+
+    .cat-tab.active[data-cat="diamond_items"] {
+        color: #bb8fce;
+        border-bottom-color: #bb8fce;
+        background: rgba(187, 143, 206, 0.08);
+    }
+
+    /* Category Content */
+    .cat-content {
+        display: none;
+    }
+
+    .cat-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+    }
+
+    /* Item Table */
+    .item-table-wrapper {
+        overflow-x: auto;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .item-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .item-table thead th {
+        text-align: left;
+        padding: 14px 16px;
+        border-bottom: 2px solid rgba(255, 215, 0, 0.15);
+        color: #888;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        background: rgba(0, 0, 0, 0.3);
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        font-family: 'Outfit', sans-serif;
+        letter-spacing: 0.5px;
+    }
+
+    .item-table tbody td {
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        font-size: 0.92rem;
+    }
+
+    .item-table tbody tr:hover td {
+        background: rgba(255, 215, 0, 0.03);
+    }
+
+    .item-name {
+        font-weight: 600;
+        color: #eee;
+    }
+
+    .price-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 0.85rem;
+    }
+
+    .price-badge.dkp {
+        background: rgba(255, 215, 0, 0.12);
+        border: 1px solid rgba(255, 215, 0, 0.25);
+        color: #FFD700;
+    }
+
+    .price-badge.diamond {
+        background: rgba(187, 143, 206, 0.12);
+        border: 1px solid rgba(187, 143, 206, 0.25);
+        color: #bb8fce;
+    }
+
+    .limit-badge {
+        color: #888;
+        font-size: 0.85rem;
+    }
+
+    .limit-badge .limit-val {
+        color: #e74c3c;
+        font-weight: 600;
+    }
+
+    /* Recipient Dropdown */
+    .recipient-cell {
+        min-width: 200px;
+    }
+
+    .recipient-select {
+        width: 100%;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        color: #ccc;
+        font-size: 0.85rem;
+        font-family: 'Outfit', sans-serif;
+        cursor: pointer;
+        transition: all 0.2s;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        padding-right: 30px;
+    }
+
+    .recipient-select:hover {
+        border-color: rgba(255, 215, 0, 0.3);
+    }
+
+    .recipient-select:focus {
+        outline: none;
+        border-color: #FFD700;
+        background-color: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.1);
+    }
+
+    .recipient-select option {
+        background: #1a1a1a;
+        color: #ccc;
+    }
+
+    /* Assign Button */
+    .btn-assign {
+        padding: 7px 16px;
+        background: linear-gradient(135deg, rgba(46, 204, 113, 0.2), rgba(39, 174, 96, 0.15));
+        border: 1px solid rgba(46, 204, 113, 0.4);
+        border-radius: 8px;
+        color: #2ecc71;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-family: 'Outfit', sans-serif;
+        white-space: nowrap;
+    }
+
+    .btn-assign:hover {
+        background: linear-gradient(135deg, rgba(46, 204, 113, 0.35), rgba(39, 174, 96, 0.3));
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(46, 204, 113, 0.2);
+    }
+
+    .btn-assign:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    /* Settings Panel */
+    .settings-toggle-btn {
+        background: transparent;
+        border: 1px solid #444;
+        color: #888;
+        padding: 7px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.82rem;
+        transition: all 0.2s;
+        font-family: 'Outfit', sans-serif;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .settings-toggle-btn:hover {
+        border-color: #FFD700;
+        color: #FFD700;
+    }
+
+    .settings-overlay {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(8px);
+        align-items: center;
+        justify-content: center;
+    }
+
+    .settings-overlay.active {
+        display: flex;
+    }
+
+    .settings-modal {
+        background: linear-gradient(145deg, rgba(25, 25, 30, 0.98), rgba(15, 15, 20, 0.98));
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        box-shadow: 0 0 60px rgba(255, 215, 0, 0.1), 0 30px 60px rgba(0, 0, 0, 0.6);
+        width: 90%;
+        max-width: 800px;
+        max-height: 85vh;
+        border-radius: 16px;
+        overflow: hidden;
+        animation: modalSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .settings-modal-header {
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(212, 175, 55, 0.08));
+        padding: 20px 25px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .settings-modal-header h2 {
+        margin: 0;
+        font-size: 1.2rem;
+        color: #FFD700;
+        font-family: 'Cinzel', serif;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .settings-modal-body {
+        padding: 25px;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .settings-cat-title {
+        color: #FFD700;
+        font-family: 'Cinzel', serif;
+        font-size: 0.9rem;
+        margin: 20px 0 12px 0;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #2a2a2a;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .settings-cat-title:first-child {
+        margin-top: 0;
+    }
+
+    .settings-item-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+        padding: 8px 12px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+    }
+
+    .name-input {
+        flex: 1;
+        min-width: 150px;
+        padding: 6px 12px;
+        font-size: 0.85rem;
+        background: #1a1a1a;
+        border: 1px solid #444;
+        color: #fff;
+        border-radius: 6px;
+        font-family: 'Outfit', sans-serif;
+    }
+    
+    .name-input:focus {
+        outline: none;
+        border-color: #5dade2;
+    }
+
+    .settings-item-name {
+        flex: 1;
+        color: #bbb;
+        font-size: 0.85rem;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .settings-item-input {
+        width: 80px;
+        padding: 6px 10px;
+        font-size: 0.85rem;
+        text-align: center;
+        background: #1a1a1a;
+        border: 1px solid #444;
+        color: #FFD700;
+        border-radius: 6px;
+        font-family: 'Outfit', sans-serif;
+    }
+
+    .settings-item-input:focus {
+        outline: none;
+        border-color: #FFD700;
+    }
+
+    .settings-item-label {
+        color: #666;
+        font-size: 0.75rem;
+        width: 40px;
+        text-align: right;
+    }
+
+    .settings-modal-footer {
+        padding: 15px 25px;
+        background: rgba(0, 0, 0, 0.3);
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .btn-settings-save {
+        background: linear-gradient(135deg, #27ae60, #2ecc71);
+        border: none;
+        color: white;
+        padding: 10px 22px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 0.88rem;
+        font-family: 'Outfit', sans-serif;
+        transition: all 0.2s;
+    }
+
+    .btn-settings-save:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+    }
+
+    .btn-settings-cancel {
+        background: transparent;
+        border: 1px solid #444;
+        color: #888;
+        padding: 10px 22px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.88rem;
+        font-family: 'Outfit', sans-serif;
+        transition: all 0.2s;
+    }
+
+    .btn-settings-cancel:hover {
+        border-color: #666;
+        color: #fff;
+    }
+
+    /* Recent Transactions */
+    .transactions-section {
+        margin-top: 30px;
+    }
+
+    .transactions-title {
+        color: #FFD700;
+        font-family: 'Cinzel', serif;
+        font-size: 1.1rem;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .txn-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .txn-table thead th {
+        text-align: left;
+        padding: 12px 14px;
+        border-bottom: 1px solid #333;
+        color: #888;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.78rem;
+        font-family: 'Outfit', sans-serif;
+    }
+
+    .txn-table tbody td {
+        padding: 10px 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        font-size: 0.88rem;
+        color: #aaa;
+    }
+
+    .txn-table tbody tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .txn-amount {
+        color: #e74c3c;
+        font-weight: 600;
+    }
+
+    .txn-char {
+        color: #eee;
+        font-weight: 600;
+    }
+
+    .txn-item {
+        color: #5dade2;
+    }
+
+    .txn-date {
+        color: #666;
+        font-size: 0.8rem;
+    }
+
+    /* Toast notification */
+    .toast-container {
+        position: fixed;
+        top: 100px;
+        right: 30px;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .toast {
+        padding: 14px 22px;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        animation: toastIn 0.4s ease, toastOut 0.4s ease 3s forwards;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 280px;
+    }
+
+    .toast.success {
+        background: linear-gradient(135deg, rgba(46, 204, 113, 0.95), rgba(39, 174, 96, 0.95));
+        color: #fff;
+    }
+
+    .toast.error {
+        background: linear-gradient(135deg, rgba(231, 76, 60, 0.95), rgba(192, 57, 43, 0.95));
+        color: #fff;
+    }
+
+    @keyframes toastIn {
+        from { opacity: 0; transform: translateX(50px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes toastOut {
+        from { opacity: 1; transform: translateX(0); }
+        to { opacity: 0; transform: translateX(50px); }
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes modalSlideIn {
+        from { opacity: 0; transform: translateY(-30px) scale(0.95); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Assign Confirmation Modal */
+    .confirm-overlay {
+        display: none;
+        position: fixed;
+        z-index: 99998;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(6px);
+        align-items: center;
+        justify-content: center;
+    }
+
+    .confirm-overlay.active {
+        display: flex;
+    }
+
+    .confirm-modal {
+        background: linear-gradient(145deg, rgba(25, 25, 30, 0.98), rgba(15, 15, 20, 0.98));
+        border: 1px solid rgba(46, 204, 113, 0.4);
+        box-shadow: 0 0 60px rgba(46, 204, 113, 0.1), 0 20px 50px rgba(0, 0, 0, 0.6);
+        width: 440px;
+        max-width: 92%;
+        border-radius: 16px;
+        overflow: hidden;
+        animation: modalSlideIn 0.3s ease;
+    }
+
+    .confirm-header {
+        background: linear-gradient(135deg, rgba(46, 204, 113, 0.2), rgba(39, 174, 96, 0.1));
+        padding: 20px 25px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .confirm-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        color: #2ecc71;
+        font-family: 'Cinzel', serif;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .confirm-body {
+        padding: 25px;
+    }
+
+    .confirm-detail {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #aaa;
+        font-size: 0.95rem;
+        margin-bottom: 12px;
+    }
+
+    .confirm-detail i {
+        color: #FFD700;
+        width: 20px;
+        text-align: center;
+    }
+
+    .confirm-detail strong {
+        color: #fff;
+    }
+
+    .confirm-footer {
+        padding: 18px 25px;
+        background: rgba(0, 0, 0, 0.3);
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .btn-confirm {
+        padding: 10px 22px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.88rem;
+        cursor: pointer;
+        font-family: 'Outfit', sans-serif;
+        transition: all 0.2s;
+        border: none;
+    }
+
+    .btn-confirm.confirm-yes {
+        background: linear-gradient(135deg, #2ecc71, #27ae60);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+    }
+
+    .btn-confirm.confirm-yes:hover {
+        transform: translateY(-1px);
+    }
+
+    .btn-confirm.confirm-no {
+        background: transparent;
+        border: 1px solid #444;
+        color: #888;
+    }
+
+    .btn-confirm.confirm-no:hover {
+        border-color: #666;
+        color: #fff;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .treasury-container {
+            margin: 0;
+            margin-top: 80px;
+            border-radius: 0;
+            border: none;
+            padding: 12px;
+            min-height: auto;
+        }
+
+        .treasury-header h1 {
+            font-size: 1.3rem;
+        }
+
+        .cat-tabs {
+            gap: 3px;
+        }
+
+        .cat-tab {
+            padding: 10px 12px;
+            font-size: 0.78rem;
+        }
+
+        .item-table thead th,
+        .item-table tbody td {
+            padding: 10px 8px;
+            font-size: 0.78rem;
+        }
+
+        .recipient-cell {
+            min-width: 130px;
+        }
+
+        .treasury-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .treasury-header-actions {
+            justify-content: flex-start;
+        }
+
+        .treasury-header-actions > .settings-toggle-btn {
+            width: 100%;
+        }
+
+        .item-table {
+            min-width: 650px;
+        }
+
+        .settings-modal {
+            width: 95%;
+            max-height: 90vh;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="treasury-container">
+    <!-- Header -->
+    <div class="treasury-header">
+        <div>
+            <h1><i class="fas fa-treasure-chest" style="margin-right:10px;"></i>Treasury</h1>
+            <p class="treasury-subtitle">Clan Loot Distribution System • Boss Drop Item Management</p>
+        </div>
+        <div class="treasury-header-actions">
+            {% if is_treasury_admin %}
+            <button type="button" class="settings-toggle-btn" onclick="openSettings()">
+                <i class="fas fa-sliders"></i> Item Price Settings
+            </button>
+            {% endif %}
+            
+            {% if user_profile %}
+            <div class="treasury-badge" style="background: rgba(46, 204, 113, 0.2); border-color: #2ecc71; color: #2ecc71;" title="Total DKP: {{ user_profile.current_dkp }}">
+                <i class="fas fa-user"></i> Available DKP: <span id="myDkpBalance">{{ available_dkp }}</span>
+            </div>
+            {% endif %}
+
+            <div class="treasury-badge">
+                <i class="fas fa-gem"></i> Treasury Active
+            </div>
+        </div>
+    </div>
+
+    <!-- Clan Filter -->
+    <div class="clan-filter">
+        <span class="clan-filter-label"><i class="fas fa-shield-alt"></i> Clan:</span>
+        {% if is_treasury_admin %}
+            {% for clan in clan_choices %}
+            <a href="?clan={{ clan }}" class="clan-btn {% if selected_clan == clan %}active{% endif %}">{{ clan }}</a>
+            {% endfor %}
+        {% else %}
+            <a href="#" class="clan-btn active">{{ selected_clan }}</a>
+        {% endif %}
+    </div>
+
+    <!-- Category Tabs -->
+    <div class="cat-tabs">
+        <button class="cat-tab active" data-cat="blue_books" onclick="switchCat(this)">
+            <i class="fas fa-book"></i> 📘 Blue Books
+        </button>
+        <button class="cat-tab" data-cat="blue_equipment" onclick="switchCat(this)">
+            <i class="fas fa-shield-halved"></i> ⚔️ Blue Equipment
+        </button>
+        <button class="cat-tab" data-cat="other_items" onclick="switchCat(this)">
+            <i class="fas fa-flask"></i> 🧪 Other Items
+        </button>
+        <button class="cat-tab" data-cat="diamond_items" onclick="switchCat(this)">
+            <i class="fas fa-gem"></i> 💎 Diamond Items
+        </button>
+    </div>
+
+    <!-- Category Content Panels -->
+    <div id="cat-blue_books" class="cat-content active"></div>
+    <div id="cat-blue_equipment" class="cat-content"></div>
+    <div id="cat-other_items" class="cat-content"></div>
+    <div id="cat-diamond_items" class="cat-content"></div>
+
+    <!-- Recent Transactions -->
+    <div class="transactions-section">
+        </h3>
+        <p style="color: #666; font-size: 0.8rem; margin-top: 0; margin-bottom: 15px; font-style: italic;">
+            <i class="fas fa-info-circle"></i> Logs are automatically deleted after 3 days to prevent buildup.
+        </p>
+        <table class="txn-table" id="txnTable">
+            <thead>
+                <tr>
+                    <th>Character</th>
+                    <th>Item</th>
+                    <th>Deducted</th>
+                    <th>Admin</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for txn in recent_transactions %}
+                <tr id="txnRow-{{ txn.id }}">
+                    <td class="txn-char">{{ txn.profile.character.name }}</td>
+                    <td class="txn-item">{{ txn.item_name }}</td>
+                    <td class="txn-amount">-{{ txn.amount_deducted }} {{ txn.currency }}</td>
+                    <td style="color:#888;">{{ txn.created_by.username|default:"System" }}</td>
+                    <td class="txn-date">{{ txn.created_at|date:"d M Y H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr id="noTxnRow">
+                    <td colspan="{% if is_treasury_admin %}6{% else %}5{% endif %}" style="text-align:center; padding:30px; color:#555;">
+                        <i class="fas fa-inbox" style="font-size:1.5rem; display:block; margin-bottom:8px;"></i>
+                        <span id="noTxnText">No treasury transactions yet.</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- Pagination Controls -->
+        {% if recent_transactions.has_other_pages %}
+        <div style="display:flex; justify-content:center; gap:8px; margin-top:20px;">
+            {% if recent_transactions.has_previous %}
+            <a href="?page=1{% if selected_clan != 'all' %}&clan={{ selected_clan }}{% endif %}" style="padding:6px 12px; background:#1a1a1a; color:#FFD700; border-radius:4px; text-decoration:none;">&laquo; First</a>
+            <a href="?page={{ recent_transactions.previous_page_number }}{% if selected_clan != 'all' %}&clan={{ selected_clan }}{% endif %}" style="padding:6px 12px; background:#1a1a1a; color:#FFD700; border-radius:4px; text-decoration:none;">Prev</a>
+            {% endif %}
+            
+            <span style="padding:6px 12px; color:#aaa;">Page {{ recent_transactions.number }} of {{ recent_transactions.paginator.num_pages }}</span>
+            
+            {% if recent_transactions.has_next %}
+            <a href="?page={{ recent_transactions.next_page_number }}{% if selected_clan != 'all' %}&clan={{ selected_clan }}{% endif %}" style="padding:6px 12px; background:#1a1a1a; color:#FFD700; border-radius:4px; text-decoration:none;">Next</a>
+            <a href="?page={{ recent_transactions.paginator.num_pages }}{% if selected_clan != 'all' %}&clan={{ selected_clan }}{% endif %}" style="padding:6px 12px; background:#1a1a1a; color:#FFD700; border-radius:4px; text-decoration:none;">Last &raquo;</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Assign Confirmation Modal -->
+<div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-modal">
+        <div class="confirm-header">
+            <h3><i class="fas fa-hand-holding-heart"></i> Confirm Item Assignment</h3>
+        </div>
+        <div class="confirm-body">
+            <div class="confirm-detail">
+                <i class="fas fa-box-open"></i>
+                <span>Item: <strong id="confirm-item">—</strong></span>
+            </div>
+            <div class="confirm-detail">
+                <i class="fas fa-user"></i>
+                <span>Recipient: <strong id="confirm-recipient">—</strong></span>
+            </div>
+            <div class="confirm-detail">
+                <i class="fas fa-coins"></i>
+                <span>Deduction: <strong id="confirm-price" style="color:#e74c3c;">—</strong></span>
+            </div>
+        </div>
+        <div class="confirm-footer">
+            <button class="btn-confirm confirm-no" onclick="closeConfirm()">Cancel</button>
+            <button class="btn-confirm confirm-yes" id="confirmYesBtn" onclick="executeAssign()">
+                <i class="fas fa-check"></i> Confirm Assignment
+            </button>
+        </div>
+    </div>
+</div>
+<!-- Generic Action Confirmation Modal -->
+<div class="confirm-overlay" id="actionConfirmOverlay">
+    <div class="confirm-modal">
+        <div class="confirm-header">
+            <h3 id="actionConfirmTitle"><i class="fas fa-question-circle"></i> Confirm Action</h3>
+        </div>
+        <div class="confirm-body" style="padding: 20px; text-align: center; font-size: 1.1rem; color: #ddd;" id="actionConfirmMessage">
+            Are you sure you want to proceed?
+        </div>
+        <div class="confirm-footer">
+            <button class="btn-confirm confirm-no" onclick="closeActionConfirm()">Cancel</button>
+            <button class="btn-confirm confirm-yes" id="actionConfirmYesBtn">
+                <i class="fas fa-check"></i> Yes, Proceed
+            </button>
+        </div>
+    </div>
+</div>
+
+{% if is_treasury_admin %}
+<!-- Settings Modal -->
+<div class="settings-overlay" id="settingsOverlay">
+    <div class="settings-modal">
+        <div class="settings-modal-header">
+            <h2><i class="fas fa-sliders"></i> Treasury Item Price Settings ({{ selected_clan }})</h2>
+            <button onclick="closeSettings()" style="background:none; border:none; color:#888; font-size:1.2rem; cursor:pointer; padding:5px;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="settings-modal-body" id="settingsBody">
+            <!-- Dynamic content -->
+        </div>
+        <div class="settings-modal-footer">
+            <button class="btn-settings-cancel" onclick="closeSettings()">Cancel</button>
+            <button class="btn-settings-save" onclick="saveSettings()">
+                <i class="fas fa-save" style="margin-right:6px;"></i> Save Settings
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+// ===== DATA =====
+var treasuryConfig = {{ config|safe }};
+var selectedClan = '{{ selected_clan }}';
+var csrfToken = '{{ csrf_token }}';
+var isTreasuryAdmin = {{ is_treasury_admin|yesno:"true,false" }};
+var userProfileId = {{ user_profile.id|default:"null" }};
+var userClan = '{{ user_clan|escapejs }}';
+var userDkp = {{ user_profile.current_dkp|default:0 }};
+
+// Member list for dropdowns (We keep this array in case it's needed)
+var members = [
+    {% for p in profiles %}
+    { id: {{ p.id }}, name: '{{ p.character.name|escapejs }}', dkp: {{ p.current_dkp }} },
+    {% endfor %}
+];
+
+var pendingAssign = null;
+
+// Category metadata
+var catMeta = {
+    blue_books: { icon: '📘', label: 'Blue Books', color: '#5dade2' },
+    blue_equipment: { icon: '⚔️', label: 'Blue Equipment', color: '#58d68d' },
+    other_items: { icon: '🧪', label: 'Other Items', color: '#f39c12' },
+    diamond_items: { icon: '💎', label: 'Diamond Items', color: '#bb8fce' },
+};
+
+// ===== TAB SWITCHING =====
+function switchCat(btn) {
+    document.querySelectorAll('.cat-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.cat-content').forEach(function(c) { c.classList.remove('active'); });
+    btn.classList.add('active');
+    var cat = btn.getAttribute('data-cat');
+    document.getElementById('cat-' + cat).classList.add('active');
+}
+
+// ===== GENERIC CONFIRMATION =====
+function openActionConfirm(title, message, iconClass, onConfirm) {
+    document.getElementById('actionConfirmTitle').innerHTML = '<i class="' + iconClass + '"></i> ' + title;
+    document.getElementById('actionConfirmMessage').innerHTML = message;
+    var yesBtn = document.getElementById('actionConfirmYesBtn');
+    
+    // Remove old event listeners by cloning
+    var newYesBtn = yesBtn.cloneNode(true);
+    yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
+    
+    newYesBtn.onclick = function() {
+        closeActionConfirm();
+        if (onConfirm) onConfirm();
+    };
+    document.getElementById('actionConfirmOverlay').style.display = 'flex';
+}
+
+function closeActionConfirm() {
+    document.getElementById('actionConfirmOverlay').style.display = 'none';
+}
+
+// ===== REQUEST LOGIC =====
+function requestItem(cat, idx) {
+    if (!userProfileId) {
+        showToast('You must have a character to request items.', 'error');
+        return;
+    }
+    
+    var itemName = treasuryConfig[cat][idx].name;
+    openActionConfirm('Confirm Request', 'Are you sure you want to request <strong>' + itemName + '</strong>?', 'fas fa-hand-paper', function() {
+        fetch('{% url "treasury-request-item" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({
+                item_category: cat,
+                item_idx: idx,
+                clan: selectedClan
+            })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.success) {
+                showToast(data.message, 'success');
+                treasuryConfig[cat][idx] = data.item;
+                
+                // Use precise available DKP from server
+                if (data.available_dkp !== undefined) {
+                    userDkp = data.available_dkp;
+                    var balNode = document.getElementById('myDkpBalance');
+                    if (balNode) balNode.innerText = userDkp;
+                }
+                
+                buildTables();
+            } else {
+                showToast(data.error || 'Failed to request item.', 'error');
+            }
+        })
+        .catch(function(err) {
+            showToast('Network error: ' + err.message, 'error');
+        });
+    });
+}
+
+function rejectRequest(cat, idx, profileId) {
+    var actionName = (profileId === userProfileId) ? 'Cancel Request' : 'Reject Request';
+    var actionIcon = (profileId === userProfileId) ? 'fas fa-undo' : 'fas fa-times-circle';
+    
+    openActionConfirm(actionName, 'Are you sure you want to remove this request?', actionIcon, function() {
+        fetch('{% url "treasury-reject-request" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({
+                item_category: cat,
+                item_idx: idx,
+                profile_id: profileId,
+                clan: selectedClan
+            })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.success) {
+                showToast(data.message, 'success');
+                
+                // Use precise available DKP from server
+                if (data.available_dkp !== undefined && profileId === userProfileId) {
+                    userDkp = data.available_dkp;
+                    var balNode = document.getElementById('myDkpBalance');
+                    if (balNode) balNode.innerText = userDkp;
+                }
+                
+                treasuryConfig[cat][idx] = data.item;
+                buildTables();
+            } else {
+                showToast(data.error || 'Failed to reject request.', 'error');
+            }
+        })
+        .catch(function(err) {
+            showToast('Network error: ' + err.message, 'error');
+        });
+    });
+}
+
+// ===== DELETE LOGS =====
+function toggleAllTxn(checkbox) {
+    var checkboxes = document.querySelectorAll('.txn-checkbox');
+    checkboxes.forEach(function(cb) {
+        cb.checked = checkbox.checked;
+    });
+}
+
+function deleteSelectedLogs() {
+    var checkboxes = document.querySelectorAll('.txn-checkbox:checked');
+    if (checkboxes.length === 0) {
+        showToast('Please select at least one transaction to delete.', 'error');
+        return;
+    }
+    
+    openActionConfirm('Delete Logs', 'Are you sure you want to delete ' + checkboxes.length + ' selected log(s)?<br><br><span style="font-size:0.9rem; color:#e74c3c;">This only clears history and does not refund DKP.</span>', 'fas fa-trash-alt', function() {
+    
+    var ids = Array.from(checkboxes).map(function(cb) { return cb.value; });
+
+    fetch('{% url "treasury-delete-logs" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+        },
+        body: JSON.stringify({ txn_ids: ids })
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data.success) {
+            showToast(data.message, 'success');
+            // Remove deleted rows from DOM
+            ids.forEach(function(id) {
+                var row = document.getElementById('txnRow-' + id);
+                if (row) row.remove();
+            });
+            // Untick master checkbox
+            var masterCb = document.getElementById('selectAllTxn');
+            if (masterCb) masterCb.checked = false;
+        } else {
+            showToast(data.error || 'Failed to delete logs', 'error');
+        }
+    })
+    .catch(function(err) {
+        showToast('Network error: ' + err.message, 'error');
+    });
+    });
+}
+
+// ===== BUILD ITEM TABLES =====
+function buildTables() {
+    var categories = ['blue_books', 'blue_equipment', 'other_items', 'diamond_items'];
+
+    categories.forEach(function(cat) {
+        var items = treasuryConfig[cat] || [];
+        var meta = catMeta[cat];
+        var container = document.getElementById('cat-' + cat);
+
+        var html = '<div class="item-table-wrapper"><table class="item-table">';
+        html += '<thead><tr>';
+        html += '<th style="width:30px;">#</th>';
+        html += '<th>' + meta.icon + ' Item Name</th>';
+        html += '<th>Price</th>';
+        html += '<th>Stock/Max</th>';
+        if (isTreasuryAdmin) {
+            html += '<th style="width:300px;">Action & Requests</th>';
+        } else {
+            html += '<th style="width:250px;">Action & Requests</th>';
+        }
+        html += '</tr></thead><tbody>';
+
+        if (items.length === 0) {
+            html += '<tr><td colspan="5" style="text-align:center; padding:30px; color:#555;">No items configured.</td></tr>';
+        }
+
+        items.forEach(function(item, idx) {
+            var currClass = item.currency === 'Diamond' ? 'diamond' : 'dkp';
+            var currIcon = item.currency === 'Diamond' ? '<i class="fas fa-gem"></i>' : '<i class="fas fa-coins"></i>';
+            var limitText = item.max_per_person > 0
+                ? '<span class="limit-val">Max ' + item.max_per_person + '</span>'
+                : '<span style="color:#e74c3c; font-weight:bold;">0 / Empty</span>';
+            
+            // Out of stock
+            var outOfStock = (item.max_per_person === 0);
+
+            html += '<tr' + (outOfStock ? ' style="opacity:0.5;"' : '') + '>';
+            html += '<td style="color:#555; font-size:0.8rem;">' + (idx + 1) + '</td>';
+            html += '<td class="item-name">' + item.name + '</td>';
+            html += '<td><span class="price-badge ' + currClass + '">' + currIcon + ' ' + item.price + ' ' + item.currency + '</span></td>';
+            html += '<td class="limit-badge">' + limitText + '</td>';
+
+            var reqs = item.requests || [];
+            
+            var alreadyRequested = false;
+            if (userProfileId) {
+                alreadyRequested = reqs.some(function(r) { return r.profile_id == userProfileId; });
+            }
+            
+            var requestButtonHtml = '';
+            if (alreadyRequested) {
+                requestButtonHtml = '<button disabled style="background:rgba(46, 204, 113, 0.2); color:#2ecc71; border:1px solid #2ecc71; padding:6px 12px; border-radius:4px; font-size:0.8rem; cursor:not-allowed; width: 100%;"><i class="fas fa-check-circle"></i> Requested</button>';
+            } else if (outOfStock || (item.max_per_person > 0 && reqs.length >= item.max_per_person)) {
+                requestButtonHtml = '<button disabled style="background:#555; color:#ccc; border:none; padding:6px 12px; border-radius:4px; font-size:0.8rem; cursor:not-allowed; width: 100%;"><i class="fas fa-ban"></i> Full/Out</button>';
+            } else if (!userProfileId) {
+                requestButtonHtml = '<button disabled style="background:#555; color:#ccc; border:none; padding:6px 12px; border-radius:4px; font-size:0.8rem; cursor:not-allowed; width: 100%;"><i class="fas fa-user-times"></i> No Char Linked</button>';
+            } else if (selectedClan !== userClan) {
+                requestButtonHtml = '<button disabled style="background:#444; color:#999; border:none; padding:6px 12px; border-radius:4px; font-size:0.8rem; cursor:not-allowed; width: 100%;" title="You can only request items belonging to your own clan"><i class="fas fa-lock"></i> Clan Only</button>';
+            } else if (item.currency === 'DKP' && userDkp < item.price) {
+                requestButtonHtml = '<button disabled style="background:#555; color:#e74c3c; border:1px solid #e74c3c; padding:6px 12px; border-radius:4px; font-size:0.8rem; cursor:not-allowed; width: 100%;" title="You need ' + item.price + ' DKP to request this"><i class="fas fa-times-circle"></i> Not Enough DKP</button>';
+            } else {
+                requestButtonHtml = '<button class="btn-assign" onclick="requestItem(\'' + cat + '\', ' + idx + ')" style="background:#3498db; color:white; width: 100%;">';
+                requestButtonHtml += '<i class="fas fa-hand-paper"></i> Request</button>';
+            }
+
+            html += '<td class="recipient-cell">';
+            html += '<div style="margin-bottom:8px;">' + requestButtonHtml + '</div>';
+            
+            if (reqs.length === 0) {
+                html += '<div style="color:#777; font-size:0.75rem; text-align:center; padding:4px;">No requests</div>';
+            } else {
+                var listId = 'reqList_' + cat + '_' + idx;
+                html += '<button onclick="toggleReqList(\'' + listId + '\', this)" style="background:rgba(255,255,255,0.05); border:1px solid #444; border-radius:4px; color:#ddd; cursor:pointer; font-size:0.75rem; margin-top:4px; padding:6px; width:100%; transition:all 0.2s;"><i class="fas fa-users" style="color:#f1c40f;"></i> Show ' + reqs.length + ' Request(s) <i class="fas fa-chevron-down" style="float:right; margin-top:2px; transition:transform 0.3s;"></i></button>';
+                
+                html += '<div id="' + listId + '" style="display:none; flex-direction:column; gap:4px; border-top:1px solid #333; padding-top:6px; margin-top:6px;">';
+                reqs.forEach(function(req) {
+                    html += '<div style="display:flex; flex-direction:column; gap:4px; background:rgba(255,215,0,0.05); padding:6px; border-radius:4px; border:1px solid rgba(255,215,0,0.2);">';
+                    html += '<span style="font-size:0.85rem;">' + req.character_name + '</span>';
+                    
+                    if (isTreasuryAdmin) {
+                        html += '<div style="display:flex; gap:4px; margin-top: 4px;">';
+                        html += '<button class="btn-assign" style="flex:1; padding:4px; font-size:0.75rem;" onclick="assignItem(\'' + cat + '\', ' + idx + ', ' + req.profile_id + ', \'' + req.character_name.replace(/'/g, "\\'") + '\')"' + (outOfStock ? ' disabled style="background:#555;"' : '') + '><i class="fas fa-check"></i> Assign</button>';
+                        html += '<button style="flex:1; padding:4px; font-size:0.75rem; background:#e74c3c; border:none; color:white; border-radius:4px; cursor:pointer;" onclick="rejectRequest(\'' + cat + '\', ' + idx + ', ' + req.profile_id + ')"><i class="fas fa-times"></i> Reject</button>';
+                        html += '</div>';
+                    } else if (userProfileId && req.profile_id == userProfileId) {
+                        html += '<div style="display:flex; gap:4px; margin-top: 4px;">';
+                        html += '<button style="flex:1; padding:4px; font-size:0.75rem; background:#e74c3c; border:none; color:white; border-radius:4px; cursor:pointer;" onclick="rejectRequest(\'' + cat + '\', ' + idx + ', ' + req.profile_id + ')" title="Cancel your request"><i class="fas fa-times"></i> Cancel Request</button>';
+                        html += '</div>';
+                    }
+                    html += '</div>';
+                });
+                html += '</div>';
+            }
+            html += '</td>';
+            html += '</tr>';
+        });
+
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+    });
+}
+
+// Toggle request list helper
+function toggleReqList(id, btn) {
+    var el = document.getElementById(id);
+    var icon = btn.querySelector('.fa-chevron-down') || btn.querySelector('.fa-chevron-up');
+    
+    if (el.style.display === 'none') {
+        el.style.display = 'flex';
+        btn.style.background = 'rgba(255,255,255,0.1)';
+        if (icon) {
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+        }
+    } else {
+        el.style.display = 'none';
+        btn.style.background = 'rgba(255,255,255,0.05)';
+        if (icon) {
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+        }
+    }
+}
+
+// ===== ASSIGN ITEM =====
+function assignItem(cat, idx, profileId, charName) {
+    var items = treasuryConfig[cat] || [];
+    var item = items[idx];
+    if (!item || !profileId) return;
+
+    // Show confirmation
+    document.getElementById('confirm-item').textContent = item.name;
+    document.getElementById('confirm-recipient').textContent = charName;
+    document.getElementById('confirm-price').textContent = '-' + item.price + ' ' + item.currency;
+    document.getElementById('confirmOverlay').classList.add('active');
+
+    pendingAssign = {
+        profile_id: profileId,
+        char_name: charName,
+        item_name: item.name,
+        item_category: cat,
+        item_idx: idx,
+        price: item.price,
+        currency: item.currency,
+        clan: selectedClan
+    };
+}
+
+function closeConfirm() {
+    document.getElementById('confirmOverlay').classList.remove('active');
+    pendingAssign = null;
+}
+
+function executeAssign() {
+    if (!pendingAssign) return;
+
+    var btn = document.getElementById('confirmYesBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+    fetch('{% url "treasury-assign" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+        },
+        body: JSON.stringify({
+            profile_id: pendingAssign.profile_id,
+            item_name: pendingAssign.item_name,
+            item_category: pendingAssign.item_category,
+            item_idx: pendingAssign.item_idx,
+            price: pendingAssign.price,
+            currency: pendingAssign.currency,
+            clan: pendingAssign.clan,
+        }),
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data.success) {
+            showToast(data.message, 'success');
+
+            var tbody = document.querySelector('#txnTable tbody');
+            var noTxnRow = document.getElementById('noTxnRow');
+            if (noTxnRow) { noTxnRow.remove(); }
+            
+            var newRow = document.createElement('tr');
+            newRow.id = 'txnRow-' + data.txn_id;
+            
+            newRow.innerHTML = '<td class="txn-char">' + data.character_name + '</td>' +
+                               '<td class="txn-item">' + data.item_name + '</td>' +
+                               '<td class="txn-amount">-' + data.price + ' ' + data.currency + '</td>' +
+                               '<td style="color:#888;">' + data.admin_name + '</td>' +
+                               '<td class="txn-date">' + data.date + '</td>';
+                               
+            // slight flash effect to indicate it's new
+            newRow.style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
+            tbody.insertBefore(newRow, tbody.firstChild);
+            setTimeout(function() { newRow.style.backgroundColor = ''; }, 1500);
+
+            // Update Stock locally if applicable
+            var editedCat = pendingAssign.item_category;
+            var editedIdx = pendingAssign.item_idx;
+            var item = treasuryConfig[editedCat][editedIdx];
+            if (item.max_per_person > 0) {
+                item.max_per_person -= 1;
+                // If it hits 0, it means it's out of stock (not unlimited)
+                if (item.max_per_person === 0) {
+                    item.previously_assigned = true; // custom flag for local UI update
+                }
+            }
+
+            // Remove user from requests locally to prevent duplicate assigns
+            if (item.requests) {
+                item.requests = item.requests.filter(function(r) { return r.profile_id != pendingAssign.profile_id; });
+            }
+
+            // Update local member DKP
+            if (pendingAssign.currency === 'DKP' && pendingAssign.memberIdx >= 0) {
+                members[pendingAssign.memberIdx].dkp = data.new_dkp;
+            }
+            
+            buildTables();
+            // Re-activate the correct tab
+            var activeTab = document.querySelector('.cat-tab.active');
+            if (activeTab) switchCat(activeTab);
+
+        } else {
+            showToast(data.error || 'Assignment failed', 'error');
+        }
+    })
+    .catch(function(err) {
+        showToast('Network error: ' + err.message, 'error');
+    })
+    .finally(function() {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check"></i> Confirm Assignment';
+        closeConfirm();
+    });
+}
+
+// ===== SETTINGS =====
+function openSettings() {
+    var body = document.getElementById('settingsBody');
+    var html = '';
+
+    var catOrder = ['blue_books', 'blue_equipment', 'other_items', 'diamond_items'];
+    var catIcons = {
+        blue_books: '<i class="fas fa-book" style="color:#5dade2;"></i>',
+        blue_equipment: '<i class="fas fa-shield-halved" style="color:#58d68d;"></i>',
+        other_items: '<i class="fas fa-flask" style="color:#f39c12;"></i>',
+        diamond_items: '<i class="fas fa-gem" style="color:#bb8fce;"></i>',
+    };
+
+    catOrder.forEach(function(cat) {
+        var items = treasuryConfig[cat] || [];
+        var meta = catMeta[cat];
+        html += '<div class="settings-cat-title" style="justify-content: space-between;">';
+        html += '<span>' + catIcons[cat] + ' ' + meta.label + '</span>';
+        html += '<button type="button" onclick="addSettingsItem(\'' + cat + '\')" style="background:rgba(46, 204, 113, 0.2); border:1px solid #2ecc71; color:#2ecc71; border-radius:4px; cursor:pointer; font-size:0.75rem; padding:4px 8px;"><i class="fas fa-plus"></i> Add Item</button>';
+        html += '</div>';
+        
+        html += '<div id="settings-cat-container-' + cat + '">';
+        items.forEach(function(item, idx) {
+            html += generateSettingsRow(cat, idx, item);
+        });
+        html += '</div>';
+    });
+
+    body.innerHTML = html;
+    document.getElementById('settingsOverlay').classList.add('active');
+}
+
+function generateSettingsRow(cat, idx, item) {
+    var escapedName = item.name ? item.name.replace(/"/g, '&quot;') : '';
+    var html = '<div class="settings-item-row" id="row-' + cat + '-' + idx + '">';
+    html += '<input type="text" class="name-input" id="sn-' + cat + '-' + idx + '" value="' + escapedName + '" placeholder="Item Name">';
+    html += '<span class="settings-item-label">Price</span>';
+    html += '<input type="number" class="settings-item-input" id="sp-' + cat + '-' + idx + '" value="' + item.price + '" min="0" style="width:85px; text-align:center;">';
+    html += '<span class="settings-item-label">Max</span>';
+    html += '<input type="number" class="settings-item-input" id="sm-' + cat + '-' + idx + '" value="' + item.max_per_person + '" min="0" style="width:75px; text-align:center;">';
+    html += '<button type="button" onclick="removeSettingsItem(\'' + cat + '\', ' + idx + ')" style="background:none; border:none; color:#e74c3c; cursor:pointer; padding:5px;"><i class="fas fa-trash"></i></button>';
+    html += '</div>';
+    return html;
+}
+
+function addSettingsItem(cat) {
+    if (!treasuryConfig[cat]) treasuryConfig[cat] = [];
+    var newIdx = treasuryConfig[cat].length;
+    var newItem = { name: 'New Item', price: 0, max_per_person: 0, currency: cat === 'diamond_items' ? 'Diamond' : 'DKP' };
+    treasuryConfig[cat].push(newItem);
+    
+    var container = document.getElementById('settings-cat-container-' + cat);
+    // Append the new row correctly without resetting the whole container's innerHTML (which destroys focus/edits)
+    var div = document.createElement('div');
+    div.innerHTML = generateSettingsRow(cat, newIdx, newItem);
+    container.appendChild(div.firstElementChild);
+}
+
+function removeSettingsItem(cat, idx) {
+    var row = document.getElementById('row-' + cat + '-' + idx);
+    if (row) {
+        row.style.display = 'none'; // visually hide
+        // we'll mark the input as destroyed so saveSettings skips it
+        var nameInput = document.getElementById('sn-' + cat + '-' + idx);
+        if (nameInput) nameInput.classList.add('deleted-item');
+    }
+}
+
+function closeSettings() {
+    document.getElementById('settingsOverlay').classList.remove('active');
+}
+
+function saveSettings() {
+    var catOrder = ['blue_books', 'blue_equipment', 'other_items', 'diamond_items'];
+
+    var newConfig = {};
+    
+    catOrder.forEach(function(cat) {
+        newConfig[cat] = [];
+        var items = treasuryConfig[cat] || [];
+        var currencyDefault = cat === 'diamond_items' ? 'Diamond' : 'DKP';
+        
+        items.forEach(function(oldItem, idx) {
+            var nameEl = document.getElementById('sn-' + cat + '-' + idx);
+            if (nameEl && !nameEl.classList.contains('deleted-item')) {
+                var priceEl = document.getElementById('sp-' + cat + '-' + idx);
+                var maxEl = document.getElementById('sm-' + cat + '-' + idx);
+                
+                newConfig[cat].push({
+                    name: nameEl.value.trim() || 'Unnamed Item',
+                    price: priceEl ? (parseInt(priceEl.value) || 0) : 0,
+                    max_per_person: maxEl ? (parseInt(maxEl.value) || 0) : 0,
+                    currency: oldItem.currency || currencyDefault
+                });
+            }
+        });
+    });
+    
+    // Update local variable
+    treasuryConfig = newConfig;
+
+    fetch('{% url "treasury-config-save" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+        },
+        body: JSON.stringify({ config: treasuryConfig, clan: selectedClan }),
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data.success) {
+            showToast('Settings saved successfully!', 'success');
+            closeSettings();
+            buildTables();
+            // Re-activate the correct tab
+            var activeTab = document.querySelector('.cat-tab.active');
+            if (activeTab) switchCat(activeTab);
+        } else {
+            showToast(data.error || 'Failed to save', 'error');
+        }
+    })
+    .catch(function(err) {
+        showToast('Network error: ' + err.message, 'error');
+    });
+}
+
+// ===== TOAST =====
+function showToast(message, type) {
+    var container = document.getElementById('toastContainer');
+    var toast = document.createElement('div');
+    toast.className = 'toast ' + type;
+    var icon = type === 'success' ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-exclamation-circle"></i>';
+    toast.innerHTML = icon + ' ' + message;
+    container.appendChild(toast);
+    setTimeout(function() {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 3500);
+}
+
+// ===== INIT =====
+buildTables();
+</script>
+{% endblock %}

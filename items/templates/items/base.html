@@ -701,8 +701,8 @@
                 <div class="dropdown">
                     <a href="#" class="dropbtn" style="cursor: default;">Activity Event ▾</a>
                     <div class="dropdown-content">
-                        <!-- 1. Battle Command (Admin/Sub Admin) -->
-                        {% if user.is_staff or "Sub Admin" in user.groups.all|join:", " %}
+                        <!-- 1. Battle Command (Admin/DKP Admin) -->
+                        {% if user.is_staff or user.admin_role.is_dkp_admin %}
                         <a href="{% url 'manage-events' %}" style="color: #FF7777;">Battle Command</a>
                         {% endif %}
 
@@ -720,8 +720,8 @@
                 <div class="dropdown">
                     <a href="#" class="dropbtn" style="cursor: default;">DKP System ▾</a>
                     <div class="dropdown-content">
-                        <!-- 1. DKP Control (Admin/Sub Admin) -->
-                        {% if user.is_staff or "Sub Admin" in user.groups.all|join:", " %}
+                        <!-- 1. DKP Control (Admin/DKP Admin) -->
+                        {% if user.is_staff or user.admin_role.is_dkp_admin %}
                         <a href="{% url 'web-dkp-manage' %}" style="color: #FF7777;">DKP Control</a>
                         {% endif %}
 
@@ -735,13 +735,19 @@
                     </div>
                 </div>
 
+                <!-- TREASURY MENU -->
+                <a href="{% url 'web-dkp-treasury' %}"
+                    class="{% if request.resolver_match.url_name == 'web-dkp-treasury' %}active{% endif %}">Treasury</a>
+
                 <a href="{% url 'hall-of-fame-list' %}"
                     class="{% if request.resolver_match.url_name == 'hall-of-fame-list' %}active{% endif %}">Hall of Fame</a>
 
-                {% if user.is_staff or "Sub Admin" in user.groups.all|join:", " %}
+                {% if user.is_staff %}
                 <a href="{% url 'item-list' %}"
                     class="{% if request.resolver_match.url_name == 'item-list' %}active{% endif %}">Armory</a>
+                {% endif %}
 
+                {% if user.is_staff or "Sub Admin" in user.groups.all|join:", " %}
                 <!-- ADMIN PANEL (DROPDOWN) -->
                 <div class="dropdown">
                     <a href="#" class="dropbtn" style="cursor: default;">Admin Panel ▾</a>

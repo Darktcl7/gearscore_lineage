@@ -35,6 +35,7 @@ from .views import (
     discord_dashboard, # Discord Management
     complete_event, # Complete Event with result
     toggle_sub_admin, # Toggle Sub Admin
+    toggle_admin_role, # Toggle granular roles
     # Universal Power Rank
     power_rank_leaderboard,
     edit_power_rank,
@@ -79,6 +80,7 @@ urlpatterns = [
 
     # URL: /items/manage/toggle-sub-admin/1/ -> Toggle Sub Admin Status
     path('manage/toggle-sub-admin/<int:user_pk>/', toggle_sub_admin, name='toggle-sub-admin'),
+    path('manage/toggle-admin-role/<int:user_pk>/', toggle_admin_role, name='toggle-admin-role'),
     
     # URL: /items/item/1/ -> Menampilkan detail satu item
     path('item/<int:pk>/', item_detail, name='item-detail'),

@@ -484,7 +484,7 @@
             <p style="color:#666; margin:5px 0 0 0;">Dragon Kill Points System • Raid Distribution Currency</p>
         </div>
         <div style="display:flex; gap:10px; align-items:center;">
-            {% if is_admin %}
+            {% if is_super_admin %}
             <form action="{% url 'dkp-reset-lifetime' %}" method="POST" onsubmit="return confirm('Reset ALL Lifetime Earned to 0?\nThis action cannot be undone!');" style="margin:0;">
                 {% csrf_token %}
                 <button type="submit" style="
@@ -551,15 +551,21 @@
         <div class="bulk-bar">
             <label><input type="checkbox" id="select-all" onchange="toggleSelectAll()" /> Select All</label>
             <span class="divider"></span>
+            {% if can_give %}
             <button class="bbtn bbtn-give" onclick="openBulkGiveSelected()">
                 <i class="fas fa-plus-circle"></i> Give DKP
             </button>
+            {% endif %}
+            {% if can_remove %}
             <button class="bbtn bbtn-remove" onclick="openBulkRemoveSelected()">
                 <i class="fas fa-minus-circle"></i> Remove DKP
             </button>
+            {% endif %}
+            {% if can_decay %}
             <button class="bbtn bbtn-decay" onclick="openBulkDecaySelected()">
                 <i class="fas fa-percentage"></i> Decay
             </button>
+            {% endif %}
             <span class="sel-count" id="dkp-sel-count">0 selected</span>
         </div>
         {% endif %}

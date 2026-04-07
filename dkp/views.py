@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
-from .models import DKPEvent, DKPAttendance, DKPProfile, DKPLog, BossPointConfig
+from .models import DKPEvent, DKPAttendance, DKPProfile, DKPLog, BossPointConfig, AdminRole, TreasuryItemConfig, TreasuryTransaction
 from items.models import Character, DiscordAnnouncement
 import json
 import os
@@ -151,10 +151,19 @@ def dkp_leaderboard_web(request):
         profiles = profiles.filter(character__clan=selected_clan)
     profiles = profiles.order_by('-current_dkp')
     
-    is_admin = request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser)
+    # Granular DKP board permissions
+    user_can_give = can_give_dkp(request.user) if request.user.is_authenticated else False
+    user_can_remove = can_remove_dkp(request.user) if request.user.is_authenticated else False
+    user_can_decay = can_decay_dkp(request.user) if request.user.is_authenticated else False
+    
+    is_admin = request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser or user_can_give or user_can_remove or user_can_decay)
+    
     return render(request, 'dkp/leaderboard.html', {
         'profiles': profiles,
         'is_admin': is_admin,
+        'can_give': user_can_give,
+        'can_remove': user_can_remove,
+        'can_decay': user_can_decay,
         'selected_clan': selected_clan,
         'clan_choices': clan_choices,
     })
@@ -162,7 +171,7 @@ def dkp_leaderboard_web(request):
 @login_required(login_url='/login/')
 def dkp_decay(request):
     """Apply DKP decay to a single player - max 5%"""
-    if not (request.user.is_staff or request.user.is_superuser):
+    if not can_decay_dkp(request.user):
         return redirect('web-dkp-leaderboard')
     
     if request.method == 'POST':
@@ -209,7 +218,11 @@ def dkp_decay(request):
 @login_required(login_url='/login/')
 def dkp_adjust(request):
     """Give or remove DKP points for a single player"""
-    if not (request.user.is_staff or request.user.is_superuser):
+    action = request.POST.get('adjust_action')
+
+    if action == 'give' and not can_give_dkp(request.user):
+        return redirect('web-dkp-leaderboard')
+    if action == 'remove' and not can_remove_dkp(request.user):
         return redirect('web-dkp-leaderboard')
     
     if request.method == 'POST':
@@ -259,7 +272,7 @@ def dkp_adjust(request):
 @login_required(login_url='/login/')
 def dkp_give_all(request):
     """Give DKP points to all players"""
-    if not (request.user.is_staff or request.user.is_superuser):
+    if not can_give_dkp(request.user):
         return redirect('web-dkp-leaderboard')
     
     if request.method == 'POST':
@@ -290,7 +303,7 @@ def dkp_give_all(request):
 @login_required(login_url='/login/')
 def dkp_remove_all(request):
     """Remove DKP points from all players"""
-    if not (request.user.is_staff or request.user.is_superuser):
+    if not can_remove_dkp(request.user):
         return redirect('web-dkp-leaderboard')
     
     if request.method == 'POST':
@@ -322,7 +335,7 @@ def dkp_remove_all(request):
 @login_required(login_url='/login/')
 def dkp_reset_lifetime(request):
     """Reset Lifetime Earned for all players"""
-    if not (request.user.is_staff or request.user.is_superuser):
+    if not can_decay_dkp(request.user):
         return redirect('web-dkp-leaderboard')
     
     if request.method == 'POST':
@@ -385,7 +398,7 @@ def dkp_decay_all(request):
 @login_required(login_url='/login/')
 def dkp_give_selected(request):
     """Give DKP points to selected players"""
-    if not (request.user.is_staff or request.user.is_superuser):
+    if not can_give_dkp(request.user):
         return redirect('web-dkp-leaderboard')
     
     if request.method == 'POST':
@@ -418,7 +431,7 @@ def dkp_give_selected(request):
 @login_required(login_url='/login/')
 def dkp_remove_selected(request):
     """Remove DKP points from selected players"""
-    if not (request.user.is_staff or request.user.is_superuser):
+    if not can_remove_dkp(request.user):
         return redirect('web-dkp-leaderboard')
     
     if request.method == 'POST':
@@ -452,7 +465,7 @@ def dkp_remove_selected(request):
 @login_required(login_url='/login/')
 def dkp_decay_selected(request):
     """Apply DKP decay to selected players"""
-    if not (request.user.is_staff or request.user.is_superuser):
+    if not can_decay_dkp(request.user):
         return redirect('web-dkp-leaderboard')
     
     if request.method == 'POST':
@@ -498,6 +511,11 @@ def dkp_decay_selected(request):
 @login_required(login_url='/login/')
 def dkp_my_profile(request):
     user_chars = Character.objects.filter(owner=request.user)
+    
+    # Auto-cleanup logs older than 3 days
+    from django.utils import timezone
+    three_days_ago = timezone.now() - timezone.timedelta(days=3)
+    DKPLog.objects.filter(created_at__lt=three_days_ago).delete()
     
     profiles = []
     if user_chars.exists():
@@ -559,11 +577,52 @@ def dkp_all_wallets(request):
 
 
 
+def is_dkp_admin(user):
+    from items.views import is_admin
+    if is_admin(user):
+        return True
+    try:
+        return user.admin_role.is_dkp_admin
+    except Exception:
+        return False
+
+def can_give_dkp(user):
+    """Check if user can Give DKP on the board"""
+    from items.views import is_admin
+    if is_admin(user):
+        return True
+    try:
+        role = user.admin_role
+        return role.is_dkp_admin and role.can_give_dkp
+    except Exception:
+        return False
+
+def can_remove_dkp(user):
+    """Check if user can Remove DKP on the board"""
+    from items.views import is_admin
+    if is_admin(user):
+        return True
+    try:
+        role = user.admin_role
+        return role.is_dkp_admin and role.can_remove_dkp
+    except Exception:
+        return False
+
+def can_decay_dkp(user):
+    """Check if user can Decay DKP on the board"""
+    from items.views import is_admin
+    if is_admin(user):
+        return True
+    try:
+        role = user.admin_role
+        return role.is_dkp_admin and role.can_decay_dkp
+    except Exception:
+        return False
+
 @login_required(login_url='/login/')
 def dkp_manage(request):
-    from items.views import is_any_admin
-    if not is_any_admin(request.user):
-        return redirect('index')
+    if not is_dkp_admin(request.user):
+        return HttpResponseForbidden("You do not have access to manage DKP.")
     
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -666,6 +725,11 @@ def dkp_manage(request):
 
         return redirect('web-dkp-manage')
             
+    # Auto-cleanup events older than 3 days
+    from django.utils import timezone
+    three_days_ago = timezone.now() - timezone.timedelta(days=3)
+    DKPEvent.objects.filter(date__lt=three_days_ago).delete()
+
     all_events = DKPEvent.objects.order_by('-date')
     from django.core.paginator import Paginator
     paginator = Paginator(all_events, 20)
@@ -801,3 +865,400 @@ def dkp_reset_data(request):
         return redirect('web-dkp-my-profile')
     
     return redirect('web-dkp-my-profile')
+
+
+# ======================================================
+# TREASURY VIEWS
+# ======================================================
+
+from items.views import is_admin
+
+def is_treasury_admin(user):
+    """Check if user has treasury admin access (including Sub Admins)"""
+    if is_admin(user):
+        return True
+    try:
+        return user.admin_role.is_treasury_admin
+    except AdminRole.DoesNotExist:
+        return False
+
+
+@login_required(login_url='/login/')
+def treasury_page(request):
+    """Main Treasury page - item distribution hub"""
+    has_treasury_access = is_treasury_admin(request.user)
+
+    # Get current user's profile and clan
+    user_chars = Character.objects.filter(owner=request.user)
+    user_profile = None
+    user_clan = 'Valkyrie'
+    
+    if user_chars.exists():
+        char = user_chars.first()
+        user_profile, _ = DKPProfile.objects.get_or_create(character=char)
+        if char.clan:
+            user_clan = char.clan
+
+    # Determine which clan is being viewed
+    clan_choices = ['Valkyrie', 'Valhalla']
+    selected_clan = request.GET.get('clan')
+
+    if not has_treasury_access:
+        # Non-admins can ONLY view their own clan
+        selected_clan = user_clan
+    else:
+        # Admins can view any clan, but default to their own clan
+        if not selected_clan or selected_clan not in clan_choices:
+            selected_clan = user_clan
+
+    from django.db.models import Q
+    profiles = DKPProfile.objects.select_related('character')
+    if selected_clan == 'Valkyrie':
+        profiles = profiles.filter(Q(character__clan='Valkyrie') | Q(character__clan='') | Q(character__clan__isnull=True))
+    else:
+        profiles = profiles.filter(character__clan=selected_clan)
+    profiles = profiles.order_by('character__name')
+
+    # Get treasury config (clan-specific)
+    config_obj = TreasuryItemConfig.get_config()
+    full_config = config_obj.config
+    clan_config = full_config.get(selected_clan, {
+        'blue_books': [], 'blue_equipment': [], 'other_items': [], 'diamond_items': []
+    })
+
+    # Auto-cleanup logs older than 3 days
+    from django.utils import timezone
+    three_days_ago = timezone.now() - timezone.timedelta(days=3)
+    TreasuryTransaction.objects.filter(created_at__lt=three_days_ago).delete()
+
+    # Calculate available DKP based on locked requests
+    frozen_dkp = 0
+    if user_profile:
+        for c_name, c_cats in full_config.items():
+            for cat_name, cat_items in c_cats.items():
+                for item in cat_items:
+                    if item.get('currency', 'DKP') == 'DKP':
+                        for req in item.get('requests', []):
+                            if req.get('profile_id') == user_profile.id:
+                                frozen_dkp += int(item.get('price', 0))
+    available_dkp = user_profile.current_dkp - frozen_dkp if user_profile else 0
+
+    # Recent treasury transactions (Paginated)
+    from django.core.paginator import Paginator
+    recent_transactions = TreasuryTransaction.objects.select_related('profile__character', 'created_by').order_by('-created_at')
+    
+    if selected_clan in clan_choices:
+        recent_transactions = recent_transactions.filter(clan=selected_clan)
+
+    paginator = Paginator(recent_transactions, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    from items.views import is_admin
+    return render(request, 'dkp/treasury.html', {
+        'profiles': profiles,
+        'config': json.dumps(clan_config),
+        'selected_clan': selected_clan,
+        'clan_choices': clan_choices,
+        'recent_transactions': page_obj,
+        'is_super_admin': is_admin(request.user),
+        'is_treasury_admin': has_treasury_access,
+        'user_profile': user_profile,
+        'user_clan': user_clan,
+        'available_dkp': available_dkp,
+    })
+
+
+@login_required(login_url='/login/')
+def treasury_config_get(request):
+    """Load treasury item config from database (clan-specific)"""
+    clan = request.GET.get('clan', 'Valkyrie')
+    config_obj = TreasuryItemConfig.get_config()
+    clan_config = config_obj.config.get(clan, {})
+    return JsonResponse({'success': True, 'config': clan_config})
+
+
+def get_available_dkp_for_profile(profile):
+    from .models import TreasuryItemConfig
+    config_obj = TreasuryItemConfig.get_config()
+    frozen_dkp = 0
+    full_config = config_obj.config
+    for c_name, c_cats in full_config.items():
+        for cat_name, cat_items in c_cats.items():
+            for config_item in cat_items:
+                if config_item.get('currency', 'DKP') == 'DKP':
+                    for r in config_item.get('requests', []):
+                        if r.get('profile_id') == profile.id:
+                            frozen_dkp += int(config_item.get('price', 0))
+    return profile.current_dkp - frozen_dkp
+
+@login_required(login_url='/login/')
+def treasury_config_save(request):
+    """Save treasury item config to database (clan-specific)"""
+    if not is_treasury_admin(request.user):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            clan = data.get('clan', 'Valkyrie')
+            new_clan_config = data.get('config', {})
+            
+            config_obj = TreasuryItemConfig.get_config()
+            config_obj.config[clan] = new_clan_config
+            config_obj.updated_by = request.user.username
+            config_obj.save()
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+    return JsonResponse({'error': 'POST required'}, status=405)
+
+
+@login_required(login_url='/login/')
+def treasury_request_item(request):
+    """Add a member to the item request list if stock permits"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            item_category = data.get('item_category')
+            item_idx = data.get('item_idx')
+            clan = data.get('clan', 'Valkyrie')
+
+            if item_category is None or item_idx is None:
+                return JsonResponse({'error': 'Missing required fields'}, status=400)
+
+            # Get user profile
+            user_chars = Character.objects.filter(owner=request.user)
+            if not user_chars.exists():
+                return JsonResponse({'error': 'You do not have a Character linked to your account to make requests.'}, status=403)
+            
+            char = user_chars.first()
+            user_profile, _ = DKPProfile.objects.get_or_create(character=char)
+
+            # Validate that EVERYONE (including admins) can only request items for their own clan
+            user_clan = char.clan or 'Valkyrie'
+            if clan != user_clan:
+                return JsonResponse({'error': f'You can only request items for your own clan ({user_clan}).'}, status=403)
+
+            config_obj = TreasuryItemConfig.get_config()
+            clan_config = config_obj.config.get(clan, {})
+            cat_list = clan_config.get(item_category, [])
+            if not (0 <= int(item_idx) < len(cat_list)):
+                return JsonResponse({'error': 'Item not found'}, status=404)
+
+            item = cat_list[int(item_idx)]
+            requests = item.get('requests', [])
+            stock = int(item.get('max_per_person', 0))
+            price = int(item.get('price', 0))
+            currency = item.get('currency', 'DKP')
+
+            # Prevent duplicate request
+            for req in requests:
+                if req.get('profile_id') == user_profile.id:
+                    return JsonResponse({'error': 'You have already requested this item.'}, status=400)
+
+            # Calculate available DKP (Current DKP minus locked requests)
+            available_dkp = get_available_dkp_for_profile(user_profile)
+
+            # Prevent request if available DKP is insufficient
+            if currency == 'DKP' and available_dkp < price:
+                return JsonResponse({'error': f'Insufficient Available DKP. You need {price} DKP, but your calculated available DKP is {available_dkp}.'}, status=400)
+
+            # Check stock limit (user requirement)
+            if stock > 0 and len(requests) >= stock:
+                return JsonResponse({'error': 'Request list is full for this item.'}, status=400)
+
+            item.setdefault('requests', []).append({
+                "profile_id": user_profile.id,
+                "character_name": user_profile.character.name,
+                "dkp": user_profile.current_dkp,
+                "user_id": request.user.id
+            })
+            config_obj.save()
+
+            # Refresh profile to sync any parallel updates before returning available_dkp
+            user_profile.refresh_from_db()
+            new_available_dkp = get_available_dkp_for_profile(user_profile)
+
+            return JsonResponse({'success': True, 'message': 'Request submitted successfully!', 'item': item, 'available_dkp': new_available_dkp})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+    return JsonResponse({'error': 'POST required'}, status=405)
+
+
+@login_required(login_url='/login/')
+def treasury_reject_request(request):
+    """Reject an item request (Admins can reject any, Users can cancel their own)"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            item_category = data.get('item_category')
+            item_idx = data.get('item_idx')
+            profile_id = data.get('profile_id')
+            clan = data.get('clan', 'Valkyrie')
+
+            if item_category is None or item_idx is None or profile_id is None:
+                return JsonResponse({'error': 'Missing required fields'}, status=400)
+
+            # Determine authorization
+            owner = None
+            user_chars = Character.objects.filter(owner=request.user)
+            if user_chars.exists():
+                owner, _ = DKPProfile.objects.get_or_create(character=user_chars.first())
+
+            is_self_removal = owner and owner.id == int(profile_id)
+            if not is_treasury_admin(request.user) and not is_self_removal:
+                return JsonResponse({'error': 'Unauthorized'}, status=403)
+
+            config_obj = TreasuryItemConfig.get_config()
+            clan_config = config_obj.config.get(clan, {})
+            cat_list = clan_config.get(item_category, [])
+            if not (0 <= int(item_idx) < len(cat_list)):
+                return JsonResponse({'error': 'Item not found'}, status=404)
+
+            item = cat_list[int(item_idx)]
+            requests = item.get('requests', [])
+            item['requests'] = [r for r in requests if r.get('profile_id') != int(profile_id)]
+            config_obj.save()
+
+            # Refresh profile and calculate new available DKP if owner exists
+            new_available_dkp = 0
+            if owner:
+                owner.refresh_from_db()
+                new_available_dkp = get_available_dkp_for_profile(owner)
+
+            return JsonResponse({'success': True, 'message': 'Request rejected.', 'item': item, 'available_dkp': new_available_dkp})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+    return JsonResponse({'error': 'POST required'}, status=405)
+
+
+@login_required(login_url='/login/')
+def treasury_assign(request):
+    """Assign an item to a member - deduct DKP/Diamond"""
+    if not is_treasury_admin(request.user):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            profile_id = data.get('profile_id')
+            item_name = data.get('item_name', '')
+            item_category = data.get('item_category', '')
+            item_idx = data.get('item_idx')
+            price = int(data.get('price', 0))
+            currency = data.get('currency', 'DKP')
+            clan = data.get('clan', 'all')
+            note = data.get('note', '')
+
+            if not profile_id or not item_name or price <= 0:
+                return JsonResponse({'error': 'Missing required fields'}, status=400)
+
+            try:
+                profile = DKPProfile.objects.select_related('character').get(id=profile_id)
+            except DKPProfile.DoesNotExist:
+                return JsonResponse({'error': 'Profile not found'}, status=404)
+
+            # Deduct from DKP balance (only for DKP currency)
+            if currency == 'DKP':
+                if profile.current_dkp < price:
+                    return JsonResponse({'error': f'Assign Failed! Member DKP is insufficient (Balance: {profile.current_dkp} DKP, Needed: {price} DKP) due to recent deductions.'}, status=400)
+                
+                profile.current_dkp -= price
+                profile.save()
+
+                # Create DKP log entry
+                DKPLog.objects.create(
+                    profile=profile,
+                    amount=-price,
+                    reason=f"Treasury: {item_name}",
+                    note=note,
+                    created_by=request.user
+                )
+
+            # Create treasury transaction log
+            txn = TreasuryTransaction.objects.create(
+                profile=profile,
+                item_name=item_name,
+                item_category=item_category,
+                amount_deducted=price,
+                currency=currency,
+                clan=clan,
+                note=note,
+                created_by=request.user
+            )
+
+            # Decrement Stock/Max in config
+            if item_idx is not None:
+                try:
+                    config_obj = TreasuryItemConfig.get_config()
+                    clan_config = config_obj.config.get(clan, {})
+                    cat_items = clan_config.get(item_category, [])
+                    if 0 <= int(item_idx) < len(cat_items):
+                        item_ref = cat_items[int(item_idx)]
+                        
+                        # Decrement stock
+                        current_max = int(item_ref.get('max_per_person', 0))
+                        if current_max > 0:
+                            item_ref['max_per_person'] = current_max - 1
+                        
+                        # Remove assigned user from requests if they exist
+                        requests = item_ref.get('requests', [])
+                        item_ref['requests'] = [req for req in requests if req.get('profile_id') != profile.id]
+
+                        config_obj.save()
+                except Exception as e:
+                    pass
+
+            # Auto-cleanup logs older than 3 days
+            from django.utils import timezone
+            three_days_ago = timezone.now() - timezone.timedelta(days=3)
+            TreasuryTransaction.objects.filter(created_at__lt=three_days_ago).delete()
+
+            return JsonResponse({
+                'success': True,
+                'message': f'{item_name} assigned to {profile.character.name}',
+                'new_dkp': profile.current_dkp,
+                'character_name': profile.character.name,
+                'admin_name': request.user.username,
+                'date': txn.created_at.strftime("%d %b %Y %H:%M"),
+                'currency': currency,
+                'price': price,
+                'item_name': item_name,
+                'txn_id': txn.id
+            })
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+    return JsonResponse({'error': 'POST required'}, status=405)
+
+
+@login_required(login_url='/login/')
+def treasury_delete_logs(request):
+    """Delete selected treasury transaction logs manually"""
+    if not is_treasury_admin(request.user):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            txn_ids_raw = data.get('txn_ids', [])
+            txn_ids = []
+            for t_id in txn_ids_raw:
+                try:
+                    txn_ids.append(int(t_id))
+                except ValueError:
+                    pass
+            
+            if txn_ids:
+                deleted_count, _ = TreasuryTransaction.objects.filter(id__in=txn_ids).delete()
+                return JsonResponse({'success': True, 'message': f'{deleted_count} logs deleted!'})
+            else:
+                return JsonResponse({'success': False, 'error': 'No valid IDs selected'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'POST required'}, status=405)

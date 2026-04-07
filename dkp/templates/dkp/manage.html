@@ -766,20 +766,14 @@
 
     <h3 style="color:#FFD700;">Recent Activities</h3>
 
-    <!-- Bulk Delete Bar -->
-    <div class="activity-bulk-bar">
-        <label><input type="checkbox" id="eventSelectAll" onchange="toggleEventSelectAll()"> Select All</label>
-        <span class="ab-divider"></span>
-        <button type="button" class="ab-delete-btn" id="bulkDeleteBtn" disabled onclick="showBulkDeleteModal()">
-            <i class="fas fa-trash"></i> Delete Selected
-        </button>
-        <span class="ab-count" id="eventSelCount">0 selected</span>
-    </div>
+    <!-- Bulk Delete Bar Removed -->
+    <p style="color: #666; font-size: 0.85rem; margin-top: -10px; margin-bottom: 20px; font-style: italic;">
+        <i class="fas fa-info-circle"></i> Logs older than 3 days are automatically deleted to prevent buildup.
+    </p>
 
     <table class="leaderboard-table" style="border-radius: 0 0 10px 10px;">
         <thead>
             <tr>
-                <th style="width:40px;"></th>
                 <th>Activity</th>
                 <th>Points</th>
                 <th>Participants</th>
@@ -789,9 +783,6 @@
         <tbody>
             {% for e in events %}
             <tr>
-                <td style="text-align:center;">
-                    <input type="checkbox" class="event-cb" value="{{ e.id }}" onchange="updateEventSelCount()">
-                </td>
                 <td style="font-weight:bold; color:white;">
                     {{ e.name }}
                     {% if e.is_war_day %}<span class="war-day-badge">⚔️ War Day</span>{% endif %}

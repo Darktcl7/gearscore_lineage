@@ -219,6 +219,8 @@
                                 <i class="fas fa-chart-line"></i>
                             </a>
 
+
+
                             <a href="{% url 'delete-character' character.pk %}"
                                 style="color: #E74C3C; text-decoration: none;" title="Delete Character"><i
                                     class="fas fa-trash"></i></a>
@@ -677,6 +679,72 @@
     </div>
 </div>
 
+<!-- Sub Admin Modal (with Role Checkboxes) -->
+<div class="confirm-modal" id="subAdminModal">
+    <div class="confirm-box" style="max-width: 450px;">
+        <div class="confirm-icon-area">
+            <div class="confirm-icon-circle promote" id="subAdminIconCircle" style="background: rgba(26,188,156,0.15); border-color: rgba(26,188,156,0.4); color: #1abc9c;">
+                <i class="fas fa-user-shield"></i>
+            </div>
+        </div>
+        <div class="confirm-body">
+            <h3 id="subAdminTitle">Promote to Sub Admin</h3>
+            <p id="subAdminMessage">Grant Sub Admin privileges?</p>
+        </div>
+        <!-- Role checkboxes (only visible when promoting) -->
+        <div id="subAdminRolesSection" style="padding: 0 25px 15px; text-align: left;">
+            <p style="color: #999; font-size: 0.8rem; margin-bottom: 10px;"><i class="fas fa-info-circle"></i> Select feature access for this Sub Admin:</p>
+            <div style="margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 12px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                <label style="display: flex; align-items: center; cursor: pointer; color: #ccc;">
+                    <input type="checkbox" id="cbDkpAdmin" style="margin-right: 12px; transform: scale(1.2);" onchange="toggleDkpSubOptions()">
+                    <div>
+                        <strong style="color: #fff; font-size: 0.95rem; display: block; margin-bottom: 2px;"><i class="fas fa-coins" style="color: #f1c40f;"></i> DKP Admin</strong>
+                        <small style="color: #888;">Full access to adjust balances and events</small>
+                    </div>
+                </label>
+                <!-- DKP Sub-permissions -->
+                <div id="dkpSubOptions" style="display: none; margin-top: 10px; margin-left: 30px; padding: 10px 15px; background: rgba(255,255,255,0.03); border-radius: 6px; border-left: 2px solid #f1c40f;">
+                    <p style="color: #999; font-size: 0.75rem; margin: 0 0 8px 0;"><i class="fas fa-sliders-h"></i> DKP Board Permissions:</p>
+                    <label style="display: flex; align-items: center; cursor: pointer; color: #ccc; margin-bottom: 6px;">
+                        <input type="checkbox" id="cbCanGiveDkp" style="margin-right: 10px; transform: scale(1.1);">
+                        <span style="font-size: 0.88rem;"><i class="fas fa-plus-circle" style="color: #2ecc71;"></i> Give DKP</span>
+                    </label>
+                    <label style="display: flex; align-items: center; cursor: pointer; color: #ccc; margin-bottom: 6px;">
+                        <input type="checkbox" id="cbCanRemoveDkp" style="margin-right: 10px; transform: scale(1.1);">
+                        <span style="font-size: 0.88rem;"><i class="fas fa-minus-circle" style="color: #e74c3c;"></i> Remove DKP</span>
+                    </label>
+                    <label style="display: flex; align-items: center; cursor: pointer; color: #ccc;">
+                        <input type="checkbox" id="cbCanDecayDkp" style="margin-right: 10px; transform: scale(1.1);">
+                        <span style="font-size: 0.88rem;"><i class="fas fa-chart-line-down" style="color: #e67e22;"></i> Decay DKP</span>
+                    </label>
+                </div>
+            </div>
+            <div style="margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 12px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                <label style="display: flex; align-items: center; cursor: pointer; color: #ccc;">
+                    <input type="checkbox" id="cbTreasuryAdmin" style="margin-right: 12px; transform: scale(1.2);">
+                    <div>
+                        <strong style="color: #fff; font-size: 0.95rem; display: block; margin-bottom: 2px;"><i class="fas fa-warehouse" style="color: #FFD700;"></i> Treasury Admin</strong>
+                        <small style="color: #888;">Assign items, setting price & reject requests</small>
+                    </div>
+                </label>
+            </div>
+            <div style="margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 12px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                <label style="display: flex; align-items: center; cursor: pointer; color: #ccc;">
+                    <input type="checkbox" id="cbAuctionAdmin" style="margin-right: 12px; transform: scale(1.2);">
+                    <div>
+                        <strong style="color: #fff; font-size: 0.95rem; display: block; margin-bottom: 2px;"><i class="fas fa-gavel" style="color: #e74c3c;"></i> Auction Admin</strong>
+                        <small style="color: #888;">Manage auction system (coming soon)</small>
+                    </div>
+                </label>
+            </div>
+        </div>
+        <div class="confirm-actions">
+            <button class="btn-no" onclick="closeSubAdminModal()">Cancel</button>
+            <button class="btn-yes-promote" id="subAdminYesBtn" style="background: linear-gradient(135deg, #1abc9c, #16a085); color: #fff;" onclick="executeSubAdminToggle()">Make Sub Admin</button>
+        </div>
+    </div>
+</div>
+
 <!-- Hidden Form to submit -->
 <form id="reset-password-form" method="post" style="display: none;">
     {% csrf_token %}
@@ -684,6 +752,11 @@
 </form>
 
 <script>
+    var adminRolesData = JSON.parse('{{ admin_roles_json|escapejs }}');
+    var subAdminUserId = null;
+    var subAdminUrl = null;
+    var subAdminIsCurrently = false;
+
     // =========================================
     // TOAST NOTIFICATION SYSTEM
     // =========================================
@@ -768,33 +841,117 @@
     }
 
     // =========================================
-    // SUB ADMIN CONFIRM (reuse admin modal)
+    // SUB ADMIN MODAL (with Role Checkboxes)
     // =========================================
     function showSubAdminConfirm(username, url, isCurrentlySubAdmin) {
-        adminToggleUrl = url;
-
-        const circle = document.getElementById('confirmIconCircle');
-        const title = document.getElementById('confirmTitle');
-        const msg = document.getElementById('confirmMessage');
-        const yesBtn = document.getElementById('confirmYesBtn');
-
-        if (isCurrentlySubAdmin) {
-            circle.className = 'confirm-icon-circle demote';
-            title.textContent = 'Remove Sub Admin';
-            msg.innerHTML = 'Remove Sub Admin role from <span class="username-highlight">' + username + '</span>?<br><small style="color:#666">This user will lose access to management features.</small>';
-            yesBtn.className = 'btn-yes-demote';
-            yesBtn.textContent = 'Remove Sub Admin';
-        } else {
-            circle.className = 'confirm-icon-circle promote';
-            circle.style.background = 'rgba(26,188,156,0.15)';
-            title.textContent = 'Promote to Sub Admin';
-            msg.innerHTML = 'Grant Sub Admin privileges to <span class="username-highlight">' + username + '</span>?<br><small style="color:#666">This user can manage events, DKP, and characters.</small>';
-            yesBtn.className = 'btn-yes-promote';
-            yesBtn.style.background = 'linear-gradient(135deg, #1abc9c, #16a085)';
-            yesBtn.textContent = 'Make Sub Admin';
+        subAdminUrl = url;
+        subAdminIsCurrently = isCurrentlySubAdmin;
+        
+        // Extract user ID from URL
+        var parts = url.split('/');
+        subAdminUserId = null;
+        for (var i = 0; i < parts.length; i++) {
+            if (!isNaN(parts[i]) && parts[i] !== '') { subAdminUserId = parseInt(parts[i]); }
         }
 
-        document.getElementById('adminConfirmModal').style.display = 'flex';
+        var iconCircle = document.getElementById('subAdminIconCircle');
+        var title = document.getElementById('subAdminTitle');
+        var msg = document.getElementById('subAdminMessage');
+        var yesBtn = document.getElementById('subAdminYesBtn');
+        var rolesSection = document.getElementById('subAdminRolesSection');
+
+        iconCircle.style.background = 'rgba(26,188,156,0.15)';
+        iconCircle.style.borderColor = 'rgba(26,188,156,0.4)';
+        iconCircle.style.color = '#1abc9c';
+        
+        if (isCurrentlySubAdmin) {
+            title.textContent = 'Manage Sub Admin Access';
+            msg.innerHTML = 'Update access for <span class="username-highlight">' + username + '</span><br><small style="color:#666">Uncheck all to remove Sub Admin.</small>';
+            yesBtn.textContent = 'Save Changes';
+        } else {
+            title.textContent = 'Promote to Sub Admin';
+            msg.innerHTML = 'Grant Sub Admin privileges to <span class="username-highlight">' + username + '</span><br><small style="color:#666">Select which features this user can access.</small>';
+            yesBtn.textContent = 'Make Sub Admin';
+        }
+        
+        yesBtn.className = 'btn-yes-promote';
+        yesBtn.style.background = 'linear-gradient(135deg, #1abc9c, #16a085)';
+        rolesSection.style.display = 'block';
+        
+        // Load existing roles
+        var userRoles = adminRolesData[subAdminUserId] || { is_dkp_admin: false, is_treasury_admin: false, is_auction_admin: false, can_give_dkp: false, can_remove_dkp: false, can_decay_dkp: false };
+        document.getElementById('cbDkpAdmin').checked = userRoles.is_dkp_admin;
+        document.getElementById('cbTreasuryAdmin').checked = userRoles.is_treasury_admin;
+        document.getElementById('cbAuctionAdmin').checked = userRoles.is_auction_admin;
+        document.getElementById('cbCanGiveDkp').checked = userRoles.can_give_dkp;
+        document.getElementById('cbCanRemoveDkp').checked = userRoles.can_remove_dkp;
+        document.getElementById('cbCanDecayDkp').checked = userRoles.can_decay_dkp;
+        toggleDkpSubOptions();
+
+        document.getElementById('subAdminModal').style.display = 'flex';
+    }
+
+    function toggleDkpSubOptions() {
+        var dkpChecked = document.getElementById('cbDkpAdmin').checked;
+        document.getElementById('dkpSubOptions').style.display = dkpChecked ? 'block' : 'none';
+        if (!dkpChecked) {
+            document.getElementById('cbCanGiveDkp').checked = false;
+            document.getElementById('cbCanRemoveDkp').checked = false;
+            document.getElementById('cbCanDecayDkp').checked = false;
+        }
+    }
+
+    function closeSubAdminModal() {
+        document.getElementById('subAdminModal').style.display = 'none';
+        subAdminUserId = null;
+        subAdminUrl = null;
+    }
+
+    function executeSubAdminToggle() {
+        if (!subAdminUrl) return;
+        
+        var dkp = document.getElementById('cbDkpAdmin').checked;
+        var treasury = document.getElementById('cbTreasuryAdmin').checked;
+        var auction = document.getElementById('cbAuctionAdmin').checked;
+        var canGive = document.getElementById('cbCanGiveDkp').checked;
+        var canRemove = document.getElementById('cbCanRemoveDkp').checked;
+        var canDecay = document.getElementById('cbCanDecayDkp').checked;
+        var anyChecked = dkp || treasury || auction;
+        
+        var rolePayload = { is_dkp_admin: dkp, is_treasury_admin: treasury, is_auction_admin: auction, can_give_dkp: canGive, can_remove_dkp: canRemove, can_decay_dkp: canDecay };
+        var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}';
+        
+        if (!anyChecked && subAdminIsCurrently) {
+            // All unchecked + currently sub admin → remove sub admin & roles completely
+            fetch(subAdminUrl, { method: 'GET', redirect: 'manual' })
+            .then(function() { window.location.reload(); })
+            .catch(function() { window.location.reload(); });
+        } else if (!anyChecked && !subAdminIsCurrently) {
+            // All unchecked + not sub admin → nothing to do
+            closeSubAdminModal();
+            return;
+        } else if (anyChecked && !subAdminIsCurrently) {
+            // Has checks + not yet sub admin → promote first, then save roles
+            fetch(subAdminUrl, { method: 'GET', redirect: 'manual' })
+            .then(function() {
+                return fetch('/portal/manage/toggle-admin-role/' + subAdminUserId + '/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                    body: JSON.stringify(rolePayload)
+                });
+            })
+            .then(function() { window.location.reload(); })
+            .catch(function() { window.location.reload(); });
+        } else {
+            // Has checks + already sub admin → just update roles
+            fetch('/portal/manage/toggle-admin-role/' + subAdminUserId + '/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify(rolePayload)
+            })
+            .then(function() { window.location.reload(); })
+            .catch(function() { window.location.reload(); });
+        }
     }
 
     // =========================================
@@ -834,8 +991,10 @@
     window.onclick = function (event) {
         const pwModal = document.getElementById('passwordModal');
         const adminModal = document.getElementById('adminConfirmModal');
+        const subAdminModalEl = document.getElementById('subAdminModal');
         if (event.target == pwModal) closeModal();
         if (event.target == adminModal) closeAdminConfirm();
+        if (event.target == subAdminModalEl) closeSubAdminModal();
     }
 
     // Submit password on Enter key
@@ -848,6 +1007,7 @@
         if (e.key === 'Escape') {
             closeModal();
             closeAdminConfirm();
+            closeSubAdminModal();
         }
     });
     // =========================================

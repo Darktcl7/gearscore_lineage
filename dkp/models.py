@@ -70,3 +70,130 @@ class BossPointConfig(models.Model):
     def get_config(cls):
         obj, _ = cls.objects.get_or_create(pk=1, defaults={'config': {}})
         return obj
+
+
+class AdminRole(models.Model):
+    """Granular admin permissions per user"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='admin_role')
+    is_dkp_admin = models.BooleanField("DKP Admin", default=False,
+        help_text="Full access to DKP system (Add, Remove, Decay, etc.)")
+    is_treasury_admin = models.BooleanField("Treasury Admin", default=False,
+        help_text="Access to Treasury item distribution and DKP deduction")
+    is_auction_admin = models.BooleanField("Auction Admin", default=False,
+        help_text="Access to future Auction system")
+        
+    # Granular DKP Admin controls
+    can_give_dkp = models.BooleanField("Can Give DKP", default=False)
+    can_remove_dkp = models.BooleanField("Can Remove DKP", default=False)
+    can_decay_dkp = models.BooleanField("Can Decay DKP", default=False)
+
+    class Meta:
+        verbose_name = "Admin Role"
+
+    def __str__(self):
+        roles = []
+        if self.is_dkp_admin: roles.append("DKP")
+        if self.is_treasury_admin: roles.append("Treasury")
+        if self.is_auction_admin: roles.append("Auction")
+        return f"{self.user.username} - [{', '.join(roles) or 'No Roles'}]"
+
+
+class TreasuryItemConfig(models.Model):
+    """Singleton model to store treasury item pricing/limits (like BossPointConfig)"""
+    config = models.JSONField("Treasury Items Config", default=dict)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.CharField(max_length=100, blank=True)
+
+    class Meta:
+        verbose_name = "Treasury Item Config"
+
+    def __str__(self):
+        return f"Treasury Item Config (updated: {self.updated_at})"
+
+    @classmethod
+    def get_config(cls):
+        obj, _ = cls.objects.get_or_create(pk=1, defaults={'config': cls.get_default_config()})
+        # Auto-migrate old flat config to clan-nested config
+        if obj.config and 'blue_books' in obj.config and 'Valkyrie' not in obj.config:
+            old_config = obj.config.copy()
+            obj.config = {
+                'Valkyrie': old_config,
+                'Valhalla': {
+                    'blue_books': [],
+                    'blue_equipment': [],
+                    'other_items': [],
+                    'diamond_items': [],
+                }
+            }
+            obj.save()
+        return obj
+
+    @classmethod
+    def get_default_config(cls):
+        default_items = {
+            "blue_books": [
+                {"name": "Standard Book", "price": 50, "currency": "DKP", "max_per_person": 0, "category": "blue_books"},
+                {"name": "Advanced Book", "price": 75, "currency": "DKP", "max_per_person": 0, "category": "blue_books"},
+                {"name": "High-Class Book (Group Heal)", "price": 200, "currency": "DKP", "max_per_person": 0, "category": "blue_books"},
+                {"name": "High-Class Book (War Frenzy)", "price": 200, "currency": "DKP", "max_per_person": 0, "category": "blue_books"},
+                {"name": "High-Class Book (Crowd Control)", "price": 150, "currency": "DKP", "max_per_person": 0, "category": "blue_books"},
+                {"name": "Rare Book (Class Skill)", "price": 125, "currency": "DKP", "max_per_person": 0, "category": "blue_books"},
+            ],
+            "blue_equipment": [
+                {"name": "Blue Accessory (Ring/Earring/Necklace)", "price": 25, "currency": "DKP", "max_per_person": 2, "category": "blue_equipment"},
+                {"name": "Blue Sigil", "price": 25, "currency": "DKP", "max_per_person": 2, "category": "blue_equipment"},
+                {"name": "Blue Armor Set (Helmet)", "price": 50, "currency": "DKP", "max_per_person": 1, "category": "blue_equipment"},
+                {"name": "Blue Armor Set (Armor)", "price": 75, "currency": "DKP", "max_per_person": 1, "category": "blue_equipment"},
+                {"name": "Blue Armor Set (Gloves)", "price": 50, "currency": "DKP", "max_per_person": 1, "category": "blue_equipment"},
+                {"name": "Blue Armor Set (Boots)", "price": 50, "currency": "DKP", "max_per_person": 1, "category": "blue_equipment"},
+                {"name": "Blue Wolf Set", "price": 100, "currency": "DKP", "max_per_person": 1, "category": "blue_equipment"},
+                {"name": "Doom Set", "price": 100, "currency": "DKP", "max_per_person": 1, "category": "blue_equipment"},
+                {"name": "Blue Weapon (Standard)", "price": 150, "currency": "DKP", "max_per_person": 1, "category": "blue_equipment"},
+                {"name": "Giant Weapon", "price": 300, "currency": "DKP", "max_per_person": 1, "category": "blue_equipment"},
+            ],
+            "other_items": [
+                {"name": "Bless Stone", "price": 15, "currency": "DKP", "max_per_person": 5, "category": "other_items"},
+                {"name": "Purify Stone", "price": 15, "currency": "DKP", "max_per_person": 5, "category": "other_items"},
+                {"name": "Elixir (HP/MP)", "price": 10, "currency": "DKP", "max_per_person": 10, "category": "other_items"},
+                {"name": "Scroll Enchant Blessed (Weapon)", "price": 30, "currency": "DKP", "max_per_person": 3, "category": "other_items"},
+                {"name": "Scroll Enchant Blessed (Armor)", "price": 25, "currency": "DKP", "max_per_person": 3, "category": "other_items"},
+                {"name": "Scroll Enchant (Weapon)", "price": 20, "currency": "DKP", "max_per_person": 5, "category": "other_items"},
+                {"name": "Scroll Enchant (Armor)", "price": 15, "currency": "DKP", "max_per_person": 5, "category": "other_items"},
+            ],
+            "diamond_items": [
+                {"name": "Cursed Weapon", "price": 500, "currency": "Diamond", "max_per_person": 1, "category": "diamond_items"},
+                {"name": "Cursed Armor", "price": 400, "currency": "Diamond", "max_per_person": 1, "category": "diamond_items"},
+                {"name": "Ink (Tattoo Material)", "price": 200, "currency": "Diamond", "max_per_person": 3, "category": "diamond_items"},
+                {"name": "Rare Enchant Scroll", "price": 300, "currency": "Diamond", "max_per_person": 2, "category": "diamond_items"},
+            ],
+        }
+        return {
+            "Valkyrie": default_items,
+            "Valhalla": {
+                "blue_books": [],
+                "blue_equipment": [],
+                "other_items": [],
+                "diamond_items": [],
+            }
+        }
+
+
+class TreasuryTransaction(models.Model):
+    """Log every treasury item distribution"""
+    profile = models.ForeignKey(DKPProfile, on_delete=models.CASCADE, related_name='treasury_logs')
+    item_name = models.CharField("Item Name", max_length=200)
+    item_category = models.CharField("Category", max_length=50)
+    amount_deducted = models.IntegerField("Amount Deducted")
+    currency = models.CharField("Currency", max_length=20, default='DKP')  # 'DKP' or 'Diamond'
+    clan = models.CharField("Clan", max_length=50, default='Valkyrie')
+    note = models.TextField("Note", blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Treasury Transaction"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.profile.character.name} received {self.item_name} (-{self.amount_deducted} {self.currency})"
+
