@@ -328,27 +328,40 @@ def api_get_leaderboard(request):
                 total_score=Sum('points_earned') + Sum('win_streak_bonus')
             ).order_by('-total_score')
             
+            # First pass: collect all entries
+            clan_entries = []
             rank = 1
             for entry in clan_data:
                 total_score = entry['total_score'] or 0
-                
-                if total_score > 950:
-                    tier_display = '👑 Core'
-                elif total_score > 675:
-                    tier_display = '🛡️ Elite'
-                elif total_score > 400:
-                    tier_display = '⚔️ Active'
-                else:
-                    tier_display = '💤 Inactive'
-
-                leaderboards_by_clan[clan_name].append({
+                clan_entries.append({
                     'rank': rank,
                     'player': entry['player__name'],
                     'score': total_score,
-                    'tier': tier_display,
+                    'tier': '',
                     'prize': 0,
                 })
                 rank += 1
+            
+            # Second pass: assign tiers with slot limits (same as website)
+            # Core: > 950 pts, max 15 | Elite: > 675 pts, max 15 | Active: > 400 pts, max 20 | Inactive: rest
+            core_count = 0
+            elite_count = 0
+            active_count = 0
+            for e in clan_entries:
+                score = e['score']
+                if score > 950 and core_count < 15:
+                    e['tier'] = '👑 Core'
+                    core_count += 1
+                elif score > 675 and elite_count < 15:
+                    e['tier'] = '🛡️ Elite'
+                    elite_count += 1
+                elif score > 400 and active_count < 20:
+                    e['tier'] = '⚔️ Active'
+                    active_count += 1
+                else:
+                    e['tier'] = '💤 Inactive'
+            
+            leaderboards_by_clan[clan_name] = clan_entries
         
         return JsonResponse({
             'success': True,
