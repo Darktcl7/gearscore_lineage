@@ -31,10 +31,10 @@
     /* Common containers: reduce margins */
     .activity-container,
     .admin-container {
-        margin-left: 5px !important;
-        margin-right: 5px !important;
-        margin-top: 65px !important;
-        border-radius: 12px !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        margin-top: 10px !important;
+        border-radius: 0 !important;
         height: auto !important;
         min-height: auto !important;
         overflow: visible !important;
@@ -153,7 +153,7 @@
     .profile-container {
         margin-left: 0 !important;
         margin-right: 0 !important;
-        margin-top:  65px !important;
+        margin-top:  10px !important;
         border-radius: 0 !important;
         height: auto !important;
         overflow: visible !important;
@@ -182,7 +182,7 @@
     .dkp-manage-container {
         margin-left: 0 !important;
         margin-right: 0 !important;
-        margin-top:  65px !important;
+        margin-top:  10px !important;
         border-radius: 0 !important;
         height: auto !important;
         overflow: visible !important;
@@ -192,7 +192,7 @@
     .manage-container {
         margin-left: 0 !important;
         margin-right: 0 !important;
-        margin-top:  65px !important;
+        margin-top:  10px !important;
         border-radius: 0 !important;
         height: auto !important;
         overflow: visible !important;
@@ -217,7 +217,7 @@
     .discord-container {
         margin-left: 0 !important;
         margin-right: 0 !important;
-        margin-top:  65px !important;
+        margin-top:  10px !important;
         border-radius: 0 !important;
         height: auto !important;
         overflow: visible !important;
@@ -288,7 +288,7 @@
     .dkp-manage-container {
         margin-left: 0 !important;
         margin-right: 0 !important;
-        margin-top:  60px !important;
+        margin-top:  5px !important;
         border-radius: 0 !important;
     }
 
