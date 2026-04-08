@@ -940,7 +940,7 @@ def treasury_page(request):
                     if item.get('currency', 'DKP') == 'DKP':
                         for req in item.get('requests', []):
                             if req.get('profile_id') == user_profile.id:
-                                frozen_dkp += int(item.get('price', 0))
+                                frozen_dkp += int(item.get('price', 0)) * int(req.get('quantity', 1))
     available_dkp = user_profile.current_dkp - frozen_dkp if user_profile else 0
 
     # Recent treasury transactions (Paginated)
@@ -989,7 +989,7 @@ def get_available_dkp_for_profile(profile):
                 if config_item.get('currency', 'DKP') == 'DKP':
                     for r in config_item.get('requests', []):
                         if r.get('profile_id') == profile.id:
-                            frozen_dkp += int(config_item.get('price', 0))
+                            frozen_dkp += int(config_item.get('price', 0)) * int(r.get('quantity', 1))
     return profile.current_dkp - frozen_dkp
 
 @login_required(login_url='/login/')
@@ -1017,16 +1017,20 @@ def treasury_config_save(request):
 
 @login_required(login_url='/login/')
 def treasury_request_item(request):
-    """Add a member to the item request list if stock permits"""
+    """Add a member to the item request list if stock permits (with quantity)"""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             item_category = data.get('item_category')
             item_idx = data.get('item_idx')
             clan = data.get('clan', 'Valkyrie')
+            quantity = int(data.get('quantity', 1))
 
             if item_category is None or item_idx is None:
                 return JsonResponse({'error': 'Missing required fields'}, status=400)
+
+            if quantity < 1:
+                return JsonResponse({'error': 'Quantity must be at least 1.'}, status=400)
 
             # Get user profile
             user_chars = Character.objects.filter(owner=request.user)
@@ -1048,32 +1052,46 @@ def treasury_request_item(request):
                 return JsonResponse({'error': 'Item not found'}, status=404)
 
             item = cat_list[int(item_idx)]
-            requests = item.get('requests', [])
+            requests_list = item.get('requests', [])
             stock = int(item.get('max_per_person', 0))
             price = int(item.get('price', 0))
             currency = item.get('currency', 'DKP')
 
             # Prevent duplicate request
-            for req in requests:
+            for req in requests_list:
                 if req.get('profile_id') == user_profile.id:
                     return JsonResponse({'error': 'You have already requested this item.'}, status=400)
+
+            # Calculate total already requested quantity
+            total_requested = sum(int(r.get('quantity', 1)) for r in requests_list)
+
+            # Check stock limit
+            if stock <= 0:
+                return JsonResponse({'error': 'This item is out of stock.'}, status=400)
+
+            remaining = stock - total_requested
+            if remaining <= 0:
+                return JsonResponse({'error': 'Request list is full for this item.'}, status=400)
+
+            if quantity > remaining:
+                return JsonResponse({'error': f'Only {remaining} unit(s) remaining. Please reduce your quantity.'}, status=400)
+
+            # Calculate total cost
+            total_cost = price * quantity
 
             # Calculate available DKP (Current DKP minus locked requests)
             available_dkp = get_available_dkp_for_profile(user_profile)
 
             # Prevent request if available DKP is insufficient
-            if currency == 'DKP' and available_dkp < price:
-                return JsonResponse({'error': f'Insufficient Available DKP. You need {price} DKP, but your calculated available DKP is {available_dkp}.'}, status=400)
-
-            # Check stock limit (user requirement)
-            if stock > 0 and len(requests) >= stock:
-                return JsonResponse({'error': 'Request list is full for this item.'}, status=400)
+            if currency == 'DKP' and available_dkp < total_cost:
+                return JsonResponse({'error': f'Insufficient Available DKP. You need {total_cost} DKP ({price} x {quantity}), but your available DKP is {available_dkp}.'}, status=400)
 
             item.setdefault('requests', []).append({
                 "profile_id": user_profile.id,
                 "character_name": user_profile.character.name,
                 "dkp": user_profile.current_dkp,
-                "user_id": request.user.id
+                "user_id": request.user.id,
+                "quantity": quantity
             })
             config_obj.save()
 
@@ -1081,7 +1099,7 @@ def treasury_request_item(request):
             user_profile.refresh_from_db()
             new_available_dkp = get_available_dkp_for_profile(user_profile)
 
-            return JsonResponse({'success': True, 'message': 'Request submitted successfully!', 'item': item, 'available_dkp': new_available_dkp})
+            return JsonResponse({'success': True, 'message': f'Request submitted! ({quantity}x {item["name"]})', 'item': item, 'available_dkp': new_available_dkp})
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
 
@@ -1138,7 +1156,7 @@ def treasury_reject_request(request):
 
 @login_required(login_url='/login/')
 def treasury_assign(request):
-    """Assign an item to a member - deduct DKP/Diamond"""
+    """Assign an item to a member - deduct DKP/Diamond (with quantity support)"""
     if not is_treasury_admin(request.user):
         return JsonResponse({'error': 'Unauthorized'}, status=403)
 
@@ -1149,12 +1167,12 @@ def treasury_assign(request):
             item_name = data.get('item_name', '')
             item_category = data.get('item_category', '')
             item_idx = data.get('item_idx')
-            price = int(data.get('price', 0))
+            unit_price = int(data.get('price', 0))
             currency = data.get('currency', 'DKP')
             clan = data.get('clan', 'all')
             note = data.get('note', '')
 
-            if not profile_id or not item_name or price <= 0:
+            if not profile_id or not item_name or unit_price <= 0:
                 return JsonResponse({'error': 'Missing required fields'}, status=400)
 
             try:
@@ -1162,36 +1180,10 @@ def treasury_assign(request):
             except DKPProfile.DoesNotExist:
                 return JsonResponse({'error': 'Profile not found'}, status=404)
 
-            # Deduct from DKP balance (only for DKP currency)
-            if currency == 'DKP':
-                if profile.current_dkp < price:
-                    return JsonResponse({'error': f'Assign Failed! Member DKP is insufficient (Balance: {profile.current_dkp} DKP, Needed: {price} DKP) due to recent deductions.'}, status=400)
-                
-                profile.current_dkp -= price
-                profile.save()
-
-                # Create DKP log entry
-                DKPLog.objects.create(
-                    profile=profile,
-                    amount=-price,
-                    reason=f"Treasury: {item_name}",
-                    note=note,
-                    created_by=request.user
-                )
-
-            # Create treasury transaction log
-            txn = TreasuryTransaction.objects.create(
-                profile=profile,
-                item_name=item_name,
-                item_category=item_category,
-                amount_deducted=price,
-                currency=currency,
-                clan=clan,
-                note=note,
-                created_by=request.user
-            )
-
-            # Decrement Stock/Max in config
+            # Look up request quantity from config
+            req_quantity = 1
+            config_obj = None
+            item_ref = None
             if item_idx is not None:
                 try:
                     config_obj = TreasuryItemConfig.get_config()
@@ -1199,19 +1191,58 @@ def treasury_assign(request):
                     cat_items = clan_config.get(item_category, [])
                     if 0 <= int(item_idx) < len(cat_items):
                         item_ref = cat_items[int(item_idx)]
-                        
-                        # Decrement stock
-                        current_max = int(item_ref.get('max_per_person', 0))
-                        if current_max > 0:
-                            item_ref['max_per_person'] = current_max - 1
-                        
-                        # Remove assigned user from requests if they exist
-                        requests = item_ref.get('requests', [])
-                        item_ref['requests'] = [req for req in requests if req.get('profile_id') != profile.id]
-
-                        config_obj.save()
-                except Exception as e:
+                        unit_price = int(item_ref.get('price', 0))
+                        for req in item_ref.get('requests', []):
+                            if req.get('profile_id') == profile.id:
+                                req_quantity = int(req.get('quantity', 1))
+                                break
+                except Exception:
                     pass
+
+            total_price = unit_price * req_quantity
+
+            # Deduct from DKP balance (only for DKP currency)
+            if currency == 'DKP':
+                if profile.current_dkp < total_price:
+                    return JsonResponse({'error': f'Assign Failed! Member DKP is insufficient (Balance: {profile.current_dkp} DKP, Needed: {total_price} DKP) due to recent deductions.'}, status=400)
+                
+                profile.current_dkp -= total_price
+                profile.save()
+
+                # Create DKP log entry
+                log_reason = f"Treasury: {item_name}" if req_quantity == 1 else f"Treasury: {item_name} (x{req_quantity})"
+                DKPLog.objects.create(
+                    profile=profile,
+                    amount=-total_price,
+                    reason=log_reason,
+                    note=note,
+                    created_by=request.user
+                )
+
+            # Create treasury transaction log
+            txn_item_name = f"{item_name} (x{req_quantity})" if req_quantity > 1 else item_name
+            txn = TreasuryTransaction.objects.create(
+                profile=profile,
+                item_name=txn_item_name,
+                item_category=item_category,
+                amount_deducted=total_price,
+                currency=currency,
+                clan=clan,
+                note=note,
+                created_by=request.user
+            )
+
+            # Decrement Stock/Max in config and remove request
+            if item_ref is not None and config_obj is not None:
+                current_max = int(item_ref.get('max_per_person', 0))
+                if current_max > 0:
+                    new_max = max(0, current_max - req_quantity)
+                    item_ref['max_per_person'] = new_max
+                
+                # Remove assigned user from requests
+                requests_list = item_ref.get('requests', [])
+                item_ref['requests'] = [r for r in requests_list if r.get('profile_id') != profile.id]
+                config_obj.save()
 
             # Auto-cleanup logs older than 3 days
             from django.utils import timezone
@@ -1220,15 +1251,16 @@ def treasury_assign(request):
 
             return JsonResponse({
                 'success': True,
-                'message': f'{item_name} assigned to {profile.character.name}',
+                'message': f'{txn_item_name} assigned to {profile.character.name}',
                 'new_dkp': profile.current_dkp,
                 'character_name': profile.character.name,
                 'admin_name': request.user.username,
                 'date': txn.created_at.strftime("%d %b %Y %H:%M"),
                 'currency': currency,
-                'price': price,
-                'item_name': item_name,
-                'txn_id': txn.id
+                'price': total_price,
+                'item_name': txn_item_name,
+                'txn_id': txn.id,
+                'quantity': req_quantity
             })
 
         except Exception as e:

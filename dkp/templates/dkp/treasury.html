@@ -1064,8 +1064,18 @@ function requestItem(cat, idx) {
         return;
     }
     
-    var itemName = treasuryConfig[cat][idx].name;
-    openActionConfirm('Confirm Request', 'Are you sure you want to request <strong>' + itemName + '</strong>?', 'fas fa-hand-paper', function() {
+    var qtySelect = document.getElementById('qty-' + cat + '-' + idx);
+    var quantity = qtySelect ? parseInt(qtySelect.value) : 1;
+    var item = treasuryConfig[cat][idx];
+    var totalCost = item.price * quantity;
+    var itemName = item.name;
+    
+    var confirmMsg = 'Are you sure you want to request <strong>' + quantity + 'x ' + itemName + '</strong>?';
+    if (item.currency === 'DKP') {
+        confirmMsg += '<br><br><span style="color:#f39c12;">Total cost: ' + totalCost + ' ' + item.currency + '</span>';
+    }
+    
+    openActionConfirm('Confirm Request', confirmMsg, 'fas fa-hand-paper', function() {
         fetch('{% url "treasury-request-item" %}', {
             method: 'POST',
             headers: {
@@ -1075,7 +1085,8 @@ function requestItem(cat, idx) {
             body: JSON.stringify({
                 item_category: cat,
                 item_idx: idx,
-                clan: selectedClan
+                clan: selectedClan,
+                quantity: quantity
             })
         })
         .then(function(res) { return res.json(); })
@@ -1208,6 +1219,7 @@ function buildTables() {
         html += '<th>' + meta.icon + ' Item Name</th>';
         html += '<th>Price</th>';
         html += '<th>Stock/Max</th>';
+        html += '<th style="width:70px; text-align:center;">Qty</th>';
         if (isTreasuryAdmin) {
             html += '<th style="width:300px;">Action & Requests</th>';
         } else {
@@ -1222,12 +1234,19 @@ function buildTables() {
         items.forEach(function(item, idx) {
             var currClass = item.currency === 'Diamond' ? 'diamond' : 'dkp';
             var currIcon = item.currency === 'Diamond' ? '<i class="fas fa-gem"></i>' : '<i class="fas fa-coins"></i>';
-            var limitText = item.max_per_person > 0
-                ? '<span class="limit-val">Max ' + item.max_per_person + '</span>'
+            var stock = parseInt(item.max_per_person || 0);
+            var reqs = item.requests || [];
+            var totalRequested = 0;
+            reqs.forEach(function(r) { totalRequested += parseInt(r.quantity || 1); });
+            var remainingStock = stock > 0 ? stock - totalRequested : 0;
+            if (remainingStock < 0) remainingStock = 0;
+
+            var limitText = stock > 0
+                ? '<span class="limit-val">' + remainingStock + '</span><span style="color:#666;"> / ' + stock + '</span>'
                 : '<span style="color:#e74c3c; font-weight:bold;">0 / Empty</span>';
             
             // Out of stock
-            var outOfStock = (item.max_per_person === 0);
+            var outOfStock = (stock === 0);
 
             html += '<tr' + (outOfStock ? ' style="opacity:0.5;"' : '') + '>';
             html += '<td style="color:#555; font-size:0.8rem;">' + (idx + 1) + '</td>';
@@ -1235,17 +1254,36 @@ function buildTables() {
             html += '<td><span class="price-badge ' + currClass + '">' + currIcon + ' ' + item.price + ' ' + item.currency + '</span></td>';
             html += '<td class="limit-badge">' + limitText + '</td>';
 
-            var reqs = item.requests || [];
-            
             var alreadyRequested = false;
+            var myReqQty = 0;
             if (userProfileId) {
-                alreadyRequested = reqs.some(function(r) { return r.profile_id == userProfileId; });
+                reqs.forEach(function(r) {
+                    if (r.profile_id == userProfileId) {
+                        alreadyRequested = true;
+                        myReqQty = parseInt(r.quantity || 1);
+                    }
+                });
             }
+            
+            var canRequest = !alreadyRequested && !outOfStock && remainingStock > 0 && userProfileId && selectedClan === userClan && !(item.currency === 'DKP' && userDkp < item.price);
+
+            html += '<td style="text-align:center;">';
+            if (canRequest && remainingStock > 1) {
+                html += '<select id="qty-' + cat + '-' + idx + '" style="padding:4px 6px; background:#1a1a1a; border:1px solid #444; color:#FFD700; border-radius:6px; font-size:0.85rem; width:55px; text-align:center; font-family:Outfit,sans-serif; cursor:pointer;">';
+                for (var q = 1; q <= remainingStock; q++) {
+                    html += '<option value="' + q + '">' + q + '</option>';
+                }
+                html += '</select>';
+            } else {
+                html += '<input type="hidden" id="qty-' + cat + '-' + idx + '" value="1">';
+                html += '<span style="color:#666; font-size:0.8rem;">-</span>';
+            }
+            html += '</td>';
             
             var requestButtonHtml = '';
             if (alreadyRequested) {
-                requestButtonHtml = '<button disabled style="background:rgba(46, 204, 113, 0.2); color:#2ecc71; border:1px solid #2ecc71; padding:6px 12px; border-radius:4px; font-size:0.8rem; cursor:not-allowed; width: 100%;"><i class="fas fa-check-circle"></i> Requested</button>';
-            } else if (outOfStock || (item.max_per_person > 0 && reqs.length >= item.max_per_person)) {
+                requestButtonHtml = '<button disabled style="background:rgba(46, 204, 113, 0.2); color:#2ecc71; border:1px solid #2ecc71; padding:6px 12px; border-radius:4px; font-size:0.8rem; cursor:not-allowed; width: 100%;"><i class="fas fa-check-circle"></i> Requested (x' + myReqQty + ')</button>';
+            } else if (outOfStock || remainingStock <= 0) {
                 requestButtonHtml = '<button disabled style="background:#555; color:#ccc; border:none; padding:6px 12px; border-radius:4px; font-size:0.8rem; cursor:not-allowed; width: 100%;"><i class="fas fa-ban"></i> Full/Out</button>';
             } else if (!userProfileId) {
                 requestButtonHtml = '<button disabled style="background:#555; color:#ccc; border:none; padding:6px 12px; border-radius:4px; font-size:0.8rem; cursor:not-allowed; width: 100%;"><i class="fas fa-user-times"></i> No Char Linked</button>';
@@ -1254,7 +1292,7 @@ function buildTables() {
             } else if (item.currency === 'DKP' && userDkp < item.price) {
                 requestButtonHtml = '<button disabled style="background:#555; color:#e74c3c; border:1px solid #e74c3c; padding:6px 12px; border-radius:4px; font-size:0.8rem; cursor:not-allowed; width: 100%;" title="You need ' + item.price + ' DKP to request this"><i class="fas fa-times-circle"></i> Not Enough DKP</button>';
             } else {
-                requestButtonHtml = '<button class="btn-assign" onclick="requestItem(\'' + cat + '\', ' + idx + ')" style="background:#3498db; color:white; width: 100%;">';
+                requestButtonHtml = '<button class="btn-assign" onclick="requestItem(\'' + cat + '\', ' + idx + ')" style="background:#3498db; color:white; width:100%;">';
                 requestButtonHtml += '<i class="fas fa-hand-paper"></i> Request</button>';
             }
 
@@ -1265,16 +1303,17 @@ function buildTables() {
                 html += '<div style="color:#777; font-size:0.75rem; text-align:center; padding:4px;">No requests</div>';
             } else {
                 var listId = 'reqList_' + cat + '_' + idx;
-                html += '<button onclick="toggleReqList(\'' + listId + '\', this)" style="background:rgba(255,255,255,0.05); border:1px solid #444; border-radius:4px; color:#ddd; cursor:pointer; font-size:0.75rem; margin-top:4px; padding:6px; width:100%; transition:all 0.2s;"><i class="fas fa-users" style="color:#f1c40f;"></i> Show ' + reqs.length + ' Request(s) <i class="fas fa-chevron-down" style="float:right; margin-top:2px; transition:transform 0.3s;"></i></button>';
+                html += '<button onclick="toggleReqList(\'' + listId + '\', this)" style="background:rgba(255,255,255,0.05); border:1px solid #444; border-radius:4px; color:#ddd; cursor:pointer; font-size:0.75rem; margin-top:4px; padding:6px; width:100%; transition:all 0.2s;"><i class="fas fa-users" style="color:#f1c40f;"></i> Show ' + reqs.length + ' Request(s) — ' + totalRequested + ' unit(s) <i class="fas fa-chevron-down" style="float:right; margin-top:2px; transition:transform 0.3s;"></i></button>';
                 
                 html += '<div id="' + listId + '" style="display:none; flex-direction:column; gap:4px; border-top:1px solid #333; padding-top:6px; margin-top:6px;">';
                 reqs.forEach(function(req) {
+                    var rQty = parseInt(req.quantity || 1);
                     html += '<div style="display:flex; flex-direction:column; gap:4px; background:rgba(255,215,0,0.05); padding:6px; border-radius:4px; border:1px solid rgba(255,215,0,0.2);">';
-                    html += '<span style="font-size:0.85rem;">' + req.character_name + '</span>';
+                    html += '<span style="font-size:0.85rem;">' + req.character_name + ' <span style="color:#f1c40f; font-weight:600;">(x' + rQty + ')</span></span>';
                     
                     if (isTreasuryAdmin) {
                         html += '<div style="display:flex; gap:4px; margin-top: 4px;">';
-                        html += '<button class="btn-assign" style="flex:1; padding:4px; font-size:0.75rem;" onclick="assignItem(\'' + cat + '\', ' + idx + ', ' + req.profile_id + ', \'' + req.character_name.replace(/'/g, "\\'") + '\')"' + (outOfStock ? ' disabled style="background:#555;"' : '') + '><i class="fas fa-check"></i> Assign</button>';
+                        html += '<button class="btn-assign" style="flex:1; padding:4px; font-size:0.75rem;" onclick="assignItem(\'' + cat + '\', ' + idx + ', ' + req.profile_id + ', \'' + req.character_name.replace(/'/g, "\\'") + '\')"' + (outOfStock ? ' disabled style="background:#555;"' : '') + '><i class="fas fa-check"></i> Assign (x' + rQty + ')</button>';
                         html += '<button style="flex:1; padding:4px; font-size:0.75rem; background:#e74c3c; border:none; color:white; border-radius:4px; cursor:pointer;" onclick="rejectRequest(\'' + cat + '\', ' + idx + ', ' + req.profile_id + ')"><i class="fas fa-times"></i> Reject</button>';
                         html += '</div>';
                     } else if (userProfileId && req.profile_id == userProfileId) {
@@ -1323,10 +1362,21 @@ function assignItem(cat, idx, profileId, charName) {
     var item = items[idx];
     if (!item || !profileId) return;
 
+    // Find request quantity
+    var reqQuantity = 1;
+    var reqs = item.requests || [];
+    for (var i = 0; i < reqs.length; i++) {
+        if (reqs[i].profile_id == profileId) {
+            reqQuantity = parseInt(reqs[i].quantity || 1);
+            break;
+        }
+    }
+    var totalPrice = item.price * reqQuantity;
+
     // Show confirmation
-    document.getElementById('confirm-item').textContent = item.name;
+    document.getElementById('confirm-item').textContent = item.name + (reqQuantity > 1 ? ' (x' + reqQuantity + ')' : '');
     document.getElementById('confirm-recipient').textContent = charName;
-    document.getElementById('confirm-price').textContent = '-' + item.price + ' ' + item.currency;
+    document.getElementById('confirm-price').textContent = '-' + totalPrice + ' ' + item.currency;
     document.getElementById('confirmOverlay').classList.add('active');
 
     pendingAssign = {
@@ -1337,7 +1387,8 @@ function assignItem(cat, idx, profileId, charName) {
         item_idx: idx,
         price: item.price,
         currency: item.currency,
-        clan: selectedClan
+        clan: selectedClan,
+        quantity: reqQuantity
     };
 }
 
@@ -1397,7 +1448,9 @@ function executeAssign() {
             var editedIdx = pendingAssign.item_idx;
             var item = treasuryConfig[editedCat][editedIdx];
             if (item.max_per_person > 0) {
-                item.max_per_person -= 1;
+                var assignQty = pendingAssign.quantity || 1;
+                item.max_per_person -= assignQty;
+                if (item.max_per_person < 0) item.max_per_person = 0;
                 // If it hits 0, it means it's out of stock (not unlimited)
                 if (item.max_per_person === 0) {
                     item.previously_assigned = true; // custom flag for local UI update
