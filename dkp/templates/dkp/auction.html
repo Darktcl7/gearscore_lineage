@@ -1,0 +1,506 @@
+{% extends 'items/base.html' %}
+{% load static %}
+{% block title %}DKP Auction House{% endblock %}
+{% block extra_body_attributes %}class="fullscreen-page"{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+        
+        
+
+        /* Header */
+        .page-header {
+            background: linear-gradient(135deg, #1a0a2e 0%, #16213e 50%, #0a1628 100%);
+            border-bottom: 2px solid rgba(138, 43, 226, 0.4);
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .page-header h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .page-header h1 i { -webkit-text-fill-color: #a855f7; margin-right: 8px; }
+        .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .header-actions a, .header-actions button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            background: rgba(255,255,255,0.05);
+            color: #ccc;
+            font-size: 0.85rem;
+            cursor: pointer;
+            text-decoration: none;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.2s;
+        }
+        .header-actions a:hover, .header-actions button:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: #a855f7;
+            color: #fff;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #a855f7, #7c3aed) !important;
+            border-color: #a855f7 !important;
+            color: white !important;
+            font-weight: 600;
+        }
+        .btn-primary:hover { opacity: 0.9; }
+
+        /* Main */
+        .main-container { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+        }
+        .status-draft { background: rgba(100,100,100,0.3); color: #aaa; border: 1px solid #555; }
+        .status-active { background: rgba(46,204,113,0.15); color: #2ecc71; border: 1px solid rgba(46,204,113,0.4); animation: pulse-glow 2s ease-in-out infinite; }
+        .status-closed { background: rgba(231,76,60,0.15); color: #e74c3c; border: 1px solid rgba(231,76,60,0.4); }
+        .status-cancelled { background: rgba(241,196,15,0.15); color: #f1c40f; border: 1px solid rgba(241,196,15,0.4); }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(46,204,113,0.2); }
+            50% { box-shadow: 0 0 15px rgba(46,204,113,0.4); }
+        }
+
+        /* Auction Cards */
+        .auction-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .auction-card {
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            border: 1px solid rgba(138, 43, 226, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        .auction-card:hover {
+            border-color: rgba(138, 43, 226, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(138, 43, 226, 0.15);
+        }
+        .auction-card-image {
+            width: 100%; height: 180px;
+            object-fit: cover;
+            background: #111;
+            display: block;
+        }
+        .auction-card-image-placeholder {
+            width: 100%; height: 180px;
+            background: linear-gradient(135deg, #1a0a2e, #0a1628);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 3rem; color: rgba(168,85,247,0.3);
+        }
+        .auction-card-body { padding: 16px; }
+        .auction-card-title {
+            font-size: 1.1rem; font-weight: 700; color: #fff;
+            margin-bottom: 6px;
+        }
+        .auction-card-desc {
+            font-size: 0.8rem; color: #888; margin-bottom: 12px;
+            min-height: 20px;
+        }
+        .auction-info-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+            margin-bottom: 14px;
+        }
+        .auction-info-item {
+            background: rgba(0,0,0,0.3); padding: 8px 10px;
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);
+        }
+        .auction-info-label { font-size: 0.65rem; color: #777; text-transform: uppercase; letter-spacing: 0.5px; }
+        .auction-info-value { font-size: 0.95rem; font-weight: 600; color: #FFD700; }
+        .auction-info-value.time { color: #2ecc71; }
+        .auction-info-value.leader { color: #a855f7; font-size: 0.85rem; }
+
+        .auction-card-footer {
+            display: flex; gap: 6px; flex-wrap: wrap;
+        }
+        .auction-card-footer button {
+            flex: 1; min-width: 80px;
+            padding: 8px 12px; border-radius: 6px; border: none;
+            font-size: 0.8rem; font-weight: 600; cursor: pointer;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.2s;
+        }
+        .btn-start { background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; }
+        .btn-start:hover { opacity: 0.85; }
+        .btn-cancel-auction { background: rgba(241,196,15,0.2); color: #f1c40f; border: 1px solid rgba(241,196,15,0.3) !important; }
+        .btn-cancel-auction:hover { background: rgba(241,196,15,0.3); }
+        .btn-delete-auction { background: rgba(231,76,60,0.2); color: #e74c3c; border: 1px solid rgba(231,76,60,0.3) !important; }
+        .btn-delete-auction:hover { background: rgba(231,76,60,0.3); }
+
+        .bid-count { font-size: 0.75rem; color: #888; }
+
+        /* Create Form Modal */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 1000;
+            align-items: center; justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-box {
+            background: #1a1a2e; border: 1px solid rgba(138,43,226,0.4);
+            border-radius: 12px; padding: 24px; width: 95%; max-width: 500px;
+            max-height: 90vh; overflow-y: auto;
+        }
+        .modal-box h2 {
+            font-size: 1.3rem; color: #a855f7; margin-bottom: 16px;
+        }
+        .modal-box h2 i { margin-right: 8px; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block; font-size: 0.8rem; color: #aaa;
+            margin-bottom: 4px; font-weight: 500;
+        }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%; padding: 10px 12px; border-radius: 6px;
+            background: #111; border: 1px solid #333; color: #fff;
+            font-family: 'Outfit', sans-serif; font-size: 0.9rem;
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            border-color: #a855f7; outline: none;
+        }
+        .form-group textarea { resize: vertical; min-height: 60px; }
+        .form-row { display: flex; gap: 12px; }
+        .form-row .form-group { flex: 1; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+        .modal-actions button { flex: 1; padding: 10px; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: 'Outfit', sans-serif; border: none; }
+        .btn-modal-save { background: linear-gradient(135deg, #a855f7, #7c3aed); color: white; }
+        .btn-modal-cancel { background: #333; color: #ccc; }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center; padding: 60px 20px; color: #555;
+        }
+        .empty-state i { font-size: 4rem; margin-bottom: 16px; color: rgba(168,85,247,0.2); }
+        .empty-state p { font-size: 1rem; }
+
+        /* Toast */
+        .toast-container {
+            position: fixed; top: 20px; right: 20px; z-index: 9999;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .toast {
+            padding: 12px 20px; border-radius: 8px; font-size: 0.85rem;
+            font-weight: 500; animation: slideIn 0.3s ease;
+            max-width: 350px;
+        }
+        .toast.success { background: rgba(46,204,113,0.9); color: white; }
+        .toast.error { background: rgba(231,76,60,0.9); color: white; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .page-header { padding: 14px 16px; }
+            .page-header h1 { font-size: 1.2rem; }
+            .main-container { padding: 16px 10px; }
+            .auction-grid { grid-template-columns: 1fr; }
+            .form-row { flex-direction: column; gap: 0; }
+        }
+    </style>
+<style>
+.activity-container {
+    min-height: 60vh;
+    margin-top: 0;
+    margin-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    background: rgba(10,10,10,0.9);
+    border-radius: 20px;
+    padding: 30px;
+    margin-left: max(20px, 10%);
+    margin-right: max(20px, 10%);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+    border: 1px solid #222;
+    color: white;
+}
+
+.page-header {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #333;
+    padding: 0 0 20px 0;
+    margin-bottom: 20px;
+}
+.main-container { max-width: 100%; padding: 0; }
+</style>
+
+{% endblock %}
+
+{% block content %}
+<div class="activity-container">
+
+
+<!-- HEADER -->
+<div class="page-header">
+    <h1><i class="fas fa-gavel"></i> Auction House</h1>
+    <div class="header-actions">
+
+        <button class="btn-primary" onclick="openCreateModal()"><i class="fas fa-plus"></i> New Auction</button>
+    </div>
+</div>
+
+<!-- MAIN -->
+<div class="main-container">
+    <div class="toast-container" id="toastContainer"></div>
+
+    {% if auctions %}
+    <div class="auction-grid" id="auctionGrid">
+        {% for auction in auctions %}
+        <div class="auction-card" id="auction-card-{{ auction.id }}">
+            {% if auction.image %}
+                <img src="{{ auction.image.url }}" class="auction-card-image" alt="{{ auction.title }}">
+            {% else %}
+                <div class="auction-card-image-placeholder"><i class="fas fa-gavel"></i></div>
+            {% endif %}
+            <div class="auction-card-body">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <span class="status-badge status-{{ auction.status|lower }}">
+                        {% if auction.status == 'ACTIVE' %}<i class="fas fa-circle" style="font-size:0.5rem;"></i>{% endif %}
+                        {{ auction.status }}
+                    </span>
+                    <span class="bid-count"><i class="fas fa-users"></i> {{ auction.bids.count }} bid(s)</span>
+                </div>
+                <div class="auction-card-title">{{ auction.title }}</div>
+                <div class="auction-card-desc">{{ auction.description|default:"No description" }}</div>
+
+                <div class="auction-info-grid">
+                    <div class="auction-info-item">
+                        <div class="auction-info-label">Current Bid</div>
+                        <div class="auction-info-value"><i class="fas fa-coins"></i> {{ auction.current_bid }} DKP</div>
+                    </div>
+                    <div class="auction-info-item">
+                        <div class="auction-info-label">Time Left</div>
+                        <div class="auction-info-value time">
+                            {% if auction.status == 'ACTIVE' %}
+                                <i class="fas fa-clock"></i> {{ auction.time_remaining }}
+                            {% elif auction.status == 'CLOSED' %}
+                                <span style="color:#e74c3c;">Ended</span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="auction-info-item">
+                        <div class="auction-info-label">Min Increment</div>
+                        <div class="auction-info-value" style="color:#3498db;">+{{ auction.min_increment }}</div>
+                    </div>
+                    <div class="auction-info-item">
+                        <div class="auction-info-label">Leading Bidder</div>
+                        <div class="auction-info-value leader">
+                            {% if auction.current_winner %}
+                                {{ auction.current_winner.character.name }}
+                            {% else %}
+                                <span style="color:#666;">No bids</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div style="font-size:0.7rem; color:#666; margin-bottom:10px;">
+                    <i class="fas fa-shield-alt"></i> Eligible: {{ auction.clan }}
+                    &nbsp;|&nbsp;
+                    <i class="fas fa-hourglass-start"></i> Duration: {{ auction.duration_minutes }}m
+                    {% if auction.status == 'CLOSED' and auction.current_winner %}
+                    <br><i class="fas fa-trophy" style="color:#FFD700;"></i> <strong style="color:#FFD700;">Winner: {{ auction.current_winner.character.name }} ({{ auction.current_bid }} DKP)</strong>
+                    {% endif %}
+                </div>
+
+                <div class="auction-card-footer">
+                    {% if auction.status == 'DRAFT' %}
+                        <button class="btn-start" onclick="startAuction({{ auction.id }}, '{{ auction.title|escapejs }}')"><i class="fas fa-play"></i> Start Auction</button>
+                        <button class="btn-delete-auction" onclick="deleteAuction({{ auction.id }}, '{{ auction.title|escapejs }}')"><i class="fas fa-trash"></i></button>
+                    {% elif auction.status == 'ACTIVE' %}
+                        <button class="btn-cancel-auction" onclick="cancelAuction({{ auction.id }}, '{{ auction.title|escapejs }}')"><i class="fas fa-stop"></i> Cancel</button>
+                    {% else %}
+                        <button class="btn-delete-auction" onclick="deleteAuction({{ auction.id }}, '{{ auction.title|escapejs }}')"><i class="fas fa-trash"></i> Delete</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-gavel"></i>
+        <p>No auctions yet. Click <strong>"New Auction"</strong> to create one!</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- CREATE MODAL -->
+<div class="modal-overlay" id="createModal">
+    <div class="modal-box">
+        <h2><i class="fas fa-plus-circle"></i> Create New Auction</h2>
+        <form id="createForm" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Item Name *</label>
+                <input type="text" name="title" required placeholder="e.g. Talum Dual Sword +5">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea name="description" placeholder="Optional description..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Item Image <span style="color:#888; font-size:0.75rem;">(Max 2MB)</span></label>
+                <input type="file" name="image" accept="image/*" style="padding:8px;">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Starting Bid (DKP)</label>
+                    <input type="number" name="starting_bid" value="100" min="1">
+                </div>
+                <div class="form-group" title="The minimum amount the next bid must increase by.">
+                    <label>Min Increment (DKP) <i class="fas fa-info-circle text-muted" style="font-size: 0.8em;"></i></label>
+                    <input type="number" name="min_increment" value="10" min="1">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Duration (Minutes)</label>
+                    <input type="number" name="duration_minutes" value="60" min="1" max="10080">
+                </div>
+                <div class="form-group">
+                    <label>Eligible Clan</label>
+                    <select name="clan">
+                        <option value="All">All Clans</option>
+                        <option value="Valkyrie">Valkyrie Only</option>
+                        <option value="Valhalla">Valhalla Only</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-modal-cancel" onclick="closeCreateModal()">Cancel</button>
+                <button type="submit" class="btn-modal-save"><i class="fas fa-save"></i> Create Auction</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+var csrfToken = '{{ csrf_token }}';
+
+function showToast(msg, type) {
+    var c = document.getElementById('toastContainer');
+    var t = document.createElement('div');
+    t.className = 'toast ' + type;
+    t.textContent = msg;
+    c.appendChild(t);
+    setTimeout(function() { t.remove(); }, 4000);
+}
+
+function openCreateModal() {
+    document.getElementById('createModal').classList.add('active');
+}
+function closeCreateModal() {
+    document.getElementById('createModal').classList.remove('active');
+    document.getElementById('createForm').reset();
+}
+
+// Create Auction
+document.getElementById('createForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var formData = new FormData(this);
+
+    fetch('{% url "auction-create" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        body: formData
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            showToast(data.message, 'success');
+            closeCreateModal();
+            setTimeout(function() { location.reload(); }, 1000);
+        } else {
+            showToast(data.error || 'Failed', 'error');
+        }
+    })
+    .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
+});
+
+// Start Auction
+function startAuction(id, title) {
+    if (!confirm('Start auction "' + title + '"?\n\nThis will post the auction to Discord and start the countdown timer.')) return;
+
+    fetch('{% url "auction-start" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({ auction_id: id })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            showToast(data.message, 'success');
+            setTimeout(function() { location.reload(); }, 1000);
+        } else {
+            showToast(data.error, 'error');
+        }
+    })
+    .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
+}
+
+// Cancel Auction
+function cancelAuction(id, title) {
+    if (!confirm('Cancel auction "' + title + '"?\n\nAll bids will be released.')) return;
+
+    fetch('{% url "auction-cancel" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({ auction_id: id })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            showToast(data.message, 'success');
+            setTimeout(function() { location.reload(); }, 1000);
+        } else {
+            showToast(data.error, 'error');
+        }
+    })
+    .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
+}
+
+// Delete Auction
+function deleteAuction(id, title) {
+    if (!confirm('Permanently delete auction "' + title + '"?')) return;
+
+    fetch('{% url "auction-delete" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({ auction_id: id })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            showToast(data.message, 'success');
+            var card = document.getElementById('auction-card-' + id);
+            if (card) card.remove();
+        } else {
+            showToast(data.error, 'error');
+        }
+    })
+    .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
+}
+</script>
+
+
+</div>
+{% endblock %}

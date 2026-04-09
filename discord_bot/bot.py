@@ -38,6 +38,7 @@ DISCORD_TOKEN = os.getenv('DISCORD_BOT_TOKEN', '')
 # Channel Configuration
 EVENTS_CHANNEL_ID = int(os.getenv('EVENTS_CHANNEL_ID', '0'))
 LEADERBOARD_CHANNEL_ID = int(os.getenv('LEADERBOARD_CHANNEL_ID', '0'))
+AUCTION_CHANNEL_ID = int(os.getenv('AUCTION_CHANNEL_ID', '0'))
 
 # Reminder Schedule (Day: 0=Mon, 1=Tue, ..., 6=Sun)
 # Format 24h: 'HH:MM'
@@ -77,6 +78,7 @@ class AltoBot(commands.Cog):
                     break
                     
                 channel = self.bot.get_channel(EVENTS_CHANNEL_ID)
+                auction_channel = self.bot.get_channel(AUCTION_CHANNEL_ID)
                 if channel:
                     msg_content = ann_result['message']
                     
@@ -107,6 +109,16 @@ class AltoBot(commands.Cog):
                                     print(f"User {user_id} not found for DM")
                         except Exception as e:
                             print(f"Error parsing DM: {e}")
+                    
+                    # ===== AUCTION ANNOUNCEMENTS =====
+                    elif msg_content.startswith('[AUCTION_START]'):
+                        await self._handle_auction_start(msg_content, auction_channel)
+                    elif msg_content.startswith('[AUCTION_END]'):
+                        await self._handle_auction_end(msg_content, auction_channel)
+                    elif msg_content.startswith('[AUCTION_CANCEL]'):
+                        await self._handle_auction_cancel(msg_content, auction_channel)
+                    elif msg_content.startswith('[AUCTION_NOBID]'):
+                        await self._handle_auction_nobid(msg_content, auction_channel)
                             
                     # Check if it's a simple notification
                     elif msg_content.startswith('[NOTIFICATION]'):
@@ -147,9 +159,115 @@ class AltoBot(commands.Cog):
                     if channel:
                         await channel.send(item['msg'])
                         print(f"Sent reminder: {item['msg']}")
+            
+            # 4. Check for expired auctions (every cycle)
+            try:
+                expired_result = await self.api_request('GET', '/dkp/api/auction/check-expired/')
+                if expired_result.get('success'):
+                    for closed in expired_result.get('closed_auctions', []):
+                        print(f"Auto-closed auction: {closed['title']}")
+            except Exception as e:
+                print(f"Error checking expired auctions: {e}")
                         
         except Exception as e:
             print(f"Error in reminder loop: {e}")
+    
+    # ===== AUCTION ANNOUNCEMENT HANDLERS =====
+    
+    async def _parse_auction_msg(self, msg):
+        """Parse key:value pairs from auction announcement messages"""
+        data = {}
+        for line in msg.strip().split('\n'):
+            if ':' in line and not line.startswith('['):
+                key, _, val = line.partition(':')
+                data[key.strip()] = val.strip()
+        return data
+    
+    async def _handle_auction_start(self, msg, channel):
+        if not channel:
+            return
+        data = await self._parse_auction_msg(msg)
+        
+        embed = discord.Embed(
+            title="🔨 NEW AUCTION STARTED!",
+            description=(
+                f"**{data.get('TITLE', 'Unknown Item')}**\n\n"
+                f"{data.get('DESC', '')}"
+            ),
+            color=discord.Color.purple()
+        )
+        embed.add_field(name="💰 Starting Bid", value=f"{data.get('START_BID', '?')} DKP", inline=True)
+        embed.add_field(name="📈 Min Increment", value=f"+{data.get('INCREMENT', '?')} DKP", inline=True)
+        embed.add_field(name="⏱️ Duration", value=data.get('DURATION', '?'), inline=True)
+        embed.add_field(name="🏁 Ends At", value=data.get('ENDS', '?'), inline=True)
+        embed.add_field(name="🛡️ Eligible", value=data.get('CLAN', 'All'), inline=True)
+        embed.add_field(name="🆔 Auction ID", value=f"`{data.get('ID', '?')}`", inline=True)
+        
+        image_url = data.get('IMAGE', '')
+        if image_url:
+            embed.set_image(url=image_url)
+        
+        embed.set_footer(text="Use /bid <auction_id> <amount> to place your bid!")
+        
+        await channel.send("@everyone 🔨 **AUCTION IS NOW LIVE!**", embed=embed)
+        print(f"Auction started: {data.get('TITLE')}")
+    
+    async def _handle_auction_end(self, msg, channel):
+        if not channel:
+            return
+        data = await self._parse_auction_msg(msg)
+        
+        winner_mention = ''
+        discord_id = data.get('DISCORD_ID', '')
+        if discord_id:
+            winner_mention = f" (<@{discord_id}>)"
+        
+        embed = discord.Embed(
+            title="🏆 AUCTION ENDED!",
+            description=(
+                f"**{data.get('TITLE', 'Unknown')}**\n\n"
+                f"🎉 Winner: **{data.get('WINNER', '?')}**{winner_mention}\n"
+                f"💰 Winning Bid: **{data.get('AMOUNT', '?')} DKP**\n\n"
+                f"DKP has been automatically deducted."
+            ),
+            color=discord.Color.gold()
+        )
+        embed.set_footer(text="Congratulations to the winner!")
+        await channel.send("@everyone 🏆 **AUCTION CLOSED!**", embed=embed)
+        print(f"Auction ended: {data.get('TITLE')} -> Winner: {data.get('WINNER')}")
+    
+    async def _handle_auction_cancel(self, msg, channel):
+        if not channel:
+            return
+        data = await self._parse_auction_msg(msg)
+        
+        embed = discord.Embed(
+            title="❌ AUCTION CANCELLED",
+            description=(
+                f"**{data.get('TITLE', 'Unknown')}**\n\n"
+                f"This auction has been cancelled by an admin.\n"
+                f"All held DKP has been released."
+            ),
+            color=discord.Color.red()
+        )
+        await channel.send(embed=embed)
+        print(f"Auction cancelled: {data.get('TITLE')}")
+    
+    async def _handle_auction_nobid(self, msg, channel):
+        if not channel:
+            return
+        data = await self._parse_auction_msg(msg)
+        
+        embed = discord.Embed(
+            title="⏰ AUCTION ENDED - No Bids",
+            description=(
+                f"**{data.get('TITLE', 'Unknown')}**\n\n"
+                f"This auction ended with no bids."
+            ),
+            color=discord.Color.dark_grey()
+        )
+        await channel.send(embed=embed)
+        print(f"Auction ended (no bids): {data.get('TITLE')}")
 
     @reminder_loop.before_loop
     async def before_reminder_loop(self):
@@ -443,6 +561,97 @@ class AltoBot(commands.Cog):
                 await interaction.followup.send(m)
         else:
             await interaction.followup.send(f"❌ Error: {result.get('error')}")
+
+    # ==========================================
+    # AUCTION COMMANDS
+    # ==========================================
+
+    @app_commands.command(name="bid", description="Place a bid on an active auction")
+    @app_commands.describe(
+        auction_id="The Auction ID to bid on",
+        amount="Your bid amount in DKP"
+    )
+    async def auction_bid(self, interaction: discord.Interaction, auction_id: int, amount: int):
+        """Place a bid on an active auction"""
+        # Only allow in auction channel
+        if AUCTION_CHANNEL_ID and interaction.channel_id != AUCTION_CHANNEL_ID:
+            await interaction.response.send_message(
+                f"❌ Bidding is only allowed in <#{AUCTION_CHANNEL_ID}>!",
+                ephemeral=True
+            )
+            return
+        
+        await interaction.response.defer()
+        
+        result = await self.api_request('POST', '/dkp/api/auction/bid/', {
+            'auction_id': auction_id,
+            'discord_id': str(interaction.user.id),
+            'bid_amount': amount
+        })
+        
+        if result.get('success'):
+            embed = discord.Embed(
+                title="🔨 NEW BID!",
+                description=(
+                    f"**{result.get('auction_title', '')}**\n\n"
+                    f"💰 **{result['character_name']}** bids **{result['bid_amount']} DKP**!\n"
+                    f"⏱️ Time remaining: **{result.get('time_remaining', '?')}**"
+                ),
+                color=discord.Color.purple()
+            )
+            
+            prev = result.get('previous_leader')
+            if prev:
+                prev_discord = result.get('previous_leader_discord')
+                mention = f" (<@{prev_discord}>)" if prev_discord else ""
+                embed.add_field(
+                    name="📤 Outbid",
+                    value=f"{prev}{mention} has been outbid! Their DKP hold is released.",
+                    inline=False
+                )
+            
+            embed.set_footer(text=f"Use /bid {auction_id} <amount> to bid higher!")
+            await interaction.followup.send(embed=embed)
+        else:
+            await interaction.followup.send(
+                f"❌ {result.get('error', 'Bid failed')}",
+                ephemeral=True
+            )
+
+    @app_commands.command(name="auction_list", description="View all active auctions")
+    async def auction_list(self, interaction: discord.Interaction):
+        """List all active auctions"""
+        await interaction.response.defer(ephemeral=True)
+        
+        result = await self.api_request('GET', '/dkp/api/auction/active/')
+        
+        if result.get('success'):
+            auctions = result.get('auctions', [])
+            if not auctions:
+                await interaction.followup.send("📭 No active auctions right now.", ephemeral=True)
+                return
+            
+            embed = discord.Embed(
+                title="🔨 Active Auctions",
+                color=discord.Color.purple()
+            )
+            
+            for a in auctions:
+                embed.add_field(
+                    name=f"#{a['id']} - {a['title']}",
+                    value=(
+                        f"💰 Current: **{a['current_bid']} DKP** (+{a['min_increment']})\n"
+                        f"👤 Leader: **{a['current_leader']}**\n"
+                        f"⏱️ Ends in: **{a['time_remaining']}**\n"
+                        f"🛡️ Eligible: {a['clan']} | 📊 {a['total_bids']} bid(s)"
+                    ),
+                    inline=False
+                )
+            
+            embed.set_footer(text="Use /bid <auction_id> <amount> to place a bid!")
+            await interaction.followup.send(embed=embed, ephemeral=True)
+        else:
+            await interaction.followup.send(f"❌ Error: {result.get('error')}", ephemeral=True)
 
 
 class EventSelectView(discord.ui.View):

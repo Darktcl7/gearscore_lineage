@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
-from .models import DKPEvent, DKPAttendance, DKPProfile, DKPLog, BossPointConfig, AdminRole, TreasuryItemConfig, TreasuryTransaction
+from .models import DKPEvent, DKPAttendance, DKPProfile, DKPLog, BossPointConfig, AdminRole, TreasuryItemConfig, TreasuryTransaction, Auction, AuctionBid
 from items.models import Character, DiscordAnnouncement
 import json
 import os
@@ -1293,3 +1293,406 @@ def treasury_delete_logs(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'POST required'}, status=405)
+
+
+# ============================================
+# AUCTION SYSTEM
+# ============================================
+
+def is_auction_admin(user):
+    """Check if user can manage auctions"""
+    from items.views import is_admin
+    if is_admin(user):
+        return True
+    try:
+        role = user.admin_role
+        return role.is_auction_admin
+    except Exception:
+        return False
+
+
+@login_required(login_url='/login/')
+def auction_page(request):
+    """Auction management page"""
+    if not is_auction_admin(request.user):
+        return HttpResponseForbidden("You do not have access to manage Auctions.")
+    
+    auctions = Auction.objects.all().select_related('current_winner', 'created_by')
+    
+    # Auto-check for expired auctions and close them
+    for auction in auctions:
+        if auction.is_expired and auction.status == 'ACTIVE':
+            _close_auction(auction)
+    
+    # Refresh after potential closures
+    auctions = Auction.objects.all().select_related('current_winner', 'created_by')
+    
+    return render(request, 'dkp/auction.html', {
+        'auctions': auctions,
+        'is_auction_admin': True,
+    })
+
+
+@login_required(login_url='/login/')
+def auction_create(request):
+    """Create a new auction item"""
+    if not is_auction_admin(request.user):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            title = request.POST.get('title', '').strip()
+            description = request.POST.get('description', '').strip()
+            starting_bid = int(request.POST.get('starting_bid', 100))
+            min_increment = int(request.POST.get('min_increment', 10))
+            duration_minutes = int(request.POST.get('duration_minutes', 60))
+            clan = request.POST.get('clan', 'All')
+            image = request.FILES.get('image')
+            
+            if not title:
+                return JsonResponse({'error': 'Item name is required'}, status=400)
+            
+            if image and image.size > 2 * 1024 * 1024:
+                return JsonResponse({'error': 'Image file size must be under 2MB'}, status=400)
+            
+            auction = Auction.objects.create(
+                title=title,
+                description=description,
+                starting_bid=starting_bid,
+                min_increment=min_increment,
+                duration_minutes=duration_minutes,
+                clan=clan,
+                image=image,
+                created_by=request.user,
+                status='DRAFT',
+            )
+            
+            return JsonResponse({'success': True, 'message': f'Auction "{title}" created!', 'auction_id': auction.id})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'POST required'}, status=405)
+
+
+@login_required(login_url='/login/')
+def auction_start(request):
+    """Start an auction - changes status to ACTIVE and triggers Discord announcement"""
+    if not is_auction_admin(request.user):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            auction_id = data.get('auction_id')
+            
+            auction = Auction.objects.get(id=auction_id)
+            if auction.status != 'DRAFT':
+                return JsonResponse({'error': 'Only DRAFT auctions can be started'}, status=400)
+            
+            now = timezone.now()
+            auction.status = 'ACTIVE'
+            auction.started_at = now
+            auction.ends_at = now + timezone.timedelta(minutes=auction.duration_minutes)
+            auction.current_bid = auction.starting_bid
+            auction.save()
+            
+            # Create Discord announcement
+            image_url = ''
+            if auction.image:
+                image_url = request.build_absolute_uri(auction.image.url)
+            
+            end_time_wib = auction.ends_at + timezone.timedelta(hours=7)  # Convert to WIB
+            end_time_str = end_time_wib.strftime('%d %b %Y %H:%M WIB')
+            
+            clan_text = 'ALL CLANS' if auction.clan == 'All' else f'Clan {auction.clan} Only'
+            
+            announce_msg = (
+                f"[AUCTION_START]\n"
+                f"ID:{auction.id}\n"
+                f"TITLE:{auction.title}\n"
+                f"DESC:{auction.description}\n"
+                f"START_BID:{auction.starting_bid}\n"
+                f"INCREMENT:{auction.min_increment}\n"
+                f"DURATION:{auction.duration_minutes}m\n"
+                f"ENDS:{end_time_str}\n"
+                f"CLAN:{clan_text}\n"
+                f"IMAGE:{image_url}"
+            )
+            
+            DiscordAnnouncement.objects.create(message=announce_msg)
+            
+            return JsonResponse({'success': True, 'message': f'Auction "{auction.title}" is now LIVE!'})
+        except Auction.DoesNotExist:
+            return JsonResponse({'error': 'Auction not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'POST required'}, status=405)
+
+
+@login_required(login_url='/login/')
+def auction_cancel(request):
+    """Cancel an auction and refund all bids"""
+    if not is_auction_admin(request.user):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            auction_id = data.get('auction_id')
+            
+            auction = Auction.objects.get(id=auction_id)
+            if auction.status not in ('DRAFT', 'ACTIVE'):
+                return JsonResponse({'error': 'Cannot cancel a closed auction'}, status=400)
+            
+            # Refund current highest bidder if active
+            if auction.status == 'ACTIVE' and auction.current_winner:
+                winner = auction.current_winner
+                # No actual DKP deduction during bidding - just release the hold
+                # Mark all bids as refunded
+                auction.bids.update(is_refunded=True)
+            
+            auction.status = 'CANCELLED'
+            auction.save()
+            
+            # Announce cancellation
+            DiscordAnnouncement.objects.create(
+                message=f"[AUCTION_CANCEL]\nID:{auction.id}\nTITLE:{auction.title}"
+            )
+            
+            return JsonResponse({'success': True, 'message': f'Auction "{auction.title}" cancelled.'})
+        except Auction.DoesNotExist:
+            return JsonResponse({'error': 'Auction not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'POST required'}, status=405)
+
+
+@login_required(login_url='/login/')
+def auction_delete(request):
+    """Delete a DRAFT or CANCELLED auction"""
+    if not is_auction_admin(request.user):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            auction_id = data.get('auction_id')
+            
+            auction = Auction.objects.get(id=auction_id)
+            if auction.status == 'ACTIVE':
+                return JsonResponse({'error': 'Cannot delete an active auction. Cancel it first.'}, status=400)
+            
+            title = auction.title
+            auction.delete()
+            return JsonResponse({'success': True, 'message': f'Auction "{title}" deleted.'})
+        except Auction.DoesNotExist:
+            return JsonResponse({'error': 'Auction not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'POST required'}, status=405)
+
+
+def _close_auction(auction):
+    """Internal helper to close an expired auction and process winner"""
+    if auction.status != 'ACTIVE':
+        return
+    
+    auction.status = 'CLOSED'
+    
+    if auction.current_winner:
+        winner = auction.current_winner
+        bid_amount = auction.current_bid
+        
+        # Deduct DKP from winner
+        winner.current_dkp -= bid_amount
+        if winner.current_dkp < 0:
+            winner.current_dkp = 0
+        winner.save()
+        
+        # Mark winning bid
+        winning_bid = auction.bids.filter(profile=winner).order_by('-amount').first()
+        if winning_bid:
+            winning_bid.is_winner = True
+            winning_bid.save()
+        
+        # Create DKP log
+        DKPLog.objects.create(
+            profile=winner,
+            amount=-bid_amount,
+            reason=f"Auction Won: {auction.title}",
+            created_by=auction.created_by
+        )
+        
+        # Announce winner
+        DiscordAnnouncement.objects.create(
+            message=(
+                f"[AUCTION_END]\n"
+                f"ID:{auction.id}\n"
+                f"TITLE:{auction.title}\n"
+                f"WINNER:{winner.character.name}\n"
+                f"AMOUNT:{bid_amount}\n"
+                f"DISCORD_ID:{winner.character.discord_id or ''}"
+            )
+        )
+    else:
+        # No bids - announce no winner
+        DiscordAnnouncement.objects.create(
+            message=f"[AUCTION_NOBID]\nID:{auction.id}\nTITLE:{auction.title}"
+        )
+    
+    auction.save()
+
+
+# ============================================
+# AUCTION API ENDPOINTS (for Discord Bot)
+# ============================================
+
+@csrf_exempt
+def api_auction_bid(request):
+    """API for Discord bot to place bids"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    if not verify_api_key(request):
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+    
+    try:
+        data = json.loads(request.body)
+        auction_id = data.get('auction_id')
+        discord_id = data.get('discord_id')
+        bid_amount = int(data.get('bid_amount', 0))
+        
+        # Find character by Discord ID
+        try:
+            character = Character.objects.get(discord_id=str(discord_id))
+        except Character.DoesNotExist:
+            return JsonResponse({'error': 'Discord not linked to any character. Please link on the website first.'}, status=404)
+        
+        profile, _ = DKPProfile.objects.get_or_create(character=character)
+        
+        # Get auction
+        try:
+            auction = Auction.objects.get(id=auction_id, status='ACTIVE')
+        except Auction.DoesNotExist:
+            return JsonResponse({'error': 'Auction not found or not active.'}, status=404)
+        
+        # Check if expired
+        if auction.is_expired:
+            _close_auction(auction)
+            return JsonResponse({'error': 'This auction has already ended!'}, status=400)
+        
+        # Check clan eligibility
+        if auction.clan != 'All':
+            char_clan = character.clan or 'Valkyrie'
+            if char_clan != auction.clan:
+                return JsonResponse({'error': f'This auction is for {auction.clan} members only.'}, status=403)
+        
+        # Validate bid amount
+        if bid_amount < auction.starting_bid:
+            return JsonResponse({'error': f'Bid must be at least {auction.starting_bid} DKP (starting bid).'}, status=400)
+        
+        if auction.current_winner:
+            min_bid = auction.current_bid + auction.min_increment
+            if bid_amount < min_bid:
+                return JsonResponse({'error': f'Bid must be at least {min_bid} DKP (current: {auction.current_bid} + increment: {auction.min_increment}).'}, status=400)
+        
+        # Check if bidding against self
+        if auction.current_winner and auction.current_winner.id == profile.id:
+            return JsonResponse({'error': 'You are already the highest bidder!'}, status=400)
+        
+        # Calculate available DKP (considering ALL active auction holds)
+        held_dkp = 0
+        active_bids = AuctionBid.objects.filter(
+            profile=profile,
+            auction__status='ACTIVE',
+            is_refunded=False
+        ).select_related('auction')
+        
+        for ab in active_bids:
+            # Only count if this profile is the current leader of that auction
+            if ab.auction.current_winner_id == profile.id:
+                held_dkp += ab.amount
+        
+        available_dkp = profile.current_dkp - held_dkp
+        
+        if available_dkp < bid_amount:
+            return JsonResponse({
+                'error': f'Insufficient DKP. You have {profile.current_dkp} DKP total, {held_dkp} DKP held in other auctions, {available_dkp} DKP available.'
+            }, status=400)
+        
+        # Place bid (previous leader is automatically released)
+        AuctionBid.objects.create(
+            auction=auction,
+            profile=profile,
+            amount=bid_amount,
+        )
+        
+        # Update auction
+        old_winner = auction.current_winner
+        old_winner_name = old_winner.character.name if old_winner else None
+        old_winner_discord = old_winner.character.discord_id if old_winner else None
+        
+        auction.current_bid = bid_amount
+        auction.current_winner = profile
+        auction.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'{character.name} is now the highest bidder with {bid_amount} DKP!',
+            'character_name': character.name,
+            'bid_amount': bid_amount,
+            'previous_leader': old_winner_name,
+            'previous_leader_discord': old_winner_discord,
+            'auction_title': auction.title,
+            'time_remaining': auction.time_remaining,
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@csrf_exempt
+def api_auction_active(request):
+    """API for Discord bot to list active auctions"""
+    if not verify_api_key(request):
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+    
+    auctions = Auction.objects.filter(status='ACTIVE').select_related('current_winner')
+    data = []
+    for a in auctions:
+        # Check if expired
+        if a.is_expired:
+            _close_auction(a)
+            continue
+        
+        data.append({
+            'id': a.id,
+            'title': a.title,
+            'description': a.description,
+            'current_bid': a.current_bid,
+            'min_increment': a.min_increment,
+            'current_leader': a.current_winner.character.name if a.current_winner else 'No bids yet',
+            'time_remaining': a.time_remaining,
+            'clan': a.clan,
+            'total_bids': a.bids.count(),
+        })
+    
+    return JsonResponse({'success': True, 'auctions': data})
+
+
+@csrf_exempt
+def api_auction_check_expired(request):
+    """API for bot to check and close expired auctions"""
+    if not verify_api_key(request):
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+    
+    closed = []
+    active_auctions = Auction.objects.filter(status='ACTIVE')
+    for auction in active_auctions:
+        if auction.is_expired:
+            _close_auction(auction)
+            closed.append({
+                'id': auction.id,
+                'title': auction.title,
+                'winner': auction.current_winner.character.name if auction.current_winner else None,
+                'amount': auction.current_bid if auction.current_winner else 0,
+            })
+    
+    return JsonResponse({'success': True, 'closed_auctions': closed})

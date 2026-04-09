@@ -758,6 +758,9 @@
                         {% if user.is_staff %}
                         <a href="{% url 'discord-dashboard' %}">Discord Control</a>
                         {% endif %}
+                        {% if user.is_staff or user.admin_role.is_auction_admin %}
+                        <a href="{% url 'web-portal-auction' %}">Auction House</a>
+                        {% endif %}
                     </div>
                 </div>
                 {% endif %}

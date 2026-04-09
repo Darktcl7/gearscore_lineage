@@ -197,3 +197,78 @@ class TreasuryTransaction(models.Model):
     def __str__(self):
         return f"{self.profile.character.name} received {self.item_name} (-{self.amount_deducted} {self.currency})"
 
+
+class Auction(models.Model):
+    """Auction item listing - admin creates, members bid via Discord"""
+    STATUS_CHOICES = [
+        ('DRAFT', 'Draft'),
+        ('ACTIVE', 'Active'),
+        ('CLOSED', 'Closed'),
+        ('CANCELLED', 'Cancelled'),
+    ]
+    title = models.CharField("Item Name", max_length=200)
+    description = models.TextField("Description", blank=True, default='')
+    image = models.ImageField("Item Image", upload_to='auction/', blank=True, null=True)
+    starting_bid = models.IntegerField("Starting Bid (DKP)", default=100)
+    min_increment = models.IntegerField("Minimum Bid Increment", default=10)
+    current_bid = models.IntegerField("Current Highest Bid", default=0)
+    current_winner = models.ForeignKey(
+        DKPProfile, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='auction_leading'
+    )
+    duration_minutes = models.IntegerField("Duration (Minutes)", default=60)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
+    clan = models.CharField("Eligible Clan", max_length=50, default='All',
+        help_text="'All' = both clans can bid, or 'Valkyrie'/'Valhalla' for specific clan")
+    started_at = models.DateTimeField(null=True, blank=True)
+    ends_at = models.DateTimeField(null=True, blank=True)
+    discord_message_id = models.CharField(max_length=50, blank=True, default='')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Auction"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.status}] {self.title} - Bid: {self.current_bid} DKP"
+
+    @property
+    def is_expired(self):
+        if self.status == 'ACTIVE' and self.ends_at:
+            return timezone.now() >= self.ends_at
+        return False
+
+    @property
+    def time_remaining(self):
+        if self.status == 'ACTIVE' and self.ends_at:
+            delta = self.ends_at - timezone.now()
+            if delta.total_seconds() <= 0:
+                return "Expired"
+            m, s = divmod(int(delta.total_seconds()), 60)
+            h, m = divmod(m, 60)
+            d, h = divmod(h, 24)
+            if d > 0:
+                return f"{d}d {h}h {m}m"
+            if h > 0:
+                return f"{h}h {m}m"
+            return f"{m}m {s}s"
+        return "-"
+
+
+class AuctionBid(models.Model):
+    """Individual bid on an auction"""
+    auction = models.ForeignKey(Auction, on_delete=models.CASCADE, related_name='bids')
+    profile = models.ForeignKey(DKPProfile, on_delete=models.CASCADE, related_name='auction_bids')
+    amount = models.IntegerField("Bid Amount (DKP)")
+    is_winner = models.BooleanField(default=False)
+    is_refunded = models.BooleanField("DKP Refunded", default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Auction Bid"
+        ordering = ['-amount']
+
+    def __str__(self):
+        return f"{self.profile.character.name} bid {self.amount} DKP on {self.auction.title}"
+

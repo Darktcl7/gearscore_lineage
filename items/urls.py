@@ -49,6 +49,8 @@ from .views import (
     manage_hall_of_fame,
 ) 
 
+import dkp.views as dkp_views
+
 urlpatterns = [
     # ===============================================
     # 1. ITEM VIEWS (Daftar & Formulir Item)
@@ -78,9 +80,15 @@ urlpatterns = [
     # URL: /items/manage/toggle-admin/1/ -> Toggle Admin Status
     path('manage/toggle-admin/<int:user_pk>/', toggle_admin, name='toggle-admin'),
 
-    # URL: /items/manage/toggle-sub-admin/1/ -> Toggle Sub Admin Status
     path('manage/toggle-sub-admin/<int:user_pk>/', toggle_sub_admin, name='toggle-sub-admin'),
     path('manage/toggle-admin-role/<int:user_pk>/', toggle_admin_role, name='toggle-admin-role'),
+    
+    # Manage Auction
+    path('manage/auction/', dkp_views.auction_page, name='web-portal-auction'),
+    path('manage/auction/create/', dkp_views.auction_create, name='auction-create'),
+    path('manage/auction/start/', dkp_views.auction_start, name='auction-start'),
+    path('manage/auction/cancel/', dkp_views.auction_cancel, name='auction-cancel'),
+    path('manage/auction/delete/', dkp_views.auction_delete, name='auction-delete'),
     
     # URL: /items/item/1/ -> Menampilkan detail satu item
     path('item/<int:pk>/', item_detail, name='item-detail'),
