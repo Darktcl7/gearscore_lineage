@@ -726,7 +726,6 @@ def dkp_manage(request):
         return redirect('web-dkp-manage')
             
     # Auto-cleanup events older than 3 days
-    from django.utils import timezone
     three_days_ago = timezone.now() - timezone.timedelta(days=3)
     DKPEvent.objects.filter(date__lt=three_days_ago).delete()
 
