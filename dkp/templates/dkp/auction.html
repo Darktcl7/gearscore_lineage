@@ -313,16 +313,18 @@
 
                 <div class="auction-info-grid">
                     <div class="auction-info-item">
-                        <div class="auction-info-label">Current Bid</div>
-                        <div class="auction-info-value"><i class="fas fa-coins"></i> {{ auction.current_bid }} DKP</div>
+                        <div class="auction-info-label">{% if auction.status == 'DRAFT' %}Starting Bid{% else %}Current Bid{% endif %}</div>
+                        <div class="auction-info-value"><i class="fas fa-coins"></i> {% if auction.status == 'DRAFT' %}{{ auction.starting_bid }}{% else %}{{ auction.current_bid }}{% endif %} DKP</div>
                     </div>
                     <div class="auction-info-item">
-                        <div class="auction-info-label">Time Left</div>
+                        <div class="auction-info-label">{% if auction.status == 'DRAFT' %}Duration{% else %}Time Left{% endif %}</div>
                         <div class="auction-info-value time">
                             {% if auction.status == 'ACTIVE' %}
                                 <i class="fas fa-clock"></i> {{ auction.time_remaining }}
                             {% elif auction.status == 'CLOSED' %}
                                 <span style="color:#e74c3c;">Ended</span>
+                            {% elif auction.status == 'DRAFT' %}
+                                <i class="fas fa-hourglass-start"></i> {{ auction.duration_minutes }}m
                             {% else %}
                                 -
                             {% endif %}
@@ -496,10 +498,12 @@ function closeConfirmModal() { document.getElementById('confirmModal').classList
 
 function executeConfirm() {
     if (!pendingAction) return;
+    var action = pendingAction.action;
+    var id = pendingAction.id;
     closeConfirmModal();
-    if (pendingAction.action === 'start') startAuction(pendingAction.id);
-    else if (pendingAction.action === 'cancel') cancelAuction(pendingAction.id);
-    else if (pendingAction.action === 'delete') deleteAuction(pendingAction.id);
+    if (action === 'start') startAuction(id);
+    else if (action === 'cancel') cancelAuction(id);
+    else if (action === 'delete') deleteAuction(id);
 }
 
 // ===== CREATE AUCTION =====
