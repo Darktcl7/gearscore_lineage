@@ -39,7 +39,7 @@ def character_management(request):
         return HttpResponseForbidden("You are not authorized to view this page.")
     
     # Optimized: select_related for owner and attributes, prefetch for ManyToMany
-    characters = Character.objects.all().select_related('owner', 'attributes', 'subclass_stats', 'characteristics_stats').prefetch_related('mythic_classes', 'legendary_classes', 'legendary_skins', 'owner__groups')
+    characters = Character.objects.all().select_related('owner', 'attributes', 'subclass_stats', 'characteristics_stats').prefetch_related('mythic_classes', 'legendary_classes', 'legendary_skins', 'owner__groups').order_by('name')
     # Get pending users (registered but not yet approved)
     from django.contrib.auth.models import User, Group
     pending_users = User.objects.filter(is_active=False, is_staff=False).order_by('-date_joined')

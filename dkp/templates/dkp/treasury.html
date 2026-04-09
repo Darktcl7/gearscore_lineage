@@ -1219,7 +1219,7 @@ function buildTables() {
         html += '<th>' + meta.icon + ' Item Name</th>';
         html += '<th>Price</th>';
         html += '<th>Stock/Max</th>';
-        html += '<th style="width:70px; text-align:center;">Qty</th>';
+        html += '<th style="width:60px; text-align:center;">Unit</th>';
         if (isTreasuryAdmin) {
             html += '<th style="width:300px;">Action & Requests</th>';
         } else {
@@ -1269,14 +1269,20 @@ function buildTables() {
 
             html += '<td style="text-align:center;">';
             if (canRequest && remainingStock > 1) {
-                html += '<select id="qty-' + cat + '-' + idx + '" style="padding:4px 6px; background:#1a1a1a; border:1px solid #444; color:#FFD700; border-radius:6px; font-size:0.85rem; width:55px; text-align:center; font-family:Outfit,sans-serif; cursor:pointer;">';
+                html += '<div style="display:flex; align-items:center; justify-content:center; gap:3px;">';
+                html += '<select id="qty-' + cat + '-' + idx + '" style="padding:2px 3px; background:#1a1a1a; border:1px solid #444; color:#FFD700; border-radius:4px; font-size:0.75rem; width:38px; text-align:center; font-family:Outfit,sans-serif; cursor:pointer;">';
                 for (var q = 1; q <= remainingStock; q++) {
                     html += '<option value="' + q + '">' + q + '</option>';
                 }
                 html += '</select>';
+                html += '<span style="color:#666; font-size:0.65rem;">unit</span>';
+                html += '</div>';
+            } else if (!outOfStock && remainingStock === 1 && canRequest) {
+                html += '<input type="hidden" id="qty-' + cat + '-' + idx + '" value="1">';
+                html += '<span style="color:#888; font-size:0.75rem;">1 <span style="color:#666; font-size:0.65rem;">unit</span></span>';
             } else {
                 html += '<input type="hidden" id="qty-' + cat + '-' + idx + '" value="1">';
-                html += '<span style="color:#666; font-size:0.8rem;">-</span>';
+                html += '<span style="color:#666; font-size:0.75rem;">-</span>';
             }
             html += '</td>';
             
@@ -1534,7 +1540,7 @@ function generateSettingsRow(cat, idx, item) {
 function addSettingsItem(cat) {
     if (!treasuryConfig[cat]) treasuryConfig[cat] = [];
     var newIdx = treasuryConfig[cat].length;
-    var newItem = { name: 'New Item', price: 0, max_per_person: 0, currency: cat === 'diamond_items' ? 'Diamond' : 'DKP' };
+    var newItem = { name: '', price: 0, max_per_person: 0, currency: cat === 'diamond_items' ? 'Diamond' : 'DKP' };
     treasuryConfig[cat].push(newItem);
     
     var container = document.getElementById('settings-cat-container-' + cat);
@@ -1575,7 +1581,7 @@ function saveSettings() {
                 var maxEl = document.getElementById('sm-' + cat + '-' + idx);
                 
                 newConfig[cat].push({
-                    name: nameEl.value.trim() || 'Unnamed Item',
+                    name: nameEl.value.trim() || '',
                     price: priceEl ? (parseInt(priceEl.value) || 0) : 0,
                     max_per_person: maxEl ? (parseInt(maxEl.value) || 0) : 0,
                     currency: oldItem.currency || currencyDefault
