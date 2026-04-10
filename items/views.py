@@ -110,7 +110,13 @@ def character_profile(request, pk):
 
     rank = rankings.get(character.id, "N/A")
 
-    gs_logs = character.gs_logs.all()
+    # Auto delete logs older than 30 days
+    from datetime import timedelta
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    character.gs_logs.filter(timestamp__lt=thirty_days_ago).delete()
+
+    # Retrieve remaining logs (limit to 50 descending just in case)
+    gs_logs = character.gs_logs.all().order_by('-timestamp')[:50]
     can_edit = is_admin(request.user) or character.owner == request.user
 
     context = {
