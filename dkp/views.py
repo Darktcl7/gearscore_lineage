@@ -653,6 +653,7 @@ def dkp_manage(request):
                     is_finalized=True,
                     is_war_day=is_war_day,
                     note=activity_note,
+                    created_by=request.user,
                 )
 
                 # WAR DAY: Also create Activity event if checked (Raid Boss & Territory Boss only)

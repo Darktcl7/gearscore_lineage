@@ -320,7 +320,7 @@
                         <div class="auction-info-label">{% if auction.status == 'DRAFT' %}Duration{% else %}Time Left{% endif %}</div>
                         <div class="auction-info-value time">
                             {% if auction.status == 'ACTIVE' %}
-                                <i class="fas fa-clock"></i> {{ auction.time_remaining }}
+                                <i class="fas fa-clock"></i> <span class="auction-countdown" data-ends-at="{{ auction.ends_at|date:'c' }}">{{ auction.time_remaining }}</span>
                             {% elif auction.status == 'CLOSED' %}
                                 <span style="color:#e74c3c;">Ended</span>
                             {% elif auction.status == 'DRAFT' %}
@@ -567,6 +567,40 @@ function deleteAuction(id) {
     })
     .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
 }
+
+// ===== REAL-TIME COUNTDOWN TIMER =====
+function updateCountdowns() {
+    const countdowns = document.querySelectorAll('.auction-countdown');
+    const now = new Date().getTime();
+    
+    countdowns.forEach(el => {
+        const endsAtStr = el.getAttribute('data-ends-at');
+        if (!endsAtStr || endsAtStr === 'None' || endsAtStr === '') return;
+        
+        const endsAt = new Date(endsAtStr).getTime();
+        const distance = endsAt - now;
+        
+        if (distance < 0) {
+            el.innerHTML = 'Just Ended';
+            el.style.color = '#e74c3c';
+            return;
+        }
+        
+        const hours = Math.floor(distance / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        
+        let display = '';
+        if (hours > 0) display += hours + 'h ';
+        display += minutes + 'm ' + seconds + 's';
+        
+        el.innerHTML = display;
+    });
+}
+
+// Run update every second
+setInterval(updateCountdowns, 1000);
+updateCountdowns(); // Initial call
 </script>
 
 {% endblock %}

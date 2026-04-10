@@ -28,6 +28,7 @@ class DKPEvent(models.Model):
     
     description = models.TextField(blank=True)
     note = models.TextField("Catatan", blank=True, default='')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f"{self.name} ({self.date.strftime('%d/%m/%Y')})"
