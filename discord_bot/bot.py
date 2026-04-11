@@ -257,11 +257,17 @@ class AltoBot(commands.Cog):
             print(f"Auction started (Thread): {thread_name}")
         except Exception as e:
             print(f"Failed to create auction thread: {e}")
-            # Ultimate fallback if thread creation completely fails
-            await channel.send("@everyone 🔨 **AUCTION IS NOW LIVE!**\n*(Thread creation failed)*", embed=embed)
+            # Fallback: send to events channel instead
+            try:
+                fallback_ch = self.bot.get_channel(EVENTS_CHANNEL_ID)
+                if fallback_ch:
+                    await fallback_ch.send("@everyone 🔨 **AUCTION IS NOW LIVE!**\n*(Forum post failed)*", embed=embed)
+            except Exception as e2:
+                print(f"Fallback also failed: {e2}")
             
     async def _handle_auction_end(self, msg, channel):
         if not channel:
+            print(f"ERROR: Auction channel is None for AUCTION_END")
             return
         data = await self._parse_auction_msg(msg)
         
@@ -290,12 +296,19 @@ class AltoBot(commands.Cog):
             except Exception:
                 pass
         else:
-            await channel.send("@everyone 🏆 **AUCTION CLOSED!**", embed=embed)
+            # Fallback to events channel
+            try:
+                fallback_ch = self.bot.get_channel(EVENTS_CHANNEL_ID)
+                if fallback_ch:
+                    await fallback_ch.send("@everyone 🏆 **AUCTION CLOSED!**", embed=embed)
+            except Exception:
+                pass
             
         print(f"Auction ended: {data.get('TITLE')} -> Winner: {data.get('WINNER')}")
     
     async def _handle_auction_cancel(self, msg, channel):
         if not channel:
+            print(f"ERROR: Auction channel is None for AUCTION_CANCEL")
             return
         data = await self._parse_auction_msg(msg)
         
@@ -317,12 +330,18 @@ class AltoBot(commands.Cog):
             except Exception:
                 pass
         else:
-            await channel.send(embed=embed)
+            try:
+                fallback_ch = self.bot.get_channel(EVENTS_CHANNEL_ID)
+                if fallback_ch:
+                    await fallback_ch.send(embed=embed)
+            except Exception:
+                pass
             
         print(f"Auction cancelled: {data.get('TITLE')}")
     
     async def _handle_auction_nobid(self, msg, channel):
         if not channel:
+            print(f"ERROR: Auction channel is None for AUCTION_NOBID")
             return
         data = await self._parse_auction_msg(msg)
         
@@ -343,7 +362,12 @@ class AltoBot(commands.Cog):
             except Exception:
                 pass
         else:
-            await channel.send(embed=embed)
+            try:
+                fallback_ch = self.bot.get_channel(EVENTS_CHANNEL_ID)
+                if fallback_ch:
+                    await fallback_ch.send(embed=embed)
+            except Exception:
+                pass
             
         print(f"Auction ended (no bids): {data.get('TITLE')}")
 
