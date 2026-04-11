@@ -125,6 +125,8 @@ class AltoBot(commands.Cog):
                         await self._handle_auction_cancel(msg_content, auction_channel)
                     elif msg_content.startswith('[AUCTION_NOBID]'):
                         await self._handle_auction_nobid(msg_content, auction_channel)
+                    elif msg_content.startswith('[AUCTION_DELETE]'):
+                        await self._handle_auction_delete(msg_content, auction_channel)
                             
                     # Check if it's a simple notification
                     elif msg_content.startswith('[NOTIFICATION]'):
@@ -370,6 +372,19 @@ class AltoBot(commands.Cog):
                 pass
             
         print(f"Auction ended (no bids): {data.get('TITLE')}")
+
+    async def _handle_auction_delete(self, msg, channel):
+        if not channel:
+            return
+        data = await self._parse_auction_msg(msg)
+        
+        thread = await self._find_auction_thread(channel, data.get('ID', '?'))
+        if thread:
+            try:
+                await thread.delete()
+                print(f"Auction deleted (thread removed): {data.get('TITLE')}")
+            except Exception as e:
+                print(f"Failed to delete auction thread: {e}")
 
     @reminder_loop.before_loop
     async def before_reminder_loop(self):
@@ -670,13 +685,53 @@ class AltoBot(commands.Cog):
 
     @app_commands.command(name="bid", description="Place a bid on an active auction")
     @app_commands.describe(
-        auction_id="The Auction ID to bid on",
-        amount="Your bid amount in DKP"
+        amount="Your bid amount in DKP",
+        auction_id="The Auction ID (optional if bidding inside the item's thread)"
     )
-    async def auction_bid(self, interaction: discord.Interaction, auction_id: int, amount: int):
+    async def auction_bid(self, interaction: discord.Interaction, amount: int, auction_id: int = None):
         """Place a bid on an active auction"""
-        # Only allow in auction channel
-        if AUCTION_CHANNEL_ID and interaction.channel_id != AUCTION_CHANNEL_ID:
+        
+        # Determine the parent channel ID robustly
+        parent_id = None
+        if hasattr(interaction.channel, 'parent_id'):
+            parent_id = interaction.channel.parent_id
+        else:
+            try:
+                # Try fetching the channel if it's a partial object without parent_id
+                ch = await interaction.guild.fetch_channel(interaction.channel_id)
+                if hasattr(ch, 'parent_id'):
+                    parent_id = ch.parent_id
+            except Exception:
+                pass
+                
+        is_in_auction_channel = (interaction.channel_id == AUCTION_CHANNEL_ID)
+        is_in_auction_thread = (parent_id == AUCTION_CHANNEL_ID)
+        
+        # If auction_id is not provided, try to extract it from the thread name
+        if auction_id is None:
+            if is_in_auction_thread:
+                # Thread name format: "Item Name [ID:12]"
+                import re
+                channel_name = getattr(interaction.channel, 'name', '')
+                if not channel_name:
+                    try:
+                        ch = await interaction.guild.fetch_channel(interaction.channel_id)
+                        channel_name = ch.name
+                    except Exception:
+                        pass
+                        
+                match = re.search(r'\[ID:(\d+)\]', channel_name)
+                if match:
+                    auction_id = int(match.group(1))
+                else:
+                    await interaction.response.send_message("❌ Could not determine Auction ID from this thread. Please specify `auction_id`.", ephemeral=True)
+                    return
+            else:
+                await interaction.response.send_message("❌ Please specify an `auction_id` if you are not bidding inside the item's thread.", ephemeral=True)
+                return
+
+        # Only allow in auction channel or its threads
+        if AUCTION_CHANNEL_ID and not (is_in_auction_channel or is_in_auction_thread):
             await interaction.response.send_message(
                 f"❌ Bidding is only allowed in <#{AUCTION_CHANNEL_ID}>!",
                 ephemeral=True
