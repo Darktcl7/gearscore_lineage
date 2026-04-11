@@ -38,7 +38,7 @@ DISCORD_TOKEN = os.getenv('DISCORD_BOT_TOKEN', '')
 # Channel Configuration
 EVENTS_CHANNEL_ID = int(os.getenv('EVENTS_CHANNEL_ID', '0'))
 LEADERBOARD_CHANNEL_ID = int(os.getenv('LEADERBOARD_CHANNEL_ID', '0'))
-AUCTION_CHANNEL_ID = int(os.getenv('AUCTION_CHANNEL_ID', '0'))
+AUCTION_CHANNEL_ID = int(os.getenv('AUCTION_CHANNEL_ID', '1492512184209506344'))
 
 # Reminder Schedule (Day: 0=Mon, 1=Tue, ..., 6=Sun)
 # Format 24h: 'HH:MM'
@@ -182,6 +182,28 @@ class AltoBot(commands.Cog):
                 key, _, val = line.partition(':')
                 data[key.strip()] = val.strip()
         return data
+        
+    async def _find_auction_thread(self, channel, auction_id):
+        """Helper to find the forum thread for a specific auction ID"""
+        if not hasattr(channel, 'threads'):
+            return None
+            
+        target_marker = f"[ID:{auction_id}]"
+        
+        # Check active threads
+        for thread in channel.threads:
+            if target_marker in thread.name:
+                return thread
+                
+        # Check archived threads just in case
+        try:
+            async for thread in channel.archived_threads(limit=50):
+                if target_marker in thread.name:
+                    return thread
+        except Exception:
+            pass
+            
+        return None
     
     async def _handle_auction_start(self, msg, channel):
         if not channel:
@@ -209,9 +231,28 @@ class AltoBot(commands.Cog):
         
         embed.set_footer(text="Use /bid <auction_id> <amount> to place your bid!")
         
-        await channel.send("@everyone 🔨 **AUCTION IS NOW LIVE!**", embed=embed)
-        print(f"Auction started: {data.get('TITLE')}")
-    
+        thread_name = f"{data.get('TITLE', 'Unknown Item')} [ID:{data.get('ID', '?')}]"
+        
+        try:
+            # If the channel is a ForumChannel, use create_thread to start a post
+            if isinstance(channel, discord.ForumChannel):
+                thread_with_message = await channel.create_thread(
+                    name=thread_name,
+                    content="@everyone 🔨 **AUCTION IS NOW LIVE!**",
+                    embed=embed,
+                    auto_archive_duration=4320
+                )
+            else:
+                # Fallback for standard TextChannels: send msg, then create thread from it
+                msg_obj = await channel.send("@everyone 🔨 **AUCTION IS NOW LIVE!**", embed=embed)
+                await msg_obj.create_thread(name=thread_name, auto_archive_duration=4320)
+                
+            print(f"Auction started (Thread): {thread_name}")
+        except Exception as e:
+            print(f"Failed to create auction thread: {e}")
+            # Ultimate fallback if thread creation completely fails
+            await channel.send("@everyone 🔨 **AUCTION IS NOW LIVE!**\n*(Thread creation failed)*", embed=embed)
+            
     async def _handle_auction_end(self, msg, channel):
         if not channel:
             return
@@ -233,7 +274,17 @@ class AltoBot(commands.Cog):
             color=discord.Color.gold()
         )
         embed.set_footer(text="Congratulations to the winner!")
-        await channel.send("@everyone 🏆 **AUCTION CLOSED!**", embed=embed)
+        
+        thread = await self._find_auction_thread(channel, data.get('ID', '?'))
+        if thread:
+            await thread.send("@everyone 🏆 **AUCTION CLOSED!**", embed=embed)
+            try:
+                await thread.edit(archived=True, locked=True)
+            except Exception:
+                pass
+        else:
+            await channel.send("@everyone 🏆 **AUCTION CLOSED!**", embed=embed)
+            
         print(f"Auction ended: {data.get('TITLE')} -> Winner: {data.get('WINNER')}")
     
     async def _handle_auction_cancel(self, msg, channel):
@@ -250,7 +301,17 @@ class AltoBot(commands.Cog):
             ),
             color=discord.Color.red()
         )
-        await channel.send(embed=embed)
+        
+        thread = await self._find_auction_thread(channel, data.get('ID', '?'))
+        if thread:
+            await thread.send(embed=embed)
+            try:
+                await thread.edit(archived=True, locked=True)
+            except Exception:
+                pass
+        else:
+            await channel.send(embed=embed)
+            
         print(f"Auction cancelled: {data.get('TITLE')}")
     
     async def _handle_auction_nobid(self, msg, channel):
@@ -266,7 +327,17 @@ class AltoBot(commands.Cog):
             ),
             color=discord.Color.dark_grey()
         )
-        await channel.send(embed=embed)
+        
+        thread = await self._find_auction_thread(channel, data.get('ID', '?'))
+        if thread:
+            await thread.send(embed=embed)
+            try:
+                await thread.edit(archived=True, locked=True)
+            except Exception:
+                pass
+        else:
+            await channel.send(embed=embed)
+            
         print(f"Auction ended (no bids): {data.get('TITLE')}")
 
     @reminder_loop.before_loop
