@@ -702,8 +702,8 @@
                 <div class="dropdown">
                     <a href="#" class="dropbtn" style="cursor: default;">Activity Event ▾</a>
                     <div class="dropdown-content">
-                        <!-- 1. Battle Command (Admin/DKP Admin) -->
-                        {% if user.is_staff or user.admin_role.is_dkp_admin %}
+                        <!-- 1. Battle Command (Admin/Event Admin) -->
+                        {% if user.is_staff or user.admin_role.is_event_admin %}
                         <a href="{% url 'manage-events' %}" style="color: #FF7777;">Battle Command</a>
                         {% endif %}
 

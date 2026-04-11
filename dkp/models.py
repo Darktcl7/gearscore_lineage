@@ -78,6 +78,8 @@ class AdminRole(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='admin_role')
     is_dkp_admin = models.BooleanField("DKP Admin", default=False,
         help_text="Full access to DKP system (Add, Remove, Decay, etc.)")
+    is_event_admin = models.BooleanField("Event Admin", default=False,
+        help_text="Access to Activity Events management")
     is_treasury_admin = models.BooleanField("Treasury Admin", default=False,
         help_text="Access to Treasury item distribution and DKP deduction")
     is_auction_admin = models.BooleanField("Auction Admin", default=False,

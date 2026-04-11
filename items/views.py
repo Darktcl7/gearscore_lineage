@@ -20,6 +20,15 @@ def is_any_admin(user):
     """Super Admin OR Sub Admin"""
     return is_admin(user) or is_sub_admin(user)
 
+def check_event_admin(user):
+    """Check if user is allowed to manage events (SuperAdmin or EventAdmin)"""
+    if is_admin(user):
+        return True
+    try:
+        return getattr(user, 'admin_role', None) and user.admin_role.is_event_admin
+    except Exception:
+        return False
+
 # ======================================================
 # CHARACTER VIEWS
 # ======================================================
@@ -55,6 +64,7 @@ def character_management(request):
     for role in AdminRole.objects.select_related('user').all():
         admin_roles[role.user.pk] = {
             'is_dkp_admin': role.is_dkp_admin,
+            'is_event_admin': role.is_event_admin,
             'is_treasury_admin': role.is_treasury_admin,
             'is_auction_admin': role.is_auction_admin,
             'can_give_dkp': role.can_give_dkp,
@@ -1124,17 +1134,78 @@ def reset_monthly_rewards(request):
     
     return redirect('my-activity')
 
+
+def _generate_due_repeatable_events():
+    """
+    Auto-generate repeatable events when their scheduled date has arrived.
+    Only creates the NEXT occurrence from a completed repeatable event,
+    and only if today >= the next scheduled date (hari H jam 00:00).
+    """
+    from django.utils import timezone
+    today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # Find all completed repeatable events
+    completed_repeatables = ActivityEvent.objects.filter(
+        is_repeatable=True,
+        is_completed=True,
+    ).order_by('-date')
+    
+    # Track which event names we've already processed to avoid duplicates
+    processed = set()
+    
+    for event in completed_repeatables:
+        # Use name as key to avoid processing same event chain multiple times
+        if event.name in processed:
+            continue
+        processed.add(event.name)
+        
+        # Calculate next occurrence date (7 days after this event)
+        next_date = event.date + timedelta(days=7)
+        
+        # Only generate if today >= next_date (hari H sudah tiba)
+        if timezone.now() < next_date.replace(hour=0, minute=0, second=0, microsecond=0):
+            continue
+        
+        # Check if event for this date already exists
+        already_exists = ActivityEvent.objects.filter(
+            name=event.name,
+            date__year=next_date.year,
+            date__month=next_date.month,
+            date__day=next_date.day,
+        ).exists()
+        
+        if not already_exists:
+            ActivityEvent.objects.create(
+                name=event.name,
+                event_type=event.event_type,
+                date=next_date,
+                is_completed=False,
+                is_repeatable=True,
+                is_mandatory=event.is_mandatory,
+                mandatory_penalty=event.mandatory_penalty,
+                is_win=False,
+                max_points=event.max_points,
+                base_points=event.base_points,
+                boss_point_config=event.boss_point_config or {},
+                reward_diamond=event.reward_diamond,
+                reward_diamond_points=event.reward_diamond_points,
+                reward_key=event.reward_key,
+                reward_key_points=event.reward_key_points,
+                reward_membership=event.reward_membership,
+                reward_membership_points=event.reward_membership_points,
+            )
+
+
 @login_required
 def manage_events(request):
     """
     Admin page to manage events
     """
-    if not is_admin(request.user):
-        try:
-            if not request.user.admin_role.is_dkp_admin:
-                return HttpResponseForbidden("Only DKP administrators can manage events.")
-        except Exception:
-            return HttpResponseForbidden("Only administrators can manage events.")
+    if not check_event_admin(request.user):
+        return HttpResponseForbidden("Only Event administrators can manage events.")
+    
+    # AUTO-GENERATE repeatable events that are due today (hari H jam 00:00)
+    _generate_due_repeatable_events()
     
     # Get all actual events (excluding manual point adjustments & War Day DKP events), ordered by date
     events = ActivityEvent.objects.exclude(
@@ -1155,8 +1226,8 @@ def manage_events(request):
 @login_required
 def complete_event(request, event_pk):
     """Complete event with Win/Lose result via form POST."""
-    if not is_any_admin(request.user):
-        return HttpResponseForbidden("Only administrators can manage events.")
+    if not check_event_admin(request.user):
+        return HttpResponseForbidden("Only Event administrators can manage events.")
     
     if request.method == 'POST':
         from items.models import ActivityEvent, PlayerActivity, DiscordAnnouncement
@@ -1216,8 +1287,8 @@ def create_event(request):
     """
     Admin page to create new event
     """
-    if not is_any_admin(request.user):
-        return HttpResponseForbidden("Only administrators can create events.")
+    if not check_event_admin(request.user):
+        return HttpResponseForbidden("Only Event administrators can create events.")
     
     if request.method == 'POST':
         event_type = request.POST.get('event_type')
@@ -1335,8 +1406,8 @@ def record_attendance(request, event_pk):
     """
     Admin page to record attendance for an event
     """
-    if not is_any_admin(request.user):
-        return HttpResponseForbidden("Only administrators can record attendance.")
+    if not check_event_admin(request.user):
+        return HttpResponseForbidden("Only Event administrators can record attendance.")
     
     event = get_object_or_404(ActivityEvent, pk=event_pk)
     # Optimized: prefetch related data
@@ -1445,8 +1516,8 @@ def duplicate_event(request, event_pk):
     """
     Duplicate an event exactly 7 days later
     """
-    if not is_any_admin(request.user):
-        return HttpResponseForbidden("Only administrators can duplicate events.")
+    if not check_event_admin(request.user):
+        return HttpResponseForbidden("Only Event administrators can duplicate events.")
     
     event = get_object_or_404(ActivityEvent, pk=event_pk)
     
@@ -1476,8 +1547,8 @@ def toggle_event_repeatable(request, event_pk):
     """
     Toggle the is_repeatable status of an event
     """
-    if not is_any_admin(request.user):
-        return HttpResponseForbidden("Only administrators can manage events.")
+    if not check_event_admin(request.user):
+        return HttpResponseForbidden("Only Event administrators can manage events.")
     
     event = get_object_or_404(ActivityEvent, pk=event_pk)
     
@@ -1614,6 +1685,7 @@ def toggle_sub_admin(request, user_pk):
         try:
             role = AdminRole.objects.get(user=target_user)
             role.is_dkp_admin = False
+            role.is_event_admin = False
             role.is_treasury_admin = False
             role.is_auction_admin = False
             role.save()
@@ -1629,7 +1701,7 @@ def toggle_sub_admin(request, user_pk):
 
 @login_required
 def toggle_admin_role(request, user_pk):
-    """Super Admin only: Toggle granular admin roles (DKP, Treasury, Auction)"""
+    """Super Admin only: Toggle granular admin roles (DKP, Event, Treasury, Auction)"""
     if not is_admin(request.user):
         return JsonResponse({'error': 'Unauthorized'}, status=403)
         
@@ -1646,6 +1718,7 @@ def toggle_admin_role(request, user_pk):
             
         role, _ = AdminRole.objects.get_or_create(user=target_user)
         role.is_dkp_admin = data.get('is_dkp_admin', role.is_dkp_admin)
+        role.is_event_admin = data.get('is_event_admin', role.is_event_admin)
         role.is_treasury_admin = data.get('is_treasury_admin', role.is_treasury_admin)
         role.is_auction_admin = data.get('is_auction_admin', role.is_auction_admin)
         role.can_give_dkp = data.get('can_give_dkp', role.can_give_dkp)
