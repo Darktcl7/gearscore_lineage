@@ -191,8 +191,20 @@ class AltoBot(commands.Cog):
                 data[key.strip()] = val.strip()
         return data
         
-    async def _find_auction_thread(self, channel, auction_id):
+    async def _find_auction_thread(self, channel, auction_id, thread_id=None):
         """Helper to find the forum thread for a specific auction ID"""
+        
+        # 1. Best case: We have the strict thread_id passed from Django
+        if thread_id:
+            try:
+                thread = self.bot.get_channel(int(thread_id))
+                if not thread:
+                    thread = await channel.guild.fetch_channel(int(thread_id))
+                return thread
+            except Exception:
+                pass
+                
+        # 2. Fallback for old/legacy ongoing auctions (or if thread_id is missing)
         if not hasattr(channel, 'threads'):
             return None
             
@@ -208,8 +220,8 @@ class AltoBot(commands.Cog):
             async for thread in channel.archived_threads(limit=50):
                 if target_marker in thread.name:
                     return thread
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Error checking archive: {e}")
             
         return None
     
@@ -236,9 +248,11 @@ class AltoBot(commands.Cog):
         
         embed.set_footer(text="Use /bid <amount> to place your bid! (No need ID inside this thread)")
         
-        thread_name = f"{data.get('TITLE', 'Unknown Item')} [ID:{data.get('ID', '?')}]"
+        # Omit ID from thread name per user request
+        thread_name = data.get('TITLE', 'Unknown Item')
         
         try:
+            thread_id = None
             # If the channel is a ForumChannel, use create_thread to start a post
             if isinstance(channel, discord.ForumChannel):
                 thread_with_message = await channel.create_thread(
@@ -247,11 +261,23 @@ class AltoBot(commands.Cog):
                     embed=embed,
                     auto_archive_duration=4320
                 )
+                thread_id = thread_with_message.thread.id
             else:
                 # Fallback for standard TextChannels: send msg, then create thread from it
                 msg_obj = await channel.send(f"@everyone 🔨 **{data.get('TITLE', 'Unknown Item')}**\n{data.get('DESC', '')}", embed=embed)
-                await msg_obj.create_thread(name=thread_name, auto_archive_duration=4320)
+                thread_obj = await msg_obj.create_thread(name=thread_name, auto_archive_duration=4320)
+                thread_id = thread_obj.id
                 
+            # Send the thread ID back to the Django API
+            if thread_id and data.get('ID'):
+                try:
+                    await self.api_request('POST', '/dkp/api/auction/thread/', {
+                        'auction_id': data.get('ID'),
+                        'thread_id': str(thread_id)
+                    })
+                except Exception as ex:
+                    print(f"Failed to record thread ID in API: {ex}")
+                    
             print(f"Auction started (Thread): {thread_name}")
         except Exception as e:
             print(f"Failed to create auction thread: {e}")
@@ -286,7 +312,7 @@ class AltoBot(commands.Cog):
         )
         embed.set_footer(text="Congratulations to the winner!")
         
-        thread = await self._find_auction_thread(channel, data.get('ID', '?'))
+        thread = await self._find_auction_thread(channel, data.get('ID', '?'), data.get('THREAD_ID'))
         if thread:
             await thread.send("@everyone 🏆 **AUCTION CLOSED!**", embed=embed)
             try:
@@ -320,7 +346,7 @@ class AltoBot(commands.Cog):
             color=discord.Color.red()
         )
         
-        thread = await self._find_auction_thread(channel, data.get('ID', '?'))
+        thread = await self._find_auction_thread(channel, data.get('ID', '?'), data.get('THREAD_ID'))
         if thread:
             await thread.send(embed=embed)
             try:
@@ -349,10 +375,10 @@ class AltoBot(commands.Cog):
                 f"**{data.get('TITLE', 'Unknown')}**\n\n"
                 f"This auction ended with no bids."
             ),
-            color=discord.Color.dark_grey()
+            color=discord.Color.light_grey()
         )
         
-        thread = await self._find_auction_thread(channel, data.get('ID', '?'))
+        thread = await self._find_auction_thread(channel, data.get('ID', '?'), data.get('THREAD_ID'))
         if thread:
             await thread.send(embed=embed)
             try:
@@ -374,7 +400,7 @@ class AltoBot(commands.Cog):
             return
         data = await self._parse_auction_msg(msg)
         
-        thread = await self._find_auction_thread(channel, data.get('ID', '?'))
+        thread = await self._find_auction_thread(channel, data.get('ID', '?'), data.get('THREAD_ID'))
         if thread:
             try:
                 await thread.delete()
@@ -705,24 +731,7 @@ class AltoBot(commands.Cog):
         
         # If auction_id is not provided, try to extract it from the thread name
         if auction_id is None:
-            if is_in_auction_thread:
-                # Thread name format: "Item Name [ID:12]"
-                import re
-                channel_name = getattr(interaction.channel, 'name', '')
-                if not channel_name:
-                    try:
-                        ch = await interaction.guild.fetch_channel(interaction.channel_id)
-                        channel_name = ch.name
-                    except Exception:
-                        pass
-                        
-                match = re.search(r'\[ID:(\d+)\]', channel_name)
-                if match:
-                    auction_id = int(match.group(1))
-                else:
-                    await interaction.response.send_message("❌ Could not determine Auction ID from this thread. Please specify `auction_id`.", ephemeral=True)
-                    return
-            else:
+            if not is_in_auction_thread:
                 await interaction.response.send_message("❌ Please specify an `auction_id` if you are not bidding inside the item's thread.", ephemeral=True)
                 return
 
@@ -736,11 +745,18 @@ class AltoBot(commands.Cog):
         
         await interaction.response.defer()
         
-        result = await self.api_request('POST', '/dkp/api/auction/bid/', {
-            'auction_id': auction_id,
+        # Build API payload
+        api_data = {
             'discord_id': str(interaction.user.id),
             'bid_amount': amount
-        })
+        }
+        
+        if auction_id is not None:
+            api_data['auction_id'] = auction_id
+        elif is_in_auction_thread:
+            api_data['thread_id'] = str(interaction.channel_id)
+            
+        result = await self.api_request('POST', '/dkp/api/auction/bid/', api_data)
         
         if result.get('success'):
             embed = discord.Embed(

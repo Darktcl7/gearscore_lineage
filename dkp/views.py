@@ -1455,9 +1455,11 @@ def auction_cancel(request):
             auction.save()
             
             # Announce cancellation
-            DiscordAnnouncement.objects.create(
-                message=f"[AUCTION_CANCEL]\nID:{auction.id}\nTITLE:{auction.title}"
-            )
+            msg = f"[AUCTION_CANCEL]\nID:{auction.id}\nTITLE:{auction.title}"
+            if auction.discord_thread_id:
+                msg += f"\nTHREAD_ID:{auction.discord_thread_id}"
+                
+            DiscordAnnouncement.objects.create(message=msg)
             
             return JsonResponse({'success': True, 'message': f'Auction "{auction.title}" cancelled.'})
         except Auction.DoesNotExist:
@@ -1487,9 +1489,11 @@ def auction_delete(request):
             auction.delete()
             
             # Tell Discord bot to delete the forum thread
-            DiscordAnnouncement.objects.create(
-                message=f"[AUCTION_DELETE]\nID:{a_id}\nTITLE:{title}"
-            )
+            msg = f"[AUCTION_DELETE]\nID:{a_id}\nTITLE:{title}"
+            if auction.discord_thread_id:
+                msg += f"\nTHREAD_ID:{auction.discord_thread_id}"
+                
+            DiscordAnnouncement.objects.create(message=msg)
             return JsonResponse({'success': True, 'message': f'Auction "{title}" deleted.'})
         except Auction.DoesNotExist:
             return JsonResponse({'error': 'Auction not found'}, status=404)
@@ -1535,21 +1539,25 @@ def _close_auction(auction):
             pass
         
         # Announce winner
-        DiscordAnnouncement.objects.create(
-            message=(
-                f"[AUCTION_END]\n"
-                f"ID:{auction.id}\n"
-                f"TITLE:{auction.title}\n"
-                f"WINNER:{winner.character.name}\n"
-                f"AMOUNT:{bid_amount}\n"
-                f"DISCORD_ID:{winner.character.discord_id or ''}"
-            )
+        msg = (
+            f"[AUCTION_END]\n"
+            f"ID:{auction.id}\n"
+            f"TITLE:{auction.title}\n"
+            f"WINNER:{winner.character.name}\n"
+            f"AMOUNT:{bid_amount}\n"
+            f"DISCORD_ID:{winner.character.discord_id or ''}"
         )
+        if auction.discord_thread_id:
+            msg += f"\nTHREAD_ID:{auction.discord_thread_id}"
+            
+        DiscordAnnouncement.objects.create(message=msg)
     else:
         # No bids - announce no winner
-        DiscordAnnouncement.objects.create(
-            message=f"[AUCTION_NOBID]\nID:{auction.id}\nTITLE:{auction.title}"
-        )
+        msg = f"[AUCTION_NOBID]\nID:{auction.id}\nTITLE:{auction.title}"
+        if auction.discord_thread_id:
+            msg += f"\nTHREAD_ID:{auction.discord_thread_id}"
+            
+        DiscordAnnouncement.objects.create(message=msg)
     
     auction.save()
 
@@ -1557,6 +1565,30 @@ def _close_auction(auction):
 # ============================================
 # AUCTION API ENDPOINTS (for Discord Bot)
 # ============================================
+
+@csrf_exempt
+def api_set_auction_thread(request):
+    """API for Discord bot to save thread ID"""
+    if not verify_api_key(request):
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            auction_id = data.get('auction_id')
+            thread_id = data.get('thread_id')
+            
+            if auction_id and thread_id:
+                auction = Auction.objects.get(id=auction_id)
+                auction.discord_thread_id = str(thread_id)
+                auction.save()
+                return JsonResponse({'success': True})
+            return JsonResponse({'error': 'Missing parameters'}, status=400)
+        except Auction.DoesNotExist:
+            return JsonResponse({'error': 'Auction not found'}, status=404)
+        except Exception:
+            return JsonResponse({'error': 'Invalid request'}, status=400)
+    return JsonResponse({'error': 'POST required'}, status=405)
 
 @csrf_exempt
 def api_auction_bid(request):
@@ -1569,6 +1601,7 @@ def api_auction_bid(request):
     try:
         data = json.loads(request.body)
         auction_id = data.get('auction_id')
+        thread_id = data.get('thread_id')
         discord_id = data.get('discord_id')
         bid_amount = int(data.get('bid_amount', 0))
         
@@ -1582,9 +1615,14 @@ def api_auction_bid(request):
         
         # Get auction
         try:
-            auction = Auction.objects.get(id=auction_id, status='ACTIVE')
+            if auction_id:
+                auction = Auction.objects.get(id=auction_id, status='ACTIVE')
+            elif thread_id:
+                auction = Auction.objects.get(discord_thread_id=str(thread_id), status='ACTIVE')
+            else:
+                return JsonResponse({'error': 'Either auction_id or thread_id must be provided.'}, status=400)
         except Auction.DoesNotExist:
-            return JsonResponse({'error': 'Auction not found or not active.'}, status=404)
+            return JsonResponse({'error': 'Auction not found or not active. Check if you entered the correct ID.'}, status=404)
         
         # Check if expired
         if auction.is_expired:

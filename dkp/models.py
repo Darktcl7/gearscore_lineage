@@ -226,6 +226,7 @@ class Auction(models.Model):
     started_at = models.DateTimeField(null=True, blank=True)
     ends_at = models.DateTimeField(null=True, blank=True)
     discord_message_id = models.CharField(max_length=50, blank=True, default='')
+    discord_thread_id = models.CharField(max_length=50, blank=True, null=True, help_text="Stored Discord Thread ID")
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

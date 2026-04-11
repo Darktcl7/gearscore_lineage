@@ -41,4 +41,5 @@ urlpatterns = [
     path('api/auction/bid/', views.api_auction_bid, name='api-auction-bid'),
     path('api/auction/active/', views.api_auction_active, name='api-auction-active'),
     path('api/auction/check-expired/', views.api_auction_check_expired, name='api-auction-check-expired'),
+    path('api/auction/thread/', views.api_set_auction_thread, name='api-auction-thread'),
 ]
