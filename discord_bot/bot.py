@@ -769,17 +769,6 @@ class AltoBot(commands.Cog):
                 color=discord.Color.purple()
             )
             
-            prev = result.get('previous_leader')
-            if prev:
-                prev_discord = result.get('previous_leader_discord')
-                mention = f" (<@{prev_discord}>)" if prev_discord else ""
-                embed.add_field(
-                    name="📤 Outbid",
-                    value=f"{prev}{mention} has been outbid! Their DKP hold is released.",
-                    inline=False
-                )
-            
-            embed.set_footer(text=f"Use /bid {auction_id} <amount> to bid higher!")
             await interaction.followup.send(embed=embed)
         else:
             await interaction.followup.send(
