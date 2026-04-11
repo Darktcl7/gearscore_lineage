@@ -248,26 +248,6 @@ def api_complete_event(request):
         
         event.save()
         
-        # Auto-repeat logic 
-        if event.is_completed and getattr(event, 'is_repeatable', False):
-            from datetime import timedelta
-            # Check if auto-generated event already exists to prevent duplicates
-            next_date = event.date + timedelta(days=7)
-            if not ActivityEvent.objects.filter(name=event.name, event_type=event.event_type, date=next_date).exists():
-                ActivityEvent.objects.create(
-                    name=event.name,
-                    event_type=event.event_type,
-                    date=next_date,
-                    is_completed=False,
-                    is_repeatable=True,
-                    is_mandatory=getattr(event, 'is_mandatory', False),
-                    mandatory_penalty=getattr(event, 'mandatory_penalty', 5),
-                    is_win=False,
-                    max_points=event.max_points,
-                    base_points=event.base_points,
-                    boss_point_config=event.boss_point_config,
-                )
-        
         # Recalculate points for all participants
         recalculate_event_points(event)
         
@@ -599,26 +579,6 @@ def api_toggle_event_status(request, event_pk):
                 pass
         
         event.save()
-        
-        # Auto-repeat logic 
-        if event.is_completed and getattr(event, 'is_repeatable', False):
-            from datetime import timedelta
-            # Check if auto-generated event already exists to prevent duplicates
-            next_date = event.date + timedelta(days=7)
-            if not ActivityEvent.objects.filter(name=event.name, event_type=event.event_type, date=next_date).exists():
-                ActivityEvent.objects.create(
-                    name=event.name,
-                    event_type=event.event_type,
-                    date=next_date,
-                    is_completed=False,
-                    is_repeatable=True,
-                    is_mandatory=getattr(event, 'is_mandatory', False),
-                    mandatory_penalty=getattr(event, 'mandatory_penalty', 5),
-                    is_win=False,
-                    max_points=event.max_points,
-                    base_points=event.base_points,
-                    boss_point_config=event.boss_point_config,
-                )
         
         # Auto-announce to Discord when event is COMPLETED
         if event.is_completed:
