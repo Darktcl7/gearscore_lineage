@@ -1483,7 +1483,13 @@ def auction_delete(request):
                 return JsonResponse({'error': 'Cannot delete an active auction. Cancel it first.'}, status=400)
             
             title = auction.title
+            a_id = auction.id
             auction.delete()
+            
+            # Tell Discord bot to delete the forum thread
+            DiscordAnnouncement.objects.create(
+                message=f"[AUCTION_DELETE]\nID:{a_id}\nTITLE:{title}"
+            )
             return JsonResponse({'success': True, 'message': f'Auction "{title}" deleted.'})
         except Auction.DoesNotExist:
             return JsonResponse({'error': 'Auction not found'}, status=404)
