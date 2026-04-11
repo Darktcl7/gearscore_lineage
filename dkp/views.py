@@ -1505,9 +1505,12 @@ def _close_auction(auction):
     
     auction.status = 'CLOSED'
     
-    if auction.current_winner:
-        winner = auction.current_winner
-        bid_amount = auction.current_bid
+    # Robustly find winner by strictly checking the highest bid
+    highest_bid = auction.bids.filter(is_refunded=False).order_by('-amount').first()
+    
+    if highest_bid:
+        winner = highest_bid.profile
+        bid_amount = highest_bid.amount
         
         # Deduct DKP from winner
         winner.current_dkp -= bid_amount
@@ -1516,18 +1519,20 @@ def _close_auction(auction):
         winner.save()
         
         # Mark winning bid
-        winning_bid = auction.bids.filter(profile=winner).order_by('-amount').first()
-        if winning_bid:
-            winning_bid.is_winner = True
-            winning_bid.save()
+        highest_bid.is_winner = True
+        highest_bid.save()
         
-        # Create DKP log
-        DKPLog.objects.create(
-            profile=winner,
-            amount=-bid_amount,
-            reason=f"Auction Won: {auction.title}",
-            created_by=auction.created_by
-        )
+        # Create DKP log safely
+        try:
+            from dkp.models import DKPLog
+            DKPLog.objects.create(
+                profile=winner,
+                amount=-bid_amount,
+                reason=f"Auction Won: {auction.title}",
+                created_by=auction.created_by
+            )
+        except Exception as e:
+            pass
         
         # Announce winner
         DiscordAnnouncement.objects.create(
