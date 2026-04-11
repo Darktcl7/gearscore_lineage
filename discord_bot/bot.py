@@ -221,10 +221,6 @@ class AltoBot(commands.Cog):
         
         embed = discord.Embed(
             title="🔨 NEW AUCTION STARTED!",
-            description=(
-                f"**{data.get('TITLE', 'Unknown Item')}**\n\n"
-                f"{data.get('DESC', '')}"
-            ),
             color=discord.Color.purple()
         )
         embed.add_field(name="💰 Starting Bid", value=f"{data.get('START_BID', '?')} DKP", inline=True)
@@ -238,7 +234,7 @@ class AltoBot(commands.Cog):
         if image_url:
             embed.set_image(url=image_url)
         
-        embed.set_footer(text="Use /bid <auction_id> <amount> to place your bid!")
+        embed.set_footer(text="Use /bid <amount> to place your bid! (No need ID inside this thread)")
         
         thread_name = f"{data.get('TITLE', 'Unknown Item')} [ID:{data.get('ID', '?')}]"
         
@@ -247,13 +243,13 @@ class AltoBot(commands.Cog):
             if isinstance(channel, discord.ForumChannel):
                 thread_with_message = await channel.create_thread(
                     name=thread_name,
-                    content="@everyone 🔨 **AUCTION IS NOW LIVE!**",
+                    content=f"@everyone 🔨 **{data.get('TITLE', 'Unknown Item')}**\n{data.get('DESC', '')}",
                     embed=embed,
                     auto_archive_duration=4320
                 )
             else:
                 # Fallback for standard TextChannels: send msg, then create thread from it
-                msg_obj = await channel.send("@everyone 🔨 **AUCTION IS NOW LIVE!**", embed=embed)
+                msg_obj = await channel.send(f"@everyone 🔨 **{data.get('TITLE', 'Unknown Item')}**\n{data.get('DESC', '')}", embed=embed)
                 await msg_obj.create_thread(name=thread_name, auto_archive_duration=4320)
                 
             print(f"Auction started (Thread): {thread_name}")
