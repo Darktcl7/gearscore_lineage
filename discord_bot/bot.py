@@ -79,6 +79,12 @@ class AltoBot(commands.Cog):
                     
                 channel = self.bot.get_channel(EVENTS_CHANNEL_ID)
                 auction_channel = self.bot.get_channel(AUCTION_CHANNEL_ID)
+                if not auction_channel:
+                    try:
+                        auction_channel = await self.bot.fetch_channel(AUCTION_CHANNEL_ID)
+                        print(f"Fetched auction channel: {auction_channel} (type: {type(auction_channel).__name__})")
+                    except Exception as e:
+                        print(f"Failed to fetch auction channel {AUCTION_CHANNEL_ID}: {e}")
                 if channel:
                     msg_content = ann_result['message']
                     
@@ -207,6 +213,7 @@ class AltoBot(commands.Cog):
     
     async def _handle_auction_start(self, msg, channel):
         if not channel:
+            print(f"ERROR: Auction channel is None! AUCTION_CHANNEL_ID={AUCTION_CHANNEL_ID}")
             return
         data = await self._parse_auction_msg(msg)
         
