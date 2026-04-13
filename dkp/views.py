@@ -1436,6 +1436,7 @@ def auction_start(request):
                 f"INCREMENT:{auction.min_increment}\n"
                 f"DURATION:{auction.duration_minutes}m\n"
                 f"ENDS:{end_time_str}\n"
+                f"ENDS_TIMESTAMP:{int(auction.ends_at.timestamp())}\n"
                 f"CLAN:{clan_text}\n"
                 f"CURRENCY:{auction.currency}\n"
                 f"IMAGE:{image_url}"
@@ -1522,7 +1523,6 @@ def auction_delete(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'POST required'}, status=405)
-
 
 @login_required(login_url='/login/')
 def auction_clear_winners(request):
@@ -1738,6 +1738,13 @@ def api_auction_bid(request):
         
         auction.current_bid = bid_amount
         auction.current_winner = profile
+        
+        # Anti-snipe: extend by 1 minute if less than 60 seconds remain
+        if auction.ends_at:
+            remaining = (auction.ends_at - timezone.now()).total_seconds()
+            if remaining < 60:
+                auction.ends_at = auction.ends_at + timezone.timedelta(minutes=1)
+        
         auction.save()
         
         return JsonResponse({

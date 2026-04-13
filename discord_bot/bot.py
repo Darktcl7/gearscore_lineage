@@ -267,7 +267,13 @@ class AltoBot(commands.Cog):
         embed.add_field(name=f"{currency_icon} Current Bid", value=f"**{start_bid} {currency}**", inline=True)
         embed.add_field(name="🛡️ Eligible", value=data.get('CLAN', 'All'), inline=True)
         embed.add_field(name="📈 Min Inc", value=f"+{increment}", inline=True)
-        embed.add_field(name="⏱️ Time Left", value=f"**Ends: {ends_str}**", inline=True)
+        
+        # Use Discord Native Timestamp for live countdown
+        ends_ts = data.get('ENDS_TIMESTAMP')
+        if ends_ts:
+            embed.add_field(name="⏱️ Time Left", value=f"**End: <t:{ends_ts}:R>**", inline=True)
+        else:
+            embed.add_field(name="⏱️ Time Left", value=f"**Ends: {ends_str}**", inline=True)
         
         image_url = data.get('IMAGE', '')
         if image_url:
@@ -1093,7 +1099,7 @@ class AuctionBidView(discord.ui.View):
                             elif field.name and 'Time Left' in field.name:
                                 new_embed.add_field(
                                     name="⏱️ Time Left",
-                                    value=f"**{result.get('time_remaining', '?')}**",
+                                    value=field.value,
                                     inline=True
                                 )
                             else:

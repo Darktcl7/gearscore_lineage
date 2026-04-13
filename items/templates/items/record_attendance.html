@@ -47,6 +47,11 @@ main{flex:1;overflow:hidden}
 .boss-pts-row label{display:flex;align-items:center;gap:8px;color:#ddd;font-size:.85rem}
 .bp-input{width:60px;padding:4px 6px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#fff;font-size:.85rem;text-align:center}
 .bp-input:focus{outline:none;border-color:#DAA520;box-shadow:0 0 5px rgba(218,165,32,.3)}
+.clan-section{margin-bottom:25px}
+.clan-header{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-radius:10px;margin-bottom:12px;font-weight:600;font-size:1rem;color:#fff}
+.valkyrie-header{background:linear-gradient(135deg,rgba(155,89,182,.3),rgba(142,68,173,.2));border:1px solid rgba(155,89,182,.4)}
+.valhalla-header{background:linear-gradient(135deg,rgba(52,152,219,.3),rgba(41,128,185,.2));border:1px solid rgba(52,152,219,.4)}
+.clan-count{color:#DAA520;font-weight:700}
 </style>
 {% endblock %}
 
@@ -77,8 +82,15 @@ main{flex:1;overflow:hidden}
 <label><input type="checkbox" id="select-all"> Select All</label>
 <span style="color:#888"><span id="sc">0</span> / {{ characters|length }} selected</span>
 </div>
+
+<!-- VALKYRIE CLAN -->
+<div class="clan-section">
+<div class="clan-header valkyrie-header">
+<span><i class="fas fa-shield-alt"></i> Valkyrie Clan</span>
+<span class="clan-count" id="vc">0</span> / {{ valkyrie_chars|length }}
+</div>
 <div class="cg">
-{% for character in characters %}
+{% for character in valkyrie_chars %}
 <div class="cc {% if character.is_attended %}selected{% endif %}" onclick="toggleCard(this,event)">
 <div class="cch">
 <input type="checkbox" name="characters" value="{{ character.pk }}" class="ack" {% if character.is_attended %}checked{% endif %}>
@@ -94,8 +106,41 @@ main{flex:1;overflow:hidden}
 </div>
 {% endif %}
 </div>
+{% empty %}
+<div style="color:#555; padding:20px; text-align:center;">No Valkyrie members.</div>
 {% endfor %}
 </div>
+</div>
+
+<!-- VALHALLA CLAN -->
+<div class="clan-section">
+<div class="clan-header valhalla-header">
+<span><i class="fas fa-shield-alt"></i> Valhalla Clan</span>
+<span class="clan-count" id="vh">0</span> / {{ valhalla_chars|length }}
+</div>
+<div class="cg">
+{% for character in valhalla_chars %}
+<div class="cc {% if character.is_attended %}selected{% endif %}" onclick="toggleCard(this,event)">
+<div class="cch">
+<input type="checkbox" name="characters" value="{{ character.pk }}" class="ack" {% if character.is_attended %}checked{% endif %}>
+<div class="ci">
+<div class="cn">{{ character.name }}</div>
+<div class="cl">{{ character.character_class }} - Lv.{{ character.level }}</div>
+</div></div>
+{% if event.event_type == 'INVASION' %}
+<div class="bs" onclick="event.stopPropagation()">
+<div class="bo"><input type="checkbox" name="boss_dragon_beast_{{ character.pk }}" value="true" {% if character.bosses_killed.dragon_beast %}checked{% endif %}> &#x1F432; Dragon Beast</div>
+<div class="bo"><input type="checkbox" name="boss_carnifex_{{ character.pk }}" value="true" {% if character.bosses_killed.carnifex %}checked{% endif %}> &#x1F479; Carnifex</div>
+<div class="bo"><input type="checkbox" name="boss_orfen_{{ character.pk }}" value="true" {% if character.bosses_killed.orfen %}checked{% endif %}> &#x1F577;&#xFE0F; Orfen</div>
+</div>
+{% endif %}
+</div>
+{% empty %}
+<div style="color:#555; padding:20px; text-align:center;">No Valhalla members.</div>
+{% endfor %}
+</div>
+</div>
+
 <div class="bc">
 <a href="{% url 'manage-events' %}" class="bcan"><i class="fas fa-times"></i> Cancel</a>
 <button type="submit" class="bsub"><i class="fas fa-save"></i> Save Attendance</button>
@@ -118,7 +163,14 @@ var cbs=document.querySelectorAll('input.ack');
 var s=this.checked;
 cbs.forEach(function(cb){cb.checked=s;cb.closest('.cc').classList.toggle('selected',s);});
 uc();});
-function uc(){document.getElementById('sc').textContent=document.querySelectorAll('input.ack:checked').length;}
+function uc(){
+var total=document.querySelectorAll('input.ack:checked').length;
+document.getElementById('sc').textContent=total;
+var valkSec=document.querySelector('.valkyrie-header');
+if(valkSec){document.getElementById('vc').textContent=valkSec.closest('.clan-section').querySelectorAll('input.ack:checked').length;}
+var valhSec=document.querySelector('.valhalla-header');
+if(valhSec){document.getElementById('vh').textContent=valhSec.closest('.clan-section').querySelectorAll('input.ack:checked').length;}
+}
 uc();
 </script>
 {% endblock %}

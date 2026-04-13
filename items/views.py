@@ -1505,9 +1505,15 @@ def record_attendance(request, event_pk):
         'orfen': bosspc.get('orfen', 100),
     }
     
+    # Split characters by clan
+    valkyrie_chars = [c for c in processed_characters if getattr(c, 'clan', 'Valkyrie') == 'Valkyrie']
+    valhalla_chars = [c for c in processed_characters if getattr(c, 'clan', 'Valkyrie') == 'Valhalla']
+    
     context = {
         'event': event,
         'characters': processed_characters,
+        'valkyrie_chars': valkyrie_chars,
+        'valhalla_chars': valhalla_chars,
         'boss_points': boss_points,
         'is_admin': True,
     }
