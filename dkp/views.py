@@ -1318,7 +1318,7 @@ def auction_page(request):
     if not is_auction_admin(request.user):
         return HttpResponseForbidden("You do not have access to manage Auctions.")
     
-    auctions = Auction.objects.all().select_related('current_winner', 'created_by')
+    auctions = Auction.objects.exclude(status='ARCHIVED').select_related('current_winner', 'created_by')
     
     # Auto-check for expired auctions and close them
     for auction in auctions:
@@ -1326,19 +1326,19 @@ def auction_page(request):
             _close_auction(auction)
     
     # Refresh after potential closures
-    auctions = Auction.objects.all().select_related('current_winner', 'created_by')
+    auctions = Auction.objects.exclude(status='ARCHIVED').select_related('current_winner', 'created_by')
     
-    # Diamond auction winners
+    # Diamond auction winners (include ARCHIVED so data persists after card delete)
     diamond_winners = AuctionBid.objects.filter(
         auction__currency='DIAMOND',
-        auction__status='CLOSED',
+        auction__status__in=['CLOSED', 'ARCHIVED'],
         is_winner=True
     ).select_related('auction', 'auction__current_winner', 'auction__current_winner__character').order_by('-created_at')
     
-    # DKP auction winners
+    # DKP auction winners (include ARCHIVED so data persists after card delete)
     dkp_winners = AuctionBid.objects.filter(
         auction__currency='DKP',
-        auction__status='CLOSED',
+        auction__status__in=['CLOSED', 'ARCHIVED'],
         is_winner=True
     ).select_related('auction', 'auction__current_winner', 'auction__current_winner__character').order_by('-created_at')
     
@@ -1494,7 +1494,7 @@ def auction_cancel(request):
 
 @login_required(login_url='/login/')
 def auction_delete(request):
-    """Delete a DRAFT or CANCELLED auction"""
+    """Delete a DRAFT or CANCELLED auction, or archive a CLOSED auction"""
     if not is_auction_admin(request.user):
         return JsonResponse({'error': 'Unauthorized'}, status=403)
     
@@ -1509,12 +1509,20 @@ def auction_delete(request):
             
             title = auction.title
             a_id = auction.id
-            auction.delete()
+            thread_id = auction.discord_thread_id
+            
+            if auction.status == 'CLOSED':
+                # Soft-delete: archive to preserve winner data
+                auction.status = 'ARCHIVED'
+                auction.save()
+            else:
+                # Hard-delete for DRAFT/CANCELLED (no winner data)
+                auction.delete()
             
             # Tell Discord bot to delete the forum thread
             msg = f"[AUCTION_DELETE]\nID:{a_id}\nTITLE:{title}"
-            if auction.discord_thread_id:
-                msg += f"\nTHREAD_ID:{auction.discord_thread_id}"
+            if thread_id:
+                msg += f"\nTHREAD_ID:{thread_id}"
                 
             DiscordAnnouncement.objects.create(message=msg)
             return JsonResponse({'success': True, 'message': f'Auction "{title}" deleted.'})
@@ -1540,7 +1548,7 @@ def auction_clear_winners(request):
             
             deleted_count, _ = AuctionBid.objects.filter(
                 auction__currency=currency,
-                auction__status='CLOSED',
+                auction__status__in=['CLOSED', 'ARCHIVED'],
                 is_winner=True
             ).delete()
             
