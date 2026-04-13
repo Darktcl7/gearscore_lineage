@@ -1524,6 +1524,33 @@ def auction_delete(request):
     return JsonResponse({'error': 'POST required'}, status=405)
 
 
+@login_required(login_url='/login/')
+def auction_clear_winners(request):
+    """Delete all auction winner records for a specific currency"""
+    if not is_auction_admin(request.user):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            currency = data.get('currency', '').upper()
+            
+            if currency not in ('DKP', 'DIAMOND'):
+                return JsonResponse({'error': 'Invalid currency type'}, status=400)
+            
+            deleted_count, _ = AuctionBid.objects.filter(
+                auction__currency=currency,
+                auction__status='CLOSED',
+                is_winner=True
+            ).delete()
+            
+            label = 'Diamond' if currency == 'DIAMOND' else 'DKP'
+            return JsonResponse({'success': True, 'message': f'Deleted {deleted_count} {label} winner record(s).'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'POST required'}, status=405)
+
+
 def _close_auction(auction):
     """Internal helper to close an expired auction and process winner"""
     if auction.status != 'ACTIVE':

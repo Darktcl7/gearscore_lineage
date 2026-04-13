@@ -357,6 +357,29 @@
         font-weight: 700;
     }
 
+    /* ===== SECTION HEADER ROW ===== */
+    .section-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+    }
+    .section-header-row h2 { margin-bottom: 0; }
+    .btn-clear-winners {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        color: white;
+        border: none;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Outfit', sans-serif;
+        transition: all 0.2s;
+    }
+    .btn-clear-winners:hover { opacity: 0.85; }
+    .btn-clear-winners i { margin-right: 4px; }
+
     /* ===== RESPONSIVE ===== */
     @media (max-width: 1100px) {
         .auction-grid { grid-template-columns: repeat(2, 1fr); }
@@ -472,9 +495,13 @@
     {% endif %}
 
     <!-- DIAMOND AUCTION WINNERS TABLE -->
-    {% if diamond_winners %}
     <div class="diamond-section">
-        <h2><i class="fas fa-gem"></i> DIAMOND AUCTION WINNERS</h2>
+        <div class="section-header-row">
+            <h2><i class="fas fa-gem"></i> DIAMOND AUCTION WINNERS</h2>
+            {% if diamond_winners %}
+            <button class="btn-clear-winners" onclick="confirmClearWinners('diamond')"><i class="fas fa-trash-alt"></i> Delete All</button>
+            {% endif %}
+        </div>
         <table class="diamond-table">
             <thead>
                 <tr>
@@ -494,16 +521,23 @@
                     <td class="diamond-amount">💎 {{ w.amount }}</td>
                     <td style="color:#777;">{{ w.created_at|date:'d M Y' }}</td>
                 </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align:center; color:#555; padding:20px;">No winners yet.</td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    {% endif %}
 
     <!-- DKP AUCTION WINNERS TABLE -->
-    {% if dkp_winners %}
     <div class="dkp-section">
-        <h2><i class="fas fa-coins"></i> DKP AUCTION WINNERS</h2>
+        <div class="section-header-row">
+            <h2><i class="fas fa-coins"></i> DKP AUCTION WINNERS</h2>
+            {% if dkp_winners %}
+            <button class="btn-clear-winners" onclick="confirmClearWinners('dkp')"><i class="fas fa-trash-alt"></i> Delete All</button>
+            {% endif %}
+        </div>
         <table class="dkp-table">
             <thead>
                 <tr>
@@ -523,11 +557,14 @@
                     <td class="dkp-amount">💰 {{ w.amount }}</td>
                     <td style="color:#777;">{{ w.created_at|date:'d M Y' }}</td>
                 </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align:center; color:#555; padding:20px;">No winners yet.</td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    {% endif %}
 </div>
 
 <!-- CREATE MODAL -->
@@ -733,6 +770,38 @@ function deleteAuction(id) {
     .then(function(r) { return r.json(); })
     .then(function(data) {
         if (data.success) { showToast(data.message, 'success'); var card = document.getElementById('auction-card-' + id); if (card) card.remove(); }
+        else { showToast(data.error, 'error'); }
+    })
+    .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
+}
+
+// ===== CLEAR WINNERS =====
+function confirmClearWinners(currency) {
+    var label = currency === 'diamond' ? 'Diamond' : 'DKP';
+    var confirmModal = document.getElementById('confirmModal');
+    var confirmTitle = document.getElementById('confirmTitle');
+    var confirmDesc = document.getElementById('confirmDesc');
+    var confirmIcon = document.getElementById('confirmIcon');
+    var confirmYes = document.getElementById('confirmYes');
+    
+    confirmIcon.className = 'confirm-icon danger';
+    confirmIcon.innerHTML = '<i class="fas fa-trash-alt"></i>';
+    confirmTitle.textContent = 'Delete All ' + label + ' Winners?';
+    confirmDesc.innerHTML = 'This will permanently delete <strong>all ' + label + ' auction winner records</strong>. This action cannot be undone.';
+    confirmYes.className = 'btn-confirm-yes red';
+    confirmYes.onclick = function() { clearWinners(currency); confirmModal.style.display = 'none'; };
+    confirmModal.style.display = 'flex';
+}
+
+function clearWinners(currency) {
+    fetch('{% url "auction-clear-winners" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({ currency: currency })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) { showToast(data.message, 'success'); setTimeout(function() { location.reload(); }, 1000); }
         else { showToast(data.error, 'error'); }
     })
     .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
