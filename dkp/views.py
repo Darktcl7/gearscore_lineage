@@ -1328,8 +1328,24 @@ def auction_page(request):
     # Refresh after potential closures
     auctions = Auction.objects.all().select_related('current_winner', 'created_by')
     
+    # Diamond auction winners
+    diamond_winners = AuctionBid.objects.filter(
+        auction__currency='DIAMOND',
+        auction__status='CLOSED',
+        is_winner=True
+    ).select_related('auction', 'auction__current_winner', 'auction__current_winner__character').order_by('-created_at')
+    
+    # DKP auction winners
+    dkp_winners = AuctionBid.objects.filter(
+        auction__currency='DKP',
+        auction__status='CLOSED',
+        is_winner=True
+    ).select_related('auction', 'auction__current_winner', 'auction__current_winner__character').order_by('-created_at')
+    
     return render(request, 'dkp/auction.html', {
         'auctions': auctions,
+        'diamond_winners': diamond_winners,
+        'dkp_winners': dkp_winners,
         'is_auction_admin': True,
     })
 
@@ -1348,6 +1364,7 @@ def auction_create(request):
             min_increment = int(request.POST.get('min_increment', 10))
             duration_minutes = int(request.POST.get('duration_minutes', 60))
             clan = request.POST.get('clan', 'All')
+            currency = request.POST.get('currency', 'DKP')
             image = request.FILES.get('image')
             
             if not title:
@@ -1356,6 +1373,9 @@ def auction_create(request):
             if image and image.size > 2 * 1024 * 1024:
                 return JsonResponse({'error': 'Image file size must be under 2MB'}, status=400)
             
+            if currency not in ('DKP', 'DIAMOND'):
+                currency = 'DKP'
+            
             auction = Auction.objects.create(
                 title=title,
                 description=description,
@@ -1363,6 +1383,7 @@ def auction_create(request):
                 min_increment=min_increment,
                 duration_minutes=duration_minutes,
                 clan=clan,
+                currency=currency,
                 image=image,
                 created_by=request.user,
                 status='DRAFT',
@@ -1416,6 +1437,7 @@ def auction_start(request):
                 f"DURATION:{auction.duration_minutes}m\n"
                 f"ENDS:{end_time_str}\n"
                 f"CLAN:{clan_text}\n"
+                f"CURRENCY:{auction.currency}\n"
                 f"IMAGE:{image_url}"
             )
             
@@ -1516,27 +1538,28 @@ def _close_auction(auction):
         winner = highest_bid.profile
         bid_amount = highest_bid.amount
         
-        # Deduct DKP from winner
-        winner.current_dkp -= bid_amount
-        if winner.current_dkp < 0:
-            winner.current_dkp = 0
-        winner.save()
+        # Only deduct DKP for DKP auctions (Diamond has no website balance)
+        if auction.currency == 'DKP':
+            winner.current_dkp -= bid_amount
+            if winner.current_dkp < 0:
+                winner.current_dkp = 0
+            winner.save()
+            
+            # Create DKP log safely
+            try:
+                from dkp.models import DKPLog
+                DKPLog.objects.create(
+                    profile=winner,
+                    amount=-bid_amount,
+                    reason=f"Auction Won: {auction.title}",
+                    created_by=auction.created_by
+                )
+            except Exception:
+                pass
         
         # Mark winning bid
         highest_bid.is_winner = True
         highest_bid.save()
-        
-        # Create DKP log safely
-        try:
-            from dkp.models import DKPLog
-            DKPLog.objects.create(
-                profile=winner,
-                amount=-bid_amount,
-                reason=f"Auction Won: {auction.title}",
-                created_by=auction.created_by
-            )
-        except Exception as e:
-            pass
         
         # Announce winner
         msg = (
@@ -1545,6 +1568,7 @@ def _close_auction(auction):
             f"TITLE:{auction.title}\n"
             f"WINNER:{winner.character.name}\n"
             f"AMOUNT:{bid_amount}\n"
+            f"CURRENCY:{auction.currency}\n"
             f"DISCORD_ID:{winner.character.discord_id or ''}"
         )
         if auction.discord_thread_id:
@@ -1635,38 +1659,43 @@ def api_auction_bid(request):
             if char_clan != auction.clan:
                 return JsonResponse({'error': f'This auction is for {auction.clan} members only.'}, status=403)
         
+        currency = auction.currency  # 'DKP' or 'DIAMOND'
+        
         # Validate bid amount
         if bid_amount < auction.starting_bid:
-            return JsonResponse({'error': f'Bid must be at least {auction.starting_bid} DKP (starting bid).'}, status=400)
+            return JsonResponse({'error': f'Bid must be at least {auction.starting_bid} {currency} (starting bid).'}, status=400)
         
         if auction.current_winner:
             min_bid = auction.current_bid + auction.min_increment
             if bid_amount < min_bid:
-                return JsonResponse({'error': f'Bid must be at least {min_bid} DKP (current: {auction.current_bid} + increment: {auction.min_increment}).'}, status=400)
+                return JsonResponse({'error': f'Bid must be at least {min_bid} {currency} (current: {auction.current_bid} + increment: {auction.min_increment}).'}, status=400)
         
         # Check if bidding against self
         if auction.current_winner and auction.current_winner.id == profile.id:
             return JsonResponse({'error': 'You are already the highest bidder!'}, status=400)
         
-        # Calculate available DKP (considering ALL active auction holds)
-        held_dkp = 0
-        active_bids = AuctionBid.objects.filter(
-            profile=profile,
-            auction__status='ACTIVE',
-            is_refunded=False
-        ).select_related('auction')
-        
-        for ab in active_bids:
-            # Only count if this profile is the current leader of that auction
-            if ab.auction.current_winner_id == profile.id:
-                held_dkp += ab.amount
-        
-        available_dkp = profile.current_dkp - held_dkp
-        
-        if available_dkp < bid_amount:
-            return JsonResponse({
-                'error': f'Insufficient DKP. You have {profile.current_dkp} DKP total, {held_dkp} DKP held in other auctions, {available_dkp} DKP available.'
-            }, status=400)
+        # DKP auctions: check balance. Diamond auctions: skip balance check.
+        if currency == 'DKP':
+            # Calculate available DKP (considering ALL active auction holds)
+            held_dkp = 0
+            active_bids = AuctionBid.objects.filter(
+                profile=profile,
+                auction__status='ACTIVE',
+                auction__currency='DKP',
+                is_refunded=False
+            ).select_related('auction')
+            
+            for ab in active_bids:
+                # Only count if this profile is the current leader of that auction
+                if ab.auction.current_winner_id == profile.id:
+                    held_dkp += ab.amount
+            
+            available_dkp = profile.current_dkp - held_dkp
+            
+            if available_dkp < bid_amount:
+                return JsonResponse({
+                    'error': f'Insufficient DKP. You have {profile.current_dkp} DKP total, {held_dkp} DKP held in other auctions, {available_dkp} DKP available.'
+                }, status=400)
         
         # Place bid (previous leader is automatically released)
         AuctionBid.objects.create(
@@ -1686,9 +1715,10 @@ def api_auction_bid(request):
         
         return JsonResponse({
             'success': True,
-            'message': f'{character.name} is now the highest bidder with {bid_amount} DKP!',
+            'message': f'{character.name} is now the highest bidder with {bid_amount} {currency}!',
             'character_name': character.name,
             'bid_amount': bid_amount,
+            'currency': currency,
             'previous_leader': old_winner_name,
             'previous_leader_discord': old_winner_discord,
             'auction_title': auction.title,

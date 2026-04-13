@@ -128,6 +128,28 @@ class AltoBot(commands.Cog):
                     elif msg_content.startswith('[AUCTION_DELETE]'):
                         await self._handle_auction_delete(msg_content, auction_channel)
                             
+                    # ===== EVENT ANNOUNCEMENTS =====
+                    elif msg_content.startswith('[EVENT_COMPLETED]'):
+                        clean_msg = msg_content.replace('[EVENT_COMPLETED]\n', '').strip()
+                        
+                        # Send to default events channel
+                        if channel:
+                            await channel.send(clean_msg)
+                            print(f"Event completed sent to primary events channel.")
+                            
+                        # Send to specific requested channel
+                        target_channel_id = 1489269074188963880
+                        target_channel = self.bot.get_channel(target_channel_id)
+                        if not target_channel:
+                            try:
+                                target_channel = await self.bot.fetch_channel(target_channel_id)
+                            except Exception:
+                                pass
+                                
+                        if target_channel:
+                            await target_channel.send(clean_msg)
+                            print(f"Event completed sent to secondary channel {target_channel_id}.")
+                            
                     # Check if it's a simple notification
                     elif msg_content.startswith('[NOTIFICATION]'):
                         clean_msg = msg_content.replace('[NOTIFICATION]', '').strip()
@@ -230,17 +252,19 @@ class AltoBot(commands.Cog):
             print(f"ERROR: Auction channel is None! AUCTION_CHANNEL_ID={AUCTION_CHANNEL_ID}")
             return
         data = await self._parse_auction_msg(msg)
+        currency = data.get('CURRENCY', 'DKP')
+        currency_icon = '💎' if currency == 'DIAMOND' else '💰'
         
         embed = discord.Embed(
             title="🔨 NEW AUCTION STARTED!",
-            color=discord.Color.purple()
+            color=discord.Color.blue() if currency == 'DIAMOND' else discord.Color.purple()
         )
-        embed.add_field(name="💰 Starting Bid", value=f"{data.get('START_BID', '?')} DKP", inline=True)
-        embed.add_field(name="📈 Min Increment", value=f"+{data.get('INCREMENT', '?')} DKP", inline=True)
+        embed.add_field(name=f"{currency_icon} Starting Bid", value=f"{data.get('START_BID', '?')} {currency}", inline=True)
+        embed.add_field(name="📈 Min Increment", value=f"+{data.get('INCREMENT', '?')} {currency}", inline=True)
         embed.add_field(name="⏱️ Duration", value=data.get('DURATION', '?'), inline=True)
         embed.add_field(name="🏁 Ends At", value=data.get('ENDS', '?'), inline=True)
         embed.add_field(name="🛡️ Eligible", value=data.get('CLAN', 'All'), inline=True)
-        embed.add_field(name="🆔 Auction ID", value=f"`{data.get('ID', '?')}`", inline=True)
+        embed.add_field(name="💲 Currency", value=currency, inline=True)
         
         image_url = data.get('IMAGE', '')
         if image_url:
@@ -294,21 +318,25 @@ class AltoBot(commands.Cog):
             print(f"ERROR: Auction channel is None for AUCTION_END")
             return
         data = await self._parse_auction_msg(msg)
+        currency = data.get('CURRENCY', 'DKP')
+        currency_icon = '💎' if currency == 'DIAMOND' else '💰'
         
         winner_mention = ''
         discord_id = data.get('DISCORD_ID', '')
         if discord_id:
             winner_mention = f" (<@{discord_id}>)"
         
+        deduct_msg = "DKP has been automatically deducted." if currency == 'DKP' else "Please collect the Diamond payment from the winner."
+        
         embed = discord.Embed(
             title="🏆 AUCTION ENDED!",
             description=(
                 f"**{data.get('TITLE', 'Unknown')}**\n\n"
                 f"🎉 Winner: **{data.get('WINNER', '?')}**{winner_mention}\n"
-                f"💰 Winning Bid: **{data.get('AMOUNT', '?')} DKP**\n\n"
-                f"DKP has been automatically deducted."
+                f"{currency_icon} Winning Bid: **{data.get('AMOUNT', '?')} {currency}**\n\n"
+                f"{deduct_msg}"
             ),
-            color=discord.Color.gold()
+            color=discord.Color.blue() if currency == 'DIAMOND' else discord.Color.gold()
         )
         embed.set_footer(text="Congratulations to the winner!")
         
@@ -759,14 +787,16 @@ class AltoBot(commands.Cog):
         result = await self.api_request('POST', '/dkp/api/auction/bid/', api_data)
         
         if result.get('success'):
+            cur = result.get('currency', 'DKP')
+            cur_icon = '💎' if cur == 'DIAMOND' else '💰'
             embed = discord.Embed(
                 title="🔨 NEW BID!",
                 description=(
                     f"**{result.get('auction_title', '')}**\n\n"
-                    f"💰 **{result['character_name']}** bids **{result['bid_amount']} DKP**!\n"
+                    f"{cur_icon} **{result['character_name']}** bids **{result['bid_amount']} {cur}**!\n"
                     f"⏱️ Time remaining: **{result.get('time_remaining', '?')}**"
                 ),
-                color=discord.Color.purple()
+                color=discord.Color.blue() if cur == 'DIAMOND' else discord.Color.purple()
             )
             
             await interaction.followup.send(embed=embed)

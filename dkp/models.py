@@ -209,10 +209,15 @@ class Auction(models.Model):
         ('CLOSED', 'Closed'),
         ('CANCELLED', 'Cancelled'),
     ]
+    CURRENCY_CHOICES = [
+        ('DKP', 'DKP'),
+        ('DIAMOND', 'Diamond'),
+    ]
     title = models.CharField("Item Name", max_length=200)
     description = models.TextField("Description", blank=True, default='')
     image = models.ImageField("Item Image", upload_to='auction/', blank=True, null=True)
-    starting_bid = models.IntegerField("Starting Bid (DKP)", default=100)
+    currency = models.CharField("Currency", max_length=10, choices=CURRENCY_CHOICES, default='DKP')
+    starting_bid = models.IntegerField("Starting Bid", default=100)
     min_increment = models.IntegerField("Minimum Bid Increment", default=10)
     current_bid = models.IntegerField("Current Highest Bid", default=0)
     current_winner = models.ForeignKey(
@@ -235,7 +240,7 @@ class Auction(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"[{self.status}] {self.title} - Bid: {self.current_bid} DKP"
+        return f"[{self.status}] {self.title} - Bid: {self.current_bid} {self.currency}"
 
     @property
     def is_expired(self):

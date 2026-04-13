@@ -1560,6 +1560,8 @@ class LeaderboardConfig(models.Model):
     """Singleton config for leaderboard reset timestamps."""
     weekly_reset_at = models.DateTimeField("Weekly Reset At", null=True, blank=True,
         help_text="Timestamp of the last weekly reset. Weekly ranking only shows events after this time.")
+    monthly_reset_at = models.DateTimeField("Monthly Reset At", null=True, blank=True,
+        help_text="Timestamp of the last monthly reset. Monthly ranking only shows events after this time.")
 
     class Meta:
         verbose_name = "Leaderboard Configuration"

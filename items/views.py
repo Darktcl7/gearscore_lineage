@@ -533,14 +533,16 @@ def activity_leaderboard(request):
     selected_clan = request.GET.get('clan', 'Valkyrie')
     clan_choices = ['Valkyrie', 'Valhalla']
     
+    from .models import LeaderboardConfig
+    lb_config = LeaderboardConfig.get_config()
+    
     # ── MONTHLY RANKING ──
     # Total Score = event points only (EXCLUDE AP adjustments)
     from django.db.models import Q
-    monthly_qs = PlayerActivity.objects.filter(
-        event__date__year=today.year,
-        event__date__month=today.month,
-        event__is_completed=True
-    ).exclude(event__name__startswith='AP Adjustment:')
+    monthly_qs = PlayerActivity.objects.filter(event__is_completed=True)
+    if lb_config.monthly_reset_at:
+        monthly_qs = monthly_qs.filter(event__date__gte=lb_config.monthly_reset_at)
+    monthly_qs = monthly_qs.exclude(event__name__startswith='AP Adjustment:')
     
     if selected_clan == 'Valkyrie':
         monthly_qs = monthly_qs.filter(Q(player__clan='Valkyrie') | Q(player__clan='') | Q(player__clan__isnull=True))
@@ -562,12 +564,14 @@ def activity_leaderboard(request):
         tier = _get_tier(score)
         
         # Calculate AP adjustments separately
-        ap_points = PlayerActivity.objects.filter(
+        ap_qs = PlayerActivity.objects.filter(
             player__id=entry['player__id'],
-            event__name__startswith='AP Adjustment:',
-            event__date__year=today.year,
-            event__date__month=today.month
-        ).aggregate(total=Sum('points_earned'))['total'] or 0
+            event__name__startswith='AP Adjustment:'
+        )
+        if lb_config.monthly_reset_at:
+            ap_qs = ap_qs.filter(event__date__gte=lb_config.monthly_reset_at)
+        
+        ap_points = ap_qs.aggregate(total=Sum('points_earned'))['total'] or 0
         
         monthly_ranking.append({
             'rank': i,
@@ -580,20 +584,12 @@ def activity_leaderboard(request):
         })
     
     # ── WEEKLY RANKING ──
-    from datetime import timedelta as td
-    from .models import LeaderboardConfig
-    start_of_week = (today - td(days=today.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
-    
-    # Respect weekly reset timestamp - only show events after the reset
-    lb_config = LeaderboardConfig.get_config()
-    weekly_cutoff = start_of_week
-    if lb_config.weekly_reset_at and lb_config.weekly_reset_at > start_of_week:
+    weekly_qs = PlayerActivity.objects.filter(event__is_completed=True)
+    weekly_cutoff = None
+    if lb_config.weekly_reset_at:
         weekly_cutoff = lb_config.weekly_reset_at
-    
-    weekly_qs = PlayerActivity.objects.filter(
-        event__date__gte=weekly_cutoff,
-        event__is_completed=True
-    ).exclude(event__name__startswith='AP Adjustment:')
+        weekly_qs = weekly_qs.filter(event__date__gte=weekly_cutoff)
+    weekly_qs = weekly_qs.exclude(event__name__startswith='AP Adjustment:')
     
     if selected_clan == 'Valkyrie':
         weekly_qs = weekly_qs.filter(Q(player__clan='Valkyrie') | Q(player__clan='') | Q(player__clan__isnull=True))
@@ -614,11 +610,14 @@ def activity_leaderboard(request):
         score = entry['total_score'] or 0
         tier = _get_tier(score)
         
-        ap_points = PlayerActivity.objects.filter(
+        ap_weekly_qs = PlayerActivity.objects.filter(
             player__id=entry['player__id'],
-            event__name__startswith='AP Adjustment:',
-            event__date__gte=weekly_cutoff
-        ).aggregate(total=Sum('points_earned'))['total'] or 0
+            event__name__startswith='AP Adjustment:'
+        )
+        if weekly_cutoff:
+            ap_weekly_qs = ap_weekly_qs.filter(event__date__gte=weekly_cutoff)
+            
+        ap_points = ap_weekly_qs.aggregate(total=Sum('points_earned'))['total'] or 0
         
         weekly_ranking.append({
             'rank': i,
@@ -861,8 +860,11 @@ def reset_leaderboard_data(request):
             config.weekly_reset_at = today
             config.save()
         elif reset_type == 'monthly':
-            PlayerActivity.objects.filter(event__date__year=today.year, event__date__month=today.month).delete()
-            ActivityEvent.objects.filter(date__year=today.year, date__month=today.month).delete()
+            # Monthly reset: only update the monthly reset timestamp
+            from .models import LeaderboardConfig
+            config = LeaderboardConfig.get_config()
+            config.monthly_reset_at = today
+            config.save()
         else:
             PlayerActivity.objects.all().delete()
             ActivityEvent.objects.all().delete()
@@ -1259,6 +1261,7 @@ def complete_event(request, event_pk):
         
         # Create Discord announcement
         announcement_msg = (
+            f"[EVENT_COMPLETED]\n"
             f"@everyone 📢 **The event has ended!**\n\n"
             f"🏆 **EVENT COMPLETED!**\n"
             f"**{event.name}** has been completed.\n\n"

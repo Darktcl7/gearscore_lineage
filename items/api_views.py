@@ -292,11 +292,13 @@ def api_get_leaderboard(request):
             'Valhalla': []
         }
         
-        monthly_qs = PlayerActivity.objects.filter(
-            event__date__year=today.year,
-            event__date__month=today.month,
-            event__is_completed=True
-        ).exclude(event__name__startswith='AP Adjustment:')
+        from .models import LeaderboardConfig
+        lb_config = LeaderboardConfig.get_config()
+        
+        monthly_qs = PlayerActivity.objects.filter(event__is_completed=True)
+        if lb_config.monthly_reset_at:
+            monthly_qs = monthly_qs.filter(event__date__gte=lb_config.monthly_reset_at)
+        monthly_qs = monthly_qs.exclude(event__name__startswith='AP Adjustment:')
         
         for clan_name in leaderboards_by_clan.keys():
             if clan_name == 'Valkyrie':
