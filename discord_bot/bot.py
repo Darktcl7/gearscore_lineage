@@ -254,23 +254,35 @@ class AltoBot(commands.Cog):
         data = await self._parse_auction_msg(msg)
         currency = data.get('CURRENCY', 'DKP')
         currency_icon = '💎' if currency == 'DIAMOND' else '💰'
+        start_bid = int(data.get('START_BID', '0'))
+        increment = int(data.get('INCREMENT', '10'))
+        ends_str = data.get('ENDS', '?')
         
         embed = discord.Embed(
-            title="🔨 NEW AUCTION STARTED!",
+            title=f"🔨 {'[Diamond]' if currency == 'DIAMOND' else '[DKP]'} {data.get('TITLE', 'Unknown Item')}",
             color=discord.Color.blue() if currency == 'DIAMOND' else discord.Color.purple()
         )
-        embed.add_field(name=f"{currency_icon} Starting Bid", value=f"{data.get('START_BID', '?')} {currency}", inline=True)
-        embed.add_field(name="📈 Min Increment", value=f"+{data.get('INCREMENT', '?')} {currency}", inline=True)
-        embed.add_field(name="⏱️ Duration", value=data.get('DURATION', '?'), inline=True)
-        embed.add_field(name="🏁 Ends At", value=data.get('ENDS', '?'), inline=True)
+        embed.add_field(name="🏷️ Status", value="🟢 **OPEN AUCTION**", inline=True)
+        embed.add_field(name="👑 Leader", value="**—**", inline=True)
+        embed.add_field(name=f"{currency_icon} Current Bid", value=f"**{start_bid} {currency}**", inline=True)
         embed.add_field(name="🛡️ Eligible", value=data.get('CLAN', 'All'), inline=True)
-        embed.add_field(name="💲 Currency", value=currency, inline=True)
+        embed.add_field(name="📈 Min Inc", value=f"+{increment}", inline=True)
+        embed.add_field(name="⏱️ Time Left", value=f"**Ends: {ends_str}**", inline=True)
         
         image_url = data.get('IMAGE', '')
         if image_url:
             embed.set_image(url=image_url)
         
-        embed.set_footer(text="Use /bid <amount> to place your bid! (No need ID inside this thread)")
+        embed.set_footer(text=f"Start: {start_bid} {currency} | Inc: +{increment} | Use buttons below or /bid <amount>")
+        
+        # Create the bid view with buttons
+        bid_view = AuctionBidView(
+            auction_id=data.get('ID', '0'),
+            min_increment=increment,
+            current_bid=start_bid,
+            currency=currency,
+            cog=self
+        )
         
         # Omit ID from thread name per user request
         thread_name = data.get('TITLE', 'Unknown Item')
@@ -283,14 +295,31 @@ class AltoBot(commands.Cog):
                     name=thread_name,
                     content=f"@everyone 🔨 **{data.get('TITLE', 'Unknown Item')}**\n{data.get('DESC', '')}",
                     embed=embed,
+                    view=bid_view,
                     auto_archive_duration=4320
                 )
                 thread_id = thread_with_message.thread.id
+                
+                # Send initial bid log message in the thread
+                await thread_with_message.thread.send(
+                    f"📜 **Bid Log & Winner will appear below** 👇\n"
+                    f"@everyone **AUCTION OPEN!** Place your bid using the buttons above or `/bid <amount>`."
+                )
             else:
                 # Fallback for standard TextChannels: send msg, then create thread from it
-                msg_obj = await channel.send(f"@everyone 🔨 **{data.get('TITLE', 'Unknown Item')}**\n{data.get('DESC', '')}", embed=embed)
+                msg_obj = await channel.send(
+                    f"@everyone 🔨 **{data.get('TITLE', 'Unknown Item')}**\n{data.get('DESC', '')}",
+                    embed=embed,
+                    view=bid_view
+                )
                 thread_obj = await msg_obj.create_thread(name=thread_name, auto_archive_duration=4320)
                 thread_id = thread_obj.id
+                
+                # Send initial bid log message in the thread
+                await thread_obj.send(
+                    f"📜 **Bid Log & Winner will appear below** 👇\n"
+                    f"@everyone **AUCTION OPEN!** Place your bid using the buttons above or `/bid <amount>`."
+                )
                 
             # Send the thread ID back to the Django API
             if thread_id and data.get('ID'):
@@ -771,7 +800,7 @@ class AltoBot(commands.Cog):
             )
             return
         
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
         
         # Build API payload
         api_data = {
@@ -789,17 +818,32 @@ class AltoBot(commands.Cog):
         if result.get('success'):
             cur = result.get('currency', 'DKP')
             cur_icon = '💎' if cur == 'DIAMOND' else '💰'
-            embed = discord.Embed(
-                title="🔨 NEW BID!",
-                description=(
-                    f"**{result.get('auction_title', '')}**\n\n"
-                    f"{cur_icon} **{result['character_name']}** bids **{result['bid_amount']} {cur}**!\n"
-                    f"⏱️ Time remaining: **{result.get('time_remaining', '?')}**"
-                ),
-                color=discord.Color.blue() if cur == 'DIAMOND' else discord.Color.purple()
+            
+            await interaction.followup.send(
+                f"✅ You bid **{result['bid_amount']} {cur}** on **{result.get('auction_title', '')}** successfully!",
+                ephemeral=True
             )
             
-            await interaction.followup.send(embed=embed)
+            # Also update the bid log in the thread
+            try:
+                thread = interaction.channel
+                log_msg = None
+                async for m in thread.history(oldest_first=True, limit=10):
+                    if m.author.id == interaction.client.user.id and "📜 Bid Log" in m.content:
+                        log_msg = m
+                        break
+                
+                bidder_mention = f"<@{interaction.user.id}>"
+                new_log_line = f"{bidder_mention} placed bid: **{result['bid_amount']} {cur}**"
+                
+                if log_msg:
+                    updated_content = log_msg.content + f"\n{new_log_line}"
+                    if len(updated_content) > 1900:
+                        await thread.send(f"📜 **Bid Log (continued)**\n{new_log_line}")
+                    else:
+                        await log_msg.edit(content=updated_content)
+            except Exception as e:
+                print(f"Error updating bid log from /bid command: {e}")
         else:
             await interaction.followup.send(
                 f"❌ {result.get('error', 'Bid failed')}",
@@ -943,6 +987,227 @@ class CheckInView(discord.ui.View):
                 ephemeral=True
             )
 
+
+# ==========================================
+# AUCTION UI VIEWS (Bid Buttons + Custom Bid Modal)
+# ==========================================
+
+class AuctionBidView(discord.ui.View):
+    """Persistent view with Bid (+increment) button and Custom Bid button"""
+    def __init__(self, auction_id: str, min_increment: int, current_bid: int, currency: str, cog: AltoBot):
+        super().__init__(timeout=None)
+        self.auction_id = auction_id
+        self.min_increment = min_increment
+        self.current_bid = current_bid
+        self.currency = currency
+        self.cog = cog
+        
+        # Update button label dynamically
+        cur_icon = '💎' if currency == 'DIAMOND' else '💰'
+        self.bid_button.label = f"Bid (+{min_increment})"
+        self.bid_button.emoji = cur_icon
+    
+    @discord.ui.button(label="Bid (+100)", style=discord.ButtonStyle.primary)
+    async def bid_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Quick bid: current_bid + min_increment"""
+        await interaction.response.defer(ephemeral=True)
+        
+        # Calculate the next bid amount
+        bid_amount = self.current_bid + self.min_increment
+        if self.current_bid == 0:
+            # No bids yet, use starting bid (which IS current_bid from auction start data)
+            # The API will validate anyway
+            bid_amount = self.current_bid + self.min_increment
+        
+        api_data = {
+            'discord_id': str(interaction.user.id),
+            'bid_amount': bid_amount,
+            'thread_id': str(interaction.channel_id),
+        }
+        
+        result = await self.cog.api_request('POST', '/dkp/api/auction/bid/', api_data)
+        
+        if result.get('success'):
+            cur = result.get('currency', self.currency)
+            cur_icon = '💎' if cur == 'DIAMOND' else '💰'
+            
+            # Update internal state for next click
+            self.current_bid = result.get('current_bid', bid_amount)
+            self.bid_button.label = f"Bid (+{self.min_increment})"
+            self.bid_button.emoji = cur_icon
+            
+            # Update the embed message with new bid info
+            await self._update_auction_embed(interaction, result)
+            
+            # Update the bid log message
+            await self._append_bid_log(interaction, result)
+            
+            await interaction.followup.send(
+                f"✅ You bid **{bid_amount} {cur}** successfully!",
+                ephemeral=True
+            )
+        else:
+            await interaction.followup.send(
+                f"❌ {result.get('error', 'Bid failed')}",
+                ephemeral=True
+            )
+    
+    @discord.ui.button(label="Custom Bid", style=discord.ButtonStyle.secondary, emoji="✏️")
+    async def custom_bid_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Open modal for custom bid amount"""
+        modal = CustomBidModal(self)
+        await interaction.response.send_modal(modal)
+    
+    async def _update_auction_embed(self, interaction, result):
+        """Update the original auction embed with new bid info"""
+        try:
+            # Find the original message with the embed (first message in thread)
+            thread = interaction.channel
+            cur = result.get('currency', self.currency)
+            cur_icon = '💎' if cur == 'DIAMOND' else '💰'
+            
+            # Try to find the message with buttons (our message)
+            async for msg in thread.history(oldest_first=True, limit=5):
+                if msg.author.id == interaction.client.user.id and msg.components:
+                    # Found the message with buttons - update the embed
+                    if msg.embeds:
+                        old_embed = msg.embeds[0]
+                        new_embed = discord.Embed(
+                            title=old_embed.title,
+                            color=old_embed.color
+                        )
+                        
+                        for field in old_embed.fields:
+                            if field.name and 'Current Bid' in field.name:
+                                new_embed.add_field(
+                                    name=f"{cur_icon} Current Bid",
+                                    value=f"**{result['current_bid']} {cur}**",
+                                    inline=True
+                                )
+                            elif field.name and 'Leader' in field.name:
+                                new_embed.add_field(
+                                    name="👑 Leader",
+                                    value=f"**{result['character_name']}**",
+                                    inline=True
+                                )
+                            elif field.name and 'Time Left' in field.name:
+                                new_embed.add_field(
+                                    name="⏱️ Time Left",
+                                    value=f"**{result.get('time_remaining', '?')}**",
+                                    inline=True
+                                )
+                            else:
+                                new_embed.add_field(
+                                    name=field.name,
+                                    value=field.value,
+                                    inline=field.inline
+                                )
+                        
+                        if old_embed.image:
+                            new_embed.set_image(url=old_embed.image.url)
+                        if old_embed.footer:
+                            new_embed.set_footer(text=old_embed.footer.text)
+                        
+                        # Update bid button label
+                        self.bid_button.label = f"Bid (+{self.min_increment})"
+                        
+                        await msg.edit(embed=new_embed, view=self)
+                    break
+        except Exception as e:
+            print(f"Error updating auction embed: {e}")
+    
+    async def _append_bid_log(self, interaction, result):
+        """Update the bid log message in the thread"""
+        try:
+            thread = interaction.channel
+            cur = result.get('currency', self.currency)
+            log_msg = None
+            
+            # Find the log message (contains "📜 Bid Log")
+            async for msg in thread.history(oldest_first=True, limit=10):
+                if msg.author.id == interaction.client.user.id and "📜 Bid Log" in msg.content:
+                    log_msg = msg
+                    break
+            
+            bidder_mention = f"<@{interaction.user.id}>"
+            new_log_line = f"{bidder_mention} placed bid: **{result['bid_amount']} {cur}**"
+            
+            if log_msg:
+                updated_content = log_msg.content + f"\n{new_log_line}"
+                # Discord message limit is 2000 chars
+                if len(updated_content) > 1900:
+                    # Start a new log message
+                    await thread.send(f"📜 **Bid Log (continued)**\n{new_log_line}")
+                else:
+                    await log_msg.edit(content=updated_content)
+            else:
+                # Create the log message
+                await thread.send(
+                    f"📜 **Bid Log & Winner will appear below** 👇\n"
+                    f"@everyone **AUCTION OPEN!** Place your bid above.\n\n"
+                    f"{new_log_line}"
+                )
+        except Exception as e:
+            print(f"Error updating bid log: {e}")
+
+
+class CustomBidModal(discord.ui.Modal, title="Custom Bid"):
+    """Modal for entering a custom bid amount"""
+    amount = discord.ui.TextInput(
+        label="Amount",
+        placeholder="Enter your bid amount...",
+        required=True,
+        min_length=1,
+        max_length=10,
+    )
+    
+    def __init__(self, bid_view: AuctionBidView):
+        super().__init__()
+        self.bid_view = bid_view
+    
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            bid_amount = int(self.amount.value)
+        except ValueError:
+            await interaction.followup.send("❌ Please enter a valid number.", ephemeral=True)
+            return
+        
+        if bid_amount <= 0:
+            await interaction.followup.send("❌ Bid amount must be greater than 0.", ephemeral=True)
+            return
+        
+        api_data = {
+            'discord_id': str(interaction.user.id),
+            'bid_amount': bid_amount,
+            'thread_id': str(interaction.channel_id),
+        }
+        
+        result = await self.bid_view.cog.api_request('POST', '/dkp/api/auction/bid/', api_data)
+        
+        if result.get('success'):
+            cur = result.get('currency', self.bid_view.currency)
+            cur_icon = '💎' if cur == 'DIAMOND' else '💰'
+            
+            # Update internal state
+            self.bid_view.current_bid = result.get('current_bid', bid_amount)
+            self.bid_view.bid_button.label = f"Bid (+{self.bid_view.min_increment})"
+            self.bid_view.bid_button.emoji = cur_icon
+            
+            # Update embed and log
+            await self.bid_view._update_auction_embed(interaction, result)
+            await self.bid_view._append_bid_log(interaction, result)
+            
+            await interaction.followup.send(
+                f"✅ You bid **{bid_amount} {cur}** successfully!",
+                ephemeral=True
+            )
+        else:
+            await interaction.followup.send(
+                f"❌ {result.get('error', 'Bid failed')}",
+                ephemeral=True
+            )
 
 
 # ==========================================

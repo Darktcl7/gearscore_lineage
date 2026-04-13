@@ -1723,6 +1723,9 @@ def api_auction_bid(request):
             'previous_leader_discord': old_winner_discord,
             'auction_title': auction.title,
             'time_remaining': auction.time_remaining,
+            'min_increment': auction.min_increment,
+            'current_bid': auction.current_bid,
+            'ends_at_iso': auction.ends_at.isoformat() if auction.ends_at else '',
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
