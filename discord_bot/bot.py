@@ -365,6 +365,7 @@ class AltoBot(commands.Cog):
         
         thread = await self._find_auction_thread(channel, data.get('ID', '?'), data.get('THREAD_ID'))
         if thread:
+            await self._close_auction_embed(thread, "Ended")
             await thread.send("@everyone 🏆 **AUCTION CLOSED!**", embed=embed)
             try:
                 await thread.edit(archived=True, locked=True)
@@ -399,6 +400,7 @@ class AltoBot(commands.Cog):
         
         thread = await self._find_auction_thread(channel, data.get('ID', '?'), data.get('THREAD_ID'))
         if thread:
+            await self._close_auction_embed(thread, "Cancelled")
             await thread.send(embed=embed)
             try:
                 await thread.edit(archived=True, locked=True)
@@ -431,6 +433,7 @@ class AltoBot(commands.Cog):
         
         thread = await self._find_auction_thread(channel, data.get('ID', '?'), data.get('THREAD_ID'))
         if thread:
+            await self._close_auction_embed(thread, "Ended")
             await thread.send(embed=embed)
             try:
                 await thread.edit(archived=True, locked=True)
@@ -458,6 +461,32 @@ class AltoBot(commands.Cog):
                 print(f"Auction deleted (thread removed): {data.get('TITLE')}")
             except Exception as e:
                 print(f"Failed to delete auction thread: {e}")
+
+    async def _close_auction_embed(self, thread, status_text):
+        """Helper to modify the original embed to mark as ended and remove countdown"""
+        try:
+            async for msg in thread.history(oldest_first=True, limit=5):
+                if msg.author.id == self.bot.user.id and msg.embeds and msg.components:
+                    old_embed = msg.embeds[0]
+                    new_embed = discord.Embed(title=old_embed.title, color=discord.Color.dark_gray())
+                    
+                    for field in old_embed.fields:
+                        if field.name and 'Status' in field.name:
+                            new_embed.add_field(name="🏷️ Status", value=f"🔴 **{status_text.upper()}**", inline=True)
+                        elif field.name and 'Time Left' in field.name:
+                            new_embed.add_field(name="⏱️ Time Left", value=f"**{status_text}**", inline=True)
+                        else:
+                            new_embed.add_field(name=field.name, value=field.value, inline=field.inline)
+                    
+                    if old_embed.image:
+                        new_embed.set_image(url=old_embed.image.url)
+                    if old_embed.footer:
+                        new_embed.set_footer(text=old_embed.footer.text)
+                    
+                    await msg.edit(embed=new_embed, view=None)
+                    break
+        except Exception as e:
+            print(f"Error modifying end embed: {e}")
 
     @reminder_loop.before_loop
     async def before_reminder_loop(self):
