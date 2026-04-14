@@ -305,12 +305,6 @@ class AltoBot(commands.Cog):
                     auto_archive_duration=4320
                 )
                 thread_id = thread_with_message.thread.id
-                
-                # Send initial bid log message in the thread
-                await thread_with_message.thread.send(
-                    f"📜 **Bid Log & Winner will appear below** 👇\n"
-                    f"@everyone **AUCTION OPEN!** Place your bid using the buttons above or `/bid <amount>`."
-                )
             else:
                 # Fallback for standard TextChannels: send msg, then create thread from it
                 msg_obj = await channel.send(
@@ -320,12 +314,6 @@ class AltoBot(commands.Cog):
                 )
                 thread_obj = await msg_obj.create_thread(name=thread_name, auto_archive_duration=4320)
                 thread_id = thread_obj.id
-                
-                # Send initial bid log message in the thread
-                await thread_obj.send(
-                    f"📜 **Bid Log & Winner will appear below** 👇\n"
-                    f"@everyone **AUCTION OPEN!** Place your bid using the buttons above or `/bid <amount>`."
-                )
                 
             # Send the thread ID back to the Django API
             if thread_id and data.get('ID'):
@@ -834,8 +822,8 @@ class AltoBot(commands.Cog):
             try:
                 thread = interaction.channel
                 log_msg = None
-                async for m in thread.history(oldest_first=True, limit=10):
-                    if m.author.id == interaction.client.user.id and "📜 Bid Log" in m.content:
+                async for m in thread.history(oldest_first=True, limit=50):
+                    if m.author.id == interaction.client.user.id and "placed bid:" in m.content:
                         log_msg = m
                         break
                 
@@ -846,16 +834,12 @@ class AltoBot(commands.Cog):
                 if log_msg:
                     updated_content = log_msg.content + f"\n{new_log_line}"
                     if len(updated_content) > 1900:
-                        await thread.send(f"📜 **Bid Log (continued)**\n{new_log_line}")
+                        await thread.send(new_log_line)
                     else:
                         await log_msg.edit(content=updated_content)
                 else:
                     # Create the log message if it doesn't exist
-                    await thread.send(
-                        f"📜 **Bid Log & Winner will appear below** 👇\n"
-                        f"@everyone **AUCTION OPEN!** Place your bid above.\n\n"
-                        f"{new_log_line}"
-                    )
+                    await thread.send(new_log_line)
             except Exception as e:
                 print(f"Error updating bid log from /bid command: {e}")
             
@@ -1195,9 +1179,8 @@ class AuctionBidView(discord.ui.View):
             cur = result.get('currency', self.currency)
             log_msg = None
             
-            # Find the log message (contains "📜 Bid Log")
-            async for msg in thread.history(oldest_first=True, limit=10):
-                if msg.author.id == interaction.client.user.id and "📜 Bid Log" in msg.content:
+            async for msg in thread.history(oldest_first=True, limit=50):
+                if msg.author.id == interaction.client.user.id and "placed bid:" in msg.content:
                     log_msg = msg
                     break
             
@@ -1210,16 +1193,12 @@ class AuctionBidView(discord.ui.View):
                 # Discord message limit is 2000 chars
                 if len(updated_content) > 1900:
                     # Start a new log message
-                    await thread.send(f"📜 **Bid Log (continued)**\n{new_log_line}")
+                    await thread.send(new_log_line)
                 else:
                     await log_msg.edit(content=updated_content)
             else:
                 # Create the log message
-                await thread.send(
-                    f"📜 **Bid Log & Winner will appear below** 👇\n"
-                    f"@everyone **AUCTION OPEN!** Place your bid above.\n\n"
-                    f"{new_log_line}"
-                )
+                await thread.send(new_log_line)
         except Exception as e:
             print(f"Error updating bid log: {e}")
 
