@@ -67,7 +67,7 @@ class AltoBot(commands.Cog):
     async def cog_load(self):
         self.session = aiohttp.ClientSession()
 
-    @tasks.loop(minutes=1)
+    @tasks.loop(seconds=5)
     async def reminder_loop(self):
         try:
             # 1. PROCESS ALL PENDING ANNOUNCEMENTS
