@@ -628,7 +628,28 @@ def activity_leaderboard(request):
             'tier': tier,
             'tier_class': tier.lower().replace(' ', '_'),
         })
+    # Apply slot-based tiers to weekly ranking (Target points + Slot Caps)
+    w_core_count = 0
+    w_elite_count = 0
+    w_active_count = 0
     
+    for r in weekly_ranking:
+        score = r['total_score']
+        if score > 950 and w_core_count < 15:
+            r['tier'] = 'Core'
+            r['tier_class'] = 'core'
+            w_core_count += 1
+        elif score > 675 and w_elite_count < 15:
+            r['tier'] = 'Elite'
+            r['tier_class'] = 'elite'
+            w_elite_count += 1
+        elif score > 400 and w_active_count < 20:
+            r['tier'] = 'Active'
+            r['tier_class'] = 'active'
+            w_active_count += 1
+        else:
+            r['tier'] = 'Inactive'
+            r['tier_class'] = 'inactive'
     # ── GUILD STATISTICS (slot-based tiers) ──
     # Tier assignment: sorted by score, then assigned top-down with slot caps
     # Core: > 950 pts, max 15 | Elite: > 675 pts, max 15 | Active: > 400 pts, max 20 | Inactive: rest
