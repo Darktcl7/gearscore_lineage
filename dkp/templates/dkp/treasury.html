@@ -200,12 +200,12 @@
 
     .item-table thead th {
         text-align: left;
-        padding: 14px 16px;
+        padding: 8px 12px;
         border-bottom: 2px solid rgba(255, 215, 0, 0.15);
         color: #888;
         font-weight: 600;
         text-transform: uppercase;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         background: rgba(0, 0, 0, 0.3);
         position: sticky;
         top: 0;
@@ -215,9 +215,9 @@
     }
 
     .item-table tbody td {
-        padding: 14px 16px;
+        padding: 8px 12px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-        font-size: 0.92rem;
+        font-size: 0.85rem;
     }
 
     .item-table tbody tr:hover td {
@@ -295,6 +295,68 @@
         box-shadow: 0 0 10px rgba(255, 215, 0, 0.1);
     }
 
+    /* Custom Autocomplete */
+    .autocomplete-container {
+        position: relative;
+        flex: 1;
+        min-width: 250px;
+    }
+    
+    .autocomplete-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: rgba(15, 15, 20, 0.98);
+        backdrop-filter: blur(10px);
+        border: 1px solid #444;
+        border-radius: 8px;
+        margin-top: 6px;
+        max-height: 250px;
+        overflow-y: auto;
+        z-index: 1000;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        display: none;
+        animation: fadeIn 0.15s ease-out;
+    }
+
+    .autocomplete-dropdown::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .autocomplete-dropdown::-webkit-scrollbar-thumb {
+        background: #555;
+        border-radius: 3px;
+    }
+
+    .autocomplete-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        color: #ccc;
+        border-bottom: 1px solid #2a2a2a;
+        font-family: 'Outfit', sans-serif;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .autocomplete-item:last-child {
+        border-bottom: none;
+    }
+
+    .autocomplete-item:hover {
+        background: rgba(52, 152, 219, 0.15);
+        color: #fff;
+        padding-left: 20px;
+    }
+
+    .autocomplete-item-price {
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+
     .recipient-select option {
         background: #1a1a1a;
         color: #ccc;
@@ -302,12 +364,12 @@
 
     /* Assign Button */
     .btn-assign {
-        padding: 7px 16px;
+        padding: 5px 10px;
         background: linear-gradient(135deg, rgba(46, 204, 113, 0.2), rgba(39, 174, 96, 0.15));
         border: 1px solid rgba(46, 204, 113, 0.4);
-        border-radius: 8px;
+        border-radius: 6px;
         color: #2ecc71;
-        font-size: 0.82rem;
+        font-size: 0.75rem;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s;
@@ -778,8 +840,8 @@
 
         .item-table thead th,
         .item-table tbody td {
-            padding: 10px 8px;
-            font-size: 0.78rem;
+            padding: 6px 6px;
+            font-size: 0.75rem;
         }
 
         .recipient-cell {
@@ -1213,131 +1275,262 @@ function buildTables() {
         var meta = catMeta[cat];
         var container = document.getElementById('cat-' + cat);
 
-        var html = '<div class="item-table-wrapper"><table class="item-table">';
-        html += '<thead><tr>';
-        html += '<th style="width:30px;">#</th>';
-        html += '<th>' + meta.icon + ' Item Name</th>';
-        html += '<th>Price</th>';
-        html += '<th>Stock/Max</th>';
-        html += '<th style="width:60px; text-align:center;">Unit</th>';
-        if (isTreasuryAdmin) {
-            html += '<th style="width:300px;">Action & Requests</th>';
+        var html = '';
+        
+        // 1. Request Form Section
+        if (userProfileId) {
+            html += '<div style="background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin-bottom: 25px;">';
+            html += '<h3 style="margin-top:0; color:#eee; font-family:\'Cinzel\', serif; font-size:1.1rem; margin-bottom:15px;"><i class="fas fa-hand-holding-hand"></i> Submit a Request</h3>';
+            html += '<div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">';
+            
+            html += '<div class="autocomplete-container">';
+            html += '<input type="text" id="sel-' + cat + '" placeholder="Type item name..." autocomplete="off" style="width:100%; padding:10px 15px; border-radius:8px; background:#1a1a1a; color:#fff; border:1px solid #444; font-family:\'Outfit\',sans-serif;" oninput="handleAutocomplete(\'' + cat + '\')" onfocus="handleAutocomplete(\'' + cat + '\')">';
+            html += '<div id="autocompl-' + cat + '" class="autocomplete-dropdown"></div>';
+            html += '</div>';
+            
+            html += '<div id="priceinfo-' + cat + '" style="color:#FFD700; font-weight:600; min-width:100px; text-align:center;">-</div>';
+            html += '<input type="number" id="qtyreq-' + cat + '" value="1" min="1" step="1" style="width:70px; text-align:center; padding:10px; background:#1a1a1a; color:#fff; border:1px solid #444; border-radius:8px; font-family:\'Outfit\',sans-serif;">';
+            html += '<button onclick="requestSelectedItem(\'' + cat + '\')" style="background:linear-gradient(135deg, #3498db, #2980b9); color:white; border:none; border-radius:8px; padding:10px 20px; font-weight:600; cursor:pointer; font-family:\'Outfit\',sans-serif;"><i class="fas fa-paper-plane"></i> Request</button>';
+            html += '</div>';
+            html += '</div>';
         } else {
-            html += '<th style="width:250px;">Action & Requests</th>';
-        }
-        html += '</tr></thead><tbody>';
-
-        if (items.length === 0) {
-            html += '<tr><td colspan="5" style="text-align:center; padding:30px; color:#555;">No items configured.</td></tr>';
+            html += '<div style="background:rgba(231, 76, 60, 0.1); border:1px solid rgba(231, 76, 60, 0.3); padding:15px; border-radius:8px; margin-bottom:20px; color:#e74c3c; text-align:center;">Must have a linked character to request items.</div>';
         }
 
+        // 2. Pending Requests Section
+        html += '<h3 style="color:#FFD700; font-family:\'Cinzel\', serif; font-size:1.1rem; margin-bottom:12px; border-bottom:1px solid rgba(255,215,0,0.2); padding-bottom:8px;"><i class="fas fa-list"></i> Pending Requests Queue</h3>';
+
+        var hasReqs = false;
         items.forEach(function(item, idx) {
-            var currClass = item.currency === 'Diamond' ? 'diamond' : 'dkp';
-            var currIcon = item.currency === 'Diamond' ? '<i class="fas fa-gem"></i>' : '<i class="fas fa-coins"></i>';
-            var stock = parseInt(item.max_per_person || 0);
-            var reqs = item.requests || [];
-            var totalRequested = 0;
-            reqs.forEach(function(r) { totalRequested += parseInt(r.quantity || 1); });
-            var remainingStock = stock > 0 ? stock - totalRequested : 0;
-            if (remainingStock < 0) remainingStock = 0;
-
-            var limitText = stock > 0
-                ? '<span class="limit-val">' + remainingStock + '</span><span style="color:#666;"> / ' + stock + '</span>'
-                : '<span style="color:#e74c3c; font-weight:bold;">0 / Empty</span>';
-            
-            // Out of stock
-            var outOfStock = (stock === 0);
-
-            html += '<tr' + (outOfStock ? ' style="opacity:0.5;"' : '') + '>';
-            html += '<td style="color:#555; font-size:0.8rem;">' + (idx + 1) + '</td>';
-            html += '<td class="item-name">' + item.name + '</td>';
-            html += '<td><span class="price-badge ' + currClass + '">' + currIcon + ' ' + item.price + ' ' + item.currency + '</span></td>';
-            html += '<td class="limit-badge">' + limitText + '</td>';
-
-            var alreadyRequested = false;
-            var myReqQty = 0;
-            if (userProfileId) {
-                reqs.forEach(function(r) {
-                    if (r.profile_id == userProfileId) {
-                        alreadyRequested = true;
-                        myReqQty = parseInt(r.quantity || 1);
-                    }
-                });
-            }
-            
-            var canRequest = !alreadyRequested && !outOfStock && remainingStock > 0 && userProfileId && selectedClan === userClan && !(item.currency === 'DKP' && userDkp < item.price);
-
-            html += '<td style="text-align:center;">';
-            if (canRequest && remainingStock > 1) {
-                html += '<div style="display:flex; align-items:center; justify-content:center; gap:3px;">';
-                html += '<select id="qty-' + cat + '-' + idx + '" style="padding:2px 3px; background:#1a1a1a; border:1px solid #444; color:#FFD700; border-radius:4px; font-size:0.75rem; width:38px; text-align:center; font-family:Outfit,sans-serif; cursor:pointer;">';
-                for (var q = 1; q <= remainingStock; q++) {
-                    html += '<option value="' + q + '">' + q + '</option>';
-                }
-                html += '</select>';
-                html += '<span style="color:#666; font-size:0.65rem;">unit</span>';
-                html += '</div>';
-            } else if (!outOfStock && remainingStock === 1 && canRequest) {
-                html += '<input type="hidden" id="qty-' + cat + '-' + idx + '" value="1">';
-                html += '<span style="color:#888; font-size:0.75rem;">1 <span style="color:#666; font-size:0.65rem;">unit</span></span>';
-            } else {
-                html += '<input type="hidden" id="qty-' + cat + '-' + idx + '" value="1">';
-                html += '<span style="color:#666; font-size:0.75rem;">-</span>';
-            }
-            html += '</td>';
-            
-            var requestButtonHtml = '';
-            if (alreadyRequested) {
-                requestButtonHtml = '<button disabled style="background:rgba(46, 204, 113, 0.2); color:#2ecc71; border:1px solid #2ecc71; padding:6px 12px; border-radius:4px; font-size:0.8rem; cursor:not-allowed; width: 100%;"><i class="fas fa-check-circle"></i> Requested (x' + myReqQty + ')</button>';
-            } else if (outOfStock || remainingStock <= 0) {
-                requestButtonHtml = '<button disabled style="background:#555; color:#ccc; border:none; padding:6px 12px; border-radius:4px; font-size:0.8rem; cursor:not-allowed; width: 100%;"><i class="fas fa-ban"></i> Full/Out</button>';
-            } else if (!userProfileId) {
-                requestButtonHtml = '<button disabled style="background:#555; color:#ccc; border:none; padding:6px 12px; border-radius:4px; font-size:0.8rem; cursor:not-allowed; width: 100%;"><i class="fas fa-user-times"></i> No Char Linked</button>';
-            } else if (selectedClan !== userClan) {
-                requestButtonHtml = '<button disabled style="background:#444; color:#999; border:none; padding:6px 12px; border-radius:4px; font-size:0.8rem; cursor:not-allowed; width: 100%;" title="You can only request items belonging to your own clan"><i class="fas fa-lock"></i> Clan Only</button>';
-            } else if (item.currency === 'DKP' && userDkp < item.price) {
-                requestButtonHtml = '<button disabled style="background:#555; color:#e74c3c; border:1px solid #e74c3c; padding:6px 12px; border-radius:4px; font-size:0.8rem; cursor:not-allowed; width: 100%;" title="You need ' + item.price + ' DKP to request this"><i class="fas fa-times-circle"></i> Not Enough DKP</button>';
-            } else {
-                requestButtonHtml = '<button class="btn-assign" onclick="requestItem(\'' + cat + '\', ' + idx + ')" style="background:#3498db; color:white; width:100%;">';
-                requestButtonHtml += '<i class="fas fa-hand-paper"></i> Request</button>';
-            }
-
-            html += '<td class="recipient-cell">';
-            html += '<div style="margin-bottom:8px;">' + requestButtonHtml + '</div>';
-            
-            if (reqs.length === 0) {
-                html += '<div style="color:#777; font-size:0.75rem; text-align:center; padding:4px;">No requests</div>';
-            } else {
-                var listId = 'reqList_' + cat + '_' + idx;
-                html += '<button onclick="toggleReqList(\'' + listId + '\', this)" style="background:rgba(255,255,255,0.05); border:1px solid #444; border-radius:4px; color:#ddd; cursor:pointer; font-size:0.75rem; margin-top:4px; padding:6px; width:100%; transition:all 0.2s;"><i class="fas fa-users" style="color:#f1c40f;"></i> Show ' + reqs.length + ' Request(s) — ' + totalRequested + ' unit(s) <i class="fas fa-chevron-down" style="float:right; margin-top:2px; transition:transform 0.3s;"></i></button>';
+            if (item.requests && item.requests.length > 0) {
+                hasReqs = true;
+                var currIcon = item.currency === 'Diamond' ? '<i class="fas fa-gem" style="color:#bb8fce;"></i>' : '<i class="fas fa-coins" style="color:#FFD700;"></i>';
                 
-                html += '<div id="' + listId + '" style="display:none; flex-direction:column; gap:4px; border-top:1px solid #333; padding-top:6px; margin-top:6px;">';
-                reqs.forEach(function(req) {
+                // Group Container for this specific item
+                html += '<div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; margin-bottom: 20px; overflow: hidden;">';
+                
+                // Item Header
+                html += '<div style="background: rgba(0,0,0,0.3); padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">';
+                html += '<h4 style="margin: 0; color: #5dade2; font-family: \'Outfit\', sans-serif; font-size: 1.05rem;"><i class="fas fa-box-open"></i> ' + item.name + '</h4>';
+                html += '<span style="font-size: 0.85rem; color: #aaa;">' + item.requests.length + ' Request(s)</span>';
+                html += '</div>';
+
+                // Mini-Table Wrapper
+                html += '<div class="item-table-wrapper" style="border: none; border-radius: 0;">';
+                html += '<table class="item-table">';
+                html += '<thead><tr>';
+                html += '<th>Requested By</th>';
+                html += '<th style="text-align:center;">Qty</th>';
+                html += '<th>Total Cost</th>';
+                html += '<th style="width:200px; text-align:right;">Actions</th>';
+                html += '</tr></thead><tbody>';
+
+                item.requests.forEach(function(req) {
                     var rQty = parseInt(req.quantity || 1);
-                    html += '<div style="display:flex; flex-direction:column; gap:4px; background:rgba(255,215,0,0.05); padding:6px; border-radius:4px; border:1px solid rgba(255,215,0,0.2);">';
-                    html += '<span style="font-size:0.85rem;">' + req.character_name + ' <span style="color:#f1c40f; font-weight:600;">(x' + rQty + ')</span></span>';
+                    var totalCost = item.price * rQty;
+
+                    html += '<tr>';
+                    html += '<td style="font-weight:600; color:#eee;">' + req.character_name + '</td>';
+                    html += '<td style="text-align:center; font-weight:600;">' + rQty + '</td>';
+                    html += '<td>' + currIcon + ' ' + totalCost + ' ' + item.currency + '</td>';
                     
+                    html += '<td style="text-align:right;">';
+                    html += '<div style="display:flex; justify-content:flex-end; gap:6px;">';
                     if (isTreasuryAdmin) {
-                        html += '<div style="display:flex; gap:4px; margin-top: 4px;">';
-                        html += '<button class="btn-assign" style="flex:1; padding:4px; font-size:0.75rem;" onclick="assignItem(\'' + cat + '\', ' + idx + ', ' + req.profile_id + ', \'' + req.character_name.replace(/'/g, "\\'") + '\')"' + (outOfStock ? ' disabled style="background:#555;"' : '') + '><i class="fas fa-check"></i> Assign (x' + rQty + ')</button>';
-                        html += '<button style="flex:1; padding:4px; font-size:0.75rem; background:#e74c3c; border:none; color:white; border-radius:4px; cursor:pointer;" onclick="rejectRequest(\'' + cat + '\', ' + idx + ', ' + req.profile_id + ')"><i class="fas fa-times"></i> Reject</button>';
-                        html += '</div>';
+                        html += '<button class="btn-assign" onclick="assignItem(\'' + cat + '\', ' + idx + ', ' + req.profile_id + ', \'' + req.character_name.replace(/'/g, "\\'") + '\')"><i class="fas fa-check"></i> Assign</button>';
+                        html += '<button style="background:rgba(231, 76, 60, 0.2); border:1px solid #e74c3c; color:#e74c3c; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:0.75rem; font-weight:600; font-family:\'Outfit\',sans-serif;" onclick="rejectRequest(\'' + cat + '\', ' + idx + ', ' + req.profile_id + ')"><i class="fas fa-times"></i> Reject</button>';
                     } else if (userProfileId && req.profile_id == userProfileId) {
-                        html += '<div style="display:flex; gap:4px; margin-top: 4px;">';
-                        html += '<button style="flex:1; padding:4px; font-size:0.75rem; background:#e74c3c; border:none; color:white; border-radius:4px; cursor:pointer;" onclick="rejectRequest(\'' + cat + '\', ' + idx + ', ' + req.profile_id + ')" title="Cancel your request"><i class="fas fa-times"></i> Cancel Request</button>';
-                        html += '</div>';
+                        html += '<button style="background:rgba(231, 76, 60, 0.2); border:1px solid #e74c3c; color:#e74c3c; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:0.75rem; font-weight:600; font-family:\'Outfit\',sans-serif;" onclick="rejectRequest(\'' + cat + '\', ' + idx + ', ' + req.profile_id + ')"><i class="fas fa-undo"></i> Cancel</button>';
+                    } else {
+                        html += '<span style="color:#666; font-size:0.8rem;">Pending</span>';
                     }
                     html += '</div>';
+                    html += '</td>';
+                    html += '</tr>';
                 });
-                html += '</div>';
+
+                html += '</tbody></table></div></div>';
             }
-            html += '</td>';
-            html += '</tr>';
         });
 
-        html += '</tbody></table></div>';
+        if (!hasReqs) {
+            html += '<div style="text-align:center; padding:30px; color:#555; background: rgba(0,0,0,0.2); border-radius: 8px;"><i class="fas fa-inbox" style="font-size:1.5rem; display:block; margin-bottom:10px;"></i> No active requests in this category.</div>';
+        }
         container.innerHTML = html;
+        
+        // initialize price
+        updatePrice(cat);
     });
+    
+    updateTabBadges();
+}
+
+function updateTabBadges() {
+    var categories = ['blue_books', 'blue_equipment', 'other_items', 'diamond_items'];
+    categories.forEach(function(cat) {
+        var items = treasuryConfig[cat] || [];
+        var count = 0;
+        items.forEach(function(item) {
+            if (item.requests) {
+                count += item.requests.length;
+            }
+        });
+        
+        var tabBtn = document.querySelector('.cat-tab[data-cat="' + cat + '"]');
+        if (tabBtn) {
+            var badge = tabBtn.querySelector('.req-badge');
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'req-badge';
+                badge.style.cssText = 'background: #e74c3c; color: white; border-radius: 50%; width: 18px; height: 18px; line-height: 18px; text-align: center; font-size: 0.65rem; margin-left: 8px; font-weight: bold; box-shadow: 0 0 8px rgba(231,76,60,0.6); display: none;';
+                tabBtn.appendChild(badge);
+            }
+            if (count > 0) {
+                badge.innerText = count;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    });
+}
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.autocomplete-container')) {
+        document.querySelectorAll('.autocomplete-dropdown').forEach(function(el) {
+            el.style.display = 'none';
+        });
+    }
+});
+
+function handleAutocomplete(cat) {
+    var input = document.getElementById('sel-' + cat);
+    var dropdown = document.getElementById('autocompl-' + cat);
+    if (!input || !dropdown) return;
+
+    var val = input.value.trim().toLowerCase();
+    
+    // Always update price if it matches exactly
+    updatePrice(cat);
+
+    if (val === "") {
+        dropdown.style.display = 'none';
+        return;
+    }
+
+    var items = treasuryConfig[cat] || [];
+    var html = '';
+    var count = 0;
+
+    for (var i = 0; i < items.length; i++) {
+        var itemName = items[i].name;
+        if (itemName.toLowerCase().indexOf(val) !== -1) {
+            var currObj = items[i].currency === 'Diamond' ? '<i class="fas fa-gem" style="color:#bb8fce;"></i> ' + items[i].price : '<i class="fas fa-coins" style="color:#FFD700;"></i> ' + items[i].price;
+            html += '<div class="autocomplete-item" onclick="selectAutocomplete(\'' + cat + '\', \'' + itemName.replace(/'/g, "\\'").replace(/"/g, '&quot;') + '\')">';
+            html += '<span>' + itemName + '</span>';
+            html += '<span class="autocomplete-item-price">' + currObj + '</span>';
+            html += '</div>';
+            count++;
+        }
+        if (count >= 15) break;
+    }
+
+    if (count > 0) {
+        dropdown.innerHTML = html;
+        dropdown.style.display = 'block';
+    } else {
+        dropdown.style.display = 'none';
+    }
+}
+
+function selectAutocomplete(cat, itemName) {
+    var input = document.getElementById('sel-' + cat);
+    var dropdown = document.getElementById('autocompl-' + cat);
+    if (input) {
+        input.value = itemName;
+    }
+    if (dropdown) {
+        dropdown.style.display = 'none';
+    }
+    updatePrice(cat);
+}
+
+function updatePrice(cat) {
+    var input = document.getElementById('sel-' + cat);
+    var div = document.getElementById('priceinfo-' + cat);
+    if (!input || !div) return;
+    
+    var val = input.value.trim().toLowerCase();
+    if (val === "") {
+        div.innerHTML = '-';
+        return;
+    }
+    
+    var items = treasuryConfig[cat] || [];
+    var matchedItem = null;
+    for (var i = 0; i < items.length; i++) {
+        if (items[i].name.toLowerCase() === val) {
+            matchedItem = items[i];
+            break;
+        }
+    }
+    
+    if (matchedItem) {
+        var ico = matchedItem.currency === 'Diamond' ? '<i class="fas fa-gem" style="color:#bb8fce;"></i>' : '<i class="fas fa-coins" style="color:#FFD700;"></i>';
+        div.innerHTML = ico + ' ' + matchedItem.price;
+    } else {
+        div.innerHTML = '-';
+    }
+}
+
+function requestSelectedItem(cat) {
+    var input = document.getElementById('sel-' + cat);
+    if (!input || input.value.trim() === "") {
+        showToast('Please enter an item name.', 'error');
+        return;
+    }
+    
+    var val = input.value.trim().toLowerCase();
+    var items = treasuryConfig[cat] || [];
+    var matchedIdx = -1;
+    
+    for (var i = 0; i < items.length; i++) {
+        if (items[i].name.toLowerCase() === val) {
+            matchedIdx = i;
+            break;
+        }
+    }
+
+    if (matchedIdx === -1) {
+        showToast('Item not found. Please select from recommendations.', 'error');
+        return;
+    }
+    
+    var idx = matchedIdx;
+    
+    // Check if user already requested this exact item
+    var item = items[idx];
+    if (item.requests) {
+        for (var i = 0; i < item.requests.length; i++) {
+            if (item.requests[i].profile_id == userProfileId) {
+                showToast('You already requested this item. Please cancel the previous request if you want to change the quantity.', 'error');
+                return;
+            }
+        }
+    }
+    
+    // Re-use logic
+    var qtyInput = document.getElementById('qtyreq-' + cat);
+    var oldSelect = document.createElement('select');
+    oldSelect.id = 'qty-' + cat + '-' + idx;
+    var opt = document.createElement('option');
+    opt.value = qtyInput ? qtyInput.value : "1";
+    oldSelect.appendChild(opt);
+    oldSelect.style.display = 'none';
+    document.body.appendChild(oldSelect);
+    
+    requestItem(cat, idx);
+    setTimeout(function() { document.body.removeChild(oldSelect); }, 100);
 }
 
 // Toggle request list helper
@@ -1530,8 +1723,6 @@ function generateSettingsRow(cat, idx, item) {
     html += '<input type="text" class="name-input" id="sn-' + cat + '-' + idx + '" value="' + escapedName + '" placeholder="Item Name">';
     html += '<span class="settings-item-label">Price</span>';
     html += '<input type="number" class="settings-item-input" id="sp-' + cat + '-' + idx + '" value="' + item.price + '" min="0" style="width:85px; text-align:center;">';
-    html += '<span class="settings-item-label">Max</span>';
-    html += '<input type="number" class="settings-item-input" id="sm-' + cat + '-' + idx + '" value="' + item.max_per_person + '" min="0" style="width:75px; text-align:center;">';
     html += '<button type="button" onclick="removeSettingsItem(\'' + cat + '\', ' + idx + ')" style="background:none; border:none; color:#e74c3c; cursor:pointer; padding:5px;"><i class="fas fa-trash"></i></button>';
     html += '</div>';
     return html;
@@ -1578,12 +1769,11 @@ function saveSettings() {
             var nameEl = document.getElementById('sn-' + cat + '-' + idx);
             if (nameEl && !nameEl.classList.contains('deleted-item')) {
                 var priceEl = document.getElementById('sp-' + cat + '-' + idx);
-                var maxEl = document.getElementById('sm-' + cat + '-' + idx);
                 
                 newConfig[cat].push({
                     name: nameEl.value.trim() || '',
                     price: priceEl ? (parseInt(priceEl.value) || 0) : 0,
-                    max_per_person: maxEl ? (parseInt(maxEl.value) || 0) : 0,
+                    max_per_person: 0,
                     currency: oldItem.currency || currencyDefault
                 });
             }

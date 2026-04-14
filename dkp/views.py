@@ -1062,19 +1062,7 @@ def treasury_request_item(request):
                 if req.get('profile_id') == user_profile.id:
                     return JsonResponse({'error': 'You have already requested this item.'}, status=400)
 
-            # Calculate total already requested quantity
-            total_requested = sum(int(r.get('quantity', 1)) for r in requests_list)
-
-            # Check stock limit
-            if stock <= 0:
-                return JsonResponse({'error': 'This item is out of stock.'}, status=400)
-
-            remaining = stock - total_requested
-            if remaining <= 0:
-                return JsonResponse({'error': 'Request list is full for this item.'}, status=400)
-
-            if quantity > remaining:
-                return JsonResponse({'error': f'Only {remaining} unit(s) remaining. Please reduce your quantity.'}, status=400)
+            # No stock limits applied
 
             # Calculate total cost
             total_cost = price * quantity
