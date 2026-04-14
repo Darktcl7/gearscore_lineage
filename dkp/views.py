@@ -1768,6 +1768,7 @@ def api_auction_bid(request):
             'min_increment': auction.min_increment,
             'current_bid': auction.current_bid,
             'ends_at_iso': auction.ends_at.isoformat() if auction.ends_at else '',
+            'ends_at_timestamp': int(auction.ends_at.timestamp()) if auction.ends_at else None,
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)

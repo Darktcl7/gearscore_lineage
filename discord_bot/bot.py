@@ -848,8 +848,67 @@ class AltoBot(commands.Cog):
                         await thread.send(f"📜 **Bid Log (continued)**\n{new_log_line}")
                     else:
                         await log_msg.edit(content=updated_content)
+                else:
+                    # Create the log message if it doesn't exist
+                    await thread.send(
+                        f"📜 **Bid Log & Winner will appear below** 👇\n"
+                        f"@everyone **AUCTION OPEN!** Place your bid above.\n\n"
+                        f"{new_log_line}"
+                    )
             except Exception as e:
                 print(f"Error updating bid log from /bid command: {e}")
+            
+            # Also update the auction embed (Current Bid, Leader, Time Left)
+            try:
+                thread = interaction.channel
+                async for msg in thread.history(oldest_first=True, limit=5):
+                    if msg.author.id == interaction.client.user.id and msg.embeds and msg.components:
+                        old_embed = msg.embeds[0]
+                        new_embed = discord.Embed(
+                            title=old_embed.title,
+                            color=old_embed.color
+                        )
+                        
+                        for field in old_embed.fields:
+                            if field.name and 'Current Bid' in field.name:
+                                new_embed.add_field(
+                                    name=f"{cur_icon} Current Bid",
+                                    value=f"**{result['current_bid']} {cur}**",
+                                    inline=True
+                                )
+                            elif field.name and 'Leader' in field.name:
+                                new_embed.add_field(
+                                    name="👑 Leader",
+                                    value=f"**{result['character_name']}**",
+                                    inline=True
+                                )
+                            elif field.name and 'Time Left' in field.name:
+                                ends_ts = result.get('ends_at_timestamp')
+                                if ends_ts:
+                                    time_value = f"**End: <t:{ends_ts}:R>**"
+                                else:
+                                    time_value = field.value
+                                new_embed.add_field(
+                                    name="⏱️ Time Left",
+                                    value=time_value,
+                                    inline=True
+                                )
+                            else:
+                                new_embed.add_field(
+                                    name=field.name,
+                                    value=field.value,
+                                    inline=field.inline
+                                )
+                        
+                        if old_embed.image:
+                            new_embed.set_image(url=old_embed.image.url)
+                        if old_embed.footer:
+                            new_embed.set_footer(text=old_embed.footer.text)
+                        
+                        await msg.edit(embed=new_embed)
+                        break
+            except Exception as e:
+                print(f"Error updating auction embed from /bid command: {e}")
         else:
             await interaction.followup.send(
                 f"❌ {result.get('error', 'Bid failed')}",
@@ -1097,9 +1156,15 @@ class AuctionBidView(discord.ui.View):
                                     inline=True
                                 )
                             elif field.name and 'Time Left' in field.name:
+                                # Use fresh timestamp from API if available (anti-snipe may have extended)
+                                ends_ts = result.get('ends_at_timestamp')
+                                if ends_ts:
+                                    time_value = f"**End: <t:{ends_ts}:R>**"
+                                else:
+                                    time_value = field.value
                                 new_embed.add_field(
                                     name="⏱️ Time Left",
-                                    value=field.value,
+                                    value=time_value,
                                     inline=True
                                 )
                             else:
