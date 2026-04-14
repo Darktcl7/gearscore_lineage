@@ -1313,6 +1313,17 @@ def is_auction_admin(user):
 
 
 @login_required(login_url='/login/')
+def auction_poll_times(request):
+    """Lightweight AJAX endpoint to poll active auction end times"""
+    auctions = Auction.objects.filter(status='ACTIVE')
+    data = {}
+    for a in auctions:
+        if a.ends_at:
+            data[str(a.id)] = a.ends_at.isoformat()
+    return JsonResponse(data)
+
+
+@login_required(login_url='/login/')
 def auction_page(request):
     """Auction management page"""
     if not is_auction_admin(request.user):

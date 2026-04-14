@@ -435,7 +435,7 @@
                         <div class="auction-info-label">{% if auction.status == 'DRAFT' %}Duration{% else %}Time Left{% endif %}</div>
                         <div class="auction-info-value time">
                             {% if auction.status == 'ACTIVE' %}
-                                <i class="fas fa-clock"></i> <span class="auction-countdown" data-ends-at="{{ auction.ends_at|date:'c' }}">{{ auction.time_remaining }}</span>
+                                <i class="fas fa-clock"></i> <span class="auction-countdown" data-ends-at="{{ auction.ends_at|date:'c' }}" data-auction-id="{{ auction.id }}">{{ auction.time_remaining }}</span>
                             {% elif auction.status == 'CLOSED' %}
                                 <span style="color:#e74c3c;">Ended</span>
                             {% elif auction.status == 'DRAFT' %}
@@ -825,6 +825,8 @@ function updateCountdowns() {
             return;
         }
         
+        el.style.color = (distance < 60000) ? '#e74c3c' : '';
+        
         const hours = Math.floor(distance / (1000 * 60 * 60));
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
@@ -837,9 +839,29 @@ function updateCountdowns() {
     });
 }
 
-// Run update every second
+// Poll server every 10 seconds to sync anti-snipe time extensions
+function pollAuctionTimes() {
+    fetch('{% url "auction-poll-times" %}')
+        .then(r => r.json())
+        .then(data => {
+            document.querySelectorAll('.auction-countdown').forEach(el => {
+                const aId = el.getAttribute('data-auction-id');
+                if (aId && data[aId]) {
+                    const currentEnds = el.getAttribute('data-ends-at');
+                    const newEnds = data[aId];
+                    if (currentEnds !== newEnds) {
+                        el.setAttribute('data-ends-at', newEnds);
+                        el.style.color = '';
+                    }
+                }
+            });
+        })
+        .catch(() => {});
+}
+
 setInterval(updateCountdowns, 1000);
-updateCountdowns(); // Initial call
+setInterval(pollAuctionTimes, 10000);
+updateCountdowns();
 </script>
 
 {% endblock %}

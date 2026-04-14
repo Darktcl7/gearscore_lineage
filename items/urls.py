@@ -90,6 +90,7 @@ urlpatterns = [
     path('manage/auction/cancel/', dkp_views.auction_cancel, name='auction-cancel'),
     path('manage/auction/delete/', dkp_views.auction_delete, name='auction-delete'),
     path('manage/auction/clear-winners/', dkp_views.auction_clear_winners, name='auction-clear-winners'),
+    path('manage/auction/poll-times/', dkp_views.auction_poll_times, name='auction-poll-times'),
     
     # URL: /items/item/1/ -> Menampilkan detail satu item
     path('item/<int:pk>/', item_detail, name='item-detail'),

@@ -840,7 +840,8 @@ class AltoBot(commands.Cog):
                         break
                 
                 bidder_mention = f"<@{interaction.user.id}>"
-                new_log_line = f"{bidder_mention} placed bid: **{result['bid_amount']} {cur}**"
+                time_left = result.get('time_remaining', '')
+                new_log_line = f"{bidder_mention} placed bid: **{result['bid_amount']} {cur}** ⏱️ {time_left}"
                 
                 if log_msg:
                     updated_content = log_msg.content + f"\n{new_log_line}"
@@ -1201,7 +1202,8 @@ class AuctionBidView(discord.ui.View):
                     break
             
             bidder_mention = f"<@{interaction.user.id}>"
-            new_log_line = f"{bidder_mention} placed bid: **{result['bid_amount']} {cur}**"
+            time_left = result.get('time_remaining', '')
+            new_log_line = f"{bidder_mention} placed bid: **{result['bid_amount']} {cur}** ⏱️ {time_left}"
             
             if log_msg:
                 updated_content = log_msg.content + f"\n{new_log_line}"
