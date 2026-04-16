@@ -632,6 +632,7 @@ def activity_leaderboard(request):
     w_core_count = 0
     w_elite_count = 0
     w_active_count = 0
+    w_inactive_count = 0
     
     for r in weekly_ranking:
         score = r['total_score']
@@ -650,6 +651,15 @@ def activity_leaderboard(request):
         else:
             r['tier'] = 'Inactive'
             r['tier_class'] = 'inactive'
+            w_inactive_count += 1
+
+    weekly_guild_stats = {
+        'core': w_core_count,
+        'elite': w_elite_count,
+        'active': w_active_count,
+        'inactive': w_inactive_count,
+        'total': len(weekly_ranking),
+    }
     # ── GUILD STATISTICS (slot-based tiers) ──
     # Tier assignment: sorted by score, then assigned top-down with slot caps
     # Core: > 950 pts, max 15 | Elite: > 675 pts, max 15 | Active: > 400 pts, max 20 | Inactive: rest
@@ -701,6 +711,7 @@ def activity_leaderboard(request):
         'monthly_ranking': monthly_ranking,
         'weekly_ranking': weekly_ranking,
         'guild_stats': guild_stats,
+        'weekly_guild_stats': weekly_guild_stats,
         'recent_events': recent_events,
         'current_month': today.strftime('%B %Y'),
         'current_week': f"01 {today.strftime('%b')} - {__import__('calendar').monthrange(today.year, today.month)[1]} {today.strftime('%b %Y')}",

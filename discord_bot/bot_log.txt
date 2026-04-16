@@ -169,3 +169,5 @@ ModuleNotFoundError: No module named 'discord'
 [2026-03-02 05:52:03] [INFO    ] discord.gateway: Shard ID None has connected to Gateway (Session ID: 22575175f57709f2d0009dc8004cc4b7).
 [2026-03-02 08:10:37] [INFO    ] discord.gateway: Shard ID None has successfully RESUMED session 22575175f57709f2d0009dc8004cc4b7.
 [2026-03-02 09:39:59] [INFO    ] discord.gateway: Shard ID None has successfully RESUMED session 22575175f57709f2d0009dc8004cc4b7.
+nohup: ignoring input
+Python was not found; run without arguments to install from the Microsoft Store, or disable this shortcut from Settings > Apps > Advanced app settings > App execution aliases.

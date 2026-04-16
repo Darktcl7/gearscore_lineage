@@ -724,7 +724,12 @@ function clearSearch() {
         var selectAll = document.getElementById('select-all');
         var checkboxes = document.querySelectorAll('.player-checkbox');
         checkboxes.forEach(function (cb) {
-            cb.checked = selectAll.checked;
+            var tr = cb.closest('tr');
+            if (tr && tr.style.display !== 'none') {
+                cb.checked = selectAll.checked;
+            } else {
+                cb.checked = false;
+            }
         });
         updateDkpCount();
     }
