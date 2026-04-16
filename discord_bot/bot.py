@@ -57,6 +57,9 @@ class AltoBot(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.session = None
+        # Track sent alarms to prevent spam
+        # Key: (day, time_str, msg_hash) -> {'count': int, 'last_sent_minute': str}
+        self._sent_alarms = {}
         self.reminder_loop.start() # Start reminder loop
     
     def cog_unload(self):
@@ -178,17 +181,58 @@ class AltoBot(commands.Cog):
             if alarm_result.get('success'):
                 alarms = alarm_result.get('alarms', [])
 
-            # 3. Check Alarms
+            # 3. Check Alarms - Send max 3 times per alarm, 1 minute apart
             now = datetime.now(timezone(timedelta(hours=7)))  # WIB (GMT+7)
             current_day = now.weekday()
             current_time = now.strftime("%H:%M")
+            current_minute_key = now.strftime("%Y-%m-%d %H:%M")
+            
+            # Clean up old tracking entries (older than 5 minutes)
+            stale_keys = [
+                k for k, v in self._sent_alarms.items()
+                if (now - v.get('first_sent', now)).total_seconds() > 300
+            ]
+            for k in stale_keys:
+                del self._sent_alarms[k]
             
             for item in alarms:
-                if item['day'] == current_day and item['time'] == current_time:
+                alarm_time = item['time']
+                # Calculate the 3 valid send times: alarm_time, alarm_time+1min, alarm_time+2min
+                try:
+                    base_h, base_m = map(int, alarm_time.split(':'))
+                    valid_times = []
+                    for offset in range(3):
+                        m = base_m + offset
+                        h = base_h + (m // 60)
+                        m = m % 60
+                        h = h % 24
+                        valid_times.append(f"{h:02d}:{m:02d}")
+                except ValueError:
+                    continue
+                
+                if item['day'] == current_day and current_time in valid_times:
+                    # Create a unique key for this alarm
+                    alarm_key = (item['day'], alarm_time, hash(item['msg']))
+                    
+                    tracker = self._sent_alarms.get(alarm_key, {
+                        'count': 0,
+                        'last_sent_minute': None,
+                        'first_sent': now
+                    })
+                    
+                    # Skip if already sent 3 times or already sent this minute
+                    if tracker['count'] >= 3:
+                        continue
+                    if tracker['last_sent_minute'] == current_minute_key:
+                        continue
+                    
                     channel = self.bot.get_channel(EVENTS_CHANNEL_ID)
                     if channel:
                         await channel.send(item['msg'])
-                        print(f"Sent reminder: {item['msg']}")
+                        tracker['count'] += 1
+                        tracker['last_sent_minute'] = current_minute_key
+                        self._sent_alarms[alarm_key] = tracker
+                        print(f"Sent reminder ({tracker['count']}/3): {item['msg'][:50]}...")
             
             # 4. Check for expired auctions (every cycle)
             try:
