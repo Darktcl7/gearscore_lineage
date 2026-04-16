@@ -1025,6 +1025,7 @@ def treasury_request_item(request):
             item_idx = data.get('item_idx')
             clan = data.get('clan', 'Valkyrie')
             quantity = int(data.get('quantity', 1))
+            note = data.get('note', '')[:250]
 
             if item_category is None or item_idx is None:
                 return JsonResponse({'error': 'Missing required fields'}, status=400)
@@ -1079,7 +1080,8 @@ def treasury_request_item(request):
                 "character_name": user_profile.character.name,
                 "dkp": user_profile.current_dkp,
                 "user_id": request.user.id,
-                "quantity": quantity
+                "quantity": quantity,
+                "note": note
             })
             config_obj.save()
 
@@ -1248,7 +1250,8 @@ def treasury_assign(request):
                 'price': total_price,
                 'item_name': txn_item_name,
                 'txn_id': txn.id,
-                'quantity': req_quantity
+                'quantity': req_quantity,
+                'note': note
             })
 
         except Exception as e:

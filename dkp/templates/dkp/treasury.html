@@ -955,7 +955,12 @@
                 {% for txn in recent_transactions %}
                 <tr id="txnRow-{{ txn.id }}">
                     <td class="txn-char">{{ txn.profile.character.name }}</td>
-                    <td class="txn-item">{{ txn.item_name }}</td>
+                    <td class="txn-item">
+                        {{ txn.item_name }}
+                        {% if txn.note %}
+                        <div style="font-size: 0.75rem; color: #888; font-style: italic; margin-top: 2px;"><i class="fas fa-comment-alt" style="font-size:0.65rem;"></i> {{ txn.note }}</div>
+                        {% endif %}
+                    </td>
                     <td class="txn-amount">-{{ txn.amount_deducted }} {{ txn.currency }}</td>
                     <td style="color:#888;">{{ txn.created_by.username|default:"System" }}</td>
                     <td class="txn-date">{{ txn.created_at|date:"d M Y H:i" }}</td>
@@ -1128,6 +1133,10 @@ function requestItem(cat, idx) {
     
     var qtySelect = document.getElementById('qty-' + cat + '-' + idx);
     var quantity = qtySelect ? parseInt(qtySelect.value) : 1;
+    
+    var noteHidden = document.getElementById('hid-note-' + cat + '-' + idx);
+    var reqNote = noteHidden ? noteHidden.value : '';
+    
     var item = treasuryConfig[cat][idx];
     var totalCost = item.price * quantity;
     var itemName = item.name;
@@ -1148,7 +1157,8 @@ function requestItem(cat, idx) {
                 item_category: cat,
                 item_idx: idx,
                 clan: selectedClan,
-                quantity: quantity
+                quantity: quantity,
+                note: reqNote
             })
         })
         .then(function(res) { return res.json(); })
@@ -1292,6 +1302,7 @@ function buildTables() {
             html += '<input type="number" id="qtyreq-' + cat + '" value="1" min="1" step="1" style="width:70px; text-align:center; padding:10px; background:#1a1a1a; color:#fff; border:1px solid #444; border-radius:8px; font-family:\'Outfit\',sans-serif;">';
             html += '<button onclick="requestSelectedItem(\'' + cat + '\')" style="background:linear-gradient(135deg, #3498db, #2980b9); color:white; border:none; border-radius:8px; padding:10px 20px; font-weight:600; cursor:pointer; font-family:\'Outfit\',sans-serif;"><i class="fas fa-paper-plane"></i> Request</button>';
             html += '</div>';
+            html += '<div style="margin-top:12px; margin-bottom:5px;"><input type="text" id="notereq-' + cat + '" placeholder="Notes / Catatan (Opsional)..." maxlength="250" style="width:100%; padding:10px 15px; border-radius:8px; background:#1a1a1a; color:#fff; border:1px solid #444; font-family:\'Outfit\',sans-serif; box-sizing:border-box;"></div>';
             html += '</div>';
         } else {
             html += '<div style="background:rgba(231, 76, 60, 0.1); border:1px solid rgba(231, 76, 60, 0.3); padding:15px; border-radius:8px; margin-bottom:20px; color:#e74c3c; text-align:center;">Must have a linked character to request items.</div>';
@@ -1330,7 +1341,12 @@ function buildTables() {
                     var totalCost = item.price * rQty;
 
                     html += '<tr>';
-                    html += '<td style="font-weight:600; color:#eee;">' + req.character_name + '</td>';
+                    var safeNote = req.note ? req.note.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+                    html += '<td style="font-weight:600; color:#eee;">' + req.character_name;
+                    if (safeNote) {
+                        html += '<div style="font-size: 0.75rem; color: #888; font-weight: normal; margin-top: 2px; font-style: italic;"><i class="fas fa-comment-alt" style="font-size:0.65rem;"></i> ' + safeNote + '</div>';
+                    }
+                    html += '</td>';
                     html += '<td style="text-align:center; font-weight:600;">' + rQty + '</td>';
                     html += '<td>' + currIcon + ' ' + totalCost + ' ' + item.currency + '</td>';
                     
@@ -1529,8 +1545,15 @@ function requestSelectedItem(cat) {
     oldSelect.style.display = 'none';
     document.body.appendChild(oldSelect);
     
+    var noteInput = document.getElementById('notereq-' + cat);
+    var noteEl = document.createElement('input');
+    noteEl.type = 'hidden';
+    noteEl.id = 'hid-note-' + cat + '-' + idx;
+    noteEl.value = noteInput ? noteInput.value.trim() : '';
+    document.body.appendChild(noteEl);
+    
     requestItem(cat, idx);
-    setTimeout(function() { document.body.removeChild(oldSelect); }, 100);
+    setTimeout(function() { document.body.removeChild(oldSelect); document.body.removeChild(noteEl); }, 100);
 }
 
 // Toggle request list helper
@@ -1561,12 +1584,14 @@ function assignItem(cat, idx, profileId, charName) {
     var item = items[idx];
     if (!item || !profileId) return;
 
-    // Find request quantity
+    // Find request quantity and note
     var reqQuantity = 1;
+    var reqNote = '';
     var reqs = item.requests || [];
     for (var i = 0; i < reqs.length; i++) {
         if (reqs[i].profile_id == profileId) {
             reqQuantity = parseInt(reqs[i].quantity || 1);
+            reqNote = reqs[i].note || '';
             break;
         }
     }
@@ -1587,7 +1612,8 @@ function assignItem(cat, idx, profileId, charName) {
         price: item.price,
         currency: item.currency,
         clan: selectedClan,
-        quantity: reqQuantity
+        quantity: reqQuantity,
+        note: reqNote
     };
 }
 
@@ -1617,6 +1643,7 @@ function executeAssign() {
             price: pendingAssign.price,
             currency: pendingAssign.currency,
             clan: pendingAssign.clan,
+            note: pendingAssign.note || '',
         }),
     })
     .then(function(res) { return res.json(); })
@@ -1631,8 +1658,14 @@ function executeAssign() {
             var newRow = document.createElement('tr');
             newRow.id = 'txnRow-' + data.txn_id;
             
+            var itemNameHtml = data.item_name;
+            if (data.note) {
+                var safeLogNote = data.note.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                itemNameHtml += '<div style="font-size: 0.75rem; color: #888; font-style: italic; margin-top: 2px;"><i class="fas fa-comment-alt" style="font-size:0.65rem;"></i> ' + safeLogNote + '</div>';
+            }
+
             newRow.innerHTML = '<td class="txn-char">' + data.character_name + '</td>' +
-                               '<td class="txn-item">' + data.item_name + '</td>' +
+                               '<td class="txn-item">' + itemNameHtml + '</td>' +
                                '<td class="txn-amount">-' + data.price + ' ' + data.currency + '</td>' +
                                '<td style="color:#888;">' + data.admin_name + '</td>' +
                                '<td class="txn-date">' + data.date + '</td>';
