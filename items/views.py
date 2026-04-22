@@ -2090,7 +2090,7 @@ from .models import CharacterSoul
 @login_required
 def soul_page(request):
     """Soul page - shows raid boss souls for all members"""
-    clan_filter = request.GET.get('clan', 'all')
+    clan_filter = request.GET.get('clan', 'Valkyrie')
     
     characters = Character.objects.all().order_by('name')
     if clan_filter == 'Valkyrie':
