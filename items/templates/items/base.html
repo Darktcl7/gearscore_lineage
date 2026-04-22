@@ -529,6 +529,10 @@
             nav#nav-menu.active a:nth-child(5) {
                 transition-delay: 0.3s;
             }
+
+            nav#nav-menu.active a:nth-child(6) {
+                transition-delay: 0.35s;
+            }
         }
 
 
@@ -739,6 +743,10 @@
                 <!-- TREASURY MENU -->
                 <a href="{% url 'web-dkp-treasury' %}"
                     class="{% if request.resolver_match.url_name == 'web-dkp-treasury' %}active{% endif %}">Treasury</a>
+
+                <!-- SOUL MENU -->
+                <a href="{% url 'soul-page' %}"
+                    class="{% if request.resolver_match.url_name == 'soul-page' %}active{% endif %}">Soul</a>
 
                 <a href="{% url 'hall-of-fame-list' %}"
                     class="{% if request.resolver_match.url_name == 'hall-of-fame-list' %}active{% endif %}">Hall of Fame</a>

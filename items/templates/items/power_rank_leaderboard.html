@@ -7,9 +7,15 @@
 
 {% block extra_head %}
 <style>
+    /* Override base layout to give more breathing room without full width */
+    main {
+        max-width: 1700px !important;
+        padding: 20px !important;
+    }
+
     .activity-container {
         min-height: 80vh;
-        margin: 0 10px 50px 10px;
+        margin: 0 auto 50px auto;
         display: flex;
         flex-direction: column;
         background: rgba(18, 18, 18, 0.65);
@@ -199,6 +205,23 @@
         font-weight: 800;
         font-size: 1rem;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        position: relative;
+    }
+    
+    .val-badge {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        background: #1e132c;
+        border-radius: 50%;
+        font-size: 0.65rem;
+        width: 14px;
+        height: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 5px rgba(0,0,0,0.8);
+        z-index: 5;
     }
 
     .rank-1 {
@@ -563,6 +586,90 @@
 
     /* Mobile: stagger animation for nav */
     nav#nav-menu.active a:nth-child(6) { transition-delay: 0.35s; }
+
+    /* Validation Notes Custom Modal */
+    .notes-modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 10000;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(5px);
+    }
+    .notes-modal-overlay.active {
+        display: flex;
+    }
+    .notes-modal-content {
+        background: linear-gradient(145deg, #1A1A1A, #121212);
+        border: 1px solid rgba(184, 138, 255, 0.3);
+        border-radius: 12px;
+        padding: 25px;
+        width: 90%;
+        max-width: 400px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+        position: relative;
+    }
+    .notes-modal-content h3 {
+        margin: 0 0 15px 0;
+        color: #b88aff;
+        font-family: 'Cinzel', serif;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .notes-modal-content textarea {
+        width: 100%;
+        border-radius: 8px;
+        padding: 12px;
+        background: rgba(0,0,0,0.5);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: #fff;
+        font-family: inherit;
+        resize: vertical;
+        box-sizing: border-box;
+        margin-bottom: 20px;
+        font-size: 0.95rem;
+    }
+    .notes-modal-content textarea:focus {
+        border-color: #b88aff;
+        outline: none;
+        box-shadow: 0 0 8px rgba(184, 138, 255, 0.3);
+    }
+    .notes-modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+    .notes-btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-family: 'Cinzel', serif;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+    .notes-btn-cancel {
+        background: rgba(255, 255, 255, 0.1);
+        color: #ccc;
+    }
+    .notes-btn-cancel:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+    .notes-btn-save {
+        background: linear-gradient(135deg, rgba(150, 100, 255, 0.4), rgba(100, 60, 200, 0.5));
+        color: #fff;
+        border: 1px solid rgba(150, 100, 255, 0.4);
+    }
+    .notes-btn-save:hover {
+        background: linear-gradient(135deg, rgba(150, 100, 255, 0.6), rgba(100, 60, 200, 0.7));
+        box-shadow: 0 0 10px rgba(150, 100, 255, 0.3);
+    }
 </style>
 {% endblock %}
 
@@ -609,15 +716,36 @@
     </div>
 
     <div class="activity-content">
+        <!-- Clan Tabs -->
+        <div style="display:flex; justify-content:center; gap:0; margin-bottom:20px; border-radius:8px; overflow:hidden; border:1px solid rgba(255,255,255,0.1); max-width:500px; margin-left:auto; margin-right:auto;">
+            <a href="?tab=overall" class="clan-btn {% if clan_tab == 'overall' %}active{% endif %}" style="flex:1; text-align:center; display:block;">Overall</a>
+            <a href="?tab=valkyrie" class="clan-btn {% if clan_tab == 'valkyrie' %}active{% endif %}" style="flex:1; text-align:center; display:block;">Valkyrie</a>
+            <a href="?tab=valhalla" class="clan-btn {% if clan_tab == 'valhalla' %}active{% endif %}" style="flex:1; text-align:center; display:block;">Valhalla</a>
+        </div>
+
         <div class="glass-card">
-            <h3><i class="fas fa-crown"></i> Overall Power Ranking</h3>
+            <h3 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <span><i class="fas fa-crown"></i> 
+                    {% if clan_tab == 'valkyrie' %}Valkyrie Power Ranking
+                    {% elif clan_tab == 'valhalla' %}Valhalla Power Ranking
+                    {% else %}Overall Power Ranking{% endif %}
+                </span>
+                {% if user_rankings %}
+                <div style="font-size: 0.9rem; font-family: 'Roboto', sans-serif; text-transform: none; letter-spacing: normal; font-weight: normal; margin-right: 15px;">
+                    <span style="color: #888;">My Rank:</span> 
+                    {% for u_rank in user_rankings %}
+                        <strong style="color: #FFD700; margin-left: 5px;">#{{ u_rank.rank }}</strong> <span style="color: #888; font-size: 0.8rem;">({{ u_rank.character.name }})</span>{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </h3>
 
             {% if leaderboard %}
             <div class="table-wrapper">
                 <table class="leaderboard-table">
                     <thead>
                         <tr>
-                            <th style="width:60px; text-align:center;">Rank</th>
+                            <th style="width:100px; text-align:center;">Rank</th>
                             <th class="sticky-col">IGN</th>
                             <th>Server</th>
                             <th>Clan</th>
@@ -643,15 +771,45 @@
                         {% for item in leaderboard %}
                         <tr>
                             <td style="text-align: center;">
-                                {% if item.rank == 1 %}
-                                <div class="rank-badge rank-1">1</div>
-                                {% elif item.rank == 2 %}
-                                <div class="rank-badge rank-2">2</div>
-                                {% elif item.rank == 3 %}
-                                <div class="rank-badge rank-3">3</div>
-                                {% else %}
-                                <div class="rank-badge rank-other">{{ item.rank }}</div>
-                                {% endif %}
+                                <div style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                                    {% if item.rank == 1 %}
+                                    <div class="rank-badge rank-1">1
+                                    {% elif item.rank == 2 %}
+                                    <div class="rank-badge rank-2">2
+                                    {% elif item.rank == 3 %}
+                                    <div class="rank-badge rank-3">3
+                                    {% else %}
+                                    <div class="rank-badge rank-other">{{ item.rank }}
+                                    {% endif %}
+                                        
+                                        <!-- Validation Checkmark inside Rank Badge -->
+                                        {% if item.power_rank.is_validated %}
+                                        <div class="val-badge" title="Validated by Admin">
+                                            <i class="fas fa-check-circle" style="color:#88ffaa; font-size:14px;"></i>
+                                        </div>
+                                        {% elif item.power_rank.validation_notes %}
+                                        <div class="val-badge" title="Invalid: {{ item.power_rank.validation_notes }}">
+                                            <i class="fas fa-exclamation-circle" style="color:#ff8888; font-size:14px;"></i>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if is_admin %}
+                                    <div style="display:flex; flex-direction:column; gap:2px; margin-left: 2px;">
+                                        <input type="checkbox"
+                                            id="valid_{{ item.power_rank.id }}"
+                                            class="validation-checkbox"
+                                            data-pk="{{ item.power_rank.id }}"
+                                            data-player="{{ item.character.name|escapejs }}"
+                                            {% if item.power_rank.is_validated %}checked{% endif %}
+                                            style="cursor: pointer; width: 14px; height: 14px; margin: 0; outline: none; box-shadow: none;"
+                                            title="Toggle Admin Validation">
+                                        <button type="button" onclick="editValidationNotes({{ item.power_rank.id }}, '{{ item.power_rank.validation_notes|escapejs }}', '{{ item.character.name|escapejs }}')" style="background:none; border:none; color:#b88aff; cursor:pointer; padding:0;" title="Edit Notes">
+                                            <i class="fas fa-edit" style="font-size: 0.75rem;"></i>
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </div>
                             </td>
                             <td class="sticky-col" style="background: rgba(30, 30, 30, 0.4);">
                                 <a href="{% url 'character-profile' item.character.pk %}" class="player-name">
@@ -748,6 +906,18 @@
         </button>
         <div class="ss-modal-name" id="ssModalName"></div>
         <div class="ss-modal-counter" id="ssCounter"></div>
+    </div>
+</div>
+
+<!-- Validation Notes Modal -->
+<div class="notes-modal-overlay" id="notesModal" onclick="closeNotesModal(event)">
+    <div class="notes-modal-content">
+        <h3><i class="fas fa-edit"></i> <span id="notesModalTitleSpan">Edit Note</span></h3>
+        <textarea id="notesInput" rows="4" placeholder="Enter reason for invalid stats..."></textarea>
+        <div class="notes-modal-actions">
+            <button type="button" class="notes-btn notes-btn-cancel" onclick="closeNotesModal('cancelBtn')">Cancel</button>
+            <button type="button" class="notes-btn notes-btn-save" onclick="saveNotesModal()">Save</button>
+        </div>
     </div>
 </div>
 
@@ -881,6 +1051,98 @@ function downloadPowerRankPdf() {
     });
 
     doc.save('Power_Rank_' + now.toISOString().slice(0,10) + '.pdf');
+}
+
+let pendingValidationPk = null;
+let pendingValidationChecked = false;
+let pendingOldCheckedValue = false; // to revert on cancel
+
+document.querySelectorAll('.validation-checkbox').forEach(cb => {
+    cb.addEventListener('change', function() {
+        const pk = this.getAttribute('data-pk');
+        const playerName = this.getAttribute('data-player');
+        const isChecked = this.checked;
+        
+        if (!isChecked) {
+            // Need notes when invalidating, open modal
+            openNotesModal(pk, isChecked, '', true, playerName);
+        } else {
+            // Validated -> no notes needed
+            updateValidation(pk, true, '');
+        }
+    });
+});
+
+function editValidationNotes(pk, currentNotes, playerName) {
+    const cb = document.getElementById('valid_' + pk);
+    const isChecked = cb ? cb.checked : false;
+    openNotesModal(pk, isChecked, currentNotes, isChecked, playerName);
+}
+
+function openNotesModal(pk, isChecked, currentNotes, oldCheckedValue, playerName) {
+    pendingValidationPk = pk;
+    pendingValidationChecked = isChecked;
+    pendingOldCheckedValue = oldCheckedValue;
+    
+    document.getElementById('notesModalTitleSpan').innerHTML = 'Edit Note - <span style="color: #fff;">' + playerName + '</span>';
+    
+    const input = document.getElementById('notesInput');
+    input.value = currentNotes;
+    document.getElementById('notesModal').classList.add('active');
+    setTimeout(() => { input.focus(); }, 100);
+}
+
+function closeNotesModal(e) {
+    if (e.target === document.getElementById('notesModal') || e === 'cancelBtn') {
+        document.getElementById('notesModal').classList.remove('active');
+        
+        // Revert checkbox if it was an uncheck action
+        if (pendingValidationPk) {
+             const cb = document.getElementById('valid_' + pendingValidationPk);
+             if (cb) {
+                 cb.checked = pendingOldCheckedValue;
+             }
+        }
+    }
+}
+
+function saveNotesModal() {
+    const notes = document.getElementById('notesInput').value;
+    updateValidation(pendingValidationPk, pendingValidationChecked, notes);
+    document.getElementById('notesModal').classList.remove('active');
+}
+
+function updateValidation(pk, isChecked, notes) {
+    var formData = new FormData();
+    formData.append('pk', pk);
+    formData.append('is_validated', isChecked ? 'true' : 'false');
+    formData.append('validation_notes', notes);
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+    fetch('{% url "update-power-rank-validation" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.success) {
+            // Optional: visual feedback
+            const cb = document.getElementById('valid_' + pk);
+            // Flash color
+            const td = cb.closest('td');
+            td.style.backgroundColor = 'rgba(100, 255, 100, 0.2)';
+            setTimeout(() => { td.style.backgroundColor = ''; }, 500);
+            
+            // Reload page to update UI badges
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(err => alert('Failed to update validation: ' + err));
 }
 </script>
 {% endif %}

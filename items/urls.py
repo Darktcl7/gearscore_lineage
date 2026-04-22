@@ -40,6 +40,7 @@ from .views import (
     power_rank_leaderboard,
     edit_power_rank,
     delete_power_rank_screenshot,
+    update_power_rank_validation,
     
     # Activity - Admin All Members
     admin_all_members_activity,
@@ -47,6 +48,12 @@ from .views import (
     # Hall of Fame
     hall_of_fame_view,
     manage_hall_of_fame,
+    
+    # Soul System
+    soul_page,
+    toggle_soul,
+    verify_soul,
+    bulk_verify_souls,
 ) 
 
 import dkp.views as dkp_views
@@ -272,6 +279,9 @@ urlpatterns = [
     # URL: /portal/power-rank/screenshot/delete/ -> AJAX: Delete Power Rank Screenshot
     path('power-rank/screenshot/delete/', delete_power_rank_screenshot, name='delete-power-rank-screenshot'),
 
+    # URL: /portal/power-rank/validation/update/ -> AJAX: Update Validation Admin
+    path('power-rank/validation/update/', update_power_rank_validation, name='update-power-rank-validation'),
+
     # ===============================================
     # 8. HALL OF FAME
     # ===============================================
@@ -281,5 +291,21 @@ urlpatterns = [
     
     # URL: /items/manage/hall-of-fame/ -> Admin Manage Hall of Fame
     path('manage/hall-of-fame/', manage_hall_of_fame, name='manage-hall-of-fame'),
+
+    # ===============================================
+    # 9. SOUL SYSTEM
+    # ===============================================
+    
+    # URL: /portal/soul/ -> Soul Page
+    path('soul/', soul_page, name='soul-page'),
+    
+    # AJAX: Toggle soul
+    path('soul/toggle/', toggle_soul, name='toggle-soul'),
+    
+    # AJAX: Verify soul (admin)
+    path('soul/verify/', verify_soul, name='verify-soul'),
+    
+    # AJAX: Bulk verify (admin)
+    path('soul/bulk-verify/', bulk_verify_souls, name='bulk-verify-souls'),
 
 ]

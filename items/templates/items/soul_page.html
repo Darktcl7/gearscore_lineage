@@ -1,0 +1,941 @@
+{% extends "items/base.html" %}
+{% load static %}
+
+{% block title %}Soul - Raid Boss Souls{% endblock %}
+
+{% block extra_head %}
+<style>
+    .soul-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .soul-page-title {
+        text-align: center;
+        margin-bottom: 10px;
+    }
+
+    .soul-page-title h1 {
+        font-family: 'Cinzel', serif;
+        font-size: 2.2rem;
+        color: #fff;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        margin: 0;
+        text-shadow: 0 0 20px rgba(170, 134, 71, 0.5);
+    }
+
+    .soul-page-title h1 i {
+        color: var(--gold-light);
+        margin-right: 10px;
+    }
+
+    .soul-page-subtitle {
+        color: #888;
+        font-size: 0.9rem;
+        margin-top: 5px;
+        font-family: 'Roboto', sans-serif;
+    }
+
+    /* Clan Filter Tabs */
+    .soul-filters {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
+    }
+
+    .soul-filters a {
+        padding: 10px 28px;
+        font-family: 'Cinzel', serif;
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        text-decoration: none;
+        color: #999;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        transition: all 0.3s ease;
+    }
+
+    .soul-filters a:hover {
+        color: #fff;
+        border-color: rgba(212, 175, 55, 0.3);
+        background: rgba(212, 175, 55, 0.05);
+    }
+
+    .soul-filters a.active {
+        color: var(--gold-light);
+        border-color: var(--gold-light);
+        background: rgba(212, 175, 55, 0.1);
+        box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
+    }
+
+    /* Legend */
+    .soul-legend {
+        display: flex;
+        justify-content: center;
+        gap: 25px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        font-size: 0.8rem;
+        color: #999;
+    }
+
+    .soul-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .legend-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        display: inline-block;
+    }
+
+    .legend-dot.empty {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .legend-dot.pending {
+        background: rgba(255, 165, 0, 0.3);
+        border: 1px solid rgba(255, 165, 0, 0.6);
+    }
+
+    .legend-dot.verified {
+        background: rgba(76, 175, 80, 0.3);
+        border: 1px solid rgba(76, 175, 80, 0.6);
+    }
+
+    /* Summary Stats */
+    .soul-summary {
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
+    }
+
+    .soul-stat-card {
+        background: rgba(18, 18, 20, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 15px 25px;
+        text-align: center;
+        min-width: 120px;
+    }
+
+    .soul-stat-card .stat-num {
+        font-family: 'Cinzel', serif;
+        font-size: 1.8rem;
+        color: var(--gold-light);
+        font-weight: 700;
+    }
+
+    .soul-stat-card .stat-label {
+        font-size: 0.7rem;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 3px;
+    }
+
+    /* ====== MEMBER CARD ====== */
+    .member-card {
+        background: rgba(18, 18, 20, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        margin-bottom: 6px;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(8px);
+    }
+
+    .member-card:hover {
+        border-color: rgba(170, 134, 71, 0.2);
+    }
+
+    .member-card.expanded {
+        border-color: rgba(170, 134, 71, 0.3);
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+        margin-bottom: 12px;
+    }
+
+    /* Card Header (always visible) */
+    .member-header {
+        display: flex;
+        align-items: center;
+        padding: 12px 20px;
+        cursor: pointer;
+        transition: background 0.2s;
+        gap: 15px;
+    }
+
+    .member-header:hover {
+        background: rgba(212, 175, 55, 0.04);
+    }
+
+    .member-expand-icon {
+        color: var(--gold-light);
+        font-size: 0.8rem;
+        transition: transform 0.3s ease;
+        min-width: 16px;
+    }
+
+    .member-card.expanded .member-expand-icon {
+        transform: rotate(90deg);
+    }
+
+    .member-name {
+        font-size: 1rem;
+        color: #e0e0e0;
+        font-weight: 600;
+        flex: 1;
+    }
+
+    .clan-tag {
+        font-size: 0.6rem;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-family: 'Cinzel', serif;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-left: 8px;
+    }
+
+    .clan-tag.valkyrie {
+        background: rgba(66, 133, 244, 0.15);
+        color: #64b5f6;
+        border: 1px solid rgba(66, 133, 244, 0.3);
+    }
+
+    .clan-tag.valhalla {
+        background: rgba(244, 67, 54, 0.15);
+        color: #ef9a9a;
+        border: 1px solid rgba(244, 67, 54, 0.3);
+    }
+
+    .member-progress {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 160px;
+        justify-content: flex-end;
+    }
+
+    .member-progress-text {
+        font-size: 0.85rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .member-progress-bar {
+        width: 80px;
+        height: 5px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .member-progress-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.5s ease;
+    }
+
+    .member-progress-fill.low { background: linear-gradient(90deg, #f44336, #ff5722); }
+    .member-progress-fill.mid { background: linear-gradient(90deg, #ff9800, #ffc107); }
+    .member-progress-fill.high { background: linear-gradient(90deg, #4caf50, #66bb6a); }
+
+    /* Admin button in header */
+    .admin-verify-btn {
+        font-size: 0.6rem;
+        padding: 4px 10px;
+        background: rgba(76, 175, 80, 0.15);
+        border: 1px solid rgba(76, 175, 80, 0.3);
+        color: #81c784;
+        cursor: pointer;
+        font-family: 'Cinzel', serif;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+
+    .admin-verify-btn:hover {
+        background: rgba(76, 175, 80, 0.3);
+        color: #a5d6a7;
+    }
+
+    /* Card Body (expandable) */
+    .member-body {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s ease, padding 0.3s ease;
+        padding: 0 20px;
+    }
+
+    .member-card.expanded .member-body {
+        max-height: 2000px;
+        padding: 0 20px 20px;
+    }
+
+    /* Category Section */
+    .soul-category {
+        margin-bottom: 15px;
+    }
+
+    .soul-category:last-child {
+        margin-bottom: 0;
+    }
+
+    .soul-category-title {
+        font-family: 'Cinzel', serif;
+        font-size: 0.75rem;
+        color: var(--gold-light);
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-bottom: 8px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid rgba(170, 134, 71, 0.15);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .soul-category-title i {
+        font-size: 0.7rem;
+    }
+
+    /* Boss Grid */
+    .boss-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 5px;
+    }
+
+    .boss-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.8rem;
+        color: #888;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .boss-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .boss-item .boss-dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 3px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.55rem;
+        flex-shrink: 0;
+    }
+
+    .boss-item .boss-dot.empty {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .boss-item .boss-dot.pending {
+        background: rgba(255, 165, 0, 0.3);
+        border: 1px solid rgba(255, 165, 0, 0.5);
+        color: #ffb74d;
+    }
+
+    .boss-item .boss-dot.verified {
+        background: rgba(76, 175, 80, 0.3);
+        border: 1px solid rgba(76, 175, 80, 0.5);
+        color: #81c784;
+    }
+
+    .boss-item.has-soul {
+        color: #ccc;
+    }
+
+    .boss-item.is-verified {
+        color: #a5d6a7;
+    }
+
+    .boss-item .boss-name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .boss-item .boss-ss {
+        font-size: 0.6rem;
+        color: #555;
+        flex-shrink: 0;
+    }
+
+    .boss-item.has-soul .boss-ss {
+        color: #81c784;
+    }
+
+    /* Upload Modal */
+    .upload-modal {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 10000;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(5px);
+    }
+    .upload-modal.active { display: flex; }
+    .upload-box {
+        background: linear-gradient(145deg, #1a1a1a, #121212);
+        border: 1px solid rgba(170, 134, 71, 0.3);
+        border-radius: 12px;
+        padding: 25px;
+        width: 90%;
+        max-width: 420px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    }
+    .upload-box h3 {
+        margin: 0 0 5px;
+        color: var(--gold-light);
+        font-family: 'Cinzel', serif;
+        font-size: 1.1rem;
+    }
+    .upload-box .upload-subtitle {
+        color: #888;
+        font-size: 0.8rem;
+        margin-bottom: 15px;
+    }
+    .upload-drop {
+        border: 2px dashed rgba(170, 134, 71, 0.3);
+        border-radius: 8px;
+        padding: 30px;
+        text-align: center;
+        color: #666;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-bottom: 15px;
+        position: relative;
+    }
+    .upload-drop:hover, .upload-drop.dragover {
+        border-color: var(--gold-light);
+        background: rgba(170, 134, 71, 0.05);
+        color: #aaa;
+    }
+    .upload-drop i { font-size: 2rem; margin-bottom: 8px; display: block; color: var(--gold-light); }
+    .upload-drop input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    .upload-preview {
+        display: none;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+    .upload-preview img {
+        max-width: 100%;
+        max-height: 200px;
+        border-radius: 6px;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .upload-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+    .upload-actions button {
+        padding: 8px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-family: 'Cinzel', serif;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+    }
+    .btn-upload-cancel {
+        background: rgba(255,255,255,0.08);
+        color: #999;
+    }
+    .btn-upload-cancel:hover { background: rgba(255,255,255,0.15); color: #fff; }
+    .btn-upload-submit {
+        background: linear-gradient(135deg, rgba(170, 134, 71, 0.4), rgba(140, 110, 55, 0.5));
+        color: var(--gold-light);
+        border: 1px solid rgba(170, 134, 71, 0.4);
+    }
+    .btn-upload-submit:hover {
+        background: linear-gradient(135deg, rgba(170, 134, 71, 0.6), rgba(140, 110, 55, 0.7));
+    }
+
+    /* Screenshot Viewer Modal */
+    .ss-viewer {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 10001;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(8px);
+    }
+    .ss-viewer.active { display: flex; }
+    .ss-viewer img {
+        max-width: 90vw;
+        max-height: 85vh;
+        border-radius: 8px;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 10px 50px rgba(0,0,0,0.5);
+    }
+    .ss-viewer-close {
+        position: absolute;
+        top: 20px; right: 20px;
+        width: 40px; height: 40px;
+        background: rgba(255, 60, 60, 0.8);
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .ss-viewer-close:hover { background: #ff2222; }
+
+    /* Tooltip */
+    .soul-tooltip {
+        position: fixed;
+        background: rgba(20, 20, 20, 0.95);
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        padding: 8px 14px;
+        font-size: 0.8rem;
+        color: #fff;
+        z-index: 9999;
+        pointer-events: none;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+        border-radius: 3px;
+        display: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .soul-page-title h1 { font-size: 1.4rem; }
+        .soul-summary { gap: 10px; }
+        .soul-stat-card { padding: 10px 15px; min-width: 90px; }
+        .soul-stat-card .stat-num { font-size: 1.3rem; }
+        .member-header { padding: 10px 15px; gap: 10px; }
+        .member-progress { min-width: 120px; }
+        .member-progress-bar { width: 50px; }
+        .boss-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 4px; }
+        .boss-item { font-size: 0.75rem; padding: 5px 8px; }
+        .member-body { padding: 0 15px; }
+        .member-card.expanded .member-body { padding: 0 15px 15px; }
+    }
+
+    /* Search */
+    .soul-search {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+    .soul-search input {
+        width: 100%;
+        max-width: 400px;
+        padding: 10px 18px;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: #fff;
+        font-size: 0.9rem;
+        font-family: 'Roboto', sans-serif;
+        transition: all 0.3s;
+    }
+    .soul-search input:focus {
+        border-color: var(--gold-primary);
+        box-shadow: 0 0 10px rgba(170, 134, 71, 0.2);
+        outline: none;
+    }
+    .soul-search input::placeholder { color: #555; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="soul-container">
+    <!-- Title -->
+    <div class="soul-page-title">
+        <h1><i class="fas fa-ghost"></i> Soul Collection</h1>
+        <p class="soul-page-subtitle">Raid Boss Souls — Track & verify boss souls for all clan members</p>
+    </div>
+
+    <!-- Clan Filter Tabs -->
+    <div class="soul-filters">
+        <a href="?clan=all" class="{% if clan_filter == 'all' %}active{% endif %}">All Clans</a>
+        <a href="?clan=Valkyrie" class="{% if clan_filter == 'Valkyrie' %}active{% endif %}">Valkyrie</a>
+        <a href="?clan=Valhalla" class="{% if clan_filter == 'Valhalla' %}active{% endif %}">Valhalla</a>
+    </div>
+
+    <!-- Legend -->
+    <div class="soul-legend">
+        <div class="soul-legend-item"><span class="legend-dot empty"></span> Not Owned</div>
+        <div class="soul-legend-item"><span class="legend-dot pending"></span> Pending</div>
+        <div class="soul-legend-item"><span class="legend-dot verified"></span> Verified</div>
+    </div>
+
+    <!-- Summary -->
+    <div class="soul-summary">
+        <div class="soul-stat-card">
+            <div class="stat-num">{{ char_data|length }}</div>
+            <div class="stat-label">Members</div>
+        </div>
+        <div class="soul-stat-card">
+            <div class="stat-num" style="color: #81c784;">{{ user_soul_count }}</div>
+            <div class="stat-label">Your Souls</div>
+        </div>
+        <div class="soul-stat-card">
+            <div class="stat-num">{{ all_bosses|length }}</div>
+            <div class="stat-label">Total Bosses</div>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="soul-search">
+        <input type="text" id="memberSearch" placeholder="Search member..." oninput="filterMembers(this.value)">
+    </div>
+
+    <!-- Tooltip -->
+    <div class="soul-tooltip" id="soulTooltip"></div>
+
+    <!-- Member Cards -->
+    <div id="memberList">
+        {% for item in char_data %}
+        <div class="member-card" data-character-id="{{ item.character.id }}" data-name="{{ item.character.name|lower }}">
+            <!-- Header (clickable) -->
+            <div class="member-header" onclick="toggleCard(this)">
+                <i class="fas fa-chevron-right member-expand-icon"></i>
+                <span class="member-name">
+                    {{ item.character.name }}
+                    <span class="clan-tag {% if item.character.clan == 'Valkyrie' %}valkyrie{% else %}valhalla{% endif %}">
+                        {{ item.character.clan }}
+                    </span>
+                </span>
+                <div class="member-progress">
+                    <span class="member-progress-text" style="color: {% if item.owned == item.total %}#4caf50{% elif item.owned > 0 %}#ff9800{% else %}#666{% endif %};">
+                        {{ item.owned }}/{{ item.total }}
+                    </span>
+                    <div class="member-progress-bar">
+                        <div class="member-progress-fill {% if item.owned < 10 %}low{% elif item.owned < 25 %}mid{% else %}high{% endif %}" 
+                             style="width: {% widthratio item.owned item.total 100 %}%;"></div>
+                    </div>
+                </div>
+                {% if is_admin %}
+                <button class="admin-verify-btn" onclick="event.stopPropagation(); bulkVerify({{ item.character.id }}, 'verify')" title="Verify All">
+                    <i class="fas fa-check-double"></i> All
+                </button>
+                {% endif %}
+            </div>
+
+            <!-- Body (expandable) -->
+            <div class="member-body">
+                {% for group in boss_groups %}
+                <div class="soul-category">
+                    <div class="soul-category-title">
+                        {% if group.name == 'Raid Boss' %}
+                        <i class="fas fa-skull-crossbones"></i>
+                        {% elif group.name == 'Territory Boss' %}
+                        <i class="fas fa-flag"></i>
+                        {% elif group.name == 'World Boss' %}
+                        <i class="fas fa-globe"></i>
+                        {% endif %}
+                        {{ group.name }}
+                    </div>
+                    <div class="boss-grid">
+                        {% for boss in group.bosses %}
+                        <div class="boss-item {% if boss in item.souls %}has-soul{% endif %} {% for k,v in item.souls.items %}{% if k == boss %}{% if v.is_verified %}is-verified{% endif %}{% endif %}{% endfor %}"
+                             data-character="{{ item.character.id }}"
+                             data-boss="{{ boss }}"
+                             data-soul-id="{% for k,v in item.souls.items %}{% if k == boss %}{{ v.id }}{% endif %}{% endfor %}"
+                             data-verified="{% for k,v in item.souls.items %}{% if k == boss %}{{ v.is_verified }}{% endif %}{% endfor %}"
+                             data-screenshot="{% for k,v in item.souls.items %}{% if k == boss %}{{ v.screenshot_url }}{% endif %}{% endfor %}"
+                             data-owner="{{ item.character.owner_id }}"
+                             onclick="handleBossClick(this)">
+                            <span class="boss-dot {% if boss in item.souls %}{% for k,v in item.souls.items %}{% if k == boss %}{% if v.is_verified %}verified{% else %}pending{% endif %}{% endif %}{% endfor %}{% else %}empty{% endif %}">
+                                {% if boss in item.souls %}{% for k,v in item.souls.items %}{% if k == boss %}{% if v.is_verified %}✓{% else %}?{% endif %}{% endif %}{% endfor %}{% endif %}
+                            </span>
+                            <span class="boss-name">{{ boss }}</span>
+                            <span class="boss-ss" title="{% if boss in item.souls %}{% for k,v in item.souls.items %}{% if k == boss %}{% if v.screenshot_url %}View screenshot{% else %}No screenshot{% endif %}{% endif %}{% endfor %}{% endif %}">
+                                {% if boss in item.souls %}
+                                    {% for k,v in item.souls.items %}{% if k == boss %}{% if v.screenshot_url %}<i class="fas fa-image"></i>{% endif %}{% endif %}{% endfor %}
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% empty %}
+        <div style="text-align:center; padding:60px; color:#666;">
+            <i class="fas fa-ghost" style="font-size:2.5rem; margin-bottom:15px; display:block; color:#444;"></i>
+            No members found.
+        </div>
+        {% endfor %}
+
+</div>
+
+<!-- Upload Modal -->
+<div class="upload-modal" id="uploadModal">
+    <div class="upload-box">
+        <h3><i class="fas fa-upload"></i> Upload Soul Screenshot</h3>
+        <p class="upload-subtitle" id="uploadBossName">Boss Name</p>
+        <div class="upload-drop" id="uploadDrop">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <span>Click or drag image here</span>
+            <input type="file" id="uploadFileInput" accept="image/*">
+        </div>
+        <div class="upload-preview" id="uploadPreview">
+            <img id="uploadPreviewImg" src="" alt="Preview">
+        </div>
+        <div class="upload-actions">
+            <button class="btn-upload-cancel" onclick="closeUploadModal()">Cancel</button>
+            <button class="btn-upload-submit" id="btnUploadSubmit" onclick="submitUpload()">Upload & Claim</button>
+        </div>
+    </div>
+</div>
+
+<!-- Screenshot Viewer -->
+<div class="ss-viewer" id="ssViewer" onclick="closeSsViewer()">
+    <button class="ss-viewer-close" onclick="closeSsViewer()"><i class="fas fa-times"></i></button>
+    <img id="ssViewerImg" src="" alt="Screenshot">
+</div>
+
+<script>
+var isAdmin = {{ is_admin|yesno:"true,false" }};
+var currentUserId = {{ user.id }};
+var csrfToken = '{{ csrf_token }}';
+var uploadTarget = null;
+var uploadFile = null;
+
+function toggleCard(header) {
+    header.closest('.member-card').classList.toggle('expanded');
+}
+
+function filterMembers(query) {
+    query = query.toLowerCase();
+    document.querySelectorAll('.member-card').forEach(function(card) {
+        card.style.display = card.dataset.name.indexOf(query) >= 0 ? '' : 'none';
+    });
+}
+
+// ========== UPLOAD MODAL ==========
+function openUploadModal(el) {
+    uploadTarget = el;
+    uploadFile = null;
+    document.getElementById('uploadBossName').textContent = el.dataset.boss;
+    document.getElementById('uploadPreview').style.display = 'none';
+    document.getElementById('uploadFileInput').value = '';
+    document.getElementById('uploadModal').classList.add('active');
+}
+
+function closeUploadModal() {
+    document.getElementById('uploadModal').classList.remove('active');
+    uploadTarget = null;
+    uploadFile = null;
+}
+
+document.getElementById('uploadFileInput').addEventListener('change', function(e) {
+    if (e.target.files && e.target.files[0]) {
+        uploadFile = e.target.files[0];
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            document.getElementById('uploadPreviewImg').src = ev.target.result;
+            document.getElementById('uploadPreview').style.display = 'block';
+        };
+        reader.readAsDataURL(uploadFile);
+    }
+});
+
+var dropZone = document.getElementById('uploadDrop');
+dropZone.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', function() { this.classList.remove('dragover'); });
+dropZone.addEventListener('drop', function(e) {
+    e.preventDefault(); this.classList.remove('dragover');
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        uploadFile = e.dataTransfer.files[0];
+        document.getElementById('uploadFileInput').files = e.dataTransfer.files;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            document.getElementById('uploadPreviewImg').src = ev.target.result;
+            document.getElementById('uploadPreview').style.display = 'block';
+        };
+        reader.readAsDataURL(uploadFile);
+    }
+});
+
+function submitUpload() {
+    if (!uploadTarget || !uploadFile) { alert('Please select an image first.'); return; }
+    var fd = new FormData();
+    fd.append('character_id', uploadTarget.dataset.character);
+    fd.append('boss_name', uploadTarget.dataset.boss);
+    fd.append('screenshot', uploadFile);
+    fetch('{% url "toggle-soul" %}', {
+        method: 'POST', headers: {'X-CSRFToken': csrfToken}, body: fd
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success && data.action === 'added') {
+            var dot = uploadTarget.querySelector('.boss-dot');
+            dot.className = 'boss-dot pending'; dot.innerHTML = '?';
+            uploadTarget.classList.add('has-soul');
+            uploadTarget.classList.remove('is-verified');
+            uploadTarget.dataset.soulId = data.soul_id;
+            uploadTarget.dataset.verified = 'False';
+            uploadTarget.dataset.screenshot = data.screenshot_url || '';
+            var ssSpan = uploadTarget.querySelector('.boss-ss');
+            if (ssSpan && data.screenshot_url) ssSpan.innerHTML = '<i class="fas fa-image"></i>';
+            updateCardProgress(uploadTarget.dataset.character);
+        }
+        closeUploadModal();
+    });
+}
+
+// ========== SCREENSHOT VIEWER ==========
+function openSsViewer(url) {
+    document.getElementById('ssViewerImg').src = url;
+    document.getElementById('ssViewer').classList.add('active');
+}
+function closeSsViewer() { document.getElementById('ssViewer').classList.remove('active'); }
+
+// ========== HANDLE BOSS CLICK ==========
+function handleBossClick(el) {
+    var charId = el.dataset.character;
+    var boss = el.dataset.boss;
+    var soulId = el.dataset.soulId;
+    var ownerId = el.dataset.owner;
+    var screenshot = el.dataset.screenshot;
+    var dot = el.querySelector('.boss-dot');
+
+    // Click on image icon → view screenshot
+    if (screenshot && event.target.closest('.boss-ss')) {
+        event.stopPropagation();
+        openSsViewer(screenshot);
+        return;
+    }
+
+    // Admin verify pending soul
+    if (isAdmin && soulId && dot.classList.contains('pending')) {
+        fetch('{% url "verify-soul" %}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+            body: JSON.stringify({soul_id: parseInt(soulId)})
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                if (data.is_verified) {
+                    dot.className = 'boss-dot verified'; dot.innerHTML = '✓';
+                    el.classList.add('is-verified'); el.dataset.verified = 'True';
+                } else {
+                    dot.className = 'boss-dot pending'; dot.innerHTML = '?';
+                    el.classList.remove('is-verified'); el.dataset.verified = 'False';
+                }
+            }
+        });
+        return;
+    }
+
+    // Admin unverify verified soul
+    if (isAdmin && soulId && dot.classList.contains('verified')) {
+        fetch('{% url "verify-soul" %}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+            body: JSON.stringify({soul_id: parseInt(soulId)})
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                dot.className = 'boss-dot pending'; dot.innerHTML = '?';
+                el.classList.remove('is-verified'); el.dataset.verified = 'False';
+            }
+        });
+        return;
+    }
+
+    // Empty soul → open upload modal (owner or admin)
+    if ((isAdmin || parseInt(ownerId) === currentUserId) && dot.classList.contains('empty')) {
+        openUploadModal(el);
+        return;
+    }
+
+    // Has soul, non-admin owner click → remove
+    if (!isAdmin && parseInt(ownerId) === currentUserId && el.classList.contains('has-soul')) {
+        if (!confirm('Remove this soul claim?')) return;
+        var fd = new FormData();
+        fd.append('character_id', charId);
+        fd.append('boss_name', boss);
+        fetch('{% url "toggle-soul" %}', {
+            method: 'POST', headers: {'X-CSRFToken': csrfToken}, body: fd
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.action === 'removed') {
+                dot.className = 'boss-dot empty'; dot.innerHTML = '';
+                el.classList.remove('has-soul', 'is-verified');
+                el.dataset.soulId = ''; el.dataset.verified = ''; el.dataset.screenshot = '';
+                var ssSpan = el.querySelector('.boss-ss');
+                if (ssSpan) ssSpan.innerHTML = '';
+                updateCardProgress(charId);
+            }
+        });
+    }
+}
+
+function updateCardProgress(charId) {
+    var card = document.querySelector('.member-card[data-character-id="' + charId + '"]');
+    if (!card) return;
+    var items = card.querySelectorAll('.boss-item');
+    var total = items.length, owned = 0;
+    items.forEach(function(item) { if (item.classList.contains('has-soul')) owned++; });
+    var progText = card.querySelector('.member-progress-text');
+    var progFill = card.querySelector('.member-progress-fill');
+    if (progText) {
+        progText.style.color = owned === total ? '#4caf50' : (owned > 0 ? '#ff9800' : '#666');
+        progText.textContent = owned + '/' + total;
+    }
+    if (progFill) {
+        var pct = total > 0 ? Math.round(owned / total * 100) : 0;
+        progFill.style.width = pct + '%';
+        progFill.className = 'member-progress-fill ' + (pct < 20 ? 'low' : (pct < 55 ? 'mid' : 'high'));
+    }
+}
+
+function bulkVerify(charId, action) {
+    if (!confirm('Verify all souls for this member?')) return;
+    fetch('{% url "bulk-verify-souls" %}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        body: JSON.stringify({character_id: charId, action: action})
+    })
+    .then(r => r.json())
+    .then(data => { if (data.success) location.reload(); });
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeUploadModal(); closeSsViewer(); }
+});
+</script>
+{% endblock %}
+

@@ -84,6 +84,8 @@ class AdminRole(models.Model):
         help_text="Access to Treasury item distribution and DKP deduction")
     is_auction_admin = models.BooleanField("Auction Admin", default=False,
         help_text="Access to future Auction system")
+    is_soul_admin = models.BooleanField("Soul Admin", default=False,
+        help_text="Access to verify/manage Soul collections")
         
     # Granular DKP Admin controls
     can_give_dkp = models.BooleanField("Can Give DKP", default=False)
@@ -98,6 +100,7 @@ class AdminRole(models.Model):
         if self.is_dkp_admin: roles.append("DKP")
         if self.is_treasury_admin: roles.append("Treasury")
         if self.is_auction_admin: roles.append("Auction")
+        if self.is_soul_admin: roles.append("Soul")
         return f"{self.user.username} - [{', '.join(roles) or 'No Roles'}]"
 
 

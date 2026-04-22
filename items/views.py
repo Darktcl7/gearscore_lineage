@@ -67,6 +67,7 @@ def character_management(request):
             'is_event_admin': role.is_event_admin,
             'is_treasury_admin': role.is_treasury_admin,
             'is_auction_admin': role.is_auction_admin,
+            'is_soul_admin': role.is_soul_admin,
             'can_give_dkp': role.can_give_dkp,
             'can_remove_dkp': role.can_remove_dkp,
             'can_decay_dkp': role.can_decay_dkp,
@@ -1762,6 +1763,7 @@ def toggle_admin_role(request, user_pk):
         role.is_event_admin = data.get('is_event_admin', role.is_event_admin)
         role.is_treasury_admin = data.get('is_treasury_admin', role.is_treasury_admin)
         role.is_auction_admin = data.get('is_auction_admin', role.is_auction_admin)
+        role.is_soul_admin = data.get('is_soul_admin', role.is_soul_admin)
         role.can_give_dkp = data.get('can_give_dkp', role.can_give_dkp)
         role.can_remove_dkp = data.get('can_remove_dkp', role.can_remove_dkp)
         role.can_decay_dkp = data.get('can_decay_dkp', role.can_decay_dkp)
@@ -1825,32 +1827,50 @@ from .models import UniversalPowerRank
 def power_rank_leaderboard(request):
     """
     Universal Power Rank leaderboard - shows all characters ranked by gear score combined.
+    Supports clan tab filter via ?tab= parameter.
     """
+    clan_tab = request.GET.get('tab', 'overall')
+    
     rankings_qs = UniversalPowerRank.objects.select_related('character').prefetch_related('screenshots').all()
     rankings_qs = rankings_qs.order_by('-gear_score')
 
+    # Build overall leaderboard
+    all_rankings = list(rankings_qs)
+    
+    # Filter by clan tab
+    if clan_tab == 'valkyrie':
+        filtered = [pr for pr in all_rankings if pr.character.clan == 'Valkyrie']
+    elif clan_tab == 'valhalla':
+        filtered = [pr for pr in all_rankings if pr.character.clan == 'Valhalla']
+    else:
+        filtered = all_rankings
+    
     leaderboard = []
-    for i, pr in enumerate(rankings_qs, 1):
+    for i, pr in enumerate(filtered, 1):
         leaderboard.append({
             'rank': i,
             'power_rank': pr,
             'character': pr.character,
         })
 
-    # Check if current user has a character with power rank data
-    user_power_rank = None
+    # Check if current user has characters in the leaderboard
+    user_rankings = []
+    user_power_rank = None # maintain for fallback reference
     user_characters = Character.objects.filter(owner=request.user)
-    for char in user_characters:
-        try:
-            user_power_rank = char.power_rank
-            break
-        except UniversalPowerRank.DoesNotExist:
-            pass
+    user_char_ids = set(user_characters.values_list('pk', flat=True))
+    
+    for item in leaderboard:
+        if item['character'].pk in user_char_ids:
+            user_rankings.append(item)
+            if not user_power_rank:
+                user_power_rank = item['power_rank']
 
     context = {
         'leaderboard': leaderboard,
         'user_power_rank': user_power_rank,
+        'user_rankings': user_rankings,
         'is_admin': is_admin(request.user),
+        'clan_tab': clan_tab,
     }
     return render(request, 'items/power_rank_leaderboard.html', context)
 
@@ -1909,6 +1929,11 @@ def edit_power_rank(request, character_pk):
                     id__in=delete_ids,
                     power_rank=power_rank
                 ).delete()
+                
+            # If member uploads new screenshot, clear validation status
+            if valid_uploads > 0:
+                power_rank.is_validated = False
+                power_rank.validation_notes = None
 
             # Validate: must have at least 1 screenshot after save
             remaining_count = power_rank.screenshots.count()
@@ -1968,6 +1993,30 @@ def delete_power_rank_screenshot(request):
     screenshot.delete()
 
     return JsonResponse({'success': True, 'remaining': remaining - 1})
+
+@login_required
+@require_http_methods(["POST"])
+def update_power_rank_validation(request):
+    """
+    AJAX endpoint: Update power rank validation status. Admin only.
+    """
+    from django.http import JsonResponse
+    if not is_admin(request.user):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    pk = request.POST.get('pk')
+    is_validated = request.POST.get('is_validated') == 'true'
+    notes = request.POST.get('validation_notes', '')
+
+    if not pk:
+        return JsonResponse({'error': 'No PK provided'}, status=400)
+
+    power_rank = get_object_or_404(UniversalPowerRank, pk=pk)
+    power_rank.is_validated = is_validated
+    power_rank.validation_notes = notes
+    power_rank.save()
+
+    return JsonResponse({'success': True})
 
 
 # ======================================================
@@ -2031,3 +2080,175 @@ def manage_hall_of_fame(request):
         'characters': characters,
     }
     return render(request, 'items/manage_hall_of_fame.html', context)
+
+
+# ======================================================
+# SOUL PAGE (RAID BOSS SOULS)
+# ======================================================
+from .models import CharacterSoul
+
+@login_required
+def soul_page(request):
+    """Soul page - shows raid boss souls for all members"""
+    clan_filter = request.GET.get('clan', 'all')
+    
+    characters = Character.objects.all().order_by('name')
+    if clan_filter == 'Valkyrie':
+        characters = characters.filter(clan='Valkyrie')
+    elif clan_filter == 'Valhalla':
+        characters = characters.filter(clan='Valhalla')
+    
+    # Get all souls grouped by character
+    all_souls = CharacterSoul.objects.select_related('character').all()
+    soul_map = {}
+    for soul in all_souls:
+        if soul.character_id not in soul_map:
+            soul_map[soul.character_id] = {}
+        soul_map[soul.character_id][soul.boss_name] = {
+            'id': soul.id,
+            'is_verified': soul.is_verified,
+            'screenshot_url': soul.screenshot.url if soul.screenshot else '',
+        }
+    
+    # Build boss list grouped by category
+    boss_groups = [
+        {
+            'name': 'Raid Boss',
+            'bosses': [
+                'Chertuba', 'Kelsus', 'Basilla', 'Savan', 'Tromba',
+                'Felis', 'Sarka', 'Timitris', 'Talakin', 'Enkura',
+                'Contaminated Cruma', 'Katan', 'Stonegheist', 'Pan Dryad', 'Gahareth', 'Valefal',
+                'Breka', 'Medusa', 'Pan Narod', 'Matura', 'Black Lily', 'Behemoth',
+                'Balbo', 'Talkin', 'Timiniel', 'Selu', 'Repiro', 'Coroon', 'Samuel',
+                'Hisilrome', 'Mirror of Oblivion', 'Randor', 'Glaki', 'Cabrio', 'Flynt', 'Haff',
+                'Phoenix', 'Andras', 'Thanatos', 'Rahha',
+            ],
+        },
+        {
+            'name': 'Territory Boss',
+            'bosses': ['Queen Ant', 'Mutated Cruma', 'Core Susceptor', 'Dragon Beast', 'Orfen', 'Olkuth'],
+        },
+        {
+            'name': 'World Boss',
+            'bosses': [
+                'Shila', 'Moof', 'Normus', 'Ukanba', 'Selihoden',
+                'Ramdal', 'Mardil', 'Kernon', 'Tarim', 'Halate', 'Vella', 'Shuriel', 'Galaxia',
+            ],
+        },
+    ]
+    
+    all_bosses = []
+    for group in boss_groups:
+        all_bosses.extend(group['bosses'])
+    
+    # Build character data with soul info
+    char_data = []
+    for char in characters:
+        souls = soul_map.get(char.id, {})
+        total = len(all_bosses)
+        owned = sum(1 for b in all_bosses if b in souls)
+        verified = sum(1 for b in all_bosses if b in souls and souls[b]['is_verified'])
+        char_data.append({
+            'character': char,
+            'souls': souls,
+            'total': total,
+            'owned': owned,
+            'verified': verified,
+        })
+    
+    # Get current user's soul count
+    user_soul_count = 0
+    user_chars = Character.objects.filter(owner=request.user)
+    for uc in user_chars:
+        user_soul_count += len(soul_map.get(uc.id, {}))
+    
+    context = {
+        'char_data': char_data,
+        'boss_groups': boss_groups,
+        'all_bosses': all_bosses,
+        'clan_filter': clan_filter,
+        'is_admin': is_admin(request.user),
+        'user_soul_count': user_soul_count,
+    }
+    return render(request, 'items/soul_page.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def toggle_soul(request):
+    """AJAX: Toggle a soul for a character (add/remove). Members can self-report with screenshot."""
+    character_id = request.POST.get('character_id')
+    boss_name = request.POST.get('boss_name')
+    screenshot = request.FILES.get('screenshot')
+    
+    character = get_object_or_404(Character, pk=character_id)
+    
+    # Permission: admin can toggle any, user can only toggle their own
+    if not is_admin(request.user) and character.owner != request.user:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    soul, created = CharacterSoul.objects.get_or_create(
+        character=character,
+        boss_name=boss_name,
+        defaults={'is_verified': False}
+    )
+    
+    if not created and not screenshot:
+        # Remove the soul (only if no new screenshot being uploaded)
+        if soul.screenshot:
+            soul.screenshot.delete(save=False)
+        soul.delete()
+        return JsonResponse({'success': True, 'action': 'removed'})
+    
+    # Save screenshot if provided
+    if screenshot:
+        if soul.screenshot:
+            soul.screenshot.delete(save=False)
+        soul.screenshot = screenshot
+        soul.save()
+    
+    return JsonResponse({
+        'success': True, 'action': 'added', 'soul_id': soul.id,
+        'screenshot_url': soul.screenshot.url if soul.screenshot else '',
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def verify_soul(request):
+    """AJAX: Admin verifies/unverifies a soul"""
+    if not is_admin(request.user):
+        return JsonResponse({'error': 'Admin only'}, status=403)
+    
+    import json
+    data = json.loads(request.body)
+    soul_id = data.get('soul_id')
+    
+    soul = get_object_or_404(CharacterSoul, pk=soul_id)
+    soul.is_verified = not soul.is_verified
+    soul.save()
+    
+    return JsonResponse({'success': True, 'is_verified': soul.is_verified})
+
+
+@login_required
+@require_http_methods(["POST"])
+def bulk_verify_souls(request):
+    """AJAX: Admin bulk verify/unverify all souls for a character"""
+    if not is_admin(request.user):
+        return JsonResponse({'error': 'Admin only'}, status=403)
+    
+    import json
+    data = json.loads(request.body)
+    character_id = data.get('character_id')
+    action = data.get('action', 'verify')  # 'verify' or 'unverify'
+    
+    character = get_object_or_404(Character, pk=character_id)
+    souls = CharacterSoul.objects.filter(character=character)
+    
+    if action == 'verify':
+        souls.update(is_verified=True)
+    else:
+        souls.update(is_verified=False)
+    
+    return JsonResponse({'success': True, 'action': action, 'count': souls.count()})

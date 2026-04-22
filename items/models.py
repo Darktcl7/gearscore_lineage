@@ -1698,6 +1698,9 @@ class UniversalPowerRank(models.Model):
         help_text="Screenshot dari in-game stat sebagai bukti data valid"
     )
 
+    is_validated = models.BooleanField("Data Valid", default=False, help_text="Admin check to validate screenshot data matches written data")
+    validation_notes = models.TextField("Validation Notes", blank=True, null=True, help_text="Alasan jika data tidak valid")
+
     def calculate_gear_score(self):
         """
         Calculate gear score based on all power stats.
@@ -1786,3 +1789,41 @@ class HallOfFame(models.Model):
         ordering = ['-contribution', 'name']
         verbose_name = "Hall of Fame Player"
         verbose_name_plural = "Hall of Fame"
+
+# ======================================================
+# SOUL SYSTEM (RAID BOSS SOULS)
+# ======================================================
+class CharacterSoul(models.Model):
+    RAID_BOSS_CHOICES = [
+        ('Chertuba', 'Chertuba'), ('Kelsus', 'Kelsus'), ('Basilla', 'Basilla'), ('Savan', 'Savan'), ('Tromba', 'Tromba'),
+        ('Felis', 'Felis'), ('Sarka', 'Sarka'), ('Timitris', 'Timitris'), ('Talakin', 'Talakin'), ('Enkura', 'Enkura'),
+        ('Contaminated Cruma', 'Contaminated Cruma'), ('Katan', 'Katan'), ('Stonegheist', 'Stonegheist'), 
+        ('Pan Dryad', 'Pan Dryad'), ('Gahareth', 'Gahareth'), ('Valefal', 'Valefal'),
+        ('Breka', 'Breka'), ('Medusa', 'Medusa'), ('Pan Narod', 'Pan Narod'), ('Matura', 'Matura'), 
+        ('Black Lily', 'Black Lily'), ('Behemoth', 'Behemoth'),
+        ('Balbo', 'Balbo'), ('Talkin', 'Talkin'), ('Timiniel', 'Timiniel'), ('Selu', 'Selu'), 
+        ('Repiro', 'Repiro'), ('Coroon', 'Coroon'), ('Samuel', 'Samuel'),
+        ('Hisilrome', 'Hisilrome'), ('Mirror of Oblivion', 'Mirror of Oblivion'), ('Randor', 'Randor'), 
+        ('Glaki', 'Glaki'), ('Cabrio', 'Cabrio'), ('Flynt', 'Flynt'), ('Haff', 'Haff'), 
+        ('Phoenix', 'Phoenix'), ('Andras', 'Andras'), ('Thanatos', 'Thanatos'), ('Rahha', 'Rahha'),
+        ('Queen Ant', 'Queen Ant'), ('Mutated Cruma', 'Mutated Cruma'), ('Core Susceptor', 'Core Susceptor'), 
+        ('Dragon Beast', 'Dragon Beast'), ('Orfen', 'Orfen'), ('Olkuth', 'Olkuth'),
+        ('Shila', 'Shila'), ('Moof', 'Moof'), ('Normus', 'Normus'), ('Ukanba', 'Ukanba'), ('Selihoden', 'Selihoden'),
+        ('Ramdal', 'Ramdal'), ('Mardil', 'Mardil'), ('Kernon', 'Kernon'), ('Tarim', 'Tarim'), 
+        ('Halate', 'Halate'), ('Vella', 'Vella'), ('Shuriel', 'Shuriel'), ('Galaxia', 'Galaxia'),
+    ]
+
+    character = models.ForeignKey(Character, on_delete=models.CASCADE, related_name='souls')
+    boss_name = models.CharField("Raid Boss", max_length=100, choices=RAID_BOSS_CHOICES)
+    screenshot = models.ImageField("Screenshot Bukti", upload_to='soul_screenshots/', blank=True, null=True)
+    is_verified = models.BooleanField("Verified by Admin", default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.character.name} - {self.boss_name} ({'Verified' if self.is_verified else 'Pending'})"
+
+    class Meta:
+        unique_together = ('character', 'boss_name')
+        ordering = ['-created_at']
+        verbose_name = "Character Soul"
+        verbose_name_plural = "Character Souls"

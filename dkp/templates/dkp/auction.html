@@ -380,6 +380,21 @@
     .btn-clear-winners:hover { opacity: 0.85; }
     .btn-clear-winners i { margin-right: 4px; }
 
+    .btn-download-pdf {
+        background: rgba(52, 152, 219, 0.2);
+        color: #7ec8e3;
+        border: 1px solid rgba(52, 152, 219, 0.4);
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Outfit', sans-serif;
+        transition: all 0.2s;
+    }
+    .btn-download-pdf:hover { background: rgba(52, 152, 219, 0.4); }
+    .btn-download-pdf i { margin-right: 4px; }
+
     /* ===== RESPONSIVE ===== */
     @media (max-width: 1100px) {
         .auction-grid { grid-template-columns: repeat(2, 1fr); }
@@ -498,9 +513,12 @@
     <div class="diamond-section">
         <div class="section-header-row">
             <h2><i class="fas fa-gem"></i> DIAMOND AUCTION WINNERS</h2>
-            {% if diamond_winners %}
-            <button class="btn-clear-winners" onclick="confirmClearWinners('diamond')"><i class="fas fa-trash-alt"></i> Delete All</button>
-            {% endif %}
+            <div style="display:flex; gap:8px; align-items:center;">
+                <button class="btn-download-pdf" onclick="downloadWinnersPdf('diamond')"><i class="fas fa-file-pdf"></i> Download PDF</button>
+                {% if diamond_winners %}
+                <button class="btn-clear-winners" onclick="confirmClearWinners('diamond')"><i class="fas fa-trash-alt"></i> Delete All</button>
+                {% endif %}
+            </div>
         </div>
         <table class="diamond-table">
             <thead>
@@ -534,9 +552,12 @@
     <div class="dkp-section">
         <div class="section-header-row">
             <h2><i class="fas fa-coins"></i> DKP AUCTION WINNERS</h2>
-            {% if dkp_winners %}
-            <button class="btn-clear-winners" onclick="confirmClearWinners('dkp')"><i class="fas fa-trash-alt"></i> Delete All</button>
-            {% endif %}
+            <div style="display:flex; gap:8px; align-items:center;">
+                <button class="btn-download-pdf" onclick="downloadWinnersPdf('dkp')"><i class="fas fa-file-pdf"></i> Download PDF</button>
+                {% if dkp_winners %}
+                <button class="btn-clear-winners" onclick="confirmClearWinners('dkp')"><i class="fas fa-trash-alt"></i> Delete All</button>
+                {% endif %}
+            </div>
         </div>
         <table class="dkp-table">
             <thead>
@@ -638,6 +659,9 @@
         </div>
     </div>
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
 <script>
 var csrfToken = '{{ csrf_token }}';
@@ -862,6 +886,76 @@ function pollAuctionTimes() {
 setInterval(updateCountdowns, 1000);
 setInterval(pollAuctionTimes, 10000);
 updateCountdowns();
+
+// ===== DOWNLOAD WINNERS PDF =====
+function downloadWinnersPdf(type) {
+    var { jsPDF } = window.jspdf;
+    var doc = new jsPDF({ orientation: 'portrait' });
+    var now = new Date();
+    var timestamp = now.toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+
+    var isDiamond = (type === 'diamond');
+    var title = isDiamond ? 'Diamond Auction Winners' : 'DKP Auction Winners';
+    var tableSelector = isDiamond ? '.diamond-table' : '.dkp-table';
+    var currencyLabel = isDiamond ? 'Diamond' : 'DKP';
+    var headColor = isDiamond ? [59, 130, 246] : [168, 85, 247];
+    var textColor = isDiamond ? [96, 165, 250] : [192, 132, 252];
+
+    // Title
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('VALKYRIE - ' + title, 14, 15);
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100);
+    doc.text('Downloaded: ' + timestamp, 14, 22);
+    doc.setTextColor(0);
+
+    // Collect data from the table
+    var table = document.querySelector(tableSelector);
+    var rows = table ? table.querySelectorAll('tbody tr') : [];
+    var data = [];
+
+    rows.forEach(function(row) {
+        var tds = row.querySelectorAll('td');
+        if (tds.length < 5) return;
+        // Check if it's the empty "No winners yet" row
+        if (tds.length === 1 || (tds.length >= 1 && tds[0].getAttribute('colspan'))) return;
+        data.push([
+            tds[0].textContent.trim(),
+            tds[1].textContent.trim(),
+            tds[2].textContent.trim(),
+            tds[3].textContent.trim().replace(/[^\d,.-]/g, '').trim(),
+            tds[4].textContent.trim()
+        ]);
+    });
+
+    if (data.length === 0) {
+        data.push(['', '', 'No winners yet.', '', '']);
+    }
+
+    doc.autoTable({
+        startY: 27,
+        head: [['#', 'Player', 'Item', currencyLabel, 'Date']],
+        body: data,
+        theme: 'grid',
+        headStyles: { fillColor: headColor, textColor: textColor, fontStyle: 'bold', fontSize: 9 },
+        bodyStyles: { fontSize: 9, textColor: [50, 50, 50] },
+        alternateRowStyles: { fillColor: [245, 242, 250] },
+        columnStyles: {
+            0: { halign: 'center', cellWidth: 15 },
+            3: { halign: 'right', fontStyle: 'bold' }
+        },
+        didDrawPage: function(d) {
+            doc.setFontSize(7);
+            doc.setTextColor(150);
+            doc.text('Generated by Valkyrie Portal  |  ' + timestamp, 14, doc.internal.pageSize.height - 8);
+        }
+    });
+
+    doc.save(title.replace(/\s/g, '_') + '_' + now.toISOString().slice(0,10) + '.pdf');
+}
 </script>
 
 {% endblock %}
