@@ -755,6 +755,15 @@
                     </div>
                 </label>
             </div>
+            <div style="margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 12px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                <label style="display: flex; align-items: center; cursor: pointer; color: #ccc;">
+                    <input type="checkbox" id="cbPowerRankAdmin" style="margin-right: 12px; transform: scale(1.2);">
+                    <div>
+                        <strong style="color: #fff; font-size: 0.95rem; display: block; margin-bottom: 2px;"><i class="fas fa-chart-line" style="color: #3498db;"></i> Power Rank Admin</strong>
+                        <small style="color: #888;">Verify & manage Power Rank entries</small>
+                    </div>
+                </label>
+            </div>
         </div>
         <div class="confirm-actions">
             <button class="btn-no" onclick="closeSubAdminModal()">Cancel</button>
@@ -897,12 +906,13 @@
         rolesSection.style.display = 'block';
         
         // Load existing roles
-        var userRoles = adminRolesData[subAdminUserId] || { is_dkp_admin: false, is_treasury_admin: false, is_auction_admin: false, is_event_admin: false, is_soul_admin: false, can_give_dkp: false, can_remove_dkp: false, can_decay_dkp: false };
+        var userRoles = adminRolesData[subAdminUserId] || { is_dkp_admin: false, is_treasury_admin: false, is_auction_admin: false, is_event_admin: false, is_soul_admin: false, is_powerrank_admin: false, can_give_dkp: false, can_remove_dkp: false, can_decay_dkp: false };
         document.getElementById('cbDkpAdmin').checked = userRoles.is_dkp_admin;
         document.getElementById('cbEventAdmin').checked = userRoles.is_event_admin;
         document.getElementById('cbTreasuryAdmin').checked = userRoles.is_treasury_admin;
         document.getElementById('cbAuctionAdmin').checked = userRoles.is_auction_admin;
         document.getElementById('cbSoulAdmin').checked = userRoles.is_soul_admin;
+        document.getElementById('cbPowerRankAdmin').checked = userRoles.is_powerrank_admin;
         document.getElementById('cbCanGiveDkp').checked = userRoles.can_give_dkp;
         document.getElementById('cbCanRemoveDkp').checked = userRoles.can_remove_dkp;
         document.getElementById('cbCanDecayDkp').checked = userRoles.can_decay_dkp;
@@ -935,12 +945,23 @@
         var treasury = document.getElementById('cbTreasuryAdmin').checked;
         var auction = document.getElementById('cbAuctionAdmin').checked;
         var soul = document.getElementById('cbSoulAdmin').checked;
+        var prAdmin = document.getElementById('cbPowerRankAdmin').checked;
         var canGive = document.getElementById('cbCanGiveDkp').checked;
         var canRemove = document.getElementById('cbCanRemoveDkp').checked;
         var canDecay = document.getElementById('cbCanDecayDkp').checked;
-        var anyChecked = dkp || evAdmin || treasury || auction || soul;
+        var anyChecked = dkp || evAdmin || treasury || auction || soul || prAdmin;
         
-        var rolePayload = { is_dkp_admin: dkp, is_event_admin: evAdmin, is_treasury_admin: treasury, is_auction_admin: auction, is_soul_admin: soul, can_give_dkp: canGive, can_remove_dkp: canRemove, can_decay_dkp: canDecay };
+        var rolePayload = { 
+            is_dkp_admin: dkp, 
+            is_event_admin: evAdmin, 
+            is_treasury_admin: treasury, 
+            is_auction_admin: auction, 
+            is_soul_admin: soul, 
+            is_powerrank_admin: prAdmin,
+            can_give_dkp: canGive, 
+            can_remove_dkp: canRemove, 
+            can_decay_dkp: canDecay 
+        };
         var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}';
         
         if (!anyChecked && subAdminIsCurrently) {

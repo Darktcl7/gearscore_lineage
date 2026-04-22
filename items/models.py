@@ -1827,3 +1827,11 @@ class CharacterSoul(models.Model):
         ordering = ['-created_at']
         verbose_name = "Character Soul"
         verbose_name_plural = "Character Souls"
+
+class CharacterSoulProof(models.Model):
+    character = models.ForeignKey(Character, on_delete=models.CASCADE, related_name='soul_proofs')
+    image = models.ImageField("Screenshot Koleksi", upload_to='soul_proofs/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-uploaded_at']

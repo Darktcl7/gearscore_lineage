@@ -68,6 +68,7 @@ def character_management(request):
             'is_treasury_admin': role.is_treasury_admin,
             'is_auction_admin': role.is_auction_admin,
             'is_soul_admin': role.is_soul_admin,
+            'is_powerrank_admin': role.is_powerrank_admin,
             'can_give_dkp': role.can_give_dkp,
             'can_remove_dkp': role.can_remove_dkp,
             'can_decay_dkp': role.can_decay_dkp,
@@ -1764,6 +1765,7 @@ def toggle_admin_role(request, user_pk):
         role.is_treasury_admin = data.get('is_treasury_admin', role.is_treasury_admin)
         role.is_auction_admin = data.get('is_auction_admin', role.is_auction_admin)
         role.is_soul_admin = data.get('is_soul_admin', role.is_soul_admin)
+        role.is_powerrank_admin = data.get('is_powerrank_admin', role.is_powerrank_admin)
         role.can_give_dkp = data.get('can_give_dkp', role.can_give_dkp)
         role.can_remove_dkp = data.get('can_remove_dkp', role.can_remove_dkp)
         role.can_decay_dkp = data.get('can_decay_dkp', role.can_decay_dkp)
@@ -1865,11 +1867,19 @@ def power_rank_leaderboard(request):
             if not user_power_rank:
                 user_power_rank = item['power_rank']
 
+    # Check if Power Rank Admin
+    is_pr_admin = False
+    if request.user.is_authenticated:
+        from dkp.models import AdminRole
+        role = AdminRole.objects.filter(user=request.user).first()
+        if role and role.is_powerrank_admin:
+            is_pr_admin = True
+
     context = {
         'leaderboard': leaderboard,
         'user_power_rank': user_power_rank,
         'user_rankings': user_rankings,
-        'is_admin': is_admin(request.user),
+        'is_admin': is_admin(request.user) or is_pr_admin,
         'clan_tab': clan_tab,
     }
     return render(request, 'items/power_rank_leaderboard.html', context)
@@ -1979,8 +1989,15 @@ def delete_power_rank_screenshot(request):
     screenshot = get_object_or_404(PowerRankScreenshot, pk=screenshot_id)
     character = screenshot.power_rank.character
 
-    # Permission check
-    if not is_admin(request.user) and character.owner != request.user:
+    # Permission check: Super Admin, Power Rank Admin, or Owner
+    is_pr_admin = False
+    if request.user.is_authenticated:
+        from dkp.models import AdminRole
+        role = AdminRole.objects.filter(user=request.user).first()
+        if role and role.is_powerrank_admin:
+            is_pr_admin = True
+
+    if not (is_admin(request.user) or is_pr_admin) and character.owner != request.user:
         return JsonResponse({'error': 'Permission denied'}, status=403)
 
     # Check if this is the last screenshot - don't allow deletion
@@ -2001,7 +2018,15 @@ def update_power_rank_validation(request):
     AJAX endpoint: Update power rank validation status. Admin only.
     """
     from django.http import JsonResponse
-    if not is_admin(request.user):
+    # Permission: Super Admin or Power Rank Admin
+    is_pr_admin = False
+    if request.user.is_authenticated:
+        from dkp.models import AdminRole
+        role = AdminRole.objects.filter(user=request.user).first()
+        if role and role.is_powerrank_admin:
+            is_pr_admin = True
+            
+    if not (is_admin(request.user) or is_pr_admin):
         return JsonResponse({'error': 'Permission denied'}, status=403)
 
     pk = request.POST.get('pk')
@@ -2085,7 +2110,14 @@ def manage_hall_of_fame(request):
 # ======================================================
 # SOUL PAGE (RAID BOSS SOULS)
 # ======================================================
-from .models import CharacterSoul
+from .models import CharacterSoul, CharacterSoulProof
+
+def _is_soul_admin(user):
+    if is_admin(user):
+        return True
+    from dkp.models import AdminRole
+    role = AdminRole.objects.filter(user=user).first()
+    return role and role.is_soul_admin
 
 @login_required
 def soul_page(request):
@@ -2107,8 +2139,18 @@ def soul_page(request):
         soul_map[soul.character_id][soul.boss_name] = {
             'id': soul.id,
             'is_verified': soul.is_verified,
-            'screenshot_url': soul.screenshot.url if soul.screenshot else '',
         }
+    
+    # Get all soul proofs grouped by character
+    all_proofs = CharacterSoulProof.objects.select_related('character').all()
+    proof_map = {}
+    for proof in all_proofs:
+        if proof.character_id not in proof_map:
+            proof_map[proof.character_id] = []
+        proof_map[proof.character_id].append({
+            'id': proof.id,
+            'url': proof.image.url,
+        })
     
     # Build boss list grouped by category
     boss_groups = [
@@ -2135,6 +2177,10 @@ def soul_page(request):
                 'Ramdal', 'Mardil', 'Kernon', 'Tarim', 'Halate', 'Vella', 'Shuriel', 'Galaxia',
             ],
         },
+        {
+            'name': 'Arena Boss',
+            'bosses': ['Anaxa', 'Kustor'],
+        },
     ]
     
     all_bosses = []
@@ -2145,12 +2191,14 @@ def soul_page(request):
     char_data = []
     for char in characters:
         souls = soul_map.get(char.id, {})
+        proofs = proof_map.get(char.id, [])
         total = len(all_bosses)
         owned = sum(1 for b in all_bosses if b in souls)
         verified = sum(1 for b in all_bosses if b in souls and souls[b]['is_verified'])
         char_data.append({
             'character': char,
             'souls': souls,
+            'proofs': proofs,
             'total': total,
             'owned': owned,
             'verified': verified,
@@ -2167,7 +2215,7 @@ def soul_page(request):
         'boss_groups': boss_groups,
         'all_bosses': all_bosses,
         'clan_filter': clan_filter,
-        'is_admin': is_admin(request.user),
+        'is_admin': _is_soul_admin(request.user),
         'user_soul_count': user_soul_count,
     }
     return render(request, 'items/soul_page.html', context)
@@ -2176,15 +2224,16 @@ def soul_page(request):
 @login_required
 @require_http_methods(["POST"])
 def toggle_soul(request):
-    """AJAX: Toggle a soul for a character (add/remove). Members can self-report with screenshot."""
-    character_id = request.POST.get('character_id')
-    boss_name = request.POST.get('boss_name')
-    screenshot = request.FILES.get('screenshot')
+    """AJAX: Toggle a soul for a character (add/remove). Simple toggle."""
+    import json
+    data = json.loads(request.body)
+    character_id = data.get('character_id')
+    boss_name = data.get('boss_name')
     
     character = get_object_or_404(Character, pk=character_id)
     
-    # Permission: admin can toggle any, user can only toggle their own
-    if not is_admin(request.user) and character.owner != request.user:
+    # Permission: soul admin can toggle any, user can only toggle their own
+    if not _is_soul_admin(request.user) and character.owner != request.user:
         return JsonResponse({'error': 'Permission denied'}, status=403)
     
     soul, created = CharacterSoul.objects.get_or_create(
@@ -2193,31 +2242,56 @@ def toggle_soul(request):
         defaults={'is_verified': False}
     )
     
-    if not created and not screenshot:
-        # Remove the soul (only if no new screenshot being uploaded)
-        if soul.screenshot:
-            soul.screenshot.delete(save=False)
+    if not created:
         soul.delete()
         return JsonResponse({'success': True, 'action': 'removed'})
     
-    # Save screenshot if provided
-    if screenshot:
-        if soul.screenshot:
-            soul.screenshot.delete(save=False)
-        soul.screenshot = screenshot
-        soul.save()
+    return JsonResponse({'success': True, 'action': 'added', 'soul_id': soul.id})
+
+
+@login_required
+@require_http_methods(["POST"])
+def upload_soul_proof(request):
+    """AJAX: Upload a soul collection screenshot as proof for all bosses"""
+    character_id = request.POST.get('character_id')
+    screenshot = request.FILES.get('screenshot')
     
-    return JsonResponse({
-        'success': True, 'action': 'added', 'soul_id': soul.id,
-        'screenshot_url': soul.screenshot.url if soul.screenshot else '',
-    })
+    if not screenshot:
+        return JsonResponse({'error': 'No image provided'}, status=400)
+    
+    character = get_object_or_404(Character, pk=character_id)
+    
+    if not _is_soul_admin(request.user) and character.owner != request.user:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    proof = CharacterSoulProof.objects.create(character=character, image=screenshot)
+    
+    return JsonResponse({'success': True, 'proof_id': proof.id, 'proof_url': proof.image.url})
+
+
+@login_required
+@require_http_methods(["POST"])
+def delete_soul_proof(request):
+    """AJAX: Delete a soul proof screenshot"""
+    import json
+    data = json.loads(request.body)
+    proof_id = data.get('proof_id')
+    
+    proof = get_object_or_404(CharacterSoulProof, pk=proof_id)
+    
+    if not _is_soul_admin(request.user) and proof.character.owner != request.user:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    proof.image.delete(save=False)
+    proof.delete()
+    return JsonResponse({'success': True})
 
 
 @login_required
 @require_http_methods(["POST"])
 def verify_soul(request):
-    """AJAX: Admin verifies/unverifies a soul"""
-    if not is_admin(request.user):
+    """AJAX: Admin or Soul Admin verifies/unverifies a soul"""
+    if not _is_soul_admin(request.user):
         return JsonResponse({'error': 'Admin only'}, status=403)
     
     import json
@@ -2234,14 +2308,14 @@ def verify_soul(request):
 @login_required
 @require_http_methods(["POST"])
 def bulk_verify_souls(request):
-    """AJAX: Admin bulk verify/unverify all souls for a character"""
-    if not is_admin(request.user):
+    """AJAX: Admin or Soul Admin bulk verify/unverify all souls for a character"""
+    if not _is_soul_admin(request.user):
         return JsonResponse({'error': 'Admin only'}, status=403)
     
     import json
     data = json.loads(request.body)
     character_id = data.get('character_id')
-    action = data.get('action', 'verify')  # 'verify' or 'unverify'
+    action = data.get('action', 'verify')
     
     character = get_object_or_404(Character, pk=character_id)
     souls = CharacterSoul.objects.filter(character=character)

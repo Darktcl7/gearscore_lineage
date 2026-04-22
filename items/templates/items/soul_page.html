@@ -378,15 +378,29 @@
         white-space: nowrap;
     }
 
-    .boss-item .boss-ss {
-        font-size: 0.6rem;
-        color: #555;
-        flex-shrink: 0;
+    /* Proof Section */
+    .proof-section {
+        display: flex; align-items: center; gap: 8px; padding: 8px 0;
+        margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); flex-wrap: wrap;
     }
-
-    .boss-item.has-soul .boss-ss {
-        color: #81c784;
+    .proof-thumb {
+        width: 50px; height: 50px; border-radius: 6px; object-fit: cover;
+        border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: all 0.2s;
     }
+    .proof-thumb:hover { border-color: var(--gold-light); transform: scale(1.1); }
+    .btn-upload-proof {
+        padding: 6px 14px; background: linear-gradient(135deg, rgba(170,134,71,0.3), rgba(140,110,55,0.4));
+        color: var(--gold-light); border: 1px solid rgba(170,134,71,0.3); border-radius: 6px;
+        cursor: pointer; font-size: 0.75rem; font-family: 'Cinzel', serif; transition: all 0.2s;
+    }
+    .btn-upload-proof:hover { background: linear-gradient(135deg, rgba(170,134,71,0.5), rgba(140,110,55,0.6)); }
+    .proof-delete-btn {
+        position: absolute; top: -4px; right: -4px; width: 16px; height: 16px;
+        background: rgba(255,60,60,0.8); color: #fff; border: none; border-radius: 50%;
+        font-size: 0.5rem; cursor: pointer; display: none; align-items: center; justify-content: center;
+    }
+    .proof-wrap { position: relative; display: inline-block; }
+    .proof-wrap:hover .proof-delete-btn { display: flex; }
 
     /* Upload Modal */
     .upload-modal {
@@ -643,17 +657,32 @@
                 {% endif %}
             </div>
 
-            <!-- Body (expandable) -->
+            <!-- Body -->
             <div class="member-body">
+                <!-- Proof Upload Section -->
+                <div class="proof-section" id="proofSection_{{ item.character.id }}">
+                    <span style="color:#888; font-size:0.75rem; margin-right:5px;"><i class="fas fa-camera"></i> Bukti:</span>
+                    {% for proof in item.proofs %}
+                    <div class="proof-wrap" id="proofWrap_{{ proof.id }}">
+                        <img src="{{ proof.url }}" class="proof-thumb" onclick="openSsViewer('{{ proof.url }}')" alt="Proof">
+                        {% if is_admin or item.character.owner_id == user.id %}
+                        <button class="proof-delete-btn" onclick="deleteProof({{ proof.id }})" title="Hapus"><i class="fas fa-times"></i></button>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    {% if is_admin or item.character.owner_id == user.id %}
+                    <button class="btn-upload-proof" onclick="openUploadModal({{ item.character.id }}, '{{ item.character.name|escapejs }}')">
+                        <i class="fas fa-plus"></i> Upload
+                    </button>
+                    {% endif %}
+                </div>
+
                 {% for group in boss_groups %}
                 <div class="soul-category">
                     <div class="soul-category-title">
-                        {% if group.name == 'Raid Boss' %}
-                        <i class="fas fa-skull-crossbones"></i>
-                        {% elif group.name == 'Territory Boss' %}
-                        <i class="fas fa-flag"></i>
-                        {% elif group.name == 'World Boss' %}
-                        <i class="fas fa-globe"></i>
+                        {% if group.name == 'Raid Boss' %}<i class="fas fa-skull-crossbones"></i>
+                        {% elif group.name == 'Territory Boss' %}<i class="fas fa-flag"></i>
+                        {% elif group.name == 'World Boss' %}<i class="fas fa-globe"></i>
                         {% endif %}
                         {{ group.name }}
                     </div>
@@ -664,18 +693,12 @@
                              data-boss="{{ boss }}"
                              data-soul-id="{% for k,v in item.souls.items %}{% if k == boss %}{{ v.id }}{% endif %}{% endfor %}"
                              data-verified="{% for k,v in item.souls.items %}{% if k == boss %}{{ v.is_verified }}{% endif %}{% endfor %}"
-                             data-screenshot="{% for k,v in item.souls.items %}{% if k == boss %}{{ v.screenshot_url }}{% endif %}{% endfor %}"
                              data-owner="{{ item.character.owner_id }}"
                              onclick="handleBossClick(this)">
                             <span class="boss-dot {% if boss in item.souls %}{% for k,v in item.souls.items %}{% if k == boss %}{% if v.is_verified %}verified{% else %}pending{% endif %}{% endif %}{% endfor %}{% else %}empty{% endif %}">
                                 {% if boss in item.souls %}{% for k,v in item.souls.items %}{% if k == boss %}{% if v.is_verified %}✓{% else %}?{% endif %}{% endif %}{% endfor %}{% endif %}
                             </span>
                             <span class="boss-name">{{ boss }}</span>
-                            <span class="boss-ss" title="{% if boss in item.souls %}{% for k,v in item.souls.items %}{% if k == boss %}{% if v.screenshot_url %}View screenshot{% else %}No screenshot{% endif %}{% endif %}{% endfor %}{% endif %}">
-                                {% if boss in item.souls %}
-                                    {% for k,v in item.souls.items %}{% if k == boss %}{% if v.screenshot_url %}<i class="fas fa-image"></i>{% endif %}{% endif %}{% endfor %}
-                                {% endif %}
-                            </span>
                         </div>
                         {% endfor %}
                     </div>
@@ -696,7 +719,7 @@
 <div class="upload-modal" id="uploadModal">
     <div class="upload-box">
         <h3><i class="fas fa-upload"></i> Upload Soul Screenshot</h3>
-        <p class="upload-subtitle" id="uploadBossName">Boss Name</p>
+        <p class="upload-subtitle" id="uploadCharName">Soul Collection Screenshot</p>
         <div class="upload-drop" id="uploadDrop">
             <i class="fas fa-cloud-upload-alt"></i>
             <span>Click or drag image here</span>
@@ -707,7 +730,7 @@
         </div>
         <div class="upload-actions">
             <button class="btn-upload-cancel" onclick="closeUploadModal()">Cancel</button>
-            <button class="btn-upload-submit" id="btnUploadSubmit" onclick="submitUpload()">Upload & Claim</button>
+            <button class="btn-upload-submit" onclick="submitProofUpload()">Upload</button>
         </div>
     </div>
 </div>
@@ -722,12 +745,10 @@
 var isAdmin = {{ is_admin|yesno:"true,false" }};
 var currentUserId = {{ user.id }};
 var csrfToken = '{{ csrf_token }}';
-var uploadTarget = null;
+var uploadCharId = null;
 var uploadFile = null;
 
-function toggleCard(header) {
-    header.closest('.member-card').classList.toggle('expanded');
-}
+function toggleCard(header) { header.closest('.member-card').classList.toggle('expanded'); }
 
 function filterMembers(query) {
     query = query.toLowerCase();
@@ -736,34 +757,23 @@ function filterMembers(query) {
     });
 }
 
-// ========== UPLOAD MODAL ==========
-function openUploadModal(el) {
-    uploadTarget = el;
-    uploadFile = null;
-    document.getElementById('uploadBossName').textContent = el.dataset.boss;
+function openUploadModal(charId, charName) {
+    uploadCharId = charId; uploadFile = null;
+    document.getElementById('uploadCharName').textContent = charName + ' — Soul Collection';
     document.getElementById('uploadPreview').style.display = 'none';
     document.getElementById('uploadFileInput').value = '';
     document.getElementById('uploadModal').classList.add('active');
 }
-
-function closeUploadModal() {
-    document.getElementById('uploadModal').classList.remove('active');
-    uploadTarget = null;
-    uploadFile = null;
-}
+function closeUploadModal() { document.getElementById('uploadModal').classList.remove('active'); uploadCharId = null; uploadFile = null; }
 
 document.getElementById('uploadFileInput').addEventListener('change', function(e) {
     if (e.target.files && e.target.files[0]) {
         uploadFile = e.target.files[0];
         var reader = new FileReader();
-        reader.onload = function(ev) {
-            document.getElementById('uploadPreviewImg').src = ev.target.result;
-            document.getElementById('uploadPreview').style.display = 'block';
-        };
+        reader.onload = function(ev) { document.getElementById('uploadPreviewImg').src = ev.target.result; document.getElementById('uploadPreview').style.display = 'block'; };
         reader.readAsDataURL(uploadFile);
     }
 });
-
 var dropZone = document.getElementById('uploadDrop');
 dropZone.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('dragover'); });
 dropZone.addEventListener('dragleave', function() { this.classList.remove('dragover'); });
@@ -773,126 +783,62 @@ dropZone.addEventListener('drop', function(e) {
         uploadFile = e.dataTransfer.files[0];
         document.getElementById('uploadFileInput').files = e.dataTransfer.files;
         var reader = new FileReader();
-        reader.onload = function(ev) {
-            document.getElementById('uploadPreviewImg').src = ev.target.result;
-            document.getElementById('uploadPreview').style.display = 'block';
-        };
+        reader.onload = function(ev) { document.getElementById('uploadPreviewImg').src = ev.target.result; document.getElementById('uploadPreview').style.display = 'block'; };
         reader.readAsDataURL(uploadFile);
     }
 });
 
-function submitUpload() {
-    if (!uploadTarget || !uploadFile) { alert('Please select an image first.'); return; }
+function submitProofUpload() {
+    if (!uploadCharId || !uploadFile) { alert('Please select an image.'); return; }
     var fd = new FormData();
-    fd.append('character_id', uploadTarget.dataset.character);
-    fd.append('boss_name', uploadTarget.dataset.boss);
+    fd.append('character_id', uploadCharId);
     fd.append('screenshot', uploadFile);
-    fetch('{% url "toggle-soul" %}', {
-        method: 'POST', headers: {'X-CSRFToken': csrfToken}, body: fd
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success && data.action === 'added') {
-            var dot = uploadTarget.querySelector('.boss-dot');
-            dot.className = 'boss-dot pending'; dot.innerHTML = '?';
-            uploadTarget.classList.add('has-soul');
-            uploadTarget.classList.remove('is-verified');
-            uploadTarget.dataset.soulId = data.soul_id;
-            uploadTarget.dataset.verified = 'False';
-            uploadTarget.dataset.screenshot = data.screenshot_url || '';
-            var ssSpan = uploadTarget.querySelector('.boss-ss');
-            if (ssSpan && data.screenshot_url) ssSpan.innerHTML = '<i class="fas fa-image"></i>';
-            updateCardProgress(uploadTarget.dataset.character);
+    fetch('{% url "upload-soul-proof" %}', { method: 'POST', headers: {'X-CSRFToken': csrfToken}, body: fd })
+    .then(r => r.json()).then(data => {
+        if (data.success) {
+            var section = document.getElementById('proofSection_' + uploadCharId);
+            var btn = section.querySelector('.btn-upload-proof');
+            var wrap = document.createElement('div');
+            wrap.className = 'proof-wrap'; wrap.id = 'proofWrap_' + data.proof_id;
+            wrap.innerHTML = '<img src="' + data.proof_url + '" class="proof-thumb" onclick="openSsViewer(\'' + data.proof_url + '\')" alt="Proof"><button class="proof-delete-btn" onclick="deleteProof(' + data.proof_id + ')" title="Hapus"><i class="fas fa-times"></i></button>';
+            section.insertBefore(wrap, btn);
         }
         closeUploadModal();
     });
 }
 
-// ========== SCREENSHOT VIEWER ==========
-function openSsViewer(url) {
-    document.getElementById('ssViewerImg').src = url;
-    document.getElementById('ssViewer').classList.add('active');
+function deleteProof(proofId) {
+    if (!confirm('Delete this proof?')) return;
+    fetch('{% url "delete-soul-proof" %}', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}, body: JSON.stringify({proof_id: proofId}) })
+    .then(r => r.json()).then(data => { if (data.success) { var el = document.getElementById('proofWrap_' + proofId); if (el) el.remove(); } });
 }
+
+function openSsViewer(url) { document.getElementById('ssViewerImg').src = url; document.getElementById('ssViewer').classList.add('active'); }
 function closeSsViewer() { document.getElementById('ssViewer').classList.remove('active'); }
 
-// ========== HANDLE BOSS CLICK ==========
 function handleBossClick(el) {
-    var charId = el.dataset.character;
-    var boss = el.dataset.boss;
-    var soulId = el.dataset.soulId;
-    var ownerId = el.dataset.owner;
-    var screenshot = el.dataset.screenshot;
+    var charId = el.dataset.character, boss = el.dataset.boss, soulId = el.dataset.soulId, ownerId = el.dataset.owner;
     var dot = el.querySelector('.boss-dot');
 
-    // Click on image icon → view screenshot
-    if (screenshot && event.target.closest('.boss-ss')) {
-        event.stopPropagation();
-        openSsViewer(screenshot);
-        return;
-    }
-
-    // Admin verify pending soul
     if (isAdmin && soulId && dot.classList.contains('pending')) {
-        fetch('{% url "verify-soul" %}', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
-            body: JSON.stringify({soul_id: parseInt(soulId)})
-        })
-        .then(r => r.json())
-        .then(data => {
+        fetch('{% url "verify-soul" %}', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}, body: JSON.stringify({soul_id: parseInt(soulId)}) })
+        .then(r => r.json()).then(data => {
             if (data.success) {
-                if (data.is_verified) {
-                    dot.className = 'boss-dot verified'; dot.innerHTML = '✓';
-                    el.classList.add('is-verified'); el.dataset.verified = 'True';
-                } else {
-                    dot.className = 'boss-dot pending'; dot.innerHTML = '?';
-                    el.classList.remove('is-verified'); el.dataset.verified = 'False';
-                }
+                if (data.is_verified) { dot.className = 'boss-dot verified'; dot.innerHTML = '✓'; el.classList.add('is-verified'); el.dataset.verified = 'True'; }
+                else { dot.className = 'boss-dot pending'; dot.innerHTML = '?'; el.classList.remove('is-verified'); el.dataset.verified = 'False'; }
             }
-        });
-        return;
+        }); return;
     }
-
-    // Admin unverify verified soul
     if (isAdmin && soulId && dot.classList.contains('verified')) {
-        fetch('{% url "verify-soul" %}', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
-            body: JSON.stringify({soul_id: parseInt(soulId)})
-        })
-        .then(r => r.json())
-        .then(data => {
+        fetch('{% url "verify-soul" %}', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}, body: JSON.stringify({soul_id: parseInt(soulId)}) })
+        .then(r => r.json()).then(data => { if (data.success) { dot.className = 'boss-dot pending'; dot.innerHTML = '?'; el.classList.remove('is-verified'); el.dataset.verified = 'False'; } }); return;
+    }
+    if (isAdmin || parseInt(ownerId) === currentUserId) {
+        fetch('{% url "toggle-soul" %}', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}, body: JSON.stringify({character_id: parseInt(charId), boss_name: boss}) })
+        .then(r => r.json()).then(data => {
             if (data.success) {
-                dot.className = 'boss-dot pending'; dot.innerHTML = '?';
-                el.classList.remove('is-verified'); el.dataset.verified = 'False';
-            }
-        });
-        return;
-    }
-
-    // Empty soul → open upload modal (owner or admin)
-    if ((isAdmin || parseInt(ownerId) === currentUserId) && dot.classList.contains('empty')) {
-        openUploadModal(el);
-        return;
-    }
-
-    // Has soul, non-admin owner click → remove
-    if (!isAdmin && parseInt(ownerId) === currentUserId && el.classList.contains('has-soul')) {
-        if (!confirm('Remove this soul claim?')) return;
-        var fd = new FormData();
-        fd.append('character_id', charId);
-        fd.append('boss_name', boss);
-        fetch('{% url "toggle-soul" %}', {
-            method: 'POST', headers: {'X-CSRFToken': csrfToken}, body: fd
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success && data.action === 'removed') {
-                dot.className = 'boss-dot empty'; dot.innerHTML = '';
-                el.classList.remove('has-soul', 'is-verified');
-                el.dataset.soulId = ''; el.dataset.verified = ''; el.dataset.screenshot = '';
-                var ssSpan = el.querySelector('.boss-ss');
-                if (ssSpan) ssSpan.innerHTML = '';
+                if (data.action === 'added') { dot.className = 'boss-dot pending'; dot.innerHTML = '?'; el.classList.add('has-soul'); el.classList.remove('is-verified'); el.dataset.soulId = data.soul_id; el.dataset.verified = 'False'; }
+                else { dot.className = 'boss-dot empty'; dot.innerHTML = ''; el.classList.remove('has-soul', 'is-verified'); el.dataset.soulId = ''; el.dataset.verified = ''; }
                 updateCardProgress(charId);
             }
         });
@@ -902,36 +848,21 @@ function handleBossClick(el) {
 function updateCardProgress(charId) {
     var card = document.querySelector('.member-card[data-character-id="' + charId + '"]');
     if (!card) return;
-    var items = card.querySelectorAll('.boss-item');
-    var total = items.length, owned = 0;
+    var items = card.querySelectorAll('.boss-item'), total = items.length, owned = 0;
     items.forEach(function(item) { if (item.classList.contains('has-soul')) owned++; });
-    var progText = card.querySelector('.member-progress-text');
-    var progFill = card.querySelector('.member-progress-fill');
-    if (progText) {
-        progText.style.color = owned === total ? '#4caf50' : (owned > 0 ? '#ff9800' : '#666');
-        progText.textContent = owned + '/' + total;
-    }
-    if (progFill) {
-        var pct = total > 0 ? Math.round(owned / total * 100) : 0;
-        progFill.style.width = pct + '%';
-        progFill.className = 'member-progress-fill ' + (pct < 20 ? 'low' : (pct < 55 ? 'mid' : 'high'));
-    }
+    var progText = card.querySelector('.member-progress-text'), progFill = card.querySelector('.member-progress-fill');
+    if (progText) { progText.style.color = owned === total ? '#4caf50' : (owned > 0 ? '#ff9800' : '#666'); progText.textContent = owned + '/' + total; }
+    if (progFill) { var pct = total > 0 ? Math.round(owned / total * 100) : 0; progFill.style.width = pct + '%'; progFill.className = 'member-progress-fill ' + (pct < 20 ? 'low' : (pct < 55 ? 'mid' : 'high')); }
 }
 
 function bulkVerify(charId, action) {
     if (!confirm('Verify all souls for this member?')) return;
-    fetch('{% url "bulk-verify-souls" %}', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
-        body: JSON.stringify({character_id: charId, action: action})
-    })
-    .then(r => r.json())
-    .then(data => { if (data.success) location.reload(); });
+    fetch('{% url "bulk-verify-souls" %}', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}, body: JSON.stringify({character_id: charId, action: action}) })
+    .then(r => r.json()).then(data => { if (data.success) location.reload(); });
 }
 
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') { closeUploadModal(); closeSsViewer(); }
-});
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { closeUploadModal(); closeSsViewer(); } });
 </script>
 {% endblock %}
+
 

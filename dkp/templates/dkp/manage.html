@@ -76,6 +76,7 @@
     .tab-btn[data-tab="territory"].active { color: #9b59b6; border-bottom-color: #9b59b6; background: rgba(155,89,182,0.08); }
     .tab-btn[data-tab="world"].active   { color: #3498db; border-bottom-color: #3498db; background: rgba(52,152,219,0.08); }
     .tab-btn[data-tab="rift"].active    { color: #1abc9c; border-bottom-color: #1abc9c; background: rgba(26,188,156,0.08); }
+    .tab-btn[data-tab="arena"].active   { color: #f39c12; border-bottom-color: #f39c12; background: rgba(243,156,18,0.08); }
 
     .tab-content { display: none; }
     .tab-content.active { display: block; }
@@ -131,6 +132,8 @@
     #tab-world .boss-pill.selected .check-icon { border-color: #3498db; background: #3498db; }
     #tab-rift .boss-pill.selected { border-color: #1abc9c; background: rgba(26,188,156,0.15); color: #76d7c4; }
     #tab-rift .boss-pill.selected .check-icon { border-color: #1abc9c; background: #1abc9c; }
+    #tab-arena .boss-pill.selected { border-color: #f39c12; background: rgba(243,156,18,0.15); color: #f9e79f; }
+    #tab-arena .boss-pill.selected .check-icon { border-color: #f39c12; background: #f39c12; }
 
     .flat-boss-list { display: flex; flex-wrap: wrap; gap: 10px 16px; padding: 4px 0; }
 
@@ -335,6 +338,8 @@
             <div class="settings-boss-grid" id="sg-world"></div>
             <div class="settings-section-title" style="margin-top:16px;"><i class="fas fa-circle-nodes" style="margin-right:6px;"></i>Rift Boss</div>
             <div class="settings-boss-grid" id="sg-rift"></div>
+            <div class="settings-section-title" style="margin-top:16px;"><i class="fas fa-shield-halved" style="margin-right:6px;"></i>Arena Boss</div>
+            <div class="settings-boss-grid" id="sg-arena"></div>
             <button type="button" class="btn-save-settings" onclick="saveSettings()"><i class="fas fa-save" style="margin-right:6px;"></i>Save Settings</button>
             <span id="settings-saved-msg" style="color:#2ecc71; font-size:0.82rem; margin-left:12px; display:none;">✓ Saved!</span>
         </div>
@@ -352,6 +357,9 @@
             </button>
             <button class="tab-btn" data-tab="rift" type="button">
                 <i class="fas fa-circle-nodes" style="margin-right:6px;"></i>Rift Boss
+            </button>
+            <button class="tab-btn" data-tab="arena" type="button">
+                <i class="fas fa-shield-halved" style="margin-right:6px;"></i>Arena Boss
             </button>
         </div>
 
@@ -761,6 +769,75 @@
                 </div>
             </form>
         </div>
+
+        <!-- ============================
+             TAB: ARENA BOSS
+             ============================ -->
+        <div id="tab-arena" class="tab-content">
+            <form method="POST" onsubmit="return buildBossForm(this)">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create">
+                <input type="hidden" name="boss_type" value="Arena Boss">
+                <input type="hidden" name="name" id="arena-name-hidden">
+                <input type="hidden" name="code" value="">
+
+                <!-- War Day Toggle -->
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px; padding:10px 16px; background:rgba(231,76,60,0.08); border:1px solid rgba(231,76,60,0.25); border-radius:10px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:#e74c3c; font-weight:600; font-size:0.9rem;">
+                        <input type="checkbox" name="war_day" style="width:18px; height:18px; cursor:pointer;">
+                        ⚔️ War Day
+                    </label>
+                    <span style="color:#888; font-size:0.78rem;">Points will also be added to Activity Score</span>
+                </div>
+
+                <div class="flat-boss-list">
+                    <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Anaxa"><span class="check-icon"></span><span>Anaxa</span></label>
+                    <label class="boss-pill" onclick="togglePill(this)"><input type="radio" name="boss_selection" value="Kustor"><span class="check-icon"></span><span>Kustor</span></label>
+                </div>
+
+                <div class="submit-row" style="margin-top:18px; border-top:1px solid #2a2a2a; padding-top:18px;">
+                    <div class="pts-display-box">
+                        <span class="pts-label"><i class="fas fa-coins" style="color:#FFD700; margin-right:5px;"></i>Points:</span>
+                        <span class="pts-value-badge" id="pts-badge-arena">—</span>
+                    </div>
+                    <span class="selected-summary" id="arena-summary">Select a boss above to continue.</span>
+                </div>
+                <input type="hidden" name="value" id="pts-hidden-arena" value="10">
+
+                <div class="participant-section" id="part-section-arena">
+                    <div class="participant-section-header">
+                        <span class="participant-section-title"><i class="fas fa-users" style="margin-right:8px;"></i>Who participated?</span>
+                        <div class="participant-actions">
+                            <button type="button" class="btn-part-action" onclick="selectAllParts(this)">Select All</button>
+                            <button type="button" class="btn-part-action" onclick="clearParts(this)">Clear</button>
+                        </div>
+                    </div>
+                    <div class="participant-grid">
+                        {% for p in profiles %}
+                        <label class="part-pill" onclick="togglePart(this)">
+                            <input type="checkbox" name="participant_ids" value="{{ p.id }}">
+                            <span class="part-check"></span>
+                            <span>{{ p.character.name }}</span>
+                        </label>
+                        {% empty %}
+                        <span style="color:#555;">No characters registered yet.</span>
+                        {% endfor %}
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
+                        <span class="part-counter" id="part-counter-arena">0 selected</span>
+                    </div>
+                    <div class="note-input-wrapper">
+                        <label><i class="fas fa-sticky-note" style="color:#FFD700;"></i> Catatan / Note</label>
+                        <textarea name="activity_note" placeholder="Tambahkan catatan untuk aktivitas ini... (opsional)"></textarea>
+                    </div>
+                    <div style="display:flex; justify-content:flex-end; margin-top:14px;">
+                        <button type="submit" class="btn-gold" style="padding:12px 28px; font-size:0.95rem;">
+                            <i class="fas fa-save" style="margin-right:6px;"></i>SAVE ACTIVITY
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
     <!-- END BOSS TABS -->
 
@@ -869,13 +946,15 @@ var DEFAULT_PTS = {
     'Queen Ant':20,'Mutated Cruma':20,'Core Susceptor':20,'Dragon Beast':20,'Orfen':20,'Olkuth':20,
     'Shila':30,'Moof':30,'Normus':30,'Ukanba':30,'Selihoden':30,
     'Ramdal':50,'Mardil':50,'Kernon':50,'Tarim':50,'Halate':50,'Vella':50,'Shuriel':50,'Galaxia':50,
-    'Maluk':40,'Mirmax':40,'Typhoon':40
+    'Maluk':40,'Mirmax':40,'Typhoon':40,
+    'Anaxa':30,'Kustor':30
 };
 var BOSS_GROUPS = {
     'sg-raid':['Chertuba','Kelsus','Basilla','Savan','Tromba','Felis','Sarka','Timitris','Talakin','Enkura','Contaminated Cruma','Katan','Stonegheist','Pan Dryad','Gahareth','Valefal','Breka','Medusa','Pan Narod','Matura','Black Lily','Behemoth','Balbo','Talkin','Timiniel','Selu','Repiro','Coroon','Samuel','Hisilrome','Mirror of Oblivion','Randor','Glaki','Cabrio','Flynt','Haff','Phoenix','Andras','Thanatos','Rahha'],
     'sg-territory':['Queen Ant','Mutated Cruma','Core Susceptor','Dragon Beast','Orfen','Olkuth'],
     'sg-world':['Shila','Moof','Normus','Ukanba','Selihoden','Ramdal','Mardil','Kernon','Tarim','Halate','Vella','Shuriel','Galaxia'],
-    'sg-rift':['Maluk','Mirmax','Typhoon']
+    'sg-rift':['Maluk','Mirmax','Typhoon'],
+    'sg-arena':['Anaxa','Kustor']
 };
 var bossPoints = {};
 

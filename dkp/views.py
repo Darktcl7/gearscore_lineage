@@ -658,7 +658,7 @@ def dkp_manage(request):
 
                 # WAR DAY: Also create Activity event if checked (Raid Boss & Territory Boss only)
                 activity_event = None
-                if is_war_day and boss_type in ('Raid Boss', 'Territory Boss', 'World Boss'):
+                if is_war_day and boss_type in ('Raid Boss', 'Territory Boss', 'World Boss', 'Arena Boss'):
                     from items.models import ActivityEvent, PlayerActivity
                     activity_event = ActivityEvent.objects.create(
                         name=f"⚔️ War Day: {final_name}",

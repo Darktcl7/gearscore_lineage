@@ -86,6 +86,8 @@ class AdminRole(models.Model):
         help_text="Access to future Auction system")
     is_soul_admin = models.BooleanField("Soul Admin", default=False,
         help_text="Access to verify/manage Soul collections")
+    is_powerrank_admin = models.BooleanField("Power Rank Admin", default=False,
+        help_text="Access to verify Power Rank entries")
         
     # Granular DKP Admin controls
     can_give_dkp = models.BooleanField("Can Give DKP", default=False)
@@ -101,6 +103,7 @@ class AdminRole(models.Model):
         if self.is_treasury_admin: roles.append("Treasury")
         if self.is_auction_admin: roles.append("Auction")
         if self.is_soul_admin: roles.append("Soul")
+        if self.is_powerrank_admin: roles.append("PowerRank")
         return f"{self.user.username} - [{', '.join(roles) or 'No Roles'}]"
 
 
