@@ -582,8 +582,8 @@
 
     <!-- Clan Filter Tabs -->
     <div class="soul-filters">
-        <a href="?clan=Valkyrie" class="{% if clan_filter == 'Valkyrie' %}active{% endif %}">Valkyrie</a>
-        <a href="?clan=Valhalla" class="{% if clan_filter == 'Valhalla' %}active{% endif %}">Valhalla</a>
+        <a href="?clan=Valkyrie" class="{% if clan_filter == 'Valkyrie' %}active{% endif %}" style="{% if clan_filter == 'Valkyrie' %}color:#FFD700; border-color:#FFD700; background:rgba(255,215,0,0.1); box-shadow:0 0 15px rgba(255,215,0,0.15);{% endif %}">Valkyrie</a>
+        <a href="?clan=Valhalla" class="{% if clan_filter == 'Valhalla' %}active{% endif %}" style="{% if clan_filter == 'Valhalla' %}color:#b88aff; border-color:#b88aff; background:rgba(184,138,255,0.1); box-shadow:0 0 15px rgba(184,138,255,0.15);{% endif %}">Valhalla</a>
     </div>
 
     <!-- Legend -->
@@ -626,9 +626,6 @@
                 <i class="fas fa-chevron-right member-expand-icon"></i>
                 <span class="member-name">
                     {{ item.character.name }}
-                    <span class="clan-tag {% if item.character.clan == 'Valkyrie' %}valkyrie{% else %}valhalla{% endif %}">
-                        {{ item.character.clan }}
-                    </span>
                 </span>
                 <div class="member-progress">
                     <span class="member-progress-text" style="color: {% if item.owned == item.total %}#4caf50{% elif item.owned > 0 %}#ff9800{% else %}#666{% endif %};">
