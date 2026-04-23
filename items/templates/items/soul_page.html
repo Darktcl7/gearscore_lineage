@@ -583,6 +583,69 @@
         outline: none;
     }
     .soul-search input::placeholder { color: #555; }
+
+    /* Custom Confirm Modal */
+    .confirm-modal {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 10002;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(5px);
+    }
+    .confirm-modal.active { display: flex; }
+    .confirm-box {
+        background: linear-gradient(145deg, #1a1a1a, #121212);
+        border: 1px solid rgba(170, 134, 71, 0.3);
+        border-radius: 12px;
+        padding: 25px;
+        width: 90%;
+        max-width: 400px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+        text-align: center;
+    }
+    .confirm-box h3 {
+        margin: 0 0 15px;
+        color: var(--gold-light);
+        font-family: 'Cinzel', serif;
+        font-size: 1.2rem;
+    }
+    .confirm-box p {
+        color: #ccc;
+        font-size: 0.95rem;
+        margin-bottom: 25px;
+    }
+    .confirm-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+    }
+    .confirm-actions button {
+        padding: 10px 24px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-family: 'Cinzel', serif;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+    .btn-confirm-cancel {
+        background: rgba(255,255,255,0.08);
+        color: #999;
+    }
+    .btn-confirm-cancel:hover { background: rgba(255,255,255,0.15); color: #fff; }
+    .btn-confirm-ok {
+        background: linear-gradient(135deg, rgba(170, 134, 71, 0.4), rgba(140, 110, 55, 0.5));
+        color: var(--gold-light);
+        border: 1px solid rgba(170, 134, 71, 0.4);
+    }
+    .btn-confirm-ok:hover {
+        background: linear-gradient(135deg, rgba(170, 134, 71, 0.6), rgba(140, 110, 55, 0.7));
+    }
 </style>
 {% endblock %}
 
@@ -661,7 +724,7 @@
             <div class="member-body">
                 <!-- Proof Upload Section -->
                 <div class="proof-section" id="proofSection_{{ item.character.id }}">
-                    <span style="color:#888; font-size:0.75rem; margin-right:5px;"><i class="fas fa-camera"></i> Bukti:</span>
+                    <span style="color:#888; font-size:0.75rem; margin-right:5px;"><i class="fas fa-camera"></i> Proof:</span>
                     {% for proof in item.proofs %}
                     <div class="proof-wrap" id="proofWrap_{{ proof.id }}">
                         <img src="{{ proof.url }}" class="proof-thumb" onclick="openSsViewer('{{ proof.url }}')" alt="Proof">
@@ -741,6 +804,18 @@
     <img id="ssViewerImg" src="" alt="Screenshot">
 </div>
 
+<!-- Custom Confirm Modal -->
+<div class="confirm-modal" id="confirmModal">
+    <div class="confirm-box">
+        <h3><i class="fas fa-exclamation-triangle"></i> Confirmation</h3>
+        <p id="confirmMessage">Are you sure you want to proceed?</p>
+        <div class="confirm-actions">
+            <button class="btn-confirm-cancel" onclick="closeConfirmModal()">Cancel</button>
+            <button class="btn-confirm-ok" id="confirmOkBtn">Yes, Proceed</button>
+        </div>
+    </div>
+</div>
+
 <script>
 var isAdmin = {{ is_admin|yesno:"true,false" }};
 var currentUserId = {{ user.id }};
@@ -808,9 +883,10 @@ function submitProofUpload() {
 }
 
 function deleteProof(proofId) {
-    if (!confirm('Delete this proof?')) return;
-    fetch('{% url "delete-soul-proof" %}', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}, body: JSON.stringify({proof_id: proofId}) })
-    .then(r => r.json()).then(data => { if (data.success) { var el = document.getElementById('proofWrap_' + proofId); if (el) el.remove(); } });
+    openConfirmModal('Delete this proof?', function() {
+        fetch('{% url "delete-soul-proof" %}', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}, body: JSON.stringify({proof_id: proofId}) })
+        .then(r => r.json()).then(data => { if (data.success) { var el = document.getElementById('proofWrap_' + proofId); if (el) el.remove(); } });
+    });
 }
 
 function openSsViewer(url) { document.getElementById('ssViewerImg').src = url; document.getElementById('ssViewer').classList.add('active'); }
@@ -830,8 +906,13 @@ function handleBossClick(el) {
         }); return;
     }
     if (isAdmin && soulId && dot.classList.contains('verified')) {
-        fetch('{% url "verify-soul" %}', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}, body: JSON.stringify({soul_id: parseInt(soulId)}) })
-        .then(r => r.json()).then(data => { if (data.success) { dot.className = 'boss-dot pending'; dot.innerHTML = '?'; el.classList.remove('is-verified'); el.dataset.verified = 'False'; } }); return;
+        fetch('{% url "toggle-soul" %}', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}, body: JSON.stringify({character_id: parseInt(charId), boss_name: boss}) })
+        .then(r => r.json()).then(data => { 
+            if (data.success) { 
+                dot.className = 'boss-dot empty'; dot.innerHTML = ''; el.classList.remove('has-soul', 'is-verified'); el.dataset.soulId = ''; el.dataset.verified = ''; 
+                updateCardProgress(charId);
+            } 
+        }); return;
     }
     if (isAdmin || parseInt(ownerId) === currentUserId) {
         fetch('{% url "toggle-soul" %}', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}, body: JSON.stringify({character_id: parseInt(charId), boss_name: boss}) })
@@ -856,12 +937,28 @@ function updateCardProgress(charId) {
 }
 
 function bulkVerify(charId, action) {
-    if (!confirm('Verify all souls for this member?')) return;
-    fetch('{% url "bulk-verify-souls" %}', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}, body: JSON.stringify({character_id: charId, action: action}) })
-    .then(r => r.json()).then(data => { if (data.success) location.reload(); });
+    openConfirmModal('Verify all souls for this member?', function() {
+        fetch('{% url "bulk-verify-souls" %}', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}, body: JSON.stringify({character_id: charId, action: action}) })
+        .then(r => r.json()).then(data => { if (data.success) location.reload(); });
+    });
 }
 
-document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { closeUploadModal(); closeSsViewer(); } });
+var confirmCallback = null;
+function openConfirmModal(message, callback) {
+    document.getElementById('confirmMessage').textContent = message;
+    confirmCallback = callback;
+    document.getElementById('confirmModal').classList.add('active');
+}
+function closeConfirmModal() {
+    document.getElementById('confirmModal').classList.remove('active');
+    confirmCallback = null;
+}
+document.getElementById('confirmOkBtn').addEventListener('click', function() {
+    if (confirmCallback) confirmCallback();
+    closeConfirmModal();
+});
+
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { closeUploadModal(); closeSsViewer(); closeConfirmModal(); } });
 </script>
 {% endblock %}
 

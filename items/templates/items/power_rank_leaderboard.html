@@ -782,40 +782,42 @@
                                     <div class="rank-badge rank-other">{{ item.rank }}
                                     {% endif %}
                                         
-                                        <!-- Validation Checkmark inside Rank Badge -->
-                                        {% if item.power_rank.is_validated %}
-                                        <div class="val-badge" title="Validated by Admin">
-                                            <i class="fas fa-check-circle" style="color:#88ffaa; font-size:14px;"></i>
-                                        </div>
-                                        {% elif item.power_rank.validation_notes %}
-                                        <div class="val-badge" title="Invalid: {{ item.power_rank.validation_notes }}">
-                                            <i class="fas fa-exclamation-circle" style="color:#ff8888; font-size:14px;"></i>
-                                        </div>
-                                        {% endif %}
+
                                     </div>
-                                    
-                                    {% if is_admin %}
-                                    <div style="display:flex; flex-direction:column; gap:2px; margin-left: 2px;">
-                                        <input type="checkbox"
-                                            id="valid_{{ item.power_rank.id }}"
-                                            class="validation-checkbox"
-                                            data-pk="{{ item.power_rank.id }}"
-                                            data-player="{{ item.character.name|escapejs }}"
-                                            {% if item.power_rank.is_validated %}checked{% endif %}
-                                            style="cursor: pointer; width: 14px; height: 14px; margin: 0; outline: none; box-shadow: none;"
-                                            title="Toggle Admin Validation">
-                                        <button type="button" onclick="editValidationNotes({{ item.power_rank.id }}, '{{ item.power_rank.validation_notes|escapejs }}', '{{ item.character.name|escapejs }}')" style="background:none; border:none; color:#b88aff; cursor:pointer; padding:0;" title="Edit Notes">
-                                            <i class="fas fa-edit" style="font-size: 0.75rem;"></i>
-                                        </button>
-                                    </div>
-                                    {% endif %}
+
                                 </div>
                             </td>
                             <td class="sticky-col" style="background: rgba(30, 30, 30, 0.4);">
-                                <a href="{% url 'character-profile' item.character.pk %}" class="player-name">
-                                    {{ item.character.name }}
-                                </a>
-                                <div class="player-class">{{ item.power_rank.power_class|default:"—" }}</div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                    <div>
+                                        <a href="{% url 'character-profile' item.character.pk %}" class="player-name">
+                                            {{ item.character.name }}
+                                        </a>
+                                        <div class="player-class">{{ item.power_rank.power_class|default:"—" }}</div>
+                                    </div>
+                                    <div style="margin-left: 10px; display: flex; align-items: center; gap: 8px;">
+                                        {% if is_admin %}
+                                        <div style="display:flex; align-items: center; gap:4px; padding-right: 6px; border-right: 1px solid rgba(255,255,255,0.1);">
+                                            <input type="checkbox"
+                                                id="valid_{{ item.power_rank.id }}"
+                                                class="validation-checkbox"
+                                                data-pk="{{ item.power_rank.id }}"
+                                                data-player="{{ item.character.name|escapejs }}"
+                                                {% if item.power_rank.is_validated %}checked{% endif %}
+                                                style="cursor: pointer; width: 14px; height: 14px; margin: 0; outline: none; box-shadow: none;"
+                                                title="Toggle Admin Validation">
+                                            <button type="button" onclick="editValidationNotes({{ item.power_rank.id }}, '{{ item.power_rank.validation_notes|escapejs }}', '{{ item.character.name|escapejs }}')" style="background:none; border:none; color:#b88aff; cursor:pointer; padding:0; display:flex; align-items:center;" title="Edit Notes">
+                                                <i class="fas fa-edit" style="font-size: 0.85rem;"></i>
+                                            </button>
+                                        </div>
+                                        {% endif %}
+                                        {% if item.power_rank.is_validated %}
+                                        <i class="fas fa-check-circle" style="color:#88ffaa; font-size:16px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));" title="Validated by Admin"></i>
+                                        {% elif item.power_rank.validation_notes %}
+                                        <i class="fas fa-exclamation-circle" style="color:#ff8888; font-size:16px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));" title="Invalid: {{ item.power_rank.validation_notes }}"></i>
+                                        {% endif %}
+                                    </div>
+                                </div>
                             </td>
                             <td>
                                 <span class="player-server server-{{ item.power_rank.server }}">

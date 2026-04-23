@@ -1901,6 +1901,23 @@ def edit_power_rank(request, character_pk):
 
     if request.method == 'POST':
         try:
+            original_server = power_rank.server
+            original_power_class = power_rank.power_class
+            original_level = power_rank.level
+            original_dmg = power_rank.dmg
+            original_acc = power_rank.acc
+            original_defense = power_rank.defense
+            original_dmg_reduct = power_rank.dmg_reduct
+            original_skill_resist = power_rank.skill_resist
+            original_skill_dmg_boost = power_rank.skill_dmg_boost
+            original_weapon_dmg_boost = power_rank.weapon_dmg_boost
+            original_soulshot = power_rank.soulshot
+            original_valor = power_rank.valor
+            original_guardian = power_rank.guardian
+            original_conquer = power_rank.conquer
+            original_duel = power_rank.duel
+            original_purple_class_aga = power_rank.purple_class_aga
+
             power_rank.server = request.POST.get('server', power_rank.server)
             power_rank.power_class = request.POST.get('power_class', '')
             power_rank.level = float(request.POST.get('level', 0) or 0)
@@ -1917,6 +1934,25 @@ def edit_power_rank(request, character_pk):
             power_rank.conquer = float(request.POST.get('conquer', 0) or 0)
             power_rank.duel = float(request.POST.get('duel', 0) or 0)
             power_rank.purple_class_aga = float(request.POST.get('purple_class_aga', 0) or 0)
+
+            stats_changed = (
+                original_server != power_rank.server or
+                original_power_class != power_rank.power_class or
+                original_level != power_rank.level or
+                original_dmg != power_rank.dmg or
+                original_acc != power_rank.acc or
+                original_defense != power_rank.defense or
+                original_dmg_reduct != power_rank.dmg_reduct or
+                original_skill_resist != power_rank.skill_resist or
+                original_skill_dmg_boost != power_rank.skill_dmg_boost or
+                original_weapon_dmg_boost != power_rank.weapon_dmg_boost or
+                original_soulshot != power_rank.soulshot or
+                original_valor != power_rank.valor or
+                original_guardian != power_rank.guardian or
+                original_conquer != power_rank.conquer or
+                original_duel != power_rank.duel or
+                original_purple_class_aga != power_rank.purple_class_aga
+            )
 
             # Handle multiple stat screenshot uploads (max 2MB each)
             from .models import PowerRankScreenshot
@@ -1940,8 +1976,8 @@ def edit_power_rank(request, character_pk):
                     power_rank=power_rank
                 ).delete()
                 
-            # If member uploads new screenshot, clear validation status
-            if valid_uploads > 0:
+            # If member uploads new screenshot OR changes any stat, clear validation status
+            if valid_uploads > 0 or stats_changed:
                 power_rank.is_validated = False
                 power_rank.validation_notes = None
 
