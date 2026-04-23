@@ -56,6 +56,7 @@ from .views import (
     bulk_verify_souls,
     upload_soul_proof,
     delete_soul_proof,
+    batch_update_souls,
 ) 
 
 import dkp.views as dkp_views
@@ -315,5 +316,8 @@ urlpatterns = [
     
     # AJAX: Delete soul proof screenshot
     path('soul/delete-proof/', delete_soul_proof, name='delete-soul-proof'),
+
+    # AJAX: Batch update souls (new modal flow)
+    path('soul/batch-update/', batch_update_souls, name='batch-update-souls'),
 
 ]

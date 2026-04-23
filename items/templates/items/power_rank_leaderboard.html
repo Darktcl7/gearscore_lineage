@@ -670,6 +670,43 @@
         background: linear-gradient(135deg, rgba(150, 100, 255, 0.6), rgba(100, 60, 200, 0.7));
         box-shadow: 0 0 10px rgba(150, 100, 255, 0.3);
     }
+    /* Pending Update Tooltip */
+    .pending-tooltip {
+        display: none;
+        position: fixed;
+        min-width: 300px;
+        width: max-content;
+        max-width: 520px;
+        background: #050505;
+        border: 1px solid #ff9800;
+        border-radius: 8px;
+        padding: 16px 18px;
+        color: #eee;
+        font-size: 0.85rem;
+        font-family: 'Roboto', sans-serif;
+        z-index: 999999 !important;
+        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.95), 0 0 0 9999px rgba(0,0,0,0.15);
+        pointer-events: none;
+        line-height: 1.6;
+        white-space: normal;
+        word-wrap: break-word;
+        text-transform: none;
+        letter-spacing: normal;
+    }
+
+    .pending-tooltip.show {
+        display: block;
+    }
+
+    .pending-tooltip::after {
+        content: "";
+        position: absolute;
+        bottom: 100%;
+        left: 20px;
+        border-width: 8px;
+        border-style: solid;
+        border-color: transparent transparent #ff9800 transparent;
+    }
 </style>
 {% endblock %}
 
@@ -799,7 +836,7 @@
                                     </div>
                                     <div style="margin-left: 10px; display: flex; align-items: center; gap: 8px;">
                                         {% if is_admin %}
-                                        <div style="display:flex; align-items: center; gap:4px; padding-right: 6px; border-right: 1px solid rgba(255,255,255,0.1);">
+                                        <div style="display:flex; align-items: center; gap:4px; padding-right: 6px; border-right: 1px solid rgba(255,255,255,0.1); position: relative; z-index: 1;">
                                             <input type="checkbox"
                                                 id="valid_{{ item.power_rank.id }}"
                                                 class="validation-checkbox"
@@ -814,23 +851,16 @@
                                         </div>
                                         {% endif %}
                                         {% if item.power_rank.is_validated %}
-                                        <i class="fas fa-check-circle" style="color:#88ffaa; font-size:16px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));" title="Validated by Admin"></i>
+                                        <i class="fas fa-check-circle" style="color:#88ffaa; font-size:16px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.8)); position: relative; z-index: 1;" title="Validated by Admin"></i>
                                         {% elif item.power_rank.validation_notes %}
-                                        <i class="fas fa-exclamation-circle" style="color:#ff8888; font-size:16px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));" title="Invalid: {{ item.power_rank.validation_notes }}"></i>
+                                        <i class="fas fa-exclamation-circle" style="color:#ff8888; font-size:16px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.8)); position: relative; z-index: 1;" title="Invalid: {{ item.power_rank.validation_notes }}"></i>
                                         {% else %}
                                             {% if is_admin %}
-                                                <div style="position:relative; display:inline-flex;" onmouseenter="this.querySelector('.pending-tooltip').style.display='block'" onmouseleave="this.querySelector('.pending-tooltip').style.display='none'">
-                                                    <span style="font-size: 0.65rem; background: #ff9800; color: #000; padding: 2px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 0 5px rgba(255,152,0,0.5); display: inline-flex; align-items: center; gap: 4px; cursor: help;">
+                                                <div class="update-badge-wrap" style="position:relative; display:inline-flex;">
+                                                    <span class="update-badge-trigger" data-tooltip="{% if item.power_rank.pending_changes %}{{ item.power_rank.pending_changes }}{% else %}New screenshot uploaded or unknown change.{% endif %}" style="font-size: 0.65rem; background: #ff9800; color: #000; padding: 2px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 0 5px rgba(255,152,0,0.5); display: inline-flex; align-items: center; gap: 4px; cursor: help;" onmouseenter="showUpdateTooltip(this)" onmouseleave="hideUpdateTooltip()">
                                                         <i class="fas fa-exclamation-circle"></i> UPDATE
                                                     </span>
-                                                    <div class="pending-tooltip" style="display:none; position:absolute; bottom:120%; right:0; width:220px; background:rgba(0,0,0,0.9); border:1px solid #ff9800; border-radius:6px; padding:8px; color:#fff; font-size:0.75rem; font-family:'Roboto', sans-serif; z-index:100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); pointer-events:none;">
-                                                        <strong style="color:#ffb74d; display:block; margin-bottom:4px; font-family:'Cinzel', serif;">Stats Updated:</strong>
-                                                        {% if item.power_rank.pending_changes %}
-                                                            {{ item.power_rank.pending_changes }}
-                                                        {% else %}
-                                                            New screenshot uploaded or unknown change.
-                                                        {% endif %}
-                                                    </div>
+
                                                 </div>
                                             {% else %}
                                                 <i class="fas fa-clock" style="color:#ffb74d; font-size:16px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));" title="Pending Validation"></i>
@@ -993,6 +1023,24 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'ArrowLeft') prevImage(e);
     if (e.key === 'ArrowRight') nextImage(e);
 });
+
+// === Pending Update Tooltip (global, appended to body) ===
+var globalTooltip = document.createElement('div');
+globalTooltip.id = 'globalUpdateTooltip';
+globalTooltip.style.cssText = 'display:none; position:fixed; min-width:300px; max-width:520px; background:#050505; border:1px solid #ff9800; border-radius:8px; padding:16px 18px; color:#eee; font-size:0.85rem; font-family:Roboto,sans-serif; z-index:999999; box-shadow:0 15px 50px rgba(0,0,0,0.95); pointer-events:none; line-height:1.6; white-space:normal; word-wrap:break-word;';
+document.body.appendChild(globalTooltip);
+
+function showUpdateTooltip(el) {
+    var text = el.getAttribute('data-tooltip');
+    globalTooltip.textContent = text;
+    var rect = el.getBoundingClientRect();
+    globalTooltip.style.top = (rect.bottom + 8) + 'px';
+    globalTooltip.style.left = Math.max(10, rect.left) + 'px';
+    globalTooltip.style.display = 'block';
+}
+function hideUpdateTooltip() {
+    globalTooltip.style.display = 'none';
+}
 </script>
 
 {% if is_admin %}

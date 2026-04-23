@@ -1989,17 +1989,8 @@ def edit_power_rank(request, character_pk):
                 power_rank.is_validated = False
                 power_rank.validation_notes = None
                 
-                # Append to existing pending changes
-                existing_changes = []
-                if power_rank.pending_changes:
-                    existing_changes = power_rank.pending_changes.split(" | ")
-                
-                # Keep it manageable (last 5 changes max or so, or just append)
-                for log in change_logs:
-                    if log not in existing_changes:
-                        existing_changes.append(log)
-                
-                power_rank.pending_changes = " | ".join(existing_changes)
+                # Replace pending changes with latest changes only
+                power_rank.pending_changes = " | ".join(change_logs)
 
             # Validate: must have at least 1 screenshot after save
             remaining_count = power_rank.screenshots.count()
@@ -2182,7 +2173,11 @@ def soul_page(request):
     """Soul page - shows raid boss souls for all members"""
     clan_filter = request.GET.get('clan', 'Valkyrie')
     
-    characters = Character.objects.all().order_by('name')
+    from django.db.models.functions import Coalesce
+    from django.db.models import Value
+    characters = Character.objects.all().annotate(
+        pr_score=Coalesce('power_rank__gear_score', Value(0))
+    ).order_by('-pr_score', 'name')
     if clan_filter == 'Valkyrie':
         characters = characters.filter(clan='Valkyrie')
     elif clan_filter == 'Valhalla':
@@ -2214,7 +2209,7 @@ def soul_page(request):
     boss_groups = [
         {
             'name': 'Raid Boss',
-            'bosses': [
+            'bosses': sorted([
                 'Chertuba', 'Kelsus', 'Basilla', 'Savan', 'Tromba',
                 'Felis', 'Sarka', 'Timitris', 'Talakin', 'Enkura',
                 'Contaminated Cruma', 'Katan', 'Stonegheist', 'Pan Dryad', 'Gahareth', 'Valefal',
@@ -2222,22 +2217,22 @@ def soul_page(request):
                 'Balbo', 'Talkin', 'Timiniel', 'Selu', 'Repiro', 'Coroon', 'Samuel',
                 'Hisilrome', 'Mirror of Oblivion', 'Randor', 'Glaki', 'Cabrio', 'Flynt', 'Haff',
                 'Phoenix', 'Andras', 'Thanatos', 'Rahha',
-            ],
+            ]),
         },
         {
             'name': 'Territory Boss',
-            'bosses': ['Queen Ant', 'Mutated Cruma', 'Core Susceptor', 'Dragon Beast', 'Orfen', 'Olkuth'],
+            'bosses': sorted(['Queen Ant', 'Mutated Cruma', 'Core Susceptor', 'Dragon Beast', 'Orfen', 'Olkuth']),
         },
         {
             'name': 'World Boss',
-            'bosses': [
+            'bosses': sorted([
                 'Shila', 'Moof', 'Normus', 'Ukanba', 'Selihoden',
                 'Ramdal', 'Mardil', 'Kernon', 'Tarim', 'Halate', 'Vella', 'Shuriel', 'Galaxia',
-            ],
+            ]),
         },
         {
             'name': 'Arena Boss',
-            'bosses': ['Anaxa', 'Kustor'],
+            'bosses': sorted(['Anaxa', 'Kustor']),
         },
     ]
     
@@ -2258,6 +2253,9 @@ def soul_page(request):
             'proofs': proofs,
             'total': total,
             'owned': owned,
+            'verified_bosses': sorted([b for b in all_bosses if b in souls and souls[b]['is_verified']]),
+            'pending_bosses': sorted([b for b in all_bosses if b in souls and not souls[b]['is_verified']]),
+            'all_soul_bosses': sorted([b for b in all_bosses if b in souls]),
         })
     
     # Get current user's soul count
@@ -2276,14 +2274,23 @@ def soul_page(request):
                 unverified_names.add(soul.character.name)
     unverified_names = sorted(list(unverified_names))
     
+    # User's own characters for the update button
+    user_characters = Character.objects.filter(owner=request.user)
+    
+    # Build JSON-safe boss data for the modal
+    import json
+    boss_groups_json = json.dumps(boss_groups)
+    
     context = {
         'char_data': char_data,
         'boss_groups': boss_groups,
+        'boss_groups_json': boss_groups_json,
         'all_bosses': all_bosses,
         'clan_filter': clan_filter,
         'is_admin': is_admin_user,
         'user_soul_count': user_soul_count,
         'unverified_names': unverified_names,
+        'user_characters': user_characters,
     }
     return render(request, 'items/soul_page.html', context)
 
@@ -2302,6 +2309,10 @@ def toggle_soul(request):
     # Permission: soul admin can toggle any, user can only toggle their own
     if not _is_soul_admin(request.user) and character.owner != request.user:
         return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    # Requirement: Must have at least 1 proof to toggle (unless admin)
+    if not _is_soul_admin(request.user) and not character.soul_proofs.exists():
+        return JsonResponse({'error': 'Proof Required: You must upload at least one screenshot of your soul collection before you can mark any boss souls.'}, status=400)
     
     soul, created = CharacterSoul.objects.get_or_create(
         character=character,
@@ -2393,3 +2404,88 @@ def bulk_verify_souls(request):
         souls.update(is_verified=False)
     
     return JsonResponse({'success': True, 'action': action, 'count': souls.count()})
+
+
+@login_required
+@require_http_methods(["POST"])
+def batch_update_souls(request):
+    """AJAX: Batch update all souls for a character. Requires proof image upload.
+    Accepts multipart form: character_id, screenshot (file), boss_names (JSON array of boss names checked).
+    """
+    import json
+    character_id = request.POST.get('character_id')
+    screenshot = request.FILES.get('screenshot')
+    boss_names_json = request.POST.get('boss_names', '[]')
+    
+    try:
+        boss_names = json.loads(boss_names_json)
+    except (json.JSONDecodeError, TypeError):
+        boss_names = []
+    
+    if not character_id:
+        return JsonResponse({'error': 'No character specified'}, status=400)
+    
+    character = get_object_or_404(Character, pk=character_id)
+    
+    # Permission check
+    if not _is_soul_admin(request.user) and character.owner != request.user:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    # Regular user must have at least one proof (new or existing)
+    if not screenshot and not _is_soul_admin(request.user) and not character.soul_proofs.exists():
+        return JsonResponse({'error': 'Proof screenshot is required.'}, status=400)
+    
+    # 1. Save proof image (only if provided)
+    proof = None
+    if screenshot:
+        proof = CharacterSoulProof.objects.create(character=character, image=screenshot)
+    
+    # 2. Sync souls: add new ones, remove unchecked ones
+    existing_souls = CharacterSoul.objects.filter(character=character)
+    existing_boss_set = set(existing_souls.values_list('boss_name', flat=True))
+    new_boss_set = set(boss_names)
+    
+    is_admin = _is_soul_admin(request.user)
+
+    if is_admin:
+        # Admin mode: Ensure all checked bosses exist and are verified
+        for boss in new_boss_set:
+            soul, created = CharacterSoul.objects.get_or_create(
+                character=character, boss_name=boss,
+                defaults={'is_verified': True}
+            )
+            if not soul.is_verified:
+                soul.is_verified = True
+                soul.save()
+        
+        # Remove unchecked bosses (admin can remove anything)
+        to_remove = existing_boss_set - new_boss_set
+        CharacterSoul.objects.filter(character=character, boss_name__in=to_remove).delete()
+        
+        added_count = len(new_boss_set - existing_boss_set)
+        removed_count = len(to_remove)
+    else:
+        # User mode:
+        # 1. Add new bosses as unverified
+        to_add = new_boss_set - existing_boss_set
+        for boss in to_add:
+            CharacterSoul.objects.create(character=character, boss_name=boss, is_verified=False)
+        
+        # 2. Remove unchecked bosses (only if they were not already verified)
+        to_remove = existing_boss_set - new_boss_set
+        removed_souls = CharacterSoul.objects.filter(
+            character=character, 
+            boss_name__in=to_remove, 
+            is_verified=False
+        )
+        removed_count = removed_souls.count()
+        removed_souls.delete()
+        added_count = len(to_add)
+
+    return JsonResponse({
+        'success': True,
+        'added': added_count,
+        'removed': removed_count,
+        'proof_id': proof.id if proof else None,
+        'proof_url': proof.image.url if proof else None,
+    })

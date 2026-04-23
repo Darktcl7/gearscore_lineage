@@ -1795,7 +1795,7 @@ class HallOfFame(models.Model):
 # SOUL SYSTEM (RAID BOSS SOULS)
 # ======================================================
 class CharacterSoul(models.Model):
-    RAID_BOSS_CHOICES = [
+    RAID_BOSS_CHOICES = sorted([
         ('Chertuba', 'Chertuba'), ('Kelsus', 'Kelsus'), ('Basilla', 'Basilla'), ('Savan', 'Savan'), ('Tromba', 'Tromba'),
         ('Felis', 'Felis'), ('Sarka', 'Sarka'), ('Timitris', 'Timitris'), ('Talakin', 'Talakin'), ('Enkura', 'Enkura'),
         ('Contaminated Cruma', 'Contaminated Cruma'), ('Katan', 'Katan'), ('Stonegheist', 'Stonegheist'), 
@@ -1812,7 +1812,8 @@ class CharacterSoul(models.Model):
         ('Shila', 'Shila'), ('Moof', 'Moof'), ('Normus', 'Normus'), ('Ukanba', 'Ukanba'), ('Selihoden', 'Selihoden'),
         ('Ramdal', 'Ramdal'), ('Mardil', 'Mardil'), ('Kernon', 'Kernon'), ('Tarim', 'Tarim'), 
         ('Halate', 'Halate'), ('Vella', 'Vella'), ('Shuriel', 'Shuriel'), ('Galaxia', 'Galaxia'),
-    ]
+        ('Anaxa', 'Anaxa'), ('Kustor', 'Kustor'),
+    ])
 
     character = models.ForeignKey(Character, on_delete=models.CASCADE, related_name='souls')
     boss_name = models.CharField("Raid Boss", max_length=100, choices=RAID_BOSS_CHOICES)

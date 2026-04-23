@@ -1,968 +1,621 @@
-{% extends "items/base.html" %}
+{% extends 'items/base.html' %}
 {% load static %}
-
-{% block title %}Soul - Raid Boss Souls{% endblock %}
-
+{% block title %}Soul Collection{% endblock %}
+{% block extra_body_attributes %}class="fullscreen-page"{% endblock %}
 {% block extra_head %}
 <style>
-    .soul-container {
-        max-width: 1200px;
-        margin: 0 auto;
-    }
+main { max-width:1400px !important; padding:20px !important; }
+.sc-wrap { min-height:80vh; margin:0 auto 50px; background:rgba(18,18,18,0.65); border-radius:20px; box-shadow:0 10px 35px rgba(0,0,0,0.8); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.08); padding:5px 0; }
+.sc-header { padding:20px 30px; background:linear-gradient(135deg,rgba(80,40,120,0.3),rgba(40,20,80,0.4)); border-bottom:1px solid rgba(150,100,255,0.15); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:15px; border-radius:20px 20px 0 0; }
+.sc-header h1 { margin:0; color:#fff; font-size:1.5rem; font-weight:700; text-shadow:0 0 20px rgba(150,100,255,0.4); letter-spacing:0.5px; display:flex; align-items:center; gap:10px; font-family:'Cinzel',serif; }
+.sc-header h1 i { color:#b88aff; }
+.btn-update { background:linear-gradient(135deg,#b88aff,#7c4dff); color:#fff; border:none; padding:10px 20px; border-radius:10px; font-weight:600; cursor:pointer; font-size:0.9rem; display:inline-flex; align-items:center; gap:8px; transition:all 0.3s; text-decoration:none; }
+.btn-update:hover { transform:translateY(-2px); box-shadow:0 5px 20px rgba(124,77,255,0.4); }
+.sc-tabs { display:flex; justify-content:center; gap:5px; padding:15px 20px; }
+.sc-tab { padding:10px 30px; border-radius:10px; font-weight:600; cursor:pointer; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.6); text-decoration:none; font-size:0.9rem; transition:all 0.3s; }
+.sc-tab.active { background:linear-gradient(135deg,rgba(150,100,255,0.3),rgba(100,60,200,0.4)); color:#fff; border-color:rgba(150,100,255,0.4); box-shadow:0 0 15px rgba(150,100,255,0.2); }
+.sc-content { padding:20px 25px; }
+.sc-section-title { color:#fff; font-family:'Cinzel',serif; font-size:1.1rem; margin:0 0 15px; display:flex; align-items:center; gap:10px; justify-content:space-between; }
+.sc-section-title i { color:#b88aff; }
+.sc-table-wrap { overflow-x:auto; border-radius:12px; border:1px solid rgba(255,255,255,0.06); }
+.sc-table { width:100%; border-collapse:collapse; font-size:0.85rem; }
+.sc-table thead th { background:rgba(30,20,50,0.8); color:rgba(255,255,255,0.5); padding:12px 15px; text-transform:uppercase; font-size:0.7rem; letter-spacing:1px; font-weight:600; text-align:left; border-bottom:1px solid rgba(150,100,255,0.15); white-space:nowrap; }
+.sc-table tbody tr { border-bottom:1px solid rgba(255,255,255,0.04); transition:background 0.2s; }
+.sc-table tbody tr:hover { background:rgba(150,100,255,0.08); }
+.sc-table tbody td { padding:10px 15px; color:rgba(255,255,255,0.85); vertical-align:middle; }
+.rank-num { width:35px; height:35px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; font-weight:700; font-size:0.85rem; }
+.rank-1 { background:linear-gradient(135deg,#ffd700,#ffb300); color:#000; box-shadow:0 0 12px rgba(255,215,0,0.4); }
+.rank-2 { background:linear-gradient(135deg,#c0c0c0,#a0a0a0); color:#000; }
+.rank-3 { background:linear-gradient(135deg,#cd7f32,#a0622e); color:#fff; }
+.rank-def { background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); }
+.soul-count { font-weight:700; font-size:1rem; }
+.soul-count.high { color:#88ffaa; }
+.soul-count.mid { color:#ffdd57; }
+.soul-count.low { color:rgba(255,255,255,0.5); }
+.progress-bar-bg { width:120px; height:8px; background:rgba(255,255,255,0.1); border-radius:4px; overflow:hidden; }
+.progress-bar-fill { height:100%; border-radius:4px; transition:width 0.5s; }
+.boss-list-toggle { background:none; border:1px solid rgba(150,100,255,0.3); color:#b88aff; padding:4px 12px; border-radius:6px; cursor:pointer; font-size:0.75rem; transition:all 0.2s; }
+.boss-list-toggle:hover { background:rgba(150,100,255,0.15); }
+.boss-list { display:none; padding:8px 15px; }
+.boss-list.open { display:table-row; }
+.boss-chip { display:inline-block; padding:3px 8px; margin:2px; border-radius:4px; font-size:0.72rem; font-weight:500; }
+.boss-chip.verified { background:rgba(0,200,80,0.15); color:#88ffaa; border:1px solid rgba(0,200,80,0.3); }
+.boss-chip.pending { background:rgba(255,180,0,0.15); color:#ffdd57; border:1px solid rgba(255,180,0,0.3); }
+/* Modal */
+.soul-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:10000; justify-content:center; align-items:flex-start; padding:40px 20px; overflow-y:auto; }
+.soul-modal-overlay.active { display:flex; }
+.soul-modal { background:#1a1a2e; border:1px solid rgba(150,100,255,0.3); border-radius:16px; width:100%; max-width:800px; max-height:85vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.9); }
+.soul-modal-header { padding:20px 25px; background:linear-gradient(135deg,rgba(80,40,120,0.4),rgba(40,20,80,0.5)); border-bottom:1px solid rgba(150,100,255,0.2); display:flex; justify-content:space-between; align-items:center; border-radius:16px 16px 0 0; position:sticky; top:0; z-index:10; }
+.soul-modal-header h2 { margin:0; color:#fff; font-family:'Cinzel',serif; font-size:1.2rem; }
+.soul-modal-close { background:none; border:none; color:rgba(255,255,255,0.5); font-size:1.5rem; cursor:pointer; padding:5px; }
+.soul-modal-close:hover { color:#fff; }
+.soul-modal-body { padding:20px 25px; }
+.upload-zone { border:2px dashed rgba(150,100,255,0.3); border-radius:12px; padding:15px; text-align:center; color:rgba(255,255,255,0.5); margin-bottom:15px; transition:all 0.3s; cursor:pointer; font-size:0.85rem; }
+.upload-zone:hover { border-color:#b88aff; background:rgba(150,100,255,0.05); }
+.upload-zone.has-file { border-color:#88ffaa; background:rgba(0,200,80,0.05); color:#88ffaa; }
+.boss-group-title { color:#b88aff; font-family:'Cinzel',serif; font-size:0.9rem; margin:15px 0 8px; padding-bottom:5px; border-bottom:1px solid rgba(150,100,255,0.15); }
+.boss-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:6px; margin-bottom:15px; }
+.boss-check { display:flex; align-items:center; gap:6px; padding:5px 8px; border-radius:6px; cursor:pointer; transition:background 0.2s; font-size:0.8rem; color:rgba(255,255,255,0.7); }
+.boss-check:hover { background:rgba(150,100,255,0.1); }
+.boss-check input { accent-color:#b88aff; }
+.boss-check.disabled { opacity:0.4; pointer-events:none; }
+.soul-modal-footer { padding:15px 25px; border-top:1px solid rgba(150,100,255,0.15); display:flex; justify-content:flex-end; gap:10px; position:sticky; bottom:0; background:#1a1a2e; border-radius:0 0 16px 16px; }
+.btn-save { background:linear-gradient(135deg,#88ffaa,#00c853); color:#000; border:none; padding:10px 25px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.9rem; }
+.btn-save:disabled { opacity:0.4; cursor:not-allowed; }
+.btn-cancel { background:rgba(255,255,255,0.1); color:#fff; border:none; padding:10px 25px; border-radius:8px; cursor:pointer; font-size:0.9rem; }
+/* Admin verify badge */
+.badge-pending { font-size:0.6rem; background:#ff9800; color:#000; padding:2px 6px; border-radius:4px; font-weight:700; text-transform:uppercase; }
+.badge-verified { font-size:0.6rem; background:#00c853; color:#000; padding:2px 6px; border-radius:4px; font-weight:700; text-transform:uppercase; }
+.admin-actions { display:flex; gap:6px; align-items:center; }
+.btn-verify-all { background:rgba(0,200,83,0.2); color:#88ffaa; border:1px solid rgba(0,200,83,0.3); padding:4px 10px; border-radius:6px; cursor:pointer; font-size:0.7rem; font-weight:600; }
+.btn-verify-all:hover { background:rgba(0,200,83,0.35); }
+.proof-icon { cursor:pointer; color:#b88aff; }
+.proof-icon:hover { color:#fff; }
+.empty-state { text-align:center; padding:60px 20px; color:rgba(255,255,255,0.4); }
+.empty-state i { font-size:3rem; margin-bottom:15px; display:block; }
 
-    .soul-page-title {
-        text-align: center;
-        margin-bottom: 10px;
-    }
+/* Toast Notifications */
+#toast-container { position:fixed; top:20px; right:20px; z-index:11000; display:flex; flex-direction:column; gap:10px; }
+.toast { background:rgba(30,30,50,0.95); border-left:4px solid #b88aff; color:#fff; padding:15px 25px; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.5); min-width:250px; backdrop-filter:blur(10px); display:flex; align-items:center; gap:12px; transform:translateX(120%); transition:transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); border:1px solid rgba(255,255,255,0.05); }
+.toast.active { transform:translateX(0); }
+.toast.success { border-left-color:#88ffaa; }
+.toast.error { border-left-color:#ff5555; }
+.toast.warning { border-left-color:#ffdd57; }
+.toast i { font-size:1.2rem; }
+.toast-msg { font-size:0.9rem; font-weight:500; }
+.toast i { font-size:1.2rem; }
+.toast-msg { font-size:0.9rem; font-weight:500; }
 
-    .soul-page-title h1 {
-        font-family: 'Cinzel', serif;
-        font-size: 2.2rem;
-        color: #fff;
-        text-transform: uppercase;
-        letter-spacing: 3px;
-        margin: 0;
-        text-shadow: 0 0 20px rgba(170, 134, 71, 0.5);
-    }
+/* Custom Confirm Modal */
+.confirm-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:12000; justify-content:center; align-items:center; backdrop-filter:blur(5px); }
+.confirm-overlay.active { display:flex; }
+.confirm-box { background:#1a1a2e; border:1px solid rgba(150,100,255,0.3); border-radius:16px; padding:25px; width:100%; max-width:400px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.8); transform:scale(0.9); transition:transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.confirm-overlay.active .confirm-box { transform:scale(1); }
+.confirm-box h3 { color:#fff; margin:0 0 15px; font-family:'Cinzel',serif; font-size:1.1rem; }
+.confirm-box p { color:rgba(255,255,255,0.6); font-size:0.9rem; margin-bottom:25px; }
+.confirm-btns { display:flex; justify-content:center; gap:12px; }
+.btn-confirm-yes { background:#ff4444; color:#fff; border:none; padding:8px 25px; border-radius:8px; font-weight:600; cursor:pointer; font-size:0.9rem; }
+.btn-confirm-no { background:rgba(255,255,255,0.1); color:#fff; border:none; padding:8px 25px; border-radius:8px; cursor:pointer; font-size:0.9rem; }
 
-    .soul-page-title h1 i {
-        color: var(--gold-light);
-        margin-right: 10px;
-    }
-
-    .soul-page-subtitle {
-        color: #888;
-        font-size: 0.9rem;
-        margin-top: 5px;
-        font-family: 'Roboto', sans-serif;
-    }
-
-    /* Clan Filter Tabs */
-    .soul-filters {
-        display: flex;
-        justify-content: center;
-        gap: 10px;
-        margin-bottom: 25px;
-        flex-wrap: wrap;
-    }
-
-    .soul-filters a {
-        padding: 10px 28px;
-        font-family: 'Cinzel', serif;
-        font-size: 0.85rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        text-decoration: none;
-        color: #999;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        transition: all 0.3s ease;
-    }
-
-    .soul-filters a:hover {
-        color: #fff;
-        border-color: rgba(212, 175, 55, 0.3);
-        background: rgba(212, 175, 55, 0.05);
-    }
-
-    .soul-filters a.active {
-        color: var(--gold-light);
-        border-color: var(--gold-light);
-        background: rgba(212, 175, 55, 0.1);
-        box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
-    }
-
-    /* Legend */
-    .soul-legend {
-        display: flex;
-        justify-content: center;
-        gap: 25px;
-        margin-bottom: 20px;
-        flex-wrap: wrap;
-        font-size: 0.8rem;
-        color: #999;
-    }
-
-    .soul-legend-item {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .legend-dot {
-        width: 14px;
-        height: 14px;
-        border-radius: 3px;
-        display: inline-block;
-    }
-
-    .legend-dot.empty {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .legend-dot.pending {
-        background: rgba(255, 165, 0, 0.3);
-        border: 1px solid rgba(255, 165, 0, 0.6);
-    }
-
-    .legend-dot.verified {
-        background: rgba(76, 175, 80, 0.3);
-        border: 1px solid rgba(76, 175, 80, 0.6);
-    }
-
-    /* Summary Stats */
-    .soul-summary {
-        display: flex;
-        gap: 20px;
-        justify-content: center;
-        margin-bottom: 25px;
-        flex-wrap: wrap;
-    }
-
-    .soul-stat-card {
-        background: rgba(18, 18, 20, 0.8);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        padding: 15px 25px;
-        text-align: center;
-        min-width: 120px;
-    }
-
-    .soul-stat-card .stat-num {
-        font-family: 'Cinzel', serif;
-        font-size: 1.8rem;
-        color: var(--gold-light);
-        font-weight: 700;
-    }
-
-    .soul-stat-card .stat-label {
-        font-size: 0.7rem;
-        color: #888;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-top: 3px;
-    }
-
-    /* ====== MEMBER CARD ====== */
-    .member-card {
-        background: rgba(18, 18, 20, 0.8);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        margin-bottom: 6px;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(8px);
-    }
-
-    .member-card:hover {
-        border-color: rgba(170, 134, 71, 0.2);
-    }
-
-    .member-card.expanded {
-        border-color: rgba(170, 134, 71, 0.3);
-        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
-        margin-bottom: 12px;
-    }
-
-    /* Card Header (always visible) */
-    .member-header {
-        display: flex;
-        align-items: center;
-        padding: 12px 20px;
-        cursor: pointer;
-        transition: background 0.2s;
-        gap: 15px;
-    }
-
-    .member-header:hover {
-        background: rgba(212, 175, 55, 0.04);
-    }
-
-    .member-expand-icon {
-        color: var(--gold-light);
-        font-size: 0.8rem;
-        transition: transform 0.3s ease;
-        min-width: 16px;
-    }
-
-    .member-card.expanded .member-expand-icon {
-        transform: rotate(90deg);
-    }
-
-    .member-name {
-        font-size: 1rem;
-        color: #e0e0e0;
-        font-weight: 600;
-        flex: 1;
-    }
-
-    .clan-tag {
-        font-size: 0.6rem;
-        padding: 2px 8px;
-        border-radius: 3px;
-        font-family: 'Cinzel', serif;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-left: 8px;
-    }
-
-    .clan-tag.valkyrie {
-        background: rgba(66, 133, 244, 0.15);
-        color: #64b5f6;
-        border: 1px solid rgba(66, 133, 244, 0.3);
-    }
-
-    .clan-tag.valhalla {
-        background: rgba(244, 67, 54, 0.15);
-        color: #ef9a9a;
-        border: 1px solid rgba(244, 67, 54, 0.3);
-    }
-
-    .member-progress {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        min-width: 160px;
-        justify-content: flex-end;
-    }
-
-    .member-progress-text {
-        font-size: 0.85rem;
-        font-weight: 600;
-        white-space: nowrap;
-    }
-
-    .member-progress-bar {
-        width: 80px;
-        height: 5px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 3px;
-        overflow: hidden;
-    }
-
-    .member-progress-fill {
-        height: 100%;
-        border-radius: 3px;
-        transition: width 0.5s ease;
-    }
-
-    .member-progress-fill.low { background: linear-gradient(90deg, #f44336, #ff5722); }
-    .member-progress-fill.mid { background: linear-gradient(90deg, #ff9800, #ffc107); }
-    .member-progress-fill.high { background: linear-gradient(90deg, #4caf50, #66bb6a); }
-
-    /* Admin button in header */
-    .admin-verify-btn {
-        font-size: 0.6rem;
-        padding: 4px 10px;
-        background: rgba(76, 175, 80, 0.15);
-        border: 1px solid rgba(76, 175, 80, 0.3);
-        color: #81c784;
-        cursor: pointer;
-        font-family: 'Cinzel', serif;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        transition: all 0.2s;
-        white-space: nowrap;
-    }
-
-    .admin-verify-btn:hover {
-        background: rgba(76, 175, 80, 0.3);
-        color: #a5d6a7;
-    }
-
-    /* Card Body (expandable) */
-    .member-body {
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 0.4s ease, padding 0.3s ease;
-        padding: 0 20px;
-    }
-
-    .member-card.expanded .member-body {
-        max-height: 2000px;
-        padding: 0 20px 20px;
-    }
-
-    /* Category Section */
-    .soul-category {
-        margin-bottom: 15px;
-    }
-
-    .soul-category:last-child {
-        margin-bottom: 0;
-    }
-
-    .soul-category-title {
-        font-family: 'Cinzel', serif;
-        font-size: 0.75rem;
-        color: var(--gold-light);
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        margin-bottom: 8px;
-        padding-bottom: 5px;
-        border-bottom: 1px solid rgba(170, 134, 71, 0.15);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .soul-category-title i {
-        font-size: 0.7rem;
-    }
-
-    /* Boss Grid */
-    .boss-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 5px;
-    }
-
-    .boss-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 10px;
-        border-radius: 3px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-size: 0.8rem;
-        color: #888;
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.04);
-    }
-
-    .boss-item:hover {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.1);
-    }
-
-    .boss-item .boss-dot {
-        width: 16px;
-        height: 16px;
-        border-radius: 3px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.55rem;
-        flex-shrink: 0;
-    }
-
-    .boss-item .boss-dot.empty {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .boss-item .boss-dot.pending {
-        background: rgba(255, 165, 0, 0.3);
-        border: 1px solid rgba(255, 165, 0, 0.5);
-        color: #ffb74d;
-    }
-
-    .boss-item .boss-dot.verified {
-        background: rgba(76, 175, 80, 0.3);
-        border: 1px solid rgba(76, 175, 80, 0.5);
-        color: #81c784;
-    }
-
-    .boss-item.has-soul {
-        color: #ccc;
-    }
-
-    .boss-item.is-verified {
-        color: #a5d6a7;
-    }
-
-    .boss-item .boss-name {
-        flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    /* Proof Section */
-    .proof-section {
-        display: flex; align-items: center; gap: 8px; padding: 8px 0;
-        margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); flex-wrap: wrap;
-    }
-    .proof-thumb {
-        width: 50px; height: 50px; border-radius: 6px; object-fit: cover;
-        border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: all 0.2s;
-    }
-    .proof-thumb:hover { border-color: var(--gold-light); transform: scale(1.1); }
-    .btn-upload-proof {
-        padding: 6px 14px; background: linear-gradient(135deg, rgba(170,134,71,0.3), rgba(140,110,55,0.4));
-        color: var(--gold-light); border: 1px solid rgba(170,134,71,0.3); border-radius: 6px;
-        cursor: pointer; font-size: 0.75rem; font-family: 'Cinzel', serif; transition: all 0.2s;
-    }
-    .btn-upload-proof:hover { background: linear-gradient(135deg, rgba(170,134,71,0.5), rgba(140,110,55,0.6)); }
-    .proof-delete-btn {
-        position: absolute; top: -4px; right: -4px; width: 16px; height: 16px;
-        background: rgba(255,60,60,0.8); color: #fff; border: none; border-radius: 50%;
-        font-size: 0.5rem; cursor: pointer; display: none; align-items: center; justify-content: center;
-    }
-    .proof-wrap { position: relative; display: inline-block; }
-    .proof-wrap:hover .proof-delete-btn { display: flex; }
-
-    /* Upload Modal */
-    .upload-modal {
-        display: none;
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.85);
-        z-index: 10000;
-        align-items: center;
-        justify-content: center;
-        backdrop-filter: blur(5px);
-    }
-    .upload-modal.active { display: flex; }
-    .upload-box {
-        background: linear-gradient(145deg, #1a1a1a, #121212);
-        border: 1px solid rgba(170, 134, 71, 0.3);
-        border-radius: 12px;
-        padding: 25px;
-        width: 90%;
-        max-width: 420px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
-    }
-    .upload-box h3 {
-        margin: 0 0 5px;
-        color: var(--gold-light);
-        font-family: 'Cinzel', serif;
-        font-size: 1.1rem;
-    }
-    .upload-box .upload-subtitle {
-        color: #888;
-        font-size: 0.8rem;
-        margin-bottom: 15px;
-    }
-    .upload-drop {
-        border: 2px dashed rgba(170, 134, 71, 0.3);
-        border-radius: 8px;
-        padding: 30px;
-        text-align: center;
-        color: #666;
-        cursor: pointer;
-        transition: all 0.3s;
-        margin-bottom: 15px;
-        position: relative;
-    }
-    .upload-drop:hover, .upload-drop.dragover {
-        border-color: var(--gold-light);
-        background: rgba(170, 134, 71, 0.05);
-        color: #aaa;
-    }
-    .upload-drop i { font-size: 2rem; margin-bottom: 8px; display: block; color: var(--gold-light); }
-    .upload-drop input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-    .upload-preview {
-        display: none;
-        text-align: center;
-        margin-bottom: 15px;
-    }
-    .upload-preview img {
-        max-width: 100%;
-        max-height: 200px;
-        border-radius: 6px;
-        border: 1px solid rgba(255,255,255,0.1);
-    }
-    .upload-actions {
-        display: flex;
-        gap: 10px;
-        justify-content: flex-end;
-    }
-    .upload-actions button {
-        padding: 8px 20px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-family: 'Cinzel', serif;
-        font-weight: 600;
-        font-size: 0.85rem;
-        transition: all 0.2s;
-    }
-    .btn-upload-cancel {
-        background: rgba(255,255,255,0.08);
-        color: #999;
-    }
-    .btn-upload-cancel:hover { background: rgba(255,255,255,0.15); color: #fff; }
-    .btn-upload-submit {
-        background: linear-gradient(135deg, rgba(170, 134, 71, 0.4), rgba(140, 110, 55, 0.5));
-        color: var(--gold-light);
-        border: 1px solid rgba(170, 134, 71, 0.4);
-    }
-    .btn-upload-submit:hover {
-        background: linear-gradient(135deg, rgba(170, 134, 71, 0.6), rgba(140, 110, 55, 0.7));
-    }
-
-    /* Screenshot Viewer Modal */
-    .ss-viewer {
-        display: none;
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.9);
-        z-index: 10001;
-        align-items: center;
-        justify-content: center;
-        backdrop-filter: blur(8px);
-    }
-    .ss-viewer.active { display: flex; }
-    .ss-viewer img {
-        max-width: 90vw;
-        max-height: 85vh;
-        border-radius: 8px;
-        border: 1px solid rgba(255,255,255,0.1);
-        box-shadow: 0 10px 50px rgba(0,0,0,0.5);
-    }
-    .ss-viewer-close {
-        position: absolute;
-        top: 20px; right: 20px;
-        width: 40px; height: 40px;
-        background: rgba(255, 60, 60, 0.8);
-        color: #fff;
-        border: none;
-        border-radius: 50%;
-        cursor: pointer;
-        font-size: 1.1rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .ss-viewer-close:hover { background: #ff2222; }
-
-    /* Tooltip */
-    .soul-tooltip {
-        position: fixed;
-        background: rgba(20, 20, 20, 0.95);
-        border: 1px solid rgba(212, 175, 55, 0.3);
-        padding: 8px 14px;
-        font-size: 0.8rem;
-        color: #fff;
-        z-index: 9999;
-        pointer-events: none;
-        backdrop-filter: blur(8px);
-        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
-        border-radius: 3px;
-        display: none;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-        .soul-page-title h1 { font-size: 1.4rem; }
-        .soul-summary { gap: 10px; }
-        .soul-stat-card { padding: 10px 15px; min-width: 90px; }
-        .soul-stat-card .stat-num { font-size: 1.3rem; }
-        .member-header { padding: 10px 15px; gap: 10px; }
-        .member-progress { min-width: 120px; }
-        .member-progress-bar { width: 50px; }
-        .boss-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 4px; }
-        .boss-item { font-size: 0.75rem; padding: 5px 8px; }
-        .member-body { padding: 0 15px; }
-        .member-card.expanded .member-body { padding: 0 15px 15px; }
-    }
-
-    /* Search */
-    .soul-search {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 20px;
-    }
-    .soul-search input {
-        width: 100%;
-        max-width: 400px;
-        padding: 10px 18px;
-        background: rgba(0, 0, 0, 0.4);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        color: #fff;
-        font-size: 0.9rem;
-        font-family: 'Roboto', sans-serif;
-        transition: all 0.3s;
-    }
-    .soul-search input:focus {
-        border-color: var(--gold-primary);
-        box-shadow: 0 0 10px rgba(170, 134, 71, 0.2);
-        outline: none;
-    }
-    .soul-search input::placeholder { color: #555; }
-
-    /* Custom Confirm Modal */
-    .confirm-modal {
-        display: none;
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.85);
-        z-index: 10002;
-        align-items: center;
-        justify-content: center;
-        backdrop-filter: blur(5px);
-    }
-    .confirm-modal.active { display: flex; }
-    .confirm-box {
-        background: linear-gradient(145deg, #1a1a1a, #121212);
-        border: 1px solid rgba(170, 134, 71, 0.3);
-        border-radius: 12px;
-        padding: 25px;
-        width: 90%;
-        max-width: 400px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
-        text-align: center;
-    }
-    .confirm-box h3 {
-        margin: 0 0 15px;
-        color: var(--gold-light);
-        font-family: 'Cinzel', serif;
-        font-size: 1.2rem;
-    }
-    .confirm-box p {
-        color: #ccc;
-        font-size: 0.95rem;
-        margin-bottom: 25px;
-    }
-    .confirm-actions {
-        display: flex;
-        gap: 15px;
-        justify-content: center;
-    }
-    .confirm-actions button {
-        padding: 10px 24px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-family: 'Cinzel', serif;
-        font-weight: 600;
-        font-size: 0.9rem;
-        transition: all 0.2s;
-    }
-    .btn-confirm-cancel {
-        background: rgba(255,255,255,0.08);
-        color: #999;
-    }
-    .btn-confirm-cancel:hover { background: rgba(255,255,255,0.15); color: #fff; }
-    .btn-confirm-ok {
-        background: linear-gradient(135deg, rgba(170, 134, 71, 0.4), rgba(140, 110, 55, 0.5));
-        color: var(--gold-light);
-        border: 1px solid rgba(170, 134, 71, 0.4);
-    }
-    .btn-confirm-ok:hover {
-        background: linear-gradient(135deg, rgba(170, 134, 71, 0.6), rgba(140, 110, 55, 0.7));
-    }
+/* Mobile Optimization */
+@media (max-width: 768px) {
+    main { padding:10px !important; }
+    .sc-wrap { border-radius:10px; }
+    .sc-header { padding:15px; flex-direction:column; align-items:flex-start; }
+    .sc-header h1 { font-size:1.2rem; }
+    .btn-update { width:100%; justify-content:center; padding:12px; font-size:0.85rem; }
+    .sc-tabs { flex-wrap:wrap; padding:10px; }
+    .sc-tab { flex:1; text-align:center; padding:8px 15px; font-size:0.8rem; }
+    .sc-content { padding:15px 10px; }
+    .sc-table thead th { padding:10px 8px; font-size:0.65rem; }
+    .sc-table tbody td { padding:8px; font-size:0.8rem; }
+    .progress-bar-bg { width:80px; }
+    .boss-grid { grid-template-columns:repeat(auto-fill, minmax(120px, 1fr)); }
+    .soul-modal { max-height:95vh; border-radius:12px; }
+    .soul-modal-header h2 { font-size:1rem; }
+    .upload-zone { padding:12px; font-size:0.75rem; }
+    .upload-zone i { font-size:1.5rem; }
+    .btn-save, .btn-cancel { padding:10px 15px; font-size:0.85rem; flex:1; }
+    .confirm-box { width:90%; padding:20px; }
+    .sc-table-wrap { margin:0 -10px; border-radius:0; border-left:none; border-right:none; }
+    .sc-table tbody td:nth-child(2) { min-width:120px; }
+    .sc-section-title { font-size:0.9rem; }
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="soul-container">
-    <!-- Title -->
-    <div class="soul-page-title">
-        <h1><i class="fas fa-ghost"></i> Soul Collection</h1>
-        <p class="soul-page-subtitle">Raid Boss Souls — Track & verify boss souls for all clan members</p>
-    </div>
-
-    <!-- Clan Filter Tabs -->
-    <div class="soul-filters">
-        <a href="?clan=Valkyrie" class="{% if clan_filter == 'Valkyrie' %}active{% endif %}" style="{% if clan_filter == 'Valkyrie' %}color:#FFD700; border-color:#FFD700; background:rgba(255,215,0,0.1); box-shadow:0 0 15px rgba(255,215,0,0.15);{% endif %}">Valkyrie</a>
-        <a href="?clan=Valhalla" class="{% if clan_filter == 'Valhalla' %}active{% endif %}" style="{% if clan_filter == 'Valhalla' %}color:#b88aff; border-color:#b88aff; background:rgba(184,138,255,0.1); box-shadow:0 0 15px rgba(184,138,255,0.15);{% endif %}">Valhalla</a>
-    </div>
-
-    <!-- Legend -->
-    <div class="soul-legend">
-        <div class="soul-legend-item"><span class="legend-dot empty"></span> Not Owned</div>
-        <div class="soul-legend-item"><span class="legend-dot pending"></span> Pending</div>
-        <div class="soul-legend-item"><span class="legend-dot verified"></span> Verified</div>
-    </div>
-
-    <!-- Summary -->
-    <div class="soul-summary">
-        <div class="soul-stat-card">
-            <div class="stat-num">{{ char_data|length }}</div>
-            <div class="stat-label">Members</div>
-        </div>
-        <div class="soul-stat-card">
-            <div class="stat-num" style="color: #81c784;">{{ user_soul_count }}</div>
-            <div class="stat-label">Your Souls</div>
-        </div>
-        <div class="soul-stat-card">
-            <div class="stat-num">{{ all_bosses|length }}</div>
-            <div class="stat-label">Total Bosses</div>
+<div class="sc-wrap">
+    <div class="sc-header">
+        <h1><i class="fas fa-ghost"></i> SOUL COLLECTION</h1>
+        <div>
+            {% for uc in user_characters %}
+            <button class="btn-update" onclick="openSoulModal({{ uc.pk }}, '{{ uc.name|escapejs }}')">
+                <i class="fas fa-plus-circle"></i> Update Soul ({{ uc.name }})
+            </button>
+            {% endfor %}
         </div>
     </div>
 
-    <!-- Search -->
-    <div class="soul-search">
-        <input type="text" id="memberSearch" placeholder="Search member..." oninput="filterMembers(this.value)">
+    <div class="sc-tabs">
+        <a href="?clan=Valkyrie" class="sc-tab {% if clan_filter == 'Valkyrie' %}active{% endif %}">Valkyrie</a>
+        <a href="?clan=Valhalla" class="sc-tab {% if clan_filter == 'Valhalla' %}active{% endif %}">Valhalla</a>
     </div>
 
-    <!-- Tooltip -->
-    <div class="soul-tooltip" id="soulTooltip"></div>
+    <div class="sc-content">
+        <div class="sc-section-title">
+            <span><i class="fas fa-trophy"></i> {{ clan_filter|upper }} SOUL RANKING</span>
+            <span style="color:rgba(255,255,255,0.4); font-size:0.8rem;">My Souls: {{ user_soul_count }} / {{ all_bosses|length }}</span>
+        </div>
 
-    <!-- Member Cards -->
-    <div id="memberList">
-        {% for item in char_data %}
-        <div class="member-card" data-character-id="{{ item.character.id }}" data-name="{{ item.character.name|lower }}">
-            <!-- Header (clickable) -->
-            <div class="member-header" onclick="toggleCard(this)">
-                <i class="fas fa-chevron-right member-expand-icon"></i>
-                <span class="member-name">
-                    {{ item.character.name }}
-                    {% if is_admin and item.character.name in unverified_names %}
-                    <span style="font-size: 0.65rem; background: #ff4444; color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 0 5px rgba(255,68,68,0.5); display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-exclamation-circle"></i> Pending</span>
-                    {% endif %}
-                </span>
-                <div class="member-progress">
-                    <span class="member-progress-text" style="color: {% if item.owned == item.total %}#4caf50{% elif item.owned > 0 %}#ff9800{% else %}#666{% endif %};">
-                        {{ item.owned }}/{{ item.total }}
-                    </span>
-                    <div class="member-progress-bar">
-                        <div class="member-progress-fill {% if item.owned < 10 %}low{% elif item.owned < 25 %}mid{% else %}high{% endif %}" 
-                             style="width: {% widthratio item.owned item.total 100 %}%;"></div>
-                    </div>
-                </div>
-                {% if is_admin %}
-                <button class="admin-verify-btn" onclick="event.stopPropagation(); bulkVerify({{ item.character.id }}, 'verify')" title="Verify All">
-                    <i class="fas fa-check-double"></i> All
-                </button>
-                {% endif %}
-            </div>
-
-            <!-- Body -->
-            <div class="member-body">
-                <!-- Proof Upload Section -->
-                <div class="proof-section" id="proofSection_{{ item.character.id }}">
-                    <span style="color:#888; font-size:0.75rem; margin-right:5px;"><i class="fas fa-camera"></i> Proof:</span>
-                    {% for proof in item.proofs %}
-                    <div class="proof-wrap" id="proofWrap_{{ proof.id }}">
-                        <img src="{{ proof.url }}" class="proof-thumb" onclick="openSsViewer('{{ proof.url }}')" alt="Proof">
-                        {% if is_admin or item.character.owner_id == user.id %}
-                        <button class="proof-delete-btn" onclick="deleteProof({{ proof.id }})" title="Hapus"><i class="fas fa-times"></i></button>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                    {% if is_admin or item.character.owner_id == user.id %}
-                    <button class="btn-upload-proof" onclick="openUploadModal({{ item.character.id }}, '{{ item.character.name|escapejs }}')">
-                        <i class="fas fa-plus"></i> Upload
-                    </button>
-                    {% endif %}
-                </div>
-
-                {% for group in boss_groups %}
-                <div class="soul-category">
-                    <div class="soul-category-title">
-                        {% if group.name == 'Raid Boss' %}<i class="fas fa-skull-crossbones"></i>
-                        {% elif group.name == 'Territory Boss' %}<i class="fas fa-flag"></i>
-                        {% elif group.name == 'World Boss' %}<i class="fas fa-globe"></i>
-                        {% endif %}
-                        {{ group.name }}
-                    </div>
-                    <div class="boss-grid">
-                        {% for boss in group.bosses %}
-                        <div class="boss-item {% if boss in item.souls %}has-soul{% endif %} {% for k,v in item.souls.items %}{% if k == boss %}{% if v.is_verified %}is-verified{% endif %}{% endif %}{% endfor %}"
-                             data-character="{{ item.character.id }}"
-                             data-boss="{{ boss }}"
-                             data-soul-id="{% for k,v in item.souls.items %}{% if k == boss %}{{ v.id }}{% endif %}{% endfor %}"
-                             data-verified="{% for k,v in item.souls.items %}{% if k == boss %}{{ v.is_verified }}{% endif %}{% endfor %}"
-                             data-owner="{{ item.character.owner_id }}"
-                             onclick="handleBossClick(this)">
-                            <span class="boss-dot {% if boss in item.souls %}{% for k,v in item.souls.items %}{% if k == boss %}{% if v.is_verified %}verified{% else %}pending{% endif %}{% endif %}{% endfor %}{% else %}empty{% endif %}">
-                                {% if boss in item.souls %}{% for k,v in item.souls.items %}{% if k == boss %}{% if v.is_verified %}✓{% else %}?{% endif %}{% endif %}{% endfor %}{% endif %}
-                            </span>
-                            <span class="boss-name">{{ boss }}</span>
+        {% if char_data %}
+        <div class="sc-table-wrap">
+            <table class="sc-table">
+                <thead>
+                    <tr>
+                        <th style="text-align:center; width:50px;">RANK</th>
+                        <th>IGN</th>
+                        <th style="text-align:center;">SOULS</th>
+                        <th style="width:140px;">PROGRESS</th>
+                        <th style="text-align:center;">DETAILS</th>
+                        <th style="text-align:center;">PROOF</th>
+                        {% if is_admin %}<th style="text-align:center;">ADMIN</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                {% for item in char_data %}
+                <tr data-proofs='[{% for p in item.proofs %}{"id":{{ p.id }},"url":"{{ p.url }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'
+                    data-verified="{% for b in item.verified_bosses %}{{ b }}{% if not forloop.last %},{% endif %}{% endfor %}"
+                    data-pending="{% for b in item.pending_bosses %}{{ b }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                    <td style="text-align:center;">
+                        {% with rank=forloop.counter %}
+                        <span class="rank-num {% if rank == 1 %}rank-1{% elif rank == 2 %}rank-2{% elif rank == 3 %}rank-3{% else %}rank-def{% endif %}">{{ rank }}</span>
+                        {% endwith %}
+                    </td>
+                    <td>
+                        <span style="font-weight:600; color:#fff;">{{ item.character.name }}</span>
+                        <span style="font-size:0.7rem; color:rgba(255,255,255,0.3); margin-left:5px;">{{ item.character.clan }}</span>
+                    </td>
+                    <td style="text-align:center;">
+                        <span class="soul-count {% if item.owned >= 40 %}high{% elif item.owned >= 20 %}mid{% else %}low{% endif %}">{{ item.owned }}</span>
+                        <span style="color:rgba(255,255,255,0.3); font-size:0.75rem;">/ {{ item.total }}</span>
+                    </td>
+                    <td>
+                        {% widthratio item.owned item.total 100 as pct %}
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" style="width:{% widthratio item.owned item.total 100 %}%; background:{% if item.owned >= 40 %}linear-gradient(90deg,#00c853,#88ffaa){% elif item.owned >= 20 %}linear-gradient(90deg,#ff9800,#ffdd57){% else %}linear-gradient(90deg,#666,#999){% endif %};"></div>
                         </div>
-                        {% endfor %}
-                    </div>
-                </div>
+                    </td>
+                    <td style="text-align:center;">
+                        {% if item.owned > 0 %}
+                        <button class="boss-list-toggle" onclick="toggleBossList({{ item.character.pk }})">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        {% else %}
+                        <span style="color:rgba(255,255,255,0.2); font-size:0.75rem;">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center;">
+                        {% if item.proofs %}
+                        <span class="proof-icon" onclick="openProofGallery('{{ item.character.name|escapejs }}', [{% for p in item.proofs %}'{{ p.url }}'{% if not forloop.last %},{% endif %}{% endfor %}])" title="{{ item.proofs|length }} screenshot(s)">
+                            <i class="fas fa-images"></i>
+                            {% if item.proofs|length > 1 %}<sup style="font-size:0.6rem;">{{ item.proofs|length }}</sup>{% endif %}
+                        </span>
+                        {% else %}
+                        <span style="color:rgba(255,255,255,0.15);"><i class="fas fa-minus"></i></span>
+                        {% endif %}
+                    </td>
+                    {% if is_admin %}
+                    <td style="text-align:center;">
+                        <div class="admin-actions">
+                            {% if item.pending_bosses %}
+                            <span class="badge-pending" style="margin-right:4px;">{{ item.pending_bosses|length }} pending</span>
+                            {% endif %}
+                            <button class="btn-verify-all" onclick="bulkVerify({{ item.character.pk }}, 'verify')" title="Verify All">
+                                <i class="fas fa-check-double"></i> Verify
+                            </button>
+                            <button class="btn-verify-all" onclick="openAdminReview({{ item.character.pk }}, '{{ item.character.name|escapejs }}')" title="Review" style="color:#ffdd57; border-color:rgba(255,180,0,0.3); background:rgba(255,180,0,0.1);">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </td>
+                    {% endif %}
+                </tr>
+                <!-- Expandable boss list row -->
+                <tr id="bossRow_{{ item.character.pk }}" style="display:none;">
+                    <td colspan="{% if is_admin %}7{% else %}6{% endif %}" style="padding:10px 20px 15px; background:rgba(0,0,0,0.2);">
+                        {% if item.verified_bosses %}
+                        <div style="margin-bottom:8px;">
+                            <span style="color:#88ffaa; font-size:0.7rem; font-weight:600; text-transform:uppercase;"><i class="fas fa-check-circle"></i> Verified</span><br>
+                            {% for boss in item.verified_bosses %}
+                            <span class="boss-chip verified"><i class="fas fa-check" style="font-size:0.6rem;"></i> {{ boss }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% if item.pending_bosses %}
+                        <div style="margin-bottom:8px;">
+                            <span style="color:#ffdd57; font-size:0.7rem; font-weight:600; text-transform:uppercase;"><i class="fas fa-question-circle"></i> Pending Verification</span><br>
+                            {% for boss in item.pending_bosses %}
+                            <span class="boss-chip pending"><i class="fas fa-question" style="font-size:0.6rem;"></i> {{ boss }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
                 {% endfor %}
-            </div>
+                </tbody>
+            </table>
         </div>
-        {% empty %}
-        <div style="text-align:center; padding:60px; color:#666;">
-            <i class="fas fa-ghost" style="font-size:2.5rem; margin-bottom:15px; display:block; color:#444;"></i>
-            No members found.
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-ghost"></i>
+            <p>No soul data yet. Click "Update Soul" to add yours!</p>
         </div>
-        {% endfor %}
-
+        {% endif %}
+    </div>
 </div>
 
-<!-- Upload Modal -->
-<div class="upload-modal" id="uploadModal">
-    <div class="upload-box">
-        <h3><i class="fas fa-upload"></i> Upload Soul Screenshot</h3>
-        <p class="upload-subtitle" id="uploadCharName">Soul Collection Screenshot</p>
-        <div class="upload-drop" id="uploadDrop">
-            <i class="fas fa-cloud-upload-alt"></i>
-            <span>Click or drag image here</span>
-            <input type="file" id="uploadFileInput" accept="image/*">
+<!-- Update Soul Modal -->
+<div class="soul-modal-overlay" id="soulModal">
+    <div class="soul-modal">
+        <div class="soul-modal-header">
+            <h2><i class="fas fa-ghost" style="color:#b88aff;"></i> Update Soul — <span id="modalCharName"></span></h2>
+            <button class="soul-modal-close" onclick="closeSoulModal()"><i class="fas fa-times"></i></button>
         </div>
-        <div class="upload-preview" id="uploadPreview">
-            <img id="uploadPreviewImg" src="" alt="Preview">
+        <div class="soul-modal-body">
+            <input type="hidden" id="modalCharId">
+            <input type="hidden" id="modalIsAdmin" value="0">
+
+            <!-- Existing Proofs -->
+            <div id="existingProofs" style="margin-bottom:15px; display:none;">
+                <p style="color:rgba(255,255,255,0.5); font-size:0.75rem; margin-bottom:8px;"><i class="fas fa-images"></i> Existing Screenshots</p>
+                <div id="existingProofsList" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+            </div>
+
+            <!-- Upload Proof -->
+            <div id="uploadSection">
+                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('proofFile').click()">
+                    <i class="fas fa-cloud-upload-alt" style="font-size:2rem; margin-bottom:10px; display:block;"></i>
+                    <strong>Upload Proof Screenshot</strong> <span id="uploadRequired" style="color:#ff8888;">(Required)</span>
+                    <p style="font-size:0.75rem; margin-top:5px;">Click to select your soul collection screenshot</p>
+                    <input type="file" id="proofFile" accept="image/*" style="display:none;" onchange="handleFileSelect(this)">
+                </div>
+                <div id="selectedFileName" style="text-align:center; color:#88ffaa; font-size:0.8rem; margin-bottom:15px; display:none;"></div>
+            </div>
+
+            <!-- Boss Checkboxes -->
+            <div id="bossCheckboxArea" style="opacity:0.4; pointer-events:none;">
+                <p style="color:rgba(255,255,255,0.5); font-size:0.75rem; margin-bottom:10px;"><i class="fas fa-info-circle"></i> Select the bosses whose souls you have collected</p>
+            </div>
         </div>
-        <div class="upload-actions">
-            <button class="btn-upload-cancel" onclick="closeUploadModal()">Cancel</button>
-            <button class="btn-upload-submit" onclick="submitProofUpload()">Upload</button>
+        <div class="soul-modal-footer">
+            <button class="btn-cancel" onclick="closeSoulModal()">Cancel</button>
+            <button class="btn-save" id="btnSaveSoul" disabled onclick="saveSoulUpdate()"><i class="fas fa-save"></i> Save</button>
         </div>
     </div>
 </div>
 
-<!-- Screenshot Viewer -->
-<div class="ss-viewer" id="ssViewer" onclick="closeSsViewer()">
-    <button class="ss-viewer-close" onclick="closeSsViewer()"><i class="fas fa-times"></i></button>
-    <img id="ssViewerImg" src="" alt="Screenshot">
-</div>
+<div id="toast-container"></div>
 
 <!-- Custom Confirm Modal -->
-<div class="confirm-modal" id="confirmModal">
+<div class="confirm-overlay" id="confirmModal">
     <div class="confirm-box">
-        <h3><i class="fas fa-exclamation-triangle"></i> Confirmation</h3>
-        <p id="confirmMessage">Are you sure you want to proceed?</p>
-        <div class="confirm-actions">
-            <button class="btn-confirm-cancel" onclick="closeConfirmModal()">Cancel</button>
-            <button class="btn-confirm-ok" id="confirmOkBtn">Yes, Proceed</button>
+        <h3><i class="fas fa-exclamation-triangle" style="color:#ffdd57;"></i> Confirmation</h3>
+        <p id="confirmMsg">Are you sure?</p>
+        <div class="confirm-btns">
+            <button class="btn-confirm-no" onclick="closeConfirm(false)">Cancel</button>
+            <button class="btn-confirm-yes" onclick="closeConfirm(true)">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- Proof Gallery Modal -->
+<div class="soul-modal-overlay" id="proofGalleryModal" onclick="if(event.target===this)this.classList.remove('active')">
+    <div class="soul-modal" style="max-width:600px; text-align:center;">
+        <div class="soul-modal-header">
+            <h2><i class="fas fa-images" style="color:#b88aff;"></i> <span id="proofGalleryTitle">Proof</span></h2>
+            <button class="soul-modal-close" onclick="document.getElementById('proofGalleryModal').classList.remove('active')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="soul-modal-body" style="padding:15px;">
+            <img id="proofGalleryImg" src="" style="max-width:100%; border-radius:8px;">
+            <div id="proofGalleryNav" style="margin-top:10px; display:flex; justify-content:center; gap:15px; align-items:center;">
+                <button onclick="proofPrev()" style="background:rgba(255,255,255,0.1); border:none; color:#fff; padding:8px 15px; border-radius:6px; cursor:pointer;"><i class="fas fa-chevron-left"></i></button>
+                <span id="proofCounter" style="color:rgba(255,255,255,0.5); font-size:0.8rem;"></span>
+                <button onclick="proofNext()" style="background:rgba(255,255,255,0.1); border:none; color:#fff; padding:8px 15px; border-radius:6px; cursor:pointer;"><i class="fas fa-chevron-right"></i></button>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-var isAdmin = {{ is_admin|yesno:"true,false" }};
-var currentUserId = {{ user.id }};
+var bossGroups = {{ boss_groups_json|safe }};
 var csrfToken = '{{ csrf_token }}';
-var uploadCharId = null;
-var uploadFile = null;
-
-function toggleCard(header) { header.closest('.member-card').classList.toggle('expanded'); }
-
-function filterMembers(query) {
-    query = query.toLowerCase();
-    document.querySelectorAll('.member-card').forEach(function(card) {
-        card.style.display = card.dataset.name.indexOf(query) >= 0 ? '' : 'none';
-    });
-}
-
-function openUploadModal(charId, charName) {
-    uploadCharId = charId; uploadFile = null;
-    document.getElementById('uploadCharName').textContent = charName + ' — Soul Collection';
-    document.getElementById('uploadPreview').style.display = 'none';
-    document.getElementById('uploadFileInput').value = '';
-    document.getElementById('uploadModal').classList.add('active');
-}
-function closeUploadModal() { document.getElementById('uploadModal').classList.remove('active'); uploadCharId = null; uploadFile = null; }
-
-document.getElementById('uploadFileInput').addEventListener('change', function(e) {
-    if (e.target.files && e.target.files[0]) {
-        uploadFile = e.target.files[0];
-        var reader = new FileReader();
-        reader.onload = function(ev) { document.getElementById('uploadPreviewImg').src = ev.target.result; document.getElementById('uploadPreview').style.display = 'block'; };
-        reader.readAsDataURL(uploadFile);
-    }
-});
-var dropZone = document.getElementById('uploadDrop');
-dropZone.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('dragover'); });
-dropZone.addEventListener('dragleave', function() { this.classList.remove('dragover'); });
-dropZone.addEventListener('drop', function(e) {
-    e.preventDefault(); this.classList.remove('dragover');
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        uploadFile = e.dataTransfer.files[0];
-        document.getElementById('uploadFileInput').files = e.dataTransfer.files;
-        var reader = new FileReader();
-        reader.onload = function(ev) { document.getElementById('uploadPreviewImg').src = ev.target.result; document.getElementById('uploadPreview').style.display = 'block'; };
-        reader.readAsDataURL(uploadFile);
-    }
-});
-
-function submitProofUpload() {
-    if (!uploadCharId || !uploadFile) { alert('Please select an image.'); return; }
-    var fd = new FormData();
-    fd.append('character_id', uploadCharId);
-    fd.append('screenshot', uploadFile);
-    fetch('{% url "upload-soul-proof" %}', { method: 'POST', headers: {'X-CSRFToken': csrfToken}, body: fd })
-    .then(r => r.json()).then(data => {
-        if (data.success) {
-            var section = document.getElementById('proofSection_' + uploadCharId);
-            var btn = section.querySelector('.btn-upload-proof');
-            var wrap = document.createElement('div');
-            wrap.className = 'proof-wrap'; wrap.id = 'proofWrap_' + data.proof_id;
-            wrap.innerHTML = '<img src="' + data.proof_url + '" class="proof-thumb" onclick="openSsViewer(\'' + data.proof_url + '\')" alt="Proof"><button class="proof-delete-btn" onclick="deleteProof(' + data.proof_id + ')" title="Hapus"><i class="fas fa-times"></i></button>';
-            section.insertBefore(wrap, btn);
-        }
-        closeUploadModal();
-    });
-}
-
-function deleteProof(proofId) {
-    openConfirmModal('Delete this proof?', function() {
-        fetch('{% url "delete-soul-proof" %}', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}, body: JSON.stringify({proof_id: proofId}) })
-        .then(r => r.json()).then(data => { if (data.success) { var el = document.getElementById('proofWrap_' + proofId); if (el) el.remove(); } });
-    });
-}
-
-function openSsViewer(url) { document.getElementById('ssViewerImg').src = url; document.getElementById('ssViewer').classList.add('active'); }
-function closeSsViewer() { document.getElementById('ssViewer').classList.remove('active'); }
-
-function handleBossClick(el) {
-    var charId = el.dataset.character, boss = el.dataset.boss, soulId = el.dataset.soulId, ownerId = el.dataset.owner;
-    var dot = el.querySelector('.boss-dot');
-
-    if (isAdmin && soulId && dot.classList.contains('pending')) {
-        fetch('{% url "verify-soul" %}', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}, body: JSON.stringify({soul_id: parseInt(soulId)}) })
-        .then(r => r.json()).then(data => {
-            if (data.success) {
-                if (data.is_verified) { dot.className = 'boss-dot verified'; dot.innerHTML = '✓'; el.classList.add('is-verified'); el.dataset.verified = 'True'; }
-                else { dot.className = 'boss-dot pending'; dot.innerHTML = '?'; el.classList.remove('is-verified'); el.dataset.verified = 'False'; }
-            }
-        }); return;
-    }
-    if (isAdmin && soulId && dot.classList.contains('verified')) {
-        fetch('{% url "toggle-soul" %}', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}, body: JSON.stringify({character_id: parseInt(charId), boss_name: boss}) })
-        .then(r => r.json()).then(data => { 
-            if (data.success) { 
-                dot.className = 'boss-dot empty'; dot.innerHTML = ''; el.classList.remove('has-soul', 'is-verified'); el.dataset.soulId = ''; el.dataset.verified = ''; 
-                updateCardProgress(charId);
-            } 
-        }); return;
-    }
-    if (isAdmin || parseInt(ownerId) === currentUserId) {
-        fetch('{% url "toggle-soul" %}', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}, body: JSON.stringify({character_id: parseInt(charId), boss_name: boss}) })
-        .then(r => r.json()).then(data => {
-            if (data.success) {
-                if (data.action === 'added') { dot.className = 'boss-dot pending'; dot.innerHTML = '?'; el.classList.add('has-soul'); el.classList.remove('is-verified'); el.dataset.soulId = data.soul_id; el.dataset.verified = 'False'; }
-                else { dot.className = 'boss-dot empty'; dot.innerHTML = ''; el.classList.remove('has-soul', 'is-verified'); el.dataset.soulId = ''; el.dataset.verified = ''; }
-                updateCardProgress(charId);
-            }
-        });
-    }
-}
-
-function updateCardProgress(charId) {
-    var card = document.querySelector('.member-card[data-character-id="' + charId + '"]');
-    if (!card) return;
-    var items = card.querySelectorAll('.boss-item'), total = items.length, owned = 0;
-    items.forEach(function(item) { if (item.classList.contains('is-verified')) owned++; });
-    var progText = card.querySelector('.member-progress-text'), progFill = card.querySelector('.member-progress-fill');
-    if (progText) { progText.style.color = owned === total ? '#4caf50' : (owned > 0 ? '#ff9800' : '#666'); progText.textContent = owned + '/' + total; }
-    if (progFill) { var pct = total > 0 ? Math.round(owned / total * 100) : 0; progFill.style.width = pct + '%'; progFill.className = 'member-progress-fill ' + (pct < 20 ? 'low' : (pct < 55 ? 'mid' : 'high')); }
-}
-
-function bulkVerify(charId, action) {
-    openConfirmModal('Verify all souls for this member?', function() {
-        fetch('{% url "bulk-verify-souls" %}', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}, body: JSON.stringify({character_id: charId, action: action}) })
-        .then(r => r.json()).then(data => { if (data.success) location.reload(); });
-    });
-}
-
 var confirmCallback = null;
-function openConfirmModal(message, callback) {
-    document.getElementById('confirmMessage').textContent = message;
+
+function showConfirm(msg, callback) {
+    document.getElementById('confirmMsg').textContent = msg;
     confirmCallback = callback;
     document.getElementById('confirmModal').classList.add('active');
 }
-function closeConfirmModal() {
+function closeConfirm(result) {
     document.getElementById('confirmModal').classList.remove('active');
+    if(result && confirmCallback) confirmCallback();
     confirmCallback = null;
 }
-document.getElementById('confirmOkBtn').addEventListener('click', function() {
-    if (confirmCallback) confirmCallback();
-    closeConfirmModal();
-});
 
-document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { closeUploadModal(); closeSsViewer(); closeConfirmModal(); } });
+function showToast(msg, type='info') {
+    var container = document.getElementById('toast-container');
+    var toast = document.createElement('div');
+    toast.className = 'toast ' + type;
+    var icon = 'info-circle';
+    if(type==='success') icon = 'check-circle';
+    if(type==='error') icon = 'exclamation-circle';
+    if(type==='warning') icon = 'exclamation-triangle';
+    toast.innerHTML = '<i class="fas fa-' + icon + '"></i><span class="toast-msg">' + msg + '</span>';
+    container.appendChild(toast);
+    setTimeout(() => toast.classList.add('active'), 10);
+    setTimeout(() => {
+        toast.classList.remove('active');
+        setTimeout(() => toast.remove(), 400);
+    }, 4000);
+}
+
+// Toggle boss list row
+function toggleBossList(charId) {
+    var row = document.getElementById('bossRow_' + charId);
+    row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+}
+
+// Soul Modal
+var isAdminMode = false;
+
+function openSoulModal(charId, charName, adminMode) {
+    isAdminMode = !!adminMode;
+    document.getElementById('modalCharId').value = charId;
+    document.getElementById('modalCharName').textContent = charName;
+    document.getElementById('proofFile').value = '';
+    document.getElementById('uploadZone').classList.remove('has-file');
+    document.getElementById('selectedFileName').style.display = 'none';
+
+    // Load existing proofs
+    var mainRow = document.querySelector('tr[data-proofs]');
+    var rows = document.querySelectorAll('tr[data-proofs]');
+    var proofs = [];
+    rows.forEach(function(r) {
+        var bossRow = document.getElementById('bossRow_' + charId);
+        if (bossRow && r.nextElementSibling === bossRow) {
+            try { proofs = JSON.parse(r.getAttribute('data-proofs')); } catch(e) {}
+        }
+    });
+    // Try simpler approach: find bossRow's previous sibling
+    var bossRow = document.getElementById('bossRow_' + charId);
+    if (bossRow && bossRow.previousElementSibling) {
+        try { proofs = JSON.parse(bossRow.previousElementSibling.getAttribute('data-proofs')); } catch(e) {}
+    }
+
+    var proofsDiv = document.getElementById('existingProofs');
+    var proofsList = document.getElementById('existingProofsList');
+    if (proofs.length > 0) {
+        proofsDiv.style.display = 'block';
+        var ph = '';
+        proofs.forEach(function(p) {
+            ph += '<div style="position:relative; display:inline-block;">';
+            ph += '<img src="' + p.url + '" style="width:120px; height:120px; object-fit:cover; border-radius:6px; border:1px solid rgba(255,255,255,0.1); cursor:pointer;" onclick="openProofGallery(\'\', [\'' + p.url + '\'])">';
+            ph += '<button onclick="deleteProof(' + p.id + ', this)" style="position:absolute; top:-5px; right:-5px; background:#ff4444; color:#fff; border:none; border-radius:50%; width:20px; height:20px; font-size:0.6rem; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="fas fa-times"></i></button>';
+            ph += '</div>';
+        });
+        proofsList.innerHTML = ph;
+    } else {
+        proofsDiv.style.display = 'none';
+    }
+
+    // Admin mode: no upload required, checkboxes enabled
+    var area = document.getElementById('bossCheckboxArea');
+    if (isAdminMode) {
+        document.getElementById('uploadRequired').textContent = '(Optional)';
+        document.getElementById('btnSaveSoul').disabled = false;
+        area.style.opacity = '1';
+        area.style.pointerEvents = 'auto';
+    } else {
+        if (proofs.length > 0) {
+            document.getElementById('uploadRequired').textContent = '(Optional)';
+            // Has existing proofs, enable checkboxes
+            document.getElementById('btnSaveSoul').disabled = false;
+            area.style.opacity = '1';
+            area.style.pointerEvents = 'auto';
+        } else {
+            document.getElementById('uploadRequired').textContent = '(Required)';
+            document.getElementById('btnSaveSoul').disabled = true;
+            area.style.opacity = '0.4';
+            area.style.pointerEvents = 'none';
+        }
+    }
+
+    // Build checkboxes
+    var html = '<p style="color:rgba(255,255,255,0.5); font-size:0.75rem; margin-bottom:10px;"><i class="fas fa-info-circle"></i> Select the bosses whose souls you have collected</p>';
+    bossGroups.forEach(function(g) {
+        html += '<div class="boss-group-title">' + g.name + '</div><div class="boss-grid">';
+        g.bosses.forEach(function(b) {
+            html += '<label class="boss-check"><input type="checkbox" name="boss" value="' + b + '"> ' + b + '</label>';
+        });
+        html += '</div>';
+    });
+    area.innerHTML = html;
+    loadExistingSouls(charId);
+    document.getElementById('soulModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function loadExistingSouls(charId) {
+    // Find the row for this character
+    var row = null;
+    var bossRow = document.getElementById('bossRow_' + charId);
+    if (bossRow && bossRow.previousElementSibling) {
+        row = bossRow.previousElementSibling;
+    }
+    if (!row) return;
+
+    var verifiedAttr = row.getAttribute('data-verified') || '';
+    var pendingAttr = row.getAttribute('data-pending') || '';
+    
+    var verifiedBosses = verifiedAttr.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+    var pendingBosses = pendingAttr.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+
+    // Mark verified bosses
+    verifiedBosses.forEach(function(bossName) {
+        var cbs = document.querySelectorAll('#bossCheckboxArea input[value="' + bossName + '"]');
+        cbs.forEach(function(cb) { 
+            cb.checked = true;
+            if (!isAdminMode) {
+                cb.disabled = true;
+                cb.parentElement.style.opacity = '0.8';
+                cb.parentElement.style.color = '#88ffaa';
+                cb.parentElement.title = 'Verified (Locked)';
+            } else {
+                cb.parentElement.style.color = '#88ffaa';
+                cb.parentElement.insertAdjacentHTML('beforeend', ' <i class="fas fa-check-circle" style="font-size:0.7rem;"></i>');
+            }
+        });
+    });
+
+    // Mark pending bosses
+    pendingBosses.forEach(function(bossName) {
+        var cbs = document.querySelectorAll('#bossCheckboxArea input[value="' + bossName + '"]');
+        cbs.forEach(function(cb) { 
+            cb.checked = true;
+            cb.parentElement.style.color = '#ffdd57';
+            if (isAdminMode) {
+                cb.parentElement.insertAdjacentHTML('beforeend', ' <i class="fas fa-question-circle" style="font-size:0.7rem;"></i>');
+            }
+        });
+    });
+}
+
+function closeSoulModal() {
+    document.getElementById('soulModal').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function handleFileSelect(input) {
+    if (input.files.length > 0) {
+        document.getElementById('uploadZone').classList.add('has-file');
+        document.getElementById('selectedFileName').textContent = '✓ ' + input.files[0].name;
+        document.getElementById('selectedFileName').style.display = 'block';
+        document.getElementById('btnSaveSoul').disabled = false;
+        var area = document.getElementById('bossCheckboxArea');
+        area.style.opacity = '1';
+        area.style.pointerEvents = 'auto';
+    }
+}
+
+function deleteProof(proofId, btn) {
+    showConfirm('Are you sure you want to delete this proof screenshot?', function() {
+        fetch('{% url "delete-soul-proof" %}', {
+            method:'POST',
+            headers:{'Content-Type':'application/json','X-CSRFToken':csrfToken,'X-Requested-With':'XMLHttpRequest'},
+            body:JSON.stringify({proof_id: proofId})
+        }).then(function(r){return r.json();}).then(function(d){
+            if(d.success) {
+                btn.parentElement.remove();
+                showToast('Proof deleted successfully', 'success');
+                var remaining = document.querySelectorAll('#existingProofsList > div');
+                if(remaining.length === 0) document.getElementById('existingProofs').style.display = 'none';
+            } else { showToast(d.error, 'error'); }
+        });
+    });
+}
+
+function saveSoulUpdate() {
+    var charId = document.getElementById('modalCharId').value;
+    var file = document.getElementById('proofFile').files[0];
+    var checked = [];
+    document.querySelectorAll('#bossCheckboxArea input[name="boss"]:checked').forEach(function(cb) {
+        checked.push(cb.value);
+    });
+
+    if (isAdminMode) {
+        document.getElementById('btnSaveSoul').disabled = true;
+        document.getElementById('btnSaveSoul').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        var fd = new FormData();
+        fd.append('character_id', charId);
+        fd.append('boss_names', JSON.stringify(checked));
+        fd.append('csrfmiddlewaretoken', csrfToken);
+        if (file) fd.append('screenshot', file);
+        fetch('{% url "batch-update-souls" %}', { method:'POST', body:fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+        .then(function(r){return r.json();}).then(function(data){
+            if(data.success){ 
+                showToast('Verification saved successfully', 'success');
+                setTimeout(() => window.location.reload(), 1000);
+            }
+            else { 
+                showToast(data.error, 'error'); 
+                document.getElementById('btnSaveSoul').disabled=false; 
+                document.getElementById('btnSaveSoul').innerHTML='<i class="fas fa-save"></i> Save'; 
+            }
+        }).catch(function(err){ showToast('Failed to save', 'error'); document.getElementById('btnSaveSoul').disabled=false; });
+        return;
+    }
+
+    if (!file) {
+        var hasExisting = document.querySelectorAll('#existingProofsList > div').length > 0;
+        if (!hasExisting) { showToast('Please upload a proof screenshot first.', 'warning'); return; }
+    }
+    var fd = new FormData();
+    fd.append('character_id', charId);
+    fd.append('boss_names', JSON.stringify(checked));
+    fd.append('csrfmiddlewaretoken', csrfToken);
+    if (file) fd.append('screenshot', file);
+    document.getElementById('btnSaveSoul').disabled = true;
+    document.getElementById('btnSaveSoul').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    fetch('{% url "batch-update-souls" %}', { method:'POST', body:fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) { 
+            showToast('Souls updated. Waiting for admin verification.', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        }
+        else { 
+            showToast(data.error, 'error'); 
+            document.getElementById('btnSaveSoul').disabled = false; 
+            document.getElementById('btnSaveSoul').innerHTML = '<i class="fas fa-save"></i> Save'; 
+        }
+    })
+    .catch(function(err) { showToast('Connection error', 'error'); document.getElementById('btnSaveSoul').disabled = false; document.getElementById('btnSaveSoul').innerHTML = '<i class="fas fa-save"></i> Save'; });
+}
+
+// Proof Gallery
+var proofImages = [], proofIdx = 0;
+function openProofGallery(name, images) {
+    proofImages = images; proofIdx = 0;
+    document.getElementById('proofGalleryTitle').textContent = name ? 'Proof — ' + name : 'Proof';
+    showProofImg();
+    document.getElementById('proofGalleryModal').classList.add('active');
+}
+function showProofImg() {
+    document.getElementById('proofGalleryImg').src = proofImages[proofIdx];
+    document.getElementById('proofCounter').textContent = (proofIdx+1) + ' / ' + proofImages.length;
+    document.getElementById('proofGalleryNav').style.display = proofImages.length > 1 ? 'flex' : 'none';
+}
+function proofPrev() { proofIdx = (proofIdx - 1 + proofImages.length) % proofImages.length; showProofImg(); }
+function proofNext() { proofIdx = (proofIdx + 1) % proofImages.length; showProofImg(); }
+
+{% if is_admin %}
+function bulkVerify(charId, action) {
+    fetch('{% url "bulk-verify-souls" %}', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken':csrfToken,'X-Requested-With':'XMLHttpRequest'},
+        body:JSON.stringify({character_id:charId, action:action})
+    }).then(function(r){return r.json();}).then(function(d){
+        if(d.success) {
+            showToast('All souls verified', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        }
+        else showToast(d.error, 'error');
+    });
+}
+function openAdminReview(charId, charName) {
+    openSoulModal(charId, charName, true);
+}
+{% endif %}
 </script>
 {% endblock %}
-
-
