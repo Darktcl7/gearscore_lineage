@@ -703,6 +703,9 @@
                 <i class="fas fa-chevron-right member-expand-icon"></i>
                 <span class="member-name">
                     {{ item.character.name }}
+                    {% if is_admin and item.character.name in unverified_names %}
+                    <span style="font-size: 0.65rem; background: #ff4444; color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 0 5px rgba(255,68,68,0.5); display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-exclamation-circle"></i> Pending</span>
+                    {% endif %}
                 </span>
                 <div class="member-progress">
                     <span class="member-progress-text" style="color: {% if item.owned == item.total %}#4caf50{% elif item.owned > 0 %}#ff9800{% else %}#666{% endif %};">
@@ -930,7 +933,7 @@ function updateCardProgress(charId) {
     var card = document.querySelector('.member-card[data-character-id="' + charId + '"]');
     if (!card) return;
     var items = card.querySelectorAll('.boss-item'), total = items.length, owned = 0;
-    items.forEach(function(item) { if (item.classList.contains('has-soul')) owned++; });
+    items.forEach(function(item) { if (item.classList.contains('is-verified')) owned++; });
     var progText = card.querySelector('.member-progress-text'), progFill = card.querySelector('.member-progress-fill');
     if (progText) { progText.style.color = owned === total ? '#4caf50' : (owned > 0 ? '#ff9800' : '#666'); progText.textContent = owned + '/' + total; }
     if (progFill) { var pct = total > 0 ? Math.round(owned / total * 100) : 0; progFill.style.width = pct + '%'; progFill.className = 'member-progress-fill ' + (pct < 20 ? 'low' : (pct < 55 ? 'mid' : 'high')); }

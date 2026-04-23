@@ -1867,7 +1867,6 @@ def power_rank_leaderboard(request):
             if not user_power_rank:
                 user_power_rank = item['power_rank']
 
-    # Check if Power Rank Admin
     is_pr_admin = False
     if request.user.is_authenticated:
         from dkp.models import AdminRole
@@ -1875,12 +1874,19 @@ def power_rank_leaderboard(request):
         if role and role.is_powerrank_admin:
             is_pr_admin = True
 
+    is_user_admin = is_admin(request.user) or is_pr_admin
+
+    unverified_names = []
+    if is_user_admin:
+        unverified_names = [pr.character.name for pr in all_rankings if not pr.is_validated]
+
     context = {
         'leaderboard': leaderboard,
         'user_power_rank': user_power_rank,
         'user_rankings': user_rankings,
-        'is_admin': is_admin(request.user) or is_pr_admin,
+        'is_admin': is_user_admin,
         'clan_tab': clan_tab,
+        'unverified_names': unverified_names,
     }
     return render(request, 'items/power_rank_leaderboard.html', context)
 
@@ -1935,24 +1941,23 @@ def edit_power_rank(request, character_pk):
             power_rank.duel = float(request.POST.get('duel', 0) or 0)
             power_rank.purple_class_aga = float(request.POST.get('purple_class_aga', 0) or 0)
 
-            stats_changed = (
-                original_server != power_rank.server or
-                original_power_class != power_rank.power_class or
-                original_level != power_rank.level or
-                original_dmg != power_rank.dmg or
-                original_acc != power_rank.acc or
-                original_defense != power_rank.defense or
-                original_dmg_reduct != power_rank.dmg_reduct or
-                original_skill_resist != power_rank.skill_resist or
-                original_skill_dmg_boost != power_rank.skill_dmg_boost or
-                original_weapon_dmg_boost != power_rank.weapon_dmg_boost or
-                original_soulshot != power_rank.soulshot or
-                original_valor != power_rank.valor or
-                original_guardian != power_rank.guardian or
-                original_conquer != power_rank.conquer or
-                original_duel != power_rank.duel or
-                original_purple_class_aga != power_rank.purple_class_aga
-            )
+            change_logs = []
+            if original_server != power_rank.server: change_logs.append(f"Server: {original_server} -> {power_rank.server}")
+            if original_power_class != power_rank.power_class: change_logs.append(f"Class: {original_power_class} -> {power_rank.power_class}")
+            if original_level != power_rank.level: change_logs.append(f"Level: {original_level} -> {power_rank.level}")
+            if original_dmg != power_rank.dmg: change_logs.append(f"DMG: {original_dmg} -> {power_rank.dmg}")
+            if original_acc != power_rank.acc: change_logs.append(f"ACC: {original_acc} -> {power_rank.acc}")
+            if original_defense != power_rank.defense: change_logs.append(f"DEF: {original_defense} -> {power_rank.defense}")
+            if original_dmg_reduct != power_rank.dmg_reduct: change_logs.append(f"Reduc: {original_dmg_reduct} -> {power_rank.dmg_reduct}")
+            if original_skill_resist != power_rank.skill_resist: change_logs.append(f"Skill Resist: {original_skill_resist} -> {power_rank.skill_resist}")
+            if original_skill_dmg_boost != power_rank.skill_dmg_boost: change_logs.append(f"Skill DMG: {original_skill_dmg_boost} -> {power_rank.skill_dmg_boost}")
+            if original_weapon_dmg_boost != power_rank.weapon_dmg_boost: change_logs.append(f"Wpn DMG: {original_weapon_dmg_boost} -> {power_rank.weapon_dmg_boost}")
+            if original_soulshot != power_rank.soulshot: change_logs.append(f"SS: {original_soulshot} -> {power_rank.soulshot}")
+            if original_valor != power_rank.valor: change_logs.append(f"Valor: {original_valor} -> {power_rank.valor}")
+            if original_guardian != power_rank.guardian: change_logs.append(f"Guardian: {original_guardian} -> {power_rank.guardian}")
+            if original_conquer != power_rank.conquer: change_logs.append(f"Conq: {original_conquer} -> {power_rank.conquer}")
+            if original_duel != power_rank.duel: change_logs.append(f"Duel: {original_duel} -> {power_rank.duel}")
+            if original_purple_class_aga != power_rank.purple_class_aga: change_logs.append(f"Purple: {original_purple_class_aga} -> {power_rank.purple_class_aga}")
 
             # Handle multiple stat screenshot uploads (max 2MB each)
             from .models import PowerRankScreenshot
@@ -1976,10 +1981,25 @@ def edit_power_rank(request, character_pk):
                     power_rank=power_rank
                 ).delete()
                 
+            if valid_uploads > 0: change_logs.append(f"Uploaded {valid_uploads} new screenshots")
+            if delete_ids: change_logs.append(f"Deleted {len(delete_ids)} screenshots")
+
             # If member uploads new screenshot OR changes any stat, clear validation status
-            if valid_uploads > 0 or stats_changed:
+            if change_logs:
                 power_rank.is_validated = False
                 power_rank.validation_notes = None
+                
+                # Append to existing pending changes
+                existing_changes = []
+                if power_rank.pending_changes:
+                    existing_changes = power_rank.pending_changes.split(" | ")
+                
+                # Keep it manageable (last 5 changes max or so, or just append)
+                for log in change_logs:
+                    if log not in existing_changes:
+                        existing_changes.append(log)
+                
+                power_rank.pending_changes = " | ".join(existing_changes)
 
             # Validate: must have at least 1 screenshot after save
             remaining_count = power_rank.screenshots.count()
@@ -2075,6 +2095,8 @@ def update_power_rank_validation(request):
     power_rank = get_object_or_404(UniversalPowerRank, pk=pk)
     power_rank.is_validated = is_validated
     power_rank.validation_notes = notes
+    if is_validated:
+        power_rank.pending_changes = ""
     power_rank.save()
 
     return JsonResponse({'success': True})
@@ -2229,30 +2251,39 @@ def soul_page(request):
         souls = soul_map.get(char.id, {})
         proofs = proof_map.get(char.id, [])
         total = len(all_bosses)
-        owned = sum(1 for b in all_bosses if b in souls)
-        verified = sum(1 for b in all_bosses if b in souls and souls[b]['is_verified'])
+        owned = sum(1 for b in all_bosses if b in souls and souls[b]['is_verified'])
         char_data.append({
             'character': char,
             'souls': souls,
             'proofs': proofs,
             'total': total,
             'owned': owned,
-            'verified': verified,
         })
     
     # Get current user's soul count
     user_soul_count = 0
     user_chars = Character.objects.filter(owner=request.user)
     for uc in user_chars:
-        user_soul_count += len(soul_map.get(uc.id, {}))
+        uc_souls = soul_map.get(uc.id, {})
+        user_soul_count += sum(1 for s in uc_souls.values() if s['is_verified'])
+    
+    # Collect unverified members for admin
+    unverified_names = set()
+    is_admin_user = _is_soul_admin(request.user)
+    if is_admin_user:
+        for soul in all_souls:
+            if not soul.is_verified:
+                unverified_names.add(soul.character.name)
+    unverified_names = sorted(list(unverified_names))
     
     context = {
         'char_data': char_data,
         'boss_groups': boss_groups,
         'all_bosses': all_bosses,
         'clan_filter': clan_filter,
-        'is_admin': _is_soul_admin(request.user),
+        'is_admin': is_admin_user,
         'user_soul_count': user_soul_count,
+        'unverified_names': unverified_names,
     }
     return render(request, 'items/soul_page.html', context)
 

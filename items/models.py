@@ -1700,6 +1700,7 @@ class UniversalPowerRank(models.Model):
 
     is_validated = models.BooleanField("Data Valid", default=False, help_text="Admin check to validate screenshot data matches written data")
     validation_notes = models.TextField("Validation Notes", blank=True, null=True, help_text="Alasan jika data tidak valid")
+    pending_changes = models.TextField("Pending Changes", blank=True, null=True, help_text="Catatan perubahan terakhir oleh user")
 
     def calculate_gear_score(self):
         """
