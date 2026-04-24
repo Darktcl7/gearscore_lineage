@@ -13,7 +13,8 @@ main { max-width:1400px !important; padding:20px !important; }
 .btn-update:hover { transform:translateY(-2px); box-shadow:0 5px 20px rgba(124,77,255,0.4); }
 .sc-tabs { display:flex; justify-content:center; gap:5px; padding:15px 20px; }
 .sc-tab { padding:10px 30px; border-radius:10px; font-weight:600; cursor:pointer; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.6); text-decoration:none; font-size:0.9rem; transition:all 0.3s; }
-.sc-tab.active { background:linear-gradient(135deg,rgba(150,100,255,0.3),rgba(100,60,200,0.4)); color:#fff; border-color:rgba(150,100,255,0.4); box-shadow:0 0 15px rgba(150,100,255,0.2); }
+.sc-tab.active.valkyrie { background:linear-gradient(135deg,rgba(255,215,0,0.3),rgba(255,179,0,0.4)); color:#ffd700; border-color:rgba(255,215,0,0.4); box-shadow:0 0 15px rgba(255,215,0,0.2); }
+.sc-tab.active.valhalla { background:linear-gradient(135deg,rgba(184,138,255,0.3),rgba(124,77,255,0.4)); color:#b88aff; border-color:rgba(184,138,255,0.4); box-shadow:0 0 15px rgba(184,138,255,0.2); }
 .sc-content { padding:20px 25px; }
 .sc-section-title { color:#fff; font-family:'Cinzel',serif; font-size:1.1rem; margin:0 0 15px; display:flex; align-items:center; gap:10px; justify-content:space-between; }
 .sc-section-title i { color:#b88aff; }
@@ -123,7 +124,32 @@ main { max-width:1400px !important; padding:20px !important; }
     .sc-table tbody td:nth-child(2) { min-width:120px; }
     .sc-section-title { font-size:0.9rem; }
 }
+    .btn-download-pdf {
+        background: rgba(150, 100, 255, 0.1);
+        color: #b88aff;
+        border: 1px solid rgba(150, 100, 255, 0.3);
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.3s;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-decoration: none;
+    }
+    .btn-download-pdf:hover {
+        background: rgba(150, 100, 255, 0.2);
+        color: #fff;
+        border-color: #b88aff;
+    }
 </style>
+<!-- PDF Export Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -140,14 +166,19 @@ main { max-width:1400px !important; padding:20px !important; }
     </div>
 
     <div class="sc-tabs">
-        <a href="?clan=Valkyrie" class="sc-tab {% if clan_filter == 'Valkyrie' %}active{% endif %}">Valkyrie</a>
-        <a href="?clan=Valhalla" class="sc-tab {% if clan_filter == 'Valhalla' %}active{% endif %}">Valhalla</a>
+        <a href="?clan=Valkyrie" class="sc-tab valkyrie {% if clan_filter == 'Valkyrie' %}active{% endif %}">Valkyrie</a>
+        <a href="?clan=Valhalla" class="sc-tab valhalla {% if clan_filter == 'Valhalla' %}active{% endif %}">Valhalla</a>
     </div>
 
     <div class="sc-content">
         <div class="sc-section-title">
             <span><i class="fas fa-trophy"></i> {{ clan_filter|upper }} SOUL RANKING</span>
-            <span style="color:rgba(255,255,255,0.4); font-size:0.8rem;">My Souls: {{ user_soul_count }} / {{ all_bosses|length }}</span>
+            <div style="display:flex; align-items:center; gap:15px;">
+                <span style="color:rgba(255,255,255,0.4); font-size:0.8rem;">My Souls: {{ user_soul_count }} / {{ all_bosses|length }}</span>
+                <button onclick="downloadSoulPdf()" class="btn-download-pdf">
+                    <i class="fas fa-file-pdf"></i> Download PDF
+                </button>
+            </div>
         </div>
 
         {% if char_data %}
@@ -176,7 +207,6 @@ main { max-width:1400px !important; padding:20px !important; }
                     </td>
                     <td>
                         <span style="font-weight:600; color:#fff;">{{ item.character.name }}</span>
-                        <span style="font-size:0.7rem; color:rgba(255,255,255,0.3); margin-left:5px;">{{ item.character.clan }}</span>
                     </td>
                     <td style="text-align:center;">
                         <span class="soul-count {% if item.owned >= 40 %}high{% elif item.owned >= 20 %}mid{% else %}low{% endif %}">{{ item.owned }}</span>
@@ -602,6 +632,74 @@ function showProofImg() {
 }
 function proofPrev() { proofIdx = (proofIdx - 1 + proofImages.length) % proofImages.length; showProofImg(); }
 function proofNext() { proofIdx = (proofIdx + 1) % proofImages.length; showProofImg(); }
+
+function downloadSoulPdf() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape' });
+    const now = new Date();
+    const timestamp = now.toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    const clan = "{{ clan_filter|escapejs }}";
+
+    // Collect data
+    const rows = document.querySelectorAll('.sc-table tbody tr:not([id^="bossRow"])');
+    const tableData = [];
+
+    rows.forEach(function(row) {
+        const tds = row.querySelectorAll('td');
+        if (tds.length < 5) return;
+
+        const rank = row.querySelector('.rank-num').textContent.trim();
+        const name = row.querySelector('td:nth-child(2)').textContent.trim().split('\n')[0];
+        const souls = row.querySelector('.soul-count').textContent.trim() + ' / ' + row.querySelector('td:nth-child(3) span:last-child').textContent.trim().replace('/ ', '');
+        
+        const progressFill = row.querySelector('.progress-bar-fill');
+        const progress = progressFill ? progressFill.style.width : '0%';
+        
+        const verified = row.getAttribute('data-verified') || '';
+        const bossList = verified.split(',').map(s => s.trim()).filter(Boolean).join(', ');
+        
+        tableData.push([
+            rank,
+            name,
+            souls,
+            progress,
+            bossList || 'None'
+        ]);
+    });
+
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('VALKYRIE - Soul Collection Leaderboard (' + clan + ')', 14, 15);
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100);
+    doc.text('Downloaded: ' + timestamp, 14, 22);
+    doc.setTextColor(0);
+
+    doc.autoTable({
+        startY: 27,
+        head: [['RANK', 'IGN', 'SOULS', 'PROGRESS', 'DETAILS (BOSS NAMES)']],
+        body: tableData,
+        theme: 'grid',
+        headStyles: { fillColor: [60, 30, 90], textColor: [184, 138, 255], fontStyle: 'bold', fontSize: 7 },
+        bodyStyles: { fontSize: 7, textColor: [50, 50, 50] },
+        alternateRowStyles: { fillColor: [245, 242, 250] },
+        columnStyles: {
+            0: { halign: 'center', cellWidth: 15 },
+            2: { halign: 'center', cellWidth: 25 },
+            3: { halign: 'center', cellWidth: 25 },
+            4: { cellWidth: 'auto' }
+        },
+        didDrawPage: function(data) {
+            doc.setFontSize(7);
+            doc.setTextColor(150);
+            doc.text('Generated by Valkyrie Portal | Clan: ' + clan + ' | ' + timestamp, 14, doc.internal.pageSize.height - 8);
+        }
+    });
+
+    doc.save('Soul_Collection_' + clan + '_' + now.toISOString().slice(0,10) + '.pdf');
+}
 
 {% if is_admin %}
 function bulkVerify(charId, action) {
