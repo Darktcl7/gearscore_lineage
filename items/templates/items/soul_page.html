@@ -51,7 +51,7 @@ main { max-width:1400px !important; padding:20px !important; }
 .soul-modal-close { background:none; border:none; color:rgba(255,255,255,0.5); font-size:1.5rem; cursor:pointer; padding:5px; }
 .soul-modal-close:hover { color:#fff; }
 .soul-modal-body { padding:20px 25px; }
-.upload-zone { border:2px dashed rgba(150,100,255,0.3); border-radius:12px; padding:15px; text-align:center; color:rgba(255,255,255,0.5); margin-bottom:15px; transition:all 0.3s; cursor:pointer; font-size:0.85rem; }
+.upload-zone { border:2px dashed rgba(150,100,255,0.3); border-radius:12px; padding:10px; text-align:center; color:rgba(255,255,255,0.5); margin-bottom:12px; transition:all 0.3s; cursor:pointer; font-size:0.8rem; }
 .upload-zone:hover { border-color:#b88aff; background:rgba(150,100,255,0.05); }
 .upload-zone.has-file { border-color:#88ffaa; background:rgba(0,200,80,0.05); color:#88ffaa; }
 .boss-group-title { color:#b88aff; font-family:'Cinzel',serif; font-size:0.9rem; margin:15px 0 8px; padding-bottom:5px; border-bottom:1px solid rgba(150,100,255,0.15); }
@@ -302,21 +302,21 @@ main { max-width:1400px !important; padding:20px !important; }
             <input type="hidden" id="modalCharId">
             <input type="hidden" id="modalIsAdmin" value="0">
 
-            <!-- Existing Proofs -->
-            <div id="existingProofs" style="margin-bottom:15px; display:none;">
-                <p style="color:rgba(255,255,255,0.5); font-size:0.75rem; margin-bottom:8px;"><i class="fas fa-images"></i> Existing Screenshots</p>
-                <div id="existingProofsList" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
-            </div>
-
-            <!-- Upload Proof -->
+            <!-- Upload Proof (Moved Top) -->
             <div id="uploadSection">
                 <div class="upload-zone" id="uploadZone" onclick="document.getElementById('proofFile').click()">
-                    <i class="fas fa-cloud-upload-alt" style="font-size:2rem; margin-bottom:10px; display:block;"></i>
+                    <i class="fas fa-cloud-upload-alt" style="font-size:1.5rem; margin-bottom:5px; display:block;"></i>
                     <strong>Upload Proof Screenshot</strong> <span id="uploadRequired" style="color:#ff8888;">(Required)</span>
-                    <p style="font-size:0.75rem; margin-top:5px;">Click to select your soul collection screenshot</p>
+                    <p style="font-size:0.7rem; margin-top:2px;">Click to select your soul collection screenshot</p>
                     <input type="file" id="proofFile" accept="image/*" style="display:none;" onchange="handleFileSelect(this)">
                 </div>
                 <div id="selectedFileName" style="text-align:center; color:#88ffaa; font-size:0.8rem; margin-bottom:15px; display:none;"></div>
+            </div>
+
+            <!-- Existing Proofs (Moved Bottom) -->
+            <div id="existingProofs" style="margin-bottom:15px; display:none;">
+                <p style="color:rgba(255,255,255,0.5); font-size:0.75rem; margin-bottom:8px;"><i class="fas fa-images"></i> Existing Screenshots</p>
+                <div id="existingProofsList" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
             </div>
 
             <!-- Boss Checkboxes -->
@@ -447,20 +447,22 @@ function openSoulModal(charId, charName, adminMode) {
 
     // Admin mode: no upload required, checkboxes enabled
     var area = document.getElementById('bossCheckboxArea');
+    // Admin mode: checkboxes enabled
+    var area = document.getElementById('bossCheckboxArea');
     if (isAdminMode) {
-        document.getElementById('uploadRequired').textContent = '(Optional)';
+        document.getElementById('uploadRequired').textContent = '(Required)';
         document.getElementById('btnSaveSoul').disabled = false;
         area.style.opacity = '1';
         area.style.pointerEvents = 'auto';
     } else {
         if (proofs.length > 0) {
-            document.getElementById('uploadRequired').textContent = '(Optional)';
+            document.getElementById('uploadRequired').textContent = '(Required)';
             // Has existing proofs, enable checkboxes
             document.getElementById('btnSaveSoul').disabled = false;
             area.style.opacity = '1';
             area.style.pointerEvents = 'auto';
         } else {
-            document.getElementById('uploadRequired').textContent = '(Required)';
+            document.getElementById('uploadRequired').textContent = '(Wajib)';
             document.getElementById('btnSaveSoul').disabled = true;
             area.style.opacity = '0.4';
             area.style.pointerEvents = 'none';
