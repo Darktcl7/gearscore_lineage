@@ -12,7 +12,8 @@ main { max-width:1400px !important; padding:20px !important; }
 .btn-update { background:linear-gradient(135deg,#b88aff,#7c4dff); color:#fff; border:none; padding:10px 20px; border-radius:10px; font-weight:600; cursor:pointer; font-size:0.9rem; display:inline-flex; align-items:center; gap:8px; transition:all 0.3s; text-decoration:none; }
 .btn-update:hover { transform:translateY(-2px); box-shadow:0 5px 20px rgba(124,77,255,0.4); }
 .sc-tabs { display:flex; justify-content:center; gap:5px; padding:15px 20px; }
-.sc-tab { padding:10px 30px; border-radius:10px; font-weight:600; cursor:pointer; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.6); text-decoration:none; font-size:0.9rem; transition:all 0.3s; }
+.sc-tab { padding:10px 25px; border-radius:10px; font-weight:600; cursor:pointer; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.6); text-decoration:none; font-size:0.85rem; transition:all 0.3s; min-width:100px; text-align:center; }
+.sc-tab.active.overall { background:linear-gradient(135deg,rgba(150,100,255,0.3),rgba(100,60,200,0.4)); color:#fff; border-color:rgba(150,100,255,0.4); box-shadow:0 0 15px rgba(150,100,255,0.2); }
 .sc-tab.active.valkyrie { background:linear-gradient(135deg,rgba(255,215,0,0.3),rgba(255,179,0,0.4)); color:#ffd700; border-color:rgba(255,215,0,0.4); box-shadow:0 0 15px rgba(255,215,0,0.2); }
 .sc-tab.active.valhalla { background:linear-gradient(135deg,rgba(184,138,255,0.3),rgba(124,77,255,0.4)); color:#b88aff; border-color:rgba(184,138,255,0.4); box-shadow:0 0 15px rgba(184,138,255,0.2); }
 .sc-content { padding:20px 25px; }
@@ -56,10 +57,13 @@ main { max-width:1400px !important; padding:20px !important; }
 .upload-zone.has-file { border-color:#88ffaa; background:rgba(0,200,80,0.05); color:#88ffaa; }
 .boss-group-title { color:#b88aff; font-family:'Cinzel',serif; font-size:0.9rem; margin:15px 0 8px; padding-bottom:5px; border-bottom:1px solid rgba(150,100,255,0.15); }
 .boss-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:6px; margin-bottom:15px; }
-.boss-check { display:flex; align-items:center; gap:6px; padding:5px 8px; border-radius:6px; cursor:pointer; transition:background 0.2s; font-size:0.8rem; color:rgba(255,255,255,0.7); }
+.boss-check { display:flex; align-items:center; gap:6px; padding:5px 8px; border-radius:6px; cursor:pointer; transition:all 0.2s; font-size:0.8rem; color:rgba(255,255,255,0.7); border: 1px solid transparent; }
 .boss-check:hover { background:rgba(150,100,255,0.1); }
 .boss-check input { accent-color:#b88aff; }
-.boss-check.disabled { opacity:0.4; pointer-events:none; }
+.boss-check.verified { color:#88ffaa; font-weight:600; border-color: rgba(136, 255, 170, 0.2); background: rgba(136, 255, 170, 0.05); }
+.boss-check.pending { color:#ffdd57; font-weight:600; border-color: rgba(255, 221, 87, 0.2); background: rgba(255, 221, 87, 0.05); }
+.boss-check.disabled { opacity:0.6; cursor:not-allowed; }
+.boss-check.disabled input { cursor:not-allowed; }
 .soul-modal-footer { padding:15px 25px; border-top:1px solid rgba(150,100,255,0.15); display:flex; justify-content:flex-end; gap:10px; position:sticky; bottom:0; background:#1a1a2e; border-radius:0 0 16px 16px; }
 .btn-save { background:linear-gradient(135deg,#88ffaa,#00c853); color:#000; border:none; padding:10px 25px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.9rem; }
 .btn-save:disabled { opacity:0.4; cursor:not-allowed; }
@@ -114,8 +118,11 @@ main { max-width:1400px !important; padding:20px !important; }
     .sc-table tbody td { padding:8px; font-size:0.8rem; }
     .progress-bar-bg { width:80px; }
     .boss-grid { grid-template-columns:repeat(auto-fill, minmax(120px, 1fr)); }
-    .soul-modal { max-height:95vh; border-radius:12px; }
-    .soul-modal-header h2 { font-size:1rem; }
+    .soul-modal { width:100%; height:100%; max-width:100%; max-height:100vh; border-radius:0; border:none; }
+    .soul-modal-overlay { padding:0; }
+    .soul-modal-header { border-radius:0; padding:15px; }
+    .soul-modal-footer { border-radius:0; }
+    .soul-modal-body { padding:15px; }
     .upload-zone { padding:12px; font-size:0.75rem; }
     .upload-zone i { font-size:1.5rem; }
     .btn-save, .btn-cancel { padding:10px 15px; font-size:0.85rem; flex:1; }
@@ -156,7 +163,7 @@ main { max-width:1400px !important; padding:20px !important; }
 <div class="sc-wrap">
     <div class="sc-header">
         <h1><i class="fas fa-ghost"></i> SOUL COLLECTION</h1>
-        <div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
             {% for uc in user_characters %}
             <button class="btn-update" onclick="openSoulModal({{ uc.pk }}, '{{ uc.name|escapejs }}')">
                 <i class="fas fa-plus-circle"></i> Update Soul ({{ uc.name }})
@@ -368,6 +375,28 @@ var bossGroups = {{ boss_groups_json|safe }};
 var csrfToken = '{{ csrf_token }}';
 var confirmCallback = null;
 
+// Leaderboard data (current clan filter)
+const charactersData = [
+    {% for item in char_data %}
+    {
+        character: { pk: {{ item.character.pk }}, name: "{{ item.character.name|escapejs }}" },
+        souls: { {% for b, s in item.souls.items %}"{{ b|escapejs }}": {"id":{{ s.id }}, "is_verified":{{ s.is_verified|yesno:"true,false" }}}{% if not forloop.last %},{% endif %}{% endfor %} },
+        proofs: [{% for p in item.proofs %}{"id":{{ p.id }},"url":"{{ p.url|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
+// User's own characters data (universal, regardless of clan filter)
+const userCharactersData = [
+    {% for item in user_char_data %}
+    {
+        character: { pk: {{ item.character_pk }}, name: "{{ item.character_name|escapejs }}" },
+        souls: { {% for b, s in item.souls.items %}"{{ b|escapejs }}": {"id":{{ s.id }}, "is_verified":{{ s.is_verified|yesno:"true,false" }}}{% if not forloop.last %},{% endif %}{% endfor %} },
+        proofs: [{% for p in item.proofs %}{"id":{{ p.id }},"url":"{{ p.url|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
 function showConfirm(msg, callback) {
     document.getElementById('confirmMsg').textContent = msg;
     confirmCallback = callback;
@@ -407,33 +436,32 @@ var isAdminMode = false;
 
 function openSoulModal(charId, charName, adminMode) {
     isAdminMode = !!adminMode;
+    // Priority: search in user's own characters first (universal data)
+    let char = userCharactersData.find(c => c.character.pk === charId);
+    
+    // If not found (e.g. admin opening someone else's), search in current leaderboard data
+    if (!char) {
+        char = charactersData.find(c => c.character.pk === charId);
+    }
+    
+    if (!char) {
+        showToast('Character data not found.', 'error');
+        return;
+    }
+
     document.getElementById('modalCharId').value = charId;
     document.getElementById('modalCharName').textContent = charName;
     document.getElementById('proofFile').value = '';
     document.getElementById('uploadZone').classList.remove('has-file');
     document.getElementById('selectedFileName').style.display = 'none';
 
-    // Load existing proofs
-    var mainRow = document.querySelector('tr[data-proofs]');
-    var rows = document.querySelectorAll('tr[data-proofs]');
-    var proofs = [];
-    rows.forEach(function(r) {
-        var bossRow = document.getElementById('bossRow_' + charId);
-        if (bossRow && r.nextElementSibling === bossRow) {
-            try { proofs = JSON.parse(r.getAttribute('data-proofs')); } catch(e) {}
-        }
-    });
-    // Try simpler approach: find bossRow's previous sibling
-    var bossRow = document.getElementById('bossRow_' + charId);
-    if (bossRow && bossRow.previousElementSibling) {
-        try { proofs = JSON.parse(bossRow.previousElementSibling.getAttribute('data-proofs')); } catch(e) {}
-    }
-
-    var proofsDiv = document.getElementById('existingProofs');
-    var proofsList = document.getElementById('existingProofsList');
+    // Load existing proofs from the character object
+    const proofs = char.proofs || [];
+    const proofsDiv = document.getElementById('existingProofs');
+    const proofsList = document.getElementById('existingProofsList');
     if (proofs.length > 0) {
         proofsDiv.style.display = 'block';
-        var ph = '';
+        let ph = '';
         proofs.forEach(function(p) {
             ph += '<div style="position:relative; display:inline-block;">';
             ph += '<img src="' + p.url + '" style="width:120px; height:120px; object-fit:cover; border-radius:6px; border:1px solid rgba(255,255,255,0.1); cursor:pointer;" onclick="openProofGallery(\'\', [\'' + p.url + '\'])">';
@@ -445,9 +473,7 @@ function openSoulModal(charId, charName, adminMode) {
         proofsDiv.style.display = 'none';
     }
 
-    // Admin mode: no upload required, checkboxes enabled
-    var area = document.getElementById('bossCheckboxArea');
-    // Admin mode: checkboxes enabled
+    // Admin/Upload Logic
     var area = document.getElementById('bossCheckboxArea');
     if (isAdminMode) {
         document.getElementById('uploadRequired').textContent = '(Required)';
@@ -457,29 +483,53 @@ function openSoulModal(charId, charName, adminMode) {
     } else {
         if (proofs.length > 0) {
             document.getElementById('uploadRequired').textContent = '(Required)';
-            // Has existing proofs, enable checkboxes
             document.getElementById('btnSaveSoul').disabled = false;
             area.style.opacity = '1';
             area.style.pointerEvents = 'auto';
         } else {
-            document.getElementById('uploadRequired').textContent = '(Wajib)';
+            document.getElementById('uploadRequired').textContent = '(Required)';
             document.getElementById('btnSaveSoul').disabled = true;
             area.style.opacity = '0.4';
             area.style.pointerEvents = 'none';
         }
     }
 
-    // Build checkboxes
+    // Build checkboxes using pre-loaded soul data
     var html = '<p style="color:rgba(255,255,255,0.5); font-size:0.75rem; margin-bottom:10px;"><i class="fas fa-info-circle"></i> Select the bosses whose souls you have collected</p>';
+    const charSouls = char.souls || {};
     bossGroups.forEach(function(g) {
         html += '<div class="boss-group-title">' + g.name + '</div><div class="boss-grid">';
         g.bosses.forEach(function(b) {
-            html += '<label class="boss-check"><input type="checkbox" name="boss" value="' + b + '"> ' + b + '</label>';
+            const soulData = charSouls[b];
+            const isOwned = !!soulData;
+            const isVerified = soulData && soulData.is_verified;
+            
+            const checkedAttr = isOwned ? 'checked' : '';
+            
+            // Status class
+            let statusClass = '';
+            let statusLabel = '';
+            if (isVerified) {
+                statusClass = 'verified';
+                statusLabel = ' <span style="font-size:0.6rem; opacity:0.8;">(Verified)</span>';
+            } else if (isOwned) {
+                statusClass = 'pending';
+                statusLabel = ' <span style="font-size:0.6rem; opacity:0.8;">(Pending)</span>';
+            }
+            
+            // Disable if verified and not in admin mode
+            const isDisabled = isVerified && !isAdminMode;
+            const disabledAttr = isDisabled ? 'disabled' : '';
+            const disabledClass = isDisabled ? 'disabled' : '';
+
+            html += '<label class="boss-check ' + statusClass + ' ' + disabledClass + '">';
+            html += '<input type="checkbox" name="boss" value="' + b + '" ' + checkedAttr + ' ' + disabledAttr + '> ' + b + statusLabel;
+            html += '</label>';
         });
         html += '</div>';
     });
     area.innerHTML = html;
-    loadExistingSouls(charId);
+
     document.getElementById('soulModal').classList.add('active');
     document.body.style.overflow = 'hidden';
 }

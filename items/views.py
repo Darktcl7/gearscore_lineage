@@ -2182,6 +2182,7 @@ def soul_page(request):
         characters = characters.filter(clan='Valkyrie')
     elif clan_filter == 'Valhalla':
         characters = characters.filter(clan='Valhalla')
+    # If Overall, no filtering by clan
     
     # Get all souls grouped by character
     all_souls = CharacterSoul.objects.select_related('character').all()
@@ -2281,8 +2282,21 @@ def soul_page(request):
     import json
     boss_groups_json = json.dumps(boss_groups)
     
+    # Build data for user's own characters (for the universal update buttons)
+    user_char_data = []
+    for uc in user_characters:
+        souls = soul_map.get(uc.id, {})
+        proofs = proof_map.get(uc.id, [])
+        user_char_data.append({
+            'character_pk': uc.pk,
+            'character_name': uc.name,
+            'souls': souls,
+            'proofs': proofs,
+        })
+    
     context = {
         'char_data': char_data,
+        'user_char_data': user_char_data,  # Essential for universal update
         'boss_groups': boss_groups,
         'boss_groups_json': boss_groups_json,
         'all_bosses': all_bosses,
