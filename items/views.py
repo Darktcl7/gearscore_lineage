@@ -1392,11 +1392,20 @@ def create_event(request):
 
         # Parse penalty points for mandatory events
         penalty_pts = 0
+        dkp_penalty_pts = 0
+        is_dkp_penalty = request.POST.get('is_dkp_penalty') == 'on'
+        
         if request.POST.get('is_mandatory') == 'on':
             try:
                 penalty_pts = int(request.POST.get('penalty_points', 5))
             except (ValueError, TypeError):
                 penalty_pts = 5
+                
+            if is_dkp_penalty:
+                try:
+                    dkp_penalty_pts = int(request.POST.get('dkp_penalty_points', 5))
+                except (ValueError, TypeError):
+                    dkp_penalty_pts = 5
         
         # Build event kwargs
         event_kwargs = {
@@ -1407,6 +1416,8 @@ def create_event(request):
             'is_repeatable': request.POST.get('is_repeatable') == 'on',
             'is_mandatory': request.POST.get('is_mandatory') == 'on',
             'mandatory_penalty': penalty_pts,
+            'is_dkp_penalty': is_dkp_penalty,
+            'dkp_mandatory_penalty': dkp_penalty_pts,
             'is_win': False,
             'max_points': event_points,
             'reward_diamond': reward_diamond,
@@ -1417,13 +1428,53 @@ def create_event(request):
             'reward_membership_points': reward_membership_points,
         }
         
-        # For INVASION, set default boss_point_config
+        # For INVASION, set default boss_point_config and mandatory penalties
         if event_type == 'INVASION':
             event_kwargs['boss_point_config'] = {
                 'dragon_beast': 50,
                 'carnifex': 25,
                 'orfen': 100,
             }
+            
+            if request.POST.get('is_mandatory') == 'on':
+                mandatory_penalties = {}
+                dkp_mandatory_penalties = {}
+                
+                if request.POST.get('mandatory_dragon_beast') == 'on':
+                    try:
+                        mandatory_penalties['dragon_beast'] = int(request.POST.get('penalty_dragon_beast', 5))
+                    except (ValueError, TypeError):
+                        pass
+                    if is_dkp_penalty:
+                        try:
+                            dkp_mandatory_penalties['dragon_beast'] = int(request.POST.get('dkp_penalty_dragon_beast', 5))
+                        except (ValueError, TypeError):
+                            pass
+                            
+                if request.POST.get('mandatory_carnifex') == 'on':
+                    try:
+                        mandatory_penalties['carnifex'] = int(request.POST.get('penalty_carnifex', 5))
+                    except (ValueError, TypeError):
+                        pass
+                    if is_dkp_penalty:
+                        try:
+                            dkp_mandatory_penalties['carnifex'] = int(request.POST.get('dkp_penalty_carnifex', 5))
+                        except (ValueError, TypeError):
+                            pass
+                            
+                if request.POST.get('mandatory_orfen') == 'on':
+                    try:
+                        mandatory_penalties['orfen'] = int(request.POST.get('penalty_orfen', 5))
+                    except (ValueError, TypeError):
+                        pass
+                    if is_dkp_penalty:
+                        try:
+                            dkp_mandatory_penalties['orfen'] = int(request.POST.get('dkp_penalty_orfen', 5))
+                        except (ValueError, TypeError):
+                            pass
+                
+                event_kwargs['mandatory_boss_penalties'] = mandatory_penalties
+                event_kwargs['dkp_mandatory_boss_penalties'] = dkp_mandatory_penalties
         
         event = ActivityEvent.objects.create(**event_kwargs)
         
@@ -1511,11 +1562,16 @@ def record_attendance(request, event_pk):
         # Mark absent for unselected
         for char in all_characters:
             if str(char.pk) not in selected_ids:
-                PlayerActivity.objects.update_or_create(
+                activity, created = PlayerActivity.objects.update_or_create(
                     player=char,
                     event=event,
                     defaults={'status': 'ABSENT', 'points_earned': 0, 'bosses_killed': {}}
                 )
+                activity.save()
+        
+        # Recalculate win streak bonuses since attendance status changed
+        from items.api_views import recalculate_win_streak_bonuses
+        recalculate_win_streak_bonuses()
         
         # Auto-calculate monthly reports
         from .services import calculate_monthly_reports

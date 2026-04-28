@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
-from .models import DKPEvent, DKPAttendance, DKPProfile, DKPLog, BossPointConfig, AdminRole, TreasuryItemConfig, TreasuryTransaction, Auction, AuctionBid
+from .models import DKPEvent, DKPAttendance, DKPProfile, DKPLog, BossPointConfig, AdminRole, TreasuryItemConfig, TreasuryTransaction, Auction, AuctionBid, WarehouseItem
 from items.models import Character, DiscordAnnouncement
 import json
 import os
@@ -954,6 +954,8 @@ def treasury_page(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    warehouse_items = WarehouseItem.objects.filter(clan=selected_clan).order_by('-created_at')
+
     from items.views import is_admin
     return render(request, 'dkp/treasury.html', {
         'profiles': profiles,
@@ -961,6 +963,7 @@ def treasury_page(request):
         'selected_clan': selected_clan,
         'clan_choices': clan_choices,
         'recent_transactions': page_obj,
+        'warehouse_items': warehouse_items,
         'is_super_admin': is_admin(request.user),
         'is_treasury_admin': has_treasury_access,
         'user_profile': user_profile,
@@ -1282,6 +1285,50 @@ def treasury_delete_logs(request):
                 return JsonResponse({'success': True, 'message': f'{deleted_count} logs deleted!'})
             else:
                 return JsonResponse({'success': False, 'error': 'No valid IDs selected'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'POST required'}, status=405)
+
+@login_required(login_url='/login/')
+def treasury_warehouse_add(request):
+    """Add a new item to the warehouse manually"""
+    if not is_treasury_admin(request.user):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+    if request.method == 'POST':
+        try:
+            item_name = request.POST.get('item_name', '').strip()
+            item_type = request.POST.get('item_type', '').strip()
+            quantity = int(request.POST.get('quantity', 1))
+            note = request.POST.get('note', '').strip()
+            clan = request.POST.get('clan', 'Valkyrie')
+            screenshot = request.FILES.get('screenshot')
+            
+            if not item_name or not item_type:
+                return JsonResponse({'error': 'Item Description and Type are required'}, status=400)
+                
+            item = WarehouseItem.objects.create(
+                item_name=item_name,
+                item_type=item_type,
+                quantity=quantity,
+                screenshot=screenshot,
+                note=note,
+                clan=clan,
+                created_by=request.user
+            )
+            return JsonResponse({
+                'success': True, 
+                'message': 'Item added to Warehouse!', 
+                'item_id': item.id,
+                'item': {
+                    'item_name': item.item_name,
+                    'item_type': item.item_type,
+                    'quantity': item.quantity,
+                    'screenshot_url': item.screenshot.url if item.screenshot else '',
+                    'note': item.note,
+                    'created_at': item.created_at.strftime('%d %b %Y %H:%M')
+                }
+            })
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'POST required'}, status=405)

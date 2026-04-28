@@ -376,16 +376,48 @@
                     <input type="checkbox" name="is_mandatory" id="is_mandatory" style="width: 20px; height: 20px; accent-color: #e74c3c;">
                     Mandatory Event
                 </label>
+                <label id="dkp-penalty-checkbox-label" style="display: none; align-items: center; gap: 10px; cursor: pointer; margin: 0; color: #3498db;">
+                    <input type="checkbox" name="is_dkp_penalty" id="is_dkp_penalty" style="width: 20px; height: 20px; accent-color: #3498db;">
+                    Apply DKP Penalty
+                </label>
                 <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0; color: #9b59b6;">
                     <input type="checkbox" name="is_repeatable" style="width: 20px; height: 20px; accent-color: #9b59b6;">
                     Repeatable Weekly (Auto-renew)
                 </label>
             </div>
 
-            <div class="form-group" id="penalty-points-group" style="display:none;">
-                <label for="penalty_points" style="color: #e74c3c;">Penalty Points (for absent members)</label>
-                <input type="number" name="penalty_points" id="penalty_points" value="5" min="1" max="100"
-                    placeholder="Points deducted for absence">
+            <div class="form-group" id="penalty-points-group" style="display:none; gap: 15px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 200px;">
+                    <label for="penalty_points" style="color: #e74c3c;">Activity Penalty Points (for absence)</label>
+                    <input type="number" name="penalty_points" id="penalty_points" value="5" min="1" max="100"
+                        placeholder="Activity Points deducted">
+                </div>
+            </div>
+
+            <div id="invasion-mandatory-bosses" style="display:none; background: rgba(231, 76, 60, 0.1); border: 1px solid rgba(231, 76, 60, 0.3); border-radius: 10px; padding: 20px; margin-bottom: 25px;">
+                <label style="display: block; color: #e74c3c; font-weight: 600; margin-bottom: 15px;"><i class="fas fa-exclamation-triangle"></i> Mandatory Invasion Bosses</label>
+                <p style="color: #bbb; font-size: 0.85rem; margin-top: 0; margin-bottom: 15px;">Pilih boss yang wajib dan tentukan penalty poin jika member tidak hadir pada boss tersebut.</p>
+                
+                <div class="boss-checkbox">
+                    <input type="checkbox" name="mandatory_dragon_beast" id="mandatory_dragon_beast" style="width: 20px; height: 20px; accent-color: #e74c3c;">
+                    <label for="mandatory_dragon_beast" style="flex: 1;">🐉 Dragon Beast</label>
+                    <input type="number" name="penalty_dragon_beast" id="penalty_dragon_beast" value="5" min="1" max="100" style="width: 80px; padding: 8px; border-radius: 6px; background: rgba(0,0,0,0.5); border: 1px solid #e74c3c; color: white;" placeholder="Act Pts" disabled title="Activity Penalty">
+                    <input type="number" name="dkp_penalty_dragon_beast" id="dkp_penalty_dragon_beast" value="5" min="1" max="1000" style="width: 80px; padding: 8px; border-radius: 6px; background: rgba(0,0,0,0.5); border: 1px solid #3498db; color: white; display: none;" placeholder="DKP" disabled title="DKP Penalty">
+                </div>
+                
+                <div class="boss-checkbox">
+                    <input type="checkbox" name="mandatory_carnifex" id="mandatory_carnifex" style="width: 20px; height: 20px; accent-color: #e74c3c;">
+                    <label for="mandatory_carnifex" style="flex: 1;">👹 Carnifex</label>
+                    <input type="number" name="penalty_carnifex" id="penalty_carnifex" value="5" min="1" max="100" style="width: 80px; padding: 8px; border-radius: 6px; background: rgba(0,0,0,0.5); border: 1px solid #e74c3c; color: white;" placeholder="Act Pts" disabled title="Activity Penalty">
+                    <input type="number" name="dkp_penalty_carnifex" id="dkp_penalty_carnifex" value="5" min="1" max="1000" style="width: 80px; padding: 8px; border-radius: 6px; background: rgba(0,0,0,0.5); border: 1px solid #3498db; color: white; display: none;" placeholder="DKP" disabled title="DKP Penalty">
+                </div>
+                
+                <div class="boss-checkbox">
+                    <input type="checkbox" name="mandatory_orfen" id="mandatory_orfen" style="width: 20px; height: 20px; accent-color: #e74c3c;">
+                    <label for="mandatory_orfen" style="flex: 1;">🕷️ Orfen</label>
+                    <input type="number" name="penalty_orfen" id="penalty_orfen" value="5" min="1" max="100" style="width: 80px; padding: 8px; border-radius: 6px; background: rgba(0,0,0,0.5); border: 1px solid #e74c3c; color: white;" placeholder="Act Pts" disabled title="Activity Penalty">
+                    <input type="number" name="dkp_penalty_orfen" id="dkp_penalty_orfen" value="5" min="1" max="1000" style="width: 80px; padding: 8px; border-radius: 6px; background: rgba(0,0,0,0.5); border: 1px solid #3498db; color: white; display: none;" placeholder="DKP" disabled title="DKP Penalty">
+                </div>
             </div>
 
             <div class="form-group" style="margin-top: 30px;">
@@ -446,12 +478,69 @@
                 pointsHint.textContent = '';
             }
         }
+        
+        toggleMandatoryFields();
     });
 
     // Toggle mandatory penalty points field
     document.getElementById('is_mandatory').addEventListener('change', function () {
+        toggleMandatoryFields();
+    });
+
+    document.getElementById('is_dkp_penalty').addEventListener('change', function () {
+        toggleMandatoryFields();
+    });
+
+    function toggleMandatoryFields() {
+        var isMandatory = document.getElementById('is_mandatory').checked;
+        var isDkp = document.getElementById('is_dkp_penalty').checked;
+        var evType = document.getElementById('event_type').value;
         var penaltyGroup = document.getElementById('penalty-points-group');
-        penaltyGroup.style.display = this.checked ? 'block' : 'none';
+        var invasionMandatoryBosses = document.getElementById('invasion-mandatory-bosses');
+        var dkpCheckboxLabel = document.getElementById('dkp-penalty-checkbox-label');
+        
+        // Only show DKP penalty checkbox for Invasion
+        if (evType === 'INVASION') {
+            dkpCheckboxLabel.style.display = 'flex';
+        } else {
+            dkpCheckboxLabel.style.display = 'none';
+            // Uncheck it if not invasion
+            document.getElementById('is_dkp_penalty').checked = false;
+            isDkp = false;
+        }
+        
+        if (isMandatory) {
+            if (evType === 'INVASION') {
+                penaltyGroup.style.display = 'none';
+                invasionMandatoryBosses.style.display = 'block';
+            } else {
+                penaltyGroup.style.display = 'flex';
+                invasionMandatoryBosses.style.display = 'none';
+            }
+        } else {
+            penaltyGroup.style.display = 'none';
+            invasionMandatoryBosses.style.display = 'none';
+        }
+        
+        ['dragon_beast', 'carnifex', 'orfen'].forEach(function(boss) {
+            var dkpInput = document.getElementById('dkp_penalty_' + boss);
+            if (dkpInput) {
+                dkpInput.style.display = (isDkp) ? 'inline-block' : 'none';
+            }
+        });
+    }
+
+    // Boss penalty inputs logic
+    ['dragon_beast', 'carnifex', 'orfen'].forEach(function(boss) {
+        var cb = document.getElementById('mandatory_' + boss);
+        var input = document.getElementById('penalty_' + boss);
+        var dkpInput = document.getElementById('dkp_penalty_' + boss);
+        if(cb && input) {
+            cb.addEventListener('change', function() {
+                input.disabled = !this.checked;
+                if (dkpInput) dkpInput.disabled = !this.checked;
+            });
+        }
     });
 
     // Reward checkbox toggle logic

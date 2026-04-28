@@ -448,6 +448,18 @@
                                     <span style="margin-left: 5px;">{{ activity.event.name }}</span>
                                     {% if activity.event.is_mandatory %}
                                     <span style="color: #e74c3c; margin-left: 5px; font-size: 0.8rem;" title="Mandatory Event"><i class="fas fa-exclamation-circle"></i> Mandatory</span>
+                                        {% if activity.event.event_type == 'INVASION' %}
+                                            {% with missed_bosses=activity.get_missed_mandatory_bosses %}
+                                                {% if missed_bosses %}
+                                                    <div style="font-size: 0.75rem; color: #e74c3c; margin-top: 4px; padding-left: 5px; border-left: 2px solid #e74c3c;">
+                                                        Missed: 
+                                                        {% for missed in missed_bosses %}
+                                                            {{ missed }}{% if not forloop.last %}, {% endif %}
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                            {% endwith %}
+                                        {% endif %}
                                     {% endif %}
                                 {% endif %}
                             </td>

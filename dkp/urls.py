@@ -36,6 +36,7 @@ urlpatterns = [
     path('treasury/reject/', views.treasury_reject_request, name='treasury-reject-request'),
     path('treasury/assign/', views.treasury_assign, name='treasury-assign'),
     path('treasury/delete-logs/', views.treasury_delete_logs, name='treasury-delete-logs'),
+    path('treasury/warehouse/add/', views.treasury_warehouse_add, name='treasury-warehouse-add'),
 
     # AUCTION SYSTEM (APIs for Discord Bot)
     path('api/auction/bid/', views.api_auction_bid, name='api-auction-bid'),

@@ -927,6 +927,9 @@
         <button class="cat-tab" data-cat="diamond_items" onclick="switchCat(this)">
             <i class="fas fa-gem"></i> 💎 Diamond Items
         </button>
+        <button class="cat-tab" data-cat="warehouse_keeper" onclick="switchCat(this)">
+            <i class="fas fa-warehouse"></i> 📦 Warehouse Keeper
+        </button>
     </div>
 
     <!-- Category Content Panels -->
@@ -934,6 +937,77 @@
     <div id="cat-blue_equipment" class="cat-content"></div>
     <div id="cat-other_items" class="cat-content"></div>
     <div id="cat-diamond_items" class="cat-content"></div>
+    <div id="cat-warehouse_keeper" class="cat-content">
+        <div style="margin-bottom: 20px; padding: 20px; background: rgba(0,0,0,0.4); border-radius: 12px; border: 1px solid rgba(255, 215, 0, 0.2);">
+            <h3 style="color: #FFD700; margin-top: 0; margin-bottom: 15px; font-family: 'Cinzel', serif;"><i class="fas fa-plus-circle"></i> Add Warehouse Item</h3>
+            <form id="warehouseAddForm" onsubmit="submitWarehouseItem(event)" enctype="multipart/form-data" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+                <div style="flex: 1; min-width: 200px;">
+                    <label style="display: block; font-size: 0.8rem; color: #888; margin-bottom: 5px;">Item Description</label>
+                    <input type="text" id="whItemName" required style="width: 100%; padding: 8px 12px; background: #1a1a1a; border: 1px solid #444; color: #fff; border-radius: 6px; box-sizing: border-box;" placeholder="Item Name...">
+                </div>
+                <div style="flex: 1; min-width: 150px;">
+                    <label style="display: block; font-size: 0.8rem; color: #888; margin-bottom: 5px;">Item Type</label>
+                    <input type="text" id="whItemType" required style="width: 100%; padding: 8px 12px; background: #1a1a1a; border: 1px solid #444; color: #fff; border-radius: 6px; box-sizing: border-box;" placeholder="Type (Weapon, Armor, etc)">
+                </div>
+                <div style="width: 100px;">
+                    <label style="display: block; font-size: 0.8rem; color: #888; margin-bottom: 5px;">Quantity</label>
+                    <input type="number" id="whQuantity" required min="1" value="1" style="width: 100%; padding: 8px 12px; background: #1a1a1a; border: 1px solid #444; color: #FFD700; border-radius: 6px; box-sizing: border-box;">
+                </div>
+                <div style="flex: 1; min-width: 150px;">
+                    <label style="display: block; font-size: 0.8rem; color: #888; margin-bottom: 5px;">Proof (Screenshot)</label>
+                    <input type="file" id="whScreenshot" accept="image/*" style="width: 100%; padding: 5px; background: #1a1a1a; border: 1px solid #444; color: #fff; border-radius: 6px; box-sizing: border-box;">
+                </div>
+                <div style="flex: 2; min-width: 250px;">
+                    <label style="display: block; font-size: 0.8rem; color: #888; margin-bottom: 5px;">Note</label>
+                    <input type="text" id="whNote" style="width: 100%; padding: 8px 12px; background: #1a1a1a; border: 1px solid #444; color: #fff; border-radius: 6px; box-sizing: border-box;" placeholder="Optional note...">
+                </div>
+                <div>
+                    <button type="submit" class="btn-settings-save" style="padding: 9px 20px;">
+                        <i class="fas fa-save"></i> Save Item
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="item-table-wrapper">
+            <table class="item-table" id="warehouseTable">
+                <thead>
+                    <tr>
+                        <th>Item Description</th>
+                        <th>Item Type</th>
+                        <th>Quantity</th>
+                        <th>Proof</th>
+                        <th>Note</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="warehouseTbody">
+                    {% for item in warehouse_items %}
+                    <tr>
+                        <td class="item-name">{{ item.item_name }}</td>
+                        <td style="color: #bbb;">{{ item.item_type }}</td>
+                        <td style="color: #FFD700; font-weight: bold;">{{ item.quantity }}</td>
+                        <td>
+                            {% if item.screenshot %}
+                            <a href="javascript:void(0)" onclick="openImageModal('{{ item.screenshot.url }}')" style="color: #5dade2; text-decoration: none;">
+                                <i class="fas fa-image"></i> View
+                            </a>
+                            {% else %}
+                            <span style="color: #555;">-</span>
+                            {% endif %}
+                        </td>
+                        <td style="color: #888; font-size: 0.8rem;">{{ item.note|default:"-" }}</td>
+                        <td style="color: #666; font-size: 0.8rem;">{{ item.created_at|date:"d M Y H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr id="noWarehouseRow">
+                        <td colspan="6" style="text-align: center; padding: 30px; color: #555;">No items in warehouse yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 
     <!-- Recent Transactions -->
     <div class="transactions-section">
@@ -1067,6 +1141,18 @@
 </div>
 {% endif %}
 
+<!-- Image View Modal -->
+<div class="confirm-overlay" id="imageModalOverlay">
+    <div class="confirm-modal" style="max-width: 800px; padding: 10px;">
+        <div class="confirm-header" style="justify-content: flex-end; padding-bottom: 0; border: none; min-height: auto;">
+            <button onclick="closeImageModal()" style="background:none; border:none; color:#888; font-size:1.5rem; cursor:pointer;"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="confirm-body" style="text-align: center; padding: 10px;">
+            <img id="imageModalSrc" src="" style="max-width: 100%; max-height: 70vh; border-radius: 8px; border: 1px solid #444;" alt="Proof Image">
+        </div>
+    </div>
+</div>
+
 <script>
 // ===== DATA =====
 var treasuryConfig = {{ config|safe }};
@@ -1101,6 +1187,15 @@ function switchCat(btn) {
     btn.classList.add('active');
     var cat = btn.getAttribute('data-cat');
     document.getElementById('cat-' + cat).classList.add('active');
+    
+    var txnSection = document.querySelector('.transactions-section');
+    if (txnSection) {
+        if (cat === 'warehouse_keeper') {
+            txnSection.style.display = 'none';
+        } else {
+            txnSection.style.display = 'block';
+        }
+    }
 }
 
 // ===== GENERIC CONFIRMATION =====
@@ -1842,6 +1937,72 @@ function saveSettings() {
     });
 }
 
+// ===== WAREHOUSE KEEPER =====
+function submitWarehouseItem(event) {
+    event.preventDefault();
+    var btn = event.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+    var formData = new FormData();
+    formData.append('item_name', document.getElementById('whItemName').value.trim());
+    formData.append('item_type', document.getElementById('whItemType').value.trim());
+    formData.append('quantity', document.getElementById('whQuantity').value);
+    formData.append('note', document.getElementById('whNote').value.trim());
+    formData.append('clan', selectedClan);
+    
+    var fileInput = document.getElementById('whScreenshot');
+    if (fileInput && fileInput.files.length > 0) {
+        formData.append('screenshot', fileInput.files[0]);
+    }
+
+    fetch('{% url "treasury-warehouse-add" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+        },
+        body: formData,
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data.success) {
+            showToast(data.message, 'success');
+            document.getElementById('warehouseAddForm').reset();
+            
+            // Add row to table
+            var tbody = document.getElementById('warehouseTbody');
+            var noRow = document.getElementById('noWarehouseRow');
+            if (noRow) noRow.remove();
+
+            var tr = document.createElement('tr');
+            var proofHtml = data.item.screenshot_url 
+                ? '<a href="javascript:void(0)" onclick="openImageModal(\'' + data.item.screenshot_url + '\')" style="color: #5dade2; text-decoration: none;"><i class="fas fa-image"></i> View</a>'
+                : '<span style="color: #555;">-</span>';
+                
+            tr.innerHTML = '<td class="item-name">' + data.item.item_name.replace(/</g, "&lt;").replace(/>/g, "&gt;") + '</td>' +
+                           '<td style="color: #bbb;">' + data.item.item_type.replace(/</g, "&lt;").replace(/>/g, "&gt;") + '</td>' +
+                           '<td style="color: #FFD700; font-weight: bold;">' + data.item.quantity + '</td>' +
+                           '<td>' + proofHtml + '</td>' +
+                           '<td style="color: #888; font-size: 0.8rem;">' + (data.item.note ? data.item.note.replace(/</g, "&lt;").replace(/>/g, "&gt;") : '-') + '</td>' +
+                           '<td style="color: #666; font-size: 0.8rem;">' + data.item.created_at + '</td>';
+            
+            tr.style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
+            tbody.insertBefore(tr, tbody.firstChild);
+            setTimeout(function() { tr.style.backgroundColor = ''; }, 1500);
+
+        } else {
+            showToast(data.error || 'Failed to save', 'error');
+        }
+    })
+    .catch(function(err) {
+        showToast('Network error: ' + err.message, 'error');
+    })
+    .finally(function() {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Save Item';
+    });
+}
+
 // ===== TOAST =====
 function showToast(message, type) {
     var container = document.getElementById('toastContainer');
@@ -1853,6 +2014,17 @@ function showToast(message, type) {
     setTimeout(function() {
         if (toast.parentNode) toast.parentNode.removeChild(toast);
     }, 3500);
+}
+
+// ===== IMAGE MODAL =====
+function openImageModal(url) {
+    document.getElementById('imageModalSrc').src = url;
+    document.getElementById('imageModalOverlay').style.display = 'flex';
+}
+
+function closeImageModal() {
+    document.getElementById('imageModalOverlay').style.display = 'none';
+    document.getElementById('imageModalSrc').src = '';
 }
 
 // ===== INIT =====

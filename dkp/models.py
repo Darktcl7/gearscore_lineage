@@ -287,3 +287,20 @@ class AuctionBid(models.Model):
     def __str__(self):
         return f"{self.profile.character.name} bid {self.amount} DKP on {self.auction.title}"
 
+class WarehouseItem(models.Model):
+    item_name = models.CharField("Item Description", max_length=200)
+    item_type = models.CharField("Item Type", max_length=100)
+    quantity = models.IntegerField("Quantity", default=1)
+    screenshot = models.ImageField("Screenshot Proof", upload_to='warehouse_proofs/', blank=True, null=True)
+    note = models.TextField("Note", blank=True, default='')
+    clan = models.CharField("Clan", max_length=50, default='Valkyrie')
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Warehouse Item"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.item_name} ({self.quantity})"
+

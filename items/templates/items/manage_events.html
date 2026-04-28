@@ -439,7 +439,20 @@
                         <span style="color: #9b59b6; margin-left: 5px; font-size: 0.9em;" title="Repeatable Weekly"><i class="fas fa-redo"></i></span>
                         {% endif %}
                         {% if event.is_mandatory %}
-                        <span style="color: #e74c3c; margin-left: 5px; font-size: 0.9em;" title="Mandatory Event (-{{ event.mandatory_penalty }} pts for absent)"><i class="fas fa-exclamation-circle"></i></span>
+                            {% if event.event_type == 'INVASION' %}
+                                <div style="margin-top: 5px; padding: 4px 8px; background: rgba(231, 76, 60, 0.1); border-left: 2px solid #e74c3c; border-radius: 4px; font-size: 0.8rem;">
+                                    <strong style="color: #e74c3c;"><i class="fas fa-exclamation-circle"></i> Mandatory Bosses:</strong>
+                                    <ul style="margin: 3px 0 0 15px; padding: 0; color: #ccc; list-style-type: square;">
+                                    {% for detail in event.get_mandatory_boss_details %}
+                                        <li>{{ detail }}</li>
+                                    {% empty %}
+                                        <li>None</li>
+                                    {% endfor %}
+                                    </ul>
+                                </div>
+                            {% else %}
+                                <span style="color: #e74c3c; margin-left: 5px; font-size: 0.9em;" title="Mandatory Event (-{{ event.mandatory_penalty }} Act{% if event.is_dkp_penalty %}, -{{ event.dkp_mandatory_penalty }} DKP{% endif %} for absent)"><i class="fas fa-exclamation-circle"></i></span>
+                            {% endif %}
                         {% endif %}
                     </td>
                     <td>{{ event.date|date:"M d, Y H:i" }}</td>

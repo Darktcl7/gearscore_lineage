@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import DKPEvent, DKPProfile, DKPAttendance, DKPLog, AdminRole, TreasuryItemConfig, TreasuryTransaction
+from .models import DKPEvent, DKPProfile, DKPAttendance, DKPLog, AdminRole, TreasuryItemConfig, TreasuryTransaction, WarehouseItem
 
 class AttendanceInline(admin.TabularInline):
     model = DKPAttendance
@@ -70,3 +70,9 @@ class TreasuryTransactionAdmin(admin.ModelAdmin):
     list_display = ('profile', 'item_name', 'amount_deducted', 'currency', 'clan', 'created_at', 'created_by')
     list_filter = ('currency', 'clan', 'item_category', 'created_at')
     search_fields = ('profile__character__name', 'item_name')
+
+@admin.register(WarehouseItem)
+class WarehouseItemAdmin(admin.ModelAdmin):
+    list_display = ('item_name', 'item_type', 'quantity', 'clan', 'created_at')
+    list_filter = ('clan', 'item_type')
+    search_fields = ('item_name',)
