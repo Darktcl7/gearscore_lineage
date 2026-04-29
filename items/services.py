@@ -149,6 +149,16 @@ def calculate_monthly_reports(year=None, month=None):
     }
 
 
+def sync_event_dkp_penalties(event):
+    """
+    Reconcile DKP penalties for one event using the current verified attendance data.
+    Safe to call repeatedly after admin edits attendance.
+    """
+    activities = PlayerActivity.objects.filter(event=event).select_related('player', 'event', 'dkp_penalty_log')
+    for activity in activities:
+        activity.sync_dkp_penalty()
+
+
 def calculate_prize_distribution(year, month):
     """
     Calculate prize distribution for all qualified players.

@@ -12,7 +12,7 @@ import json
 from datetime import datetime
 
 from .models import ActivityEvent, PlayerActivity, Character, MonthlyReport, DiscordAlarm, DiscordAnnouncement
-from .services import calculate_monthly_reports, recalculate_event_points
+from .services import calculate_monthly_reports, recalculate_event_points, sync_event_dkp_penalties
 
 # ... (Existing code) ...
 
@@ -581,6 +581,7 @@ def api_toggle_event_status(request, event_pk):
                 pass
         
         event.save()
+        sync_event_dkp_penalties(event)
         
         # Auto-announce to Discord when event is COMPLETED
         if event.is_completed:

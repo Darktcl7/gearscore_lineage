@@ -1500,6 +1500,14 @@ class PlayerActivity(models.Model):
 
     # Flag to ensure DKP penalty is applied only once
     dkp_penalty_applied = models.BooleanField(default=False)
+    dkp_penalty_amount_applied = models.IntegerField(default=0)
+    dkp_penalty_log = models.ForeignKey(
+        'dkp.DKPLog',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='activity_penalties'
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -1552,49 +1560,107 @@ class PlayerActivity(models.Model):
                 
         super().save(*args, **kwargs)
 
-        # Apply DKP Penalty if enabled and not yet applied
-        if self.event.is_mandatory and self.event.is_dkp_penalty and not self.dkp_penalty_applied and self.pk:
-            dkp_penalty_amount = 0
-            missed_details = []
-            
-            if self.status == 'ATTENDED' and self.event.event_type == 'INVASION':
-                # Check missed mandatory bosses for DKP penalty
+    def calculate_dkp_penalty_state(self):
+        """
+        Calculate the DKP penalty that should exist for this attendance record.
+        This only returns the desired state; applying/removing the penalty is handled separately.
+        """
+        if not (self.event.is_mandatory and self.event.is_dkp_penalty):
+            return 0, ""
+
+        dkp_penalty_amount = 0
+        missed_details = []
+
+        if self.status == 'ATTENDED' and self.event.event_type == 'INVASION':
+            mandatory_map = self.event.dkp_mandatory_boss_penalties or {}
+            for boss, penalty in mandatory_map.items():
+                if penalty > 0 and not self.bosses_killed.get(boss, False):
+                    dkp_penalty_amount -= abs(penalty)
+                    boss_name = boss.replace('_', ' ').title()
+                    missed_details.append(f"{boss_name} (-{abs(penalty)} DKP)")
+        elif self.status == 'ABSENT':
+            if self.event.event_type == 'INVASION':
                 mandatory_map = self.event.dkp_mandatory_boss_penalties or {}
                 for boss, penalty in mandatory_map.items():
-                    if penalty > 0 and not self.bosses_killed.get(boss, False):
+                    if penalty > 0:
                         dkp_penalty_amount -= abs(penalty)
                         boss_name = boss.replace('_', ' ').title()
                         missed_details.append(f"{boss_name} (-{abs(penalty)} DKP)")
-            elif self.status == 'ABSENT':
-                if self.event.event_type == 'INVASION':
-                    mandatory_map = self.event.dkp_mandatory_boss_penalties or {}
-                    for boss, penalty in mandatory_map.items():
-                        if penalty > 0:
-                            dkp_penalty_amount -= abs(penalty)
-                            boss_name = boss.replace('_', ' ').title()
-                            missed_details.append(f"{boss_name} (-{abs(penalty)} DKP)")
-                else:
-                    dkp_penalty_amount -= abs(self.event.dkp_mandatory_penalty)
-            
-            if dkp_penalty_amount < 0:
-                from dkp.models import DKPProfile, DKPLog
-                profile, created = DKPProfile.objects.get_or_create(character=self.player)
-                profile.current_dkp += dkp_penalty_amount
-                profile.save()
-                
-                note_text = "Mandatory event absence"
-                if missed_details:
-                    note_text = "Missed: " + ", ".join(missed_details)
-                
-                DKPLog.objects.create(
+            else:
+                dkp_penalty_amount -= abs(self.event.dkp_mandatory_penalty)
+
+        if dkp_penalty_amount >= 0:
+            return 0, ""
+
+        note_text = "Mandatory event absence"
+        if missed_details:
+            note_text = "Missed: " + ", ".join(missed_details)
+
+        return dkp_penalty_amount, note_text
+
+    def sync_dkp_penalty(self):
+        """
+        Synchronize the DKP wallet/log to match the current verified attendance state.
+        Penalty is only active after the event is completed.
+        """
+        if not self.pk:
+            return
+
+        desired_amount = 0
+        desired_note = ""
+        if self.event.is_completed:
+            desired_amount, desired_note = self.calculate_dkp_penalty_state()
+
+        current_amount = self.dkp_penalty_amount_applied or 0
+        delta = desired_amount - current_amount
+
+        from dkp.models import DKPProfile, DKPLog
+
+        if delta != 0:
+            profile, _ = DKPProfile.objects.get_or_create(character=self.player)
+            profile.current_dkp += delta
+            profile.save(update_fields=['current_dkp'])
+
+        log = self.dkp_penalty_log
+        if desired_amount < 0:
+            profile, _ = DKPProfile.objects.get_or_create(character=self.player)
+            reason = f"Penalty: {self.event.name}"
+
+            if log:
+                updates = []
+                if log.profile_id != profile.pk:
+                    log.profile = profile
+                    updates.append('profile')
+                if log.amount != desired_amount:
+                    log.amount = desired_amount
+                    updates.append('amount')
+                if log.reason != reason:
+                    log.reason = reason
+                    updates.append('reason')
+                if log.note != desired_note:
+                    log.note = desired_note
+                    updates.append('note')
+                if updates:
+                    log.save(update_fields=updates)
+            else:
+                log = DKPLog.objects.create(
                     profile=profile,
-                    amount=dkp_penalty_amount,
-                    reason=f"Penalty: {self.event.name}",
-                    note=note_text
+                    amount=desired_amount,
+                    reason=reason,
+                    note=desired_note
                 )
-                
-                PlayerActivity.objects.filter(pk=self.pk).update(dkp_penalty_applied=True)
-                self.dkp_penalty_applied = True
+        elif log:
+            log.delete()
+            log = None
+
+        PlayerActivity.objects.filter(pk=self.pk).update(
+            dkp_penalty_applied=(desired_amount < 0),
+            dkp_penalty_amount_applied=desired_amount,
+            dkp_penalty_log=log,
+        )
+        self.dkp_penalty_applied = desired_amount < 0
+        self.dkp_penalty_amount_applied = desired_amount
+        self.dkp_penalty_log = log
 
     def get_missed_mandatory_bosses(self):
         if not self.event.is_mandatory or self.event.event_type != 'INVASION':

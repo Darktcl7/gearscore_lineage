@@ -1282,6 +1282,9 @@ def complete_event(request, event_pk):
             event.is_win_valhalla = event.is_win
         event.is_completed = True
         event.save()
+
+        from .services import sync_event_dkp_penalties
+        sync_event_dkp_penalties(event)
         
         # Count participants (only ATTENDED)
         participant_count = PlayerActivity.objects.filter(event=event, status='ATTENDED').count()
@@ -1572,6 +1575,9 @@ def record_attendance(request, event_pk):
         # Recalculate win streak bonuses since attendance status changed
         from items.api_views import recalculate_win_streak_bonuses
         recalculate_win_streak_bonuses()
+
+        from .services import sync_event_dkp_penalties
+        sync_event_dkp_penalties(event)
         
         # Auto-calculate monthly reports
         from .services import calculate_monthly_reports
