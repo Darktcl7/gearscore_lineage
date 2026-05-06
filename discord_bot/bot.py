@@ -70,6 +70,48 @@ class AltoBot(commands.Cog):
     async def cog_load(self):
         self.session = aiohttp.ClientSession()
 
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.author.bot:
+            return
+            
+        # KDA Proof Forum Channel (Thread Messages)
+        if hasattr(message.channel, 'parent_id') and message.channel.parent_id == 1501434952565391513:
+            # Check if this is the first message of the thread or contains an attachment
+            if message.attachments:
+                import re
+                from datetime import datetime
+                
+                content = message.content.lower()
+                
+                kill_match = re.search(r'kill[\s:]*(\d+)', content)
+                assist_match = re.search(r'assist[\s:]*(\d+)', content)
+                
+                if kill_match or assist_match:
+                    kills = kill_match.group(1) if kill_match else 0
+                    assists = assist_match.group(1) if assist_match else 0
+                    image_url = message.attachments[0].url
+                    discord_id = str(message.author.id)
+                    war_date = datetime.now().strftime('%Y-%m-%d')
+                    
+                    data = {
+                        'discord_id': discord_id,
+                        'kill_count': kills,
+                        'assist_count': assists,
+                        'image_url': image_url,
+                        'war_date': war_date
+                    }
+                    
+                    try:
+                        result = await self.api_request('POST', '/portal/api/war-point/submit/', data)
+                        if result and result.get('success'):
+                            await message.reply("✅ Data KDA berhasil diterima! Menunggu validasi Admin di website.")
+                        else:
+                            error_msg = result.get('error', 'Unknown error') if result else 'Failed to connect to API'
+                            await message.reply(f"❌ Gagal mengirim data KDA: {error_msg}")
+                    except Exception as e:
+                        await message.reply(f"❌ Terjadi kesalahan: {str(e)}")
+
     @tasks.loop(seconds=5)
     async def reminder_loop(self):
         try:

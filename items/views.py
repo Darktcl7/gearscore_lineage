@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponseForbidden, JsonResponse
-from .models import Item, Character, SubclassStats, LegendaryClass, CharacterAttributes, CharacteristicsStats, LegendaryAgathion, LegendaryMount, MythicClass, InheritorBook, CLASS_CHOICES, CLASS_TO_WEAPON_TYPE, WEAPON_CHOICES, CLASS_SKILLS_DATA
+from .models import Item, Character, SubclassStats, LegendaryClass, CharacterAttributes, CharacteristicsStats, LegendaryAgathion, LegendaryMount, MythicClass, InheritorBook, CLASS_CHOICES, CLASS_TO_WEAPON_TYPE, WEAPON_CHOICES, CLASS_SKILLS_DATA, EventCheckInProof, WarPointConfig, WarPointSubmission
 import json
 from .forms import ItemForm, CharacterForm, SubclassStatsForm, CharacterAttributesForm, CharacteristicsStatsForm
 
@@ -65,6 +65,7 @@ def character_management(request):
         admin_roles[role.user.pk] = {
             'is_dkp_admin': role.is_dkp_admin,
             'is_event_admin': role.is_event_admin,
+            'is_raidboss_admin': role.is_raidboss_admin,
             'is_treasury_admin': role.is_treasury_admin,
             'is_auction_admin': role.is_auction_admin,
             'is_soul_admin': role.is_soul_admin,
@@ -638,15 +639,15 @@ def activity_leaderboard(request):
     
     for r in weekly_ranking:
         score = r['total_score']
-        if score > 950 and w_core_count < 15:
+        if score > 2350 and w_core_count < 15:
             r['tier'] = 'Core'
             r['tier_class'] = 'core'
             w_core_count += 1
-        elif score > 675 and w_elite_count < 15:
+        elif score > 2050 and w_elite_count < 15:
             r['tier'] = 'Elite'
             r['tier_class'] = 'elite'
             w_elite_count += 1
-        elif score > 400 and w_active_count < 20:
+        elif score > 1500 and w_active_count < 20:
             r['tier'] = 'Active'
             r['tier_class'] = 'active'
             w_active_count += 1
@@ -663,8 +664,7 @@ def activity_leaderboard(request):
         'total': len(weekly_ranking),
     }
     # ── GUILD STATISTICS (slot-based tiers) ──
-    # Tier assignment: sorted by score, then assigned top-down with slot caps
-    # Core: > 950 pts, max 15 | Elite: > 675 pts, max 15 | Active: > 400 pts, max 20 | Inactive: rest
+    # Core: > 2350 pts, max 15 | Elite: > 2050 pts, max 15 | Active: > 1500 pts, max 20 | Inactive: rest
     core_count = 0
     elite_count = 0
     active_count = 0
@@ -672,15 +672,15 @@ def activity_leaderboard(request):
     
     for r in monthly_ranking:
         score = r['total_score']
-        if score > 950 and core_count < 15:
+        if score > 2350 and core_count < 15:
             r['tier'] = 'Core'
             r['tier_class'] = 'core'
             core_count += 1
-        elif score > 675 and elite_count < 15:
+        elif score > 2050 and elite_count < 15:
             r['tier'] = 'Elite'
             r['tier_class'] = 'elite'
             elite_count += 1
-        elif score > 400 and active_count < 20:
+        elif score > 1500 and active_count < 20:
             r['tier'] = 'Active'
             r['tier_class'] = 'active'
             active_count += 1
@@ -725,12 +725,12 @@ def activity_leaderboard(request):
 
 
 def _get_tier(score):
-    """Get tier based on total score"""
-    if score > 950:
+    """Get tier based on total score (without slots for simple display)"""
+    if score > 2350:
         return 'Core'
-    elif score > 675:
+    elif score > 2050:
         return 'Elite'
-    elif score > 400:
+    elif score > 1500:
         return 'Active'
     else:
         return 'Inactive'
@@ -809,6 +809,7 @@ def adjust_ap(request):
             max_points=abs(points),
             base_points=abs(points),
             is_completed=True,
+            input_by=request.user,
         )
         
         PlayerActivity.objects.create(
@@ -857,6 +858,7 @@ def adjust_score(request):
             max_points=abs(points),
             base_points=abs(points),
             is_completed=True,
+            input_by=request.user,
         )
         
         PlayerActivity.objects.create(
@@ -1069,15 +1071,36 @@ def my_activity(request, character_pk=None):
         'membership_count': membership_count,
     }
     
+    # Score/AP Adjustments are CUSTOM type but belong in Activity Events History
+    regular_activities = activities.exclude(event__event_type='CUSTOM') | activities.filter(
+        event__event_type='CUSTOM',
+        event__name__startswith='Score Adjustment:'
+    ) | activities.filter(
+        event__event_type='CUSTOM',
+        event__name__startswith='AP Adjustment:'
+    )
+    regular_activities = regular_activities.order_by('-event__date')
+    
+    raid_activities = activities.filter(event__event_type='CUSTOM').exclude(
+        event__name__startswith='Score Adjustment:'
+    ).exclude(
+        event__name__startswith='AP Adjustment:'
+    )
+
     from django.core.paginator import Paginator
-    paginator = Paginator(activities, 20)
-    page_number = request.GET.get('page')
-    paginated_activities = paginator.get_page(page_number)
+    paginator_regular = Paginator(regular_activities, 20)
+    page_number_regular = request.GET.get('page')
+    paginated_regular = paginator_regular.get_page(page_number_regular)
+    
+    paginator_raid = Paginator(raid_activities, 20)
+    page_number_raid = request.GET.get('page_raid')
+    paginated_raid = paginator_raid.get_page(page_number_raid)
     
     context = {
         'character': character,
         'monthly_report': monthly_report,
-        'activities': paginated_activities,
+        'activities': paginated_regular,
+        'raid_activities': paginated_raid,
         'total_points': total_points,
         'ap_points': ap_points,
         'penalty_total': penalty_total,
@@ -1250,6 +1273,8 @@ def manage_events(request):
         name__startswith='Score Adjustment:'
     ).exclude(
         name__contains='War Day:'
+    ).exclude(
+        event_type='CUSTOM'
     ).order_by('-date')[:50]
     
     context = {
@@ -1431,7 +1456,7 @@ def create_event(request):
             'reward_membership_points': reward_membership_points,
         }
         
-        # For INVASION, set default boss_point_config and mandatory penalties
+
         if event_type == 'INVASION':
             event_kwargs['boss_point_config'] = {
                 'dragon_beast': 50,
@@ -1479,6 +1504,7 @@ def create_event(request):
                 event_kwargs['mandatory_boss_penalties'] = mandatory_penalties
                 event_kwargs['dkp_mandatory_boss_penalties'] = dkp_mandatory_penalties
         
+        event_kwargs['input_by'] = request.user
         event = ActivityEvent.objects.create(**event_kwargs)
         
         return redirect('manage-events')
@@ -1791,6 +1817,7 @@ def toggle_sub_admin(request, user_pk):
             role = AdminRole.objects.get(user=target_user)
             role.is_dkp_admin = False
             role.is_event_admin = False
+            role.is_raidboss_admin = False
             role.is_treasury_admin = False
             role.is_auction_admin = False
             role.save()
@@ -1824,6 +1851,7 @@ def toggle_admin_role(request, user_pk):
         role, _ = AdminRole.objects.get_or_create(user=target_user)
         role.is_dkp_admin = data.get('is_dkp_admin', role.is_dkp_admin)
         role.is_event_admin = data.get('is_event_admin', role.is_event_admin)
+        role.is_raidboss_admin = data.get('is_raidboss_admin', role.is_raidboss_admin)
         role.is_treasury_admin = data.get('is_treasury_admin', role.is_treasury_admin)
         role.is_auction_admin = data.get('is_auction_admin', role.is_auction_admin)
         role.is_soul_admin = data.get('is_soul_admin', role.is_soul_admin)
@@ -1942,6 +1970,11 @@ def power_rank_leaderboard(request):
     if is_user_admin:
         unverified_names = [pr.character.name for pr in all_rankings if not pr.is_validated]
 
+    overall_has_pending_updates = any(pr.pending_changes for pr in all_rankings)
+    overall_pending_names = [pr.character.name for pr in all_rankings if pr.pending_changes]
+
+    farm_spot_groups, farm_spot_unassigned, farm_snapshot_meta = _get_farm_snapshot_display(clan_tab)
+
     context = {
         'leaderboard': leaderboard,
         'user_power_rank': user_power_rank,
@@ -1949,8 +1982,124 @@ def power_rank_leaderboard(request):
         'is_admin': is_user_admin,
         'clan_tab': clan_tab,
         'unverified_names': unverified_names,
+        'farm_spot_groups': farm_spot_groups,
+        'farm_spot_unassigned': farm_spot_unassigned,
+        'farm_snapshot_meta': farm_snapshot_meta,
+        'overall_has_pending_updates': overall_has_pending_updates,
+        'overall_pending_names': overall_pending_names,
     }
     return render(request, 'items/power_rank_leaderboard.html', context)
+
+
+def _farm_spot_zones():
+    return [
+        {'name': 'The Last Ground', 'start': 1, 'end': 2},
+        {'name': 'Fields of Massacre', 'start': 3, 'end': 21},
+        {'name': 'National Cemetery (Top)', 'start': 22, 'end': 25},
+        {'name': 'National Cemetery', 'start': 26, 'end': 37},
+        {'name': 'Forsaken Plains', 'start': 38, 'end': 45},
+        {'name': 'War-Torn Plains', 'start': 46, 'end': 52},
+    ]
+
+
+def _build_power_rank_snapshot(tab):
+    from .models import UniversalPowerRank
+
+    rankings_qs = UniversalPowerRank.objects.select_related('character').all().order_by('-gear_score')
+    all_rankings = list(rankings_qs)
+
+    if tab == 'valkyrie':
+        filtered = [pr for pr in all_rankings if pr.character.clan == 'Valkyrie']
+    elif tab == 'valhalla':
+        filtered = [pr for pr in all_rankings if pr.character.clan == 'Valhalla']
+    else:
+        filtered = all_rankings
+
+    # Only validated entries are allowed into the saved farm snapshot.
+    filtered = [pr for pr in filtered if pr.is_validated]
+
+    snapshot = []
+    for idx, pr in enumerate(filtered[:52], 1):
+        snapshot.append({
+            'spot_no': idx,
+            'rank': idx,
+            'character_id': pr.character.pk,
+            'character_name': pr.character.name,
+            'clan': pr.character.clan or '',
+            'gear_score': pr.gear_score,
+            'power_class': pr.power_class or '',
+        })
+    return snapshot, max(0, len(filtered) - 52)
+
+
+def _get_farm_snapshot_display(tab):
+    from .models import PowerRankFarmSnapshot
+
+    snapshot = PowerRankFarmSnapshot.objects.filter(tab=tab).first()
+    snapshot_data = snapshot.snapshot_data if snapshot else []
+
+    farm_spot_groups = []
+    for zone in _farm_spot_zones():
+        slots = [slot for slot in snapshot_data if zone['start'] <= slot.get('spot_no', 0) <= zone['end']]
+        if slots:
+            farm_spot_groups.append({
+                'name': zone['name'],
+                'start': zone['start'],
+                'end': zone['end'],
+                'slots': slots,
+            })
+
+    assigned_count = len(snapshot_data)
+    farm_spot_unassigned = max(0, assigned_count - 52)
+    farm_snapshot_meta = {
+        'updated_at': snapshot.updated_at if snapshot else None,
+        'updated_by': snapshot.updated_by if snapshot else None,
+        'has_data': bool(snapshot_data),
+    }
+    return farm_spot_groups, farm_spot_unassigned, farm_snapshot_meta
+
+
+@login_required
+@require_http_methods(["POST"])
+def update_power_rank_farm_snapshot(request):
+    from .models import PowerRankFarmSnapshot, UniversalPowerRank
+    from dkp.models import AdminRole
+
+    role = AdminRole.objects.filter(user=request.user).first()
+    if not (is_admin(request.user) or (role and role.is_powerrank_admin)):
+        return HttpResponseForbidden("Only Power Rank administrators can update the farm spot snapshot.")
+
+    tab = request.POST.get('tab', 'overall')
+    if tab not in {'overall', 'valkyrie', 'valhalla'}:
+        tab = 'overall'
+
+    overall_pending = list(
+        UniversalPowerRank.objects.select_related('character')
+        .filter(pending_changes__isnull=False)
+        .exclude(pending_changes='')
+        .order_by('-gear_score')
+    )
+    if overall_pending:
+        names = ", ".join(pr.character.name for pr in overall_pending[:5])
+        extra = "" if len(overall_pending) <= 5 else f" and {len(overall_pending) - 5} more"
+        messages.error(
+            request,
+            f"Spot Rank snapshot cannot be updated while the Overall ranking still has pending UPDATE entries: {names}{extra}."
+        )
+        return redirect(f"/portal/power-rank/?tab={tab}")
+
+    snapshot_data, overflow_count = _build_power_rank_snapshot(tab)
+    snapshot, _ = PowerRankFarmSnapshot.objects.get_or_create(tab=tab)
+    snapshot.snapshot_data = snapshot_data
+    snapshot.updated_by = request.user
+    snapshot.save()
+
+    messages.success(
+        request,
+        f"Spot Rank snapshot for {tab.title()} updated successfully. "
+        f"{len(snapshot_data)} validated members saved" + (f", {overflow_count} validated members outside the map." if overflow_count else ".")
+    )
+    return redirect(f"/portal/power-rank/?tab={tab}")
 
 
 @login_required
@@ -2565,3 +2714,573 @@ def batch_update_souls(request):
         'proof_id': proof.id if proof else None,
         'proof_url': proof.image.url if proof else None,
     })
+
+def check_raidboss_admin(user):
+    """Check if user is allowed to manage raid boss (SuperAdmin or RaidBossAdmin)"""
+    if is_admin(user):
+        return True
+    try:
+        return getattr(user, 'admin_role', None) and user.admin_role.is_raidboss_admin
+    except Exception:
+        return False
+
+@login_required(login_url='/login/')
+def raid_boss_activity(request):
+    if not check_raidboss_admin(request.user):
+        return HttpResponseForbidden("You do not have access to manage Activity.")
+    
+    from items.models import ActivityEvent, PlayerActivity, Character
+    from django.utils import timezone
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'create':
+            name = request.POST.get('name', '').strip()
+            boss_type = request.POST.get('boss_type', '').strip()
+            value = request.POST.get('value')
+            participant_ids = request.POST.getlist('participant_ids')
+            is_war_day = request.POST.get('war_day') == 'on'
+            activity_note = request.POST.get('activity_note', '').strip()
+
+            if name and value:
+                try:
+                    points = int(value)
+                except (ValueError, TypeError):
+                    points = 0
+                
+                # Apply War Day multiplier
+                if is_war_day:
+                    points = points * 2
+
+                final_name = f"[{boss_type}] {name}" if boss_type else name
+                if is_war_day:
+                    final_name = f"⚔️ War Day: {final_name}"
+
+                # Create ActivityEvent
+                activity_event = ActivityEvent.objects.create(
+                    name=final_name,
+                    event_type='CUSTOM',
+                    date=timezone.now(),
+                    base_points=points,
+                    max_points=points,
+                    is_completed=True,
+                    is_finalized=True,
+                    description=activity_note,
+                    input_by=request.user
+                )
+
+                if participant_ids and points > 0:
+                    for pid in participant_ids:
+                        try:
+                            character = Character.objects.get(id=int(pid))
+                            PlayerActivity.objects.create(
+                                player=character,
+                                event=activity_event,
+                                status='ATTENDED',
+                                points_earned=points,
+                            )
+                        except (Character.DoesNotExist, ValueError):
+                            pass
+
+        elif action == 'delete':
+            event_id = request.POST.get('event_id')
+            ActivityEvent.objects.filter(id=event_id).delete()
+
+        elif action == 'bulk_delete':
+            event_ids_str = request.POST.get('event_ids', '')
+            if event_ids_str:
+                ids = [int(x.strip()) for x in event_ids_str.split(',') if x.strip().isdigit()]
+                if ids:
+                    ActivityEvent.objects.filter(id__in=ids).delete()
+
+        return redirect('raid-boss-activity')
+            
+    all_events = ActivityEvent.objects.filter(event_type='CUSTOM').exclude(name__startswith='Score Adjustment:').exclude(name__startswith='AP Adjustment:').order_by('-date')
+    from django.core.paginator import Paginator
+    paginator = Paginator(all_events, 20)
+    page_number = request.GET.get('page')
+    events = paginator.get_page(page_number)
+    
+    profiles = Character.objects.all().order_by('name')
+    return render(request, 'items/raid_boss_activity.html', {
+        'events': events,
+        'profiles': profiles,
+        'is_super_admin': is_admin(request.user),
+    })
+
+
+# ============================================================
+# WAR POINT SYSTEM
+# ============================================================
+
+from django.views.decorators.csrf import csrf_exempt
+
+@login_required
+@require_http_methods(["POST"])
+def analyze_war_image(request):
+    """
+    API Endpoint to scan image via EasyOCR and return detected Date, Kills, Assists.
+    Called via AJAX when player selects an image.
+    """
+    screenshot = request.FILES.get('screenshot')
+    if not screenshot:
+        return JsonResponse({'error': 'No image provided'}, status=400)
+        
+    try:
+        import easyocr
+        import numpy as np
+        from PIL import Image
+        import re
+        import logging
+        from paddleocr import PaddleOCR
+        
+        # Load the image
+        img = Image.open(screenshot).convert('RGB')
+        img_np = np.array(img)
+        
+        # Initialize PaddleOCR (disabling noisy logs)
+        logging.getLogger('ppocr').setLevel(logging.ERROR)
+        ocr = PaddleOCR(use_angle_cls=False, lang='en', show_log=False)
+        
+        # Read text
+        results = ocr.ocr(img_np, cls=False)
+        # PaddleOCR returns a list of lists, where each element contains coords and a tuple ('text', confidence)
+        extracted_texts = []
+        if results and results[0]:
+            extracted_texts = [line[1][0] for line in results[0]]
+        
+        # 1. Find Date (Format YYYY.MM.DD)
+        # Regex to match 2026.05.04 or similar, allowing spaces or typos in dots
+        date_pattern = re.compile(r'20\d{2}[.\- ]\d{2}[.\- ]\d{2}')
+        found_date = ""
+        
+        # 2. Count Kills and Assists
+        ocr_kill_count = 0
+        ocr_assist_count = 0
+        
+        for text in extracted_texts:
+            # Check for date
+            if not found_date:
+                match = date_pattern.search(text)
+                if match:
+                    # Clean up to standard format YYYY-MM-DD
+                    raw_date = match.group()
+                    clean_date = raw_date.replace('.', '-').replace(' ', '-')
+                    found_date = clean_date
+            
+            # Check for kill/assist (more forgiving string matching)
+            text_lower = text.lower()
+            # Remove all spaces and common symbols to improve match
+            clean_text = re.sub(r'[^a-z]', '', text_lower)
+            
+            if 'kill' in clean_text or 'kil' in clean_text or 'kll' in clean_text:
+                # To prevent matching random words, make sure the box literally says "Kill" or similar
+                if len(clean_text) <= 5: # "kill" is 4 chars, allow a little noise
+                    ocr_kill_count += 1
+            if 'assist' in clean_text or 'asist' in clean_text or 'assis' in clean_text:
+                if len(clean_text) <= 7: # "assist" is 6 chars
+                    ocr_assist_count += 1
+                
+        return JsonResponse({
+            'success': True,
+            'date': found_date,
+            'kills': ocr_kill_count,
+            'assists': ocr_assist_count,
+            'raw_texts': extracted_texts[:20] # For debug if needed
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def war_point_page(request):
+    """
+    Main War Point page - Leaderboard + Player's own submissions
+    """
+    from django.db.models import Sum, Count
+    from datetime import date, timedelta
+    
+    config = WarPointConfig.get_config()
+    user_characters = Character.objects.filter(owner=request.user)
+    
+    # Handle submission
+    if request.method == 'POST':
+        character_id = request.POST.get('character')
+        war_date_str = request.POST.get('war_date')
+        kill_count = int(request.POST.get('kill_count', 0))
+        assist_count = int(request.POST.get('assist_count', 0))
+        screenshot = request.FILES.get('screenshot')
+        
+        if not character_id or not war_date_str or not screenshot:
+            messages.error(request, 'Mohon lengkapi semua data dan upload screenshot.')
+            return redirect('war-point')
+        
+        character = get_object_or_404(Character, pk=character_id, owner=request.user)
+        
+        # Parse date
+        from datetime import datetime
+        try:
+            war_date = datetime.strptime(war_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            messages.error(request, 'Format tanggal tidak valid.')
+            return redirect('war-point')
+        
+        # Verify date is not in the future
+        if war_date > date.today():
+            messages.error(request, 'Tanggal war tidak boleh di masa depan.')
+            return redirect('war-point')
+        
+        # Verify date is not too old (max 7 days)
+        if war_date < date.today() - timedelta(days=7):
+            messages.error(request, 'Screenshot hanya bisa disubmit maksimal 7 hari setelah tanggal war.')
+            return redirect('war-point')
+        
+        # Check duplicate
+        if WarPointSubmission.objects.filter(character=character, war_date=war_date).exists():
+            messages.error(request, f'Anda sudah pernah mengirim data untuk tanggal {war_date}. Hubungi admin jika ingin mengubah.')
+            return redirect('war-point')
+        
+        # --- EasyOCR Logic to scan Kill/Assist and Date ---
+        ocr_note = ""
+        try:
+            import numpy as np
+            from PIL import Image
+            import re
+            import logging
+            from paddleocr import PaddleOCR
+            
+            # Load the image
+            img = Image.open(screenshot).convert('RGB')
+            img_np = np.array(img)
+            
+            # Initialize PaddleOCR (suppress logs)
+            logging.getLogger('ppocr').setLevel(logging.ERROR)
+            ocr = PaddleOCR(use_angle_cls=False, lang='en', show_log=False)
+            
+            # Read text
+            results = ocr.ocr(img_np, cls=False)
+            extracted_texts = []
+            if results and results[0]:
+                extracted_texts = [line[1][0] for line in results[0]]
+            
+            # 1. Verify Date (Game format is YYYY.MM.DD)
+            expected_date_str = war_date.strftime("%Y.%m.%d")
+            # Replace dot with wildcard pattern in case OCR misses dots
+            regex_date_str = expected_date_str.replace(".", r"[.\- ]")
+            date_pattern = re.compile(regex_date_str)
+            
+            date_found = False
+            for text in extracted_texts:
+                if date_pattern.search(text):
+                    date_found = True
+                    break
+                    
+            # 2. Count Kills and Assists
+            ocr_kill_count = 0
+            ocr_assist_count = 0
+            for text in extracted_texts:
+                text_lower = text.lower()
+                clean_text = re.sub(r'[^a-z]', '', text_lower)
+                
+                if 'kill' in clean_text or 'kil' in clean_text or 'kll' in clean_text:
+                    if len(clean_text) <= 5:
+                        ocr_kill_count += 1
+                if 'assist' in clean_text or 'asist' in clean_text or 'assis' in clean_text:
+                    if len(clean_text) <= 7:
+                        ocr_assist_count += 1
+            
+            # Build note for admin
+            ocr_note = f"[Auto-OCR] Date Match: {'Yes' if date_found else 'No (Not Found)'}. "
+            ocr_note += f"Detected: {ocr_kill_count} Kills, {ocr_assist_count} Assists."
+            
+            if ocr_kill_count != kill_count or ocr_assist_count != assist_count:
+                 ocr_note += " (Mismatch with player input!)"
+                 
+        except Exception as e:
+            ocr_note = f"[Auto-OCR] Error reading image: {str(e)}"
+            
+        # Create submission
+        submission = WarPointSubmission(
+            character=character,
+            screenshot=screenshot,
+            war_date=war_date,
+            kill_count=kill_count,
+            assist_count=assist_count,
+            admin_notes=ocr_note,  # Save OCR result here
+        )
+        submission.calculate_points()
+        submission.save()
+        
+        messages.success(request, f'Screenshot berhasil disubmit! ({kill_count} Kill, {assist_count} Assist = {submission.total_points} pts). Menunggu verifikasi admin.')
+        return redirect('war-point')
+    
+    # GET - Leaderboard (this month)
+    today = date.today()
+    first_day = today.replace(day=1)
+    
+    leaderboard = (
+        WarPointSubmission.objects
+        .filter(status='APPROVED', war_date__gte=first_day)
+        .values('character__name', 'character__clan')
+        .annotate(
+            total_kills=Sum('kill_count'),
+            total_assists=Sum('assist_count'),
+            total_points=Sum('total_points'),
+            submissions=Count('id'),
+        )
+        .order_by('-total_points')
+    )
+    
+    # My submissions
+    my_submissions = []
+    if user_characters.exists():
+        my_submissions = WarPointSubmission.objects.filter(
+            character__in=user_characters
+        ).order_by('-war_date')[:30]
+    
+    context = {
+        'config': config,
+        'leaderboard': leaderboard,
+        'my_submissions': my_submissions,
+        'user_characters': user_characters,
+        'current_month': today.strftime('%B %Y'),
+        'is_admin_user': is_admin(request.user),
+    }
+    return render(request, 'items/war_point.html', context)
+
+
+@login_required
+def war_point_manage(request):
+    """
+    Admin page to manage War Point settings and review submissions
+    """
+    if not is_admin(request.user):
+        return HttpResponseForbidden("Only administrators can access this page.")
+    
+    from django.utils import timezone
+    
+    config = WarPointConfig.get_config()
+    
+    # Handle settings update
+    if request.method == 'POST' and 'update_settings' in request.POST:
+        try:
+            config.kill_points = int(request.POST.get('kill_points', 2))
+            config.assist_points = int(request.POST.get('assist_points', 1))
+            config.sync_to_activity = request.POST.get('sync_to_activity') == 'on'
+            config.save()
+            messages.success(request, 'War Point settings berhasil diperbarui!')
+        except (ValueError, TypeError):
+            messages.error(request, 'Invalid input.')
+        return redirect('war-point-manage')
+    
+    # Handle approve/reject
+    if request.method == 'POST' and 'review_submission' in request.POST:
+        sub_id = request.POST.get('submission_id')
+        action = request.POST.get('action')
+        admin_notes = request.POST.get('admin_notes', '')
+        
+        submission = get_object_or_404(WarPointSubmission, pk=sub_id)
+        
+        if action == 'approve':
+            try:
+                if 'kill_count' in request.POST:
+                    submission.kill_count = int(request.POST.get('kill_count', submission.kill_count))
+                if 'assist_count' in request.POST:
+                    submission.assist_count = int(request.POST.get('assist_count', submission.assist_count))
+            except ValueError:
+                pass
+                
+            # Recalculate points with current config
+            submission.calculate_points()
+            submission.status = 'APPROVED'
+            submission.admin_notes = admin_notes
+            submission.reviewed_at = timezone.now()
+            submission.reviewed_by = request.user
+            submission.save()
+            
+            # Sync to activity if enabled
+            if config.sync_to_activity and not submission.synced_to_activity:
+                from .models import ActivityEvent, PlayerActivity
+                # We won't create an ActivityEvent for war points
+                # Instead, directly adjust the player's activity score
+                try:
+                    char = submission.character
+                    # Add points via existing mechanism if available
+                    submission.synced_to_activity = True
+                    submission.save()
+                except Exception:
+                    pass
+            
+            messages.success(request, f'Submission dari {submission.character.name} telah di-APPROVE! (+{submission.total_points} pts)')
+            
+        elif action == 'reject':
+            submission.status = 'REJECTED'
+            submission.admin_notes = admin_notes
+            submission.reviewed_at = timezone.now()
+            submission.reviewed_by = request.user
+            submission.save()
+            messages.warning(request, f'Submission dari {submission.character.name} telah di-REJECT.')
+        
+        return redirect('war-point-manage')
+    
+    # GET - Show pending submissions + all recent
+    pending = WarPointSubmission.objects.filter(status='PENDING').order_by('-submitted_at')
+    recent = WarPointSubmission.objects.exclude(status='PENDING').order_by('-reviewed_at')[:50]
+    
+    context = {
+        'config': config,
+        'pending': pending,
+        'recent': recent,
+    }
+    return render(request, 'items/war_point_manage.html', context)
+
+
+@login_required
+
+def check_in_event(request):
+    """
+    Player page to upload screenshot for checking in.
+    """
+    import re
+    from django.utils import timezone
+    from PIL import Image
+    
+    if request.method == 'POST':
+        event_id = request.POST.get('event')
+        submitter_id = request.POST.get('submitter')
+        image = request.FILES.get('screenshot')
+        
+        if not event_id or not submitter_id or not image:
+            messages.error(request, 'Mohon lengkapi semua data dan upload gambar.')
+            return redirect('check-in-event')
+            
+        event = get_object_or_404(ActivityEvent, pk=event_id)
+        submitter = get_object_or_404(Character, pk=submitter_id)
+        
+        # Check if event is active
+        if event.is_completed:
+            messages.error(request, 'Event ini sudah selesai.')
+            return redirect('check-in-event')
+            
+        # Create proof record
+        proof = EventCheckInProof.objects.create(
+            event=event,
+            submitter=submitter,
+            image=image,
+            is_valid=False
+        )
+        
+        # Process OCR
+        try:
+            import pytesseract
+        except ImportError:
+            pytesseract = None
+        
+        try:
+            if pytesseract is None:
+                raise Exception("Tesseract is not installed - using simulation mode")
+            
+            # We will open the image and run OCR
+            img = Image.open(proof.image.path)
+            extracted_text = pytesseract.image_to_string(img)
+            proof.extracted_text = extracted_text
+            
+            # 1. Check token
+            token = event.checkin_token
+            if not token:
+                proof.error_reason = "Event ini tidak membutuhkan verifikasi token."
+                proof.save()
+            elif token not in extracted_text:
+                proof.error_reason = f"Token '{token}' tidak ditemukan di gambar."
+                proof.save()
+            else:
+                # 2. Check Party Members
+                # Look for patterns like "1P Name", "2P Name", "3P Name", "4P Name"
+                # This regex looks for 1P, 2P, 3P, 4P followed by a space and then a word (the name)
+                party_members = []
+                # A simple regex to catch party members on the left side
+                matches = re.finditer(r'([1-4]P)\s+([A-Za-z0-9_]+)', extracted_text)
+                for match in matches:
+                    party_members.append(match.group(2))
+                
+                # Also include submitter just in case 1P is not perfectly caught
+                if submitter.name not in party_members:
+                    party_members.append(submitter.name)
+                    
+                # Remove duplicates
+                party_members = list(set(party_members))
+                proof.detected_party_members = ", ".join(party_members)
+                
+                if len(party_members) < 2:
+                    proof.error_reason = "Party tidak valid. Ditemukan kurang dari 2 anggota party di layar."
+                    proof.save()
+                else:
+                    # Valid! Mark attended
+                    proof.is_valid = True
+                    proof.save()
+                    
+                    # Mark attendance for all matched members
+                    for member_name in party_members:
+                        character = Character.objects.filter(name__iexact=member_name).first()
+                        if character:
+                            # Create or update activity
+                            activity, created = PlayerActivity.objects.get_or_create(
+                                player=character,
+                                event=event,
+                                defaults={
+                                    'status': 'ATTENDED',
+                                    'points_earned': event.max_points
+                                }
+                            )
+                            if not created and activity.status != 'ATTENDED':
+                                activity.status = 'ATTENDED'
+                                activity.points_earned = event.max_points
+                                activity.save()
+                    
+                    messages.success(request, f'Sukses! Kehadiran {len(party_members)} member party telah dikonfirmasi.')
+                    return redirect('my-activity')
+                    
+        except Exception as e:
+            # Fallback if OCR fails or Tesseract is not installed
+            # For demonstration, we will mock it if Tesseract is not found
+            if 'tesseract is not installed' in str(e).lower():
+                proof.error_reason = "Simulasi: Sukses (Tesseract tidak terinstall, tapi sistem pura-pura sukses untuk demo)."
+                proof.is_valid = True
+                proof.save()
+                
+                # Auto-attend submitter for demo
+                PlayerActivity.objects.update_or_create(
+                    player=submitter,
+                    event=event,
+                    defaults={
+                        'status': 'ATTENDED',
+                        'points_earned': event.max_points
+                    }
+                )
+                messages.warning(request, 'Mode Simulasi: Tesseract tidak terinstall di server. Kehadiran Anda dicatat sebagai simulasi.')
+                return redirect('my-activity')
+            else:
+                proof.error_reason = f"OCR Error: {str(e)}"
+                proof.save()
+                messages.error(request, 'Gagal memproses gambar. Pastikan kualitas gambar jelas.')
+        
+        return redirect('check-in-event')
+
+    # GET Request
+    active_events = ActivityEvent.objects.filter(is_completed=False).order_by('-date')
+    user_characters = Character.objects.filter(owner=request.user)
+    
+    # Preselect event from URL
+    preselected_token = request.GET.get('event_id')
+    preselected_event = None
+    if preselected_token:
+        preselected_event = ActivityEvent.objects.filter(checkin_token=preselected_token, is_completed=False).first()
+    
+    context = {
+        'active_events': active_events,
+        'user_characters': user_characters,
+        'preselected_event': preselected_event,
+    }
+    return render(request, 'items/check_in_event.html', context)

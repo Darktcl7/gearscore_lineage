@@ -2,6 +2,7 @@
 
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.contrib.auth.models import User
 
 
 
@@ -1333,13 +1334,12 @@ class CharacteristicsStats(models.Model):
     def __str__(self):
         return f"Characteristics Stats for {self.character.name}"
 
-
-
-
 class ActivityEvent(models.Model):
-    """Model untuk event/aktivitas guild"""
+    "\"\"Model untuk event/aktivitas guild\"\""
     EVENT_TYPE_CHOICES = (
-        ('INVASION', '⚔️ Invasion'),
+        ('INV_DRAGON_BEAST', '⚔️ Invasion Dragon Beast'),
+        ('INV_CARNIFEX', '⚔️ Invasion Carnifex'),
+        ('INV_ORFEN', '⚔️ Invasion Orfen'),
         ('BOSS_RUSH', '🐉 Boss Rush'),
         ('CATACOMBS', '🏰 Catacombs'),
         ('DIMENSIONAL', '🌀 Dimensional Siege'),
@@ -1348,9 +1348,10 @@ class ActivityEvent(models.Model):
         ('CUSTOM', '📋 Custom'),
     )
 
-    # Default points per event type (used in create_event view)
     DEFAULT_POINTS = {
-        'INVASION': 0,        # INVASION uses boss_point_config, no flat points
+        'INV_DRAGON_BEAST': 0,
+        'INV_CARNIFEX': 0,
+        'INV_ORFEN': 0,
         'BOSS_RUSH': 100,
         'CATACOMBS': 50,
         'DIMENSIONAL': 100,
@@ -1420,9 +1421,14 @@ class ActivityEvent(models.Model):
     reward_key_points = models.IntegerField("Key Points", default=0)
     reward_membership = models.BooleanField("Reward Membership", default=False)
     reward_membership_points = models.IntegerField("Membership Points", default=0)
+
+    # Token Verification
+    checkin_token = models.CharField("Check-in Token", max_length=10, blank=True, null=True)
+    token_expires_at = models.DateTimeField("Token Expires At", blank=True, null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    input_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='input_events', verbose_name="Input By")
 
     def save(self, *args, **kwargs):
         if not self.event_id:
@@ -1928,6 +1934,26 @@ class PowerRankScreenshot(models.Model):
         ordering = ['-uploaded_at']
 
 
+class PowerRankFarmSnapshot(models.Model):
+    TAB_CHOICES = [
+        ('overall', 'Overall'),
+        ('valkyrie', 'Valkyrie'),
+        ('valhalla', 'Valhalla'),
+    ]
+
+    tab = models.CharField(max_length=20, choices=TAB_CHOICES, unique=True)
+    snapshot_data = models.JSONField(default=list, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Power Rank Farm Snapshot"
+        verbose_name_plural = "Power Rank Farm Snapshots"
+
+    def __str__(self):
+        return f"Farm Snapshot - {self.tab}"
+
+
 # ======================================================
 # HALL OF FAME
 # ======================================================
@@ -2005,3 +2031,100 @@ class CharacterSoulProof(models.Model):
 
     class Meta:
         ordering = ['-uploaded_at']
+
+# ======================================================
+# GLOBAL SETTINGS / FEATURE TOGGLES
+# ======================================================
+class FeatureToggle(models.Model):
+    enable_dkp_system = models.BooleanField("Enable DKP System Menu", default=False)
+    
+    def __str__(self):
+        return "Global Feature Toggles"
+    
+    class Meta:
+        verbose_name = "Feature Toggle"
+        verbose_name_plural = "Feature Toggles"
+
+
+
+class EventCheckInProof(models.Model):
+    event = models.ForeignKey(ActivityEvent, on_delete=models.CASCADE, related_name='checkin_proofs')
+    submitter = models.ForeignKey(Character, on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='checkin_proofs/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    is_valid = models.BooleanField(default=False)
+    extracted_text = models.TextField(blank=True, null=True)
+    detected_party_members = models.TextField(blank=True, null=True)
+    error_reason = models.CharField(max_length=255, blank=True, null=True)
+    
+    def __str__(self):
+        return f"Proof for {self.event.name} by {self.submitter.name}"
+
+
+class WarPointConfig(models.Model):
+    """Singleton config for War Point system - admin sets kill/assist point values"""
+    kill_points = models.IntegerField("Points per Kill", default=2)
+    assist_points = models.IntegerField("Points per Assist", default=1)
+    sync_to_activity = models.BooleanField(
+        "Sync to Activity Points", default=False,
+        help_text="Jika dicentang, War Points juga akan ditambahkan ke Activity Points player"
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        # Singleton pattern: always use pk=1
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_config(cls):
+        config, _ = cls.objects.get_or_create(pk=1)
+        return config
+
+    def __str__(self):
+        return f"War Point Config (Kill: {self.kill_points}pts, Assist: {self.assist_points}pts)"
+
+    class Meta:
+        verbose_name = "War Point Config"
+        verbose_name_plural = "War Point Config"
+
+
+class WarPointSubmission(models.Model):
+    """Player submission of kill/assist screenshot for War Points"""
+    STATUS_CHOICES = (
+        ('PENDING', '⏳ Pending Review'),
+        ('APPROVED', '✅ Approved'),
+        ('REJECTED', '❌ Rejected'),
+    )
+
+    character = models.ForeignKey(Character, on_delete=models.CASCADE, related_name='war_submissions')
+    screenshot = models.ImageField("Screenshot Bukti", upload_to='war_points/')
+    war_date = models.DateField("Tanggal War", help_text="Tanggal war yang ditampilkan di screenshot")
+    kill_count = models.IntegerField("Jumlah Kill", default=0, help_text="Total kill dari screenshot")
+    assist_count = models.IntegerField("Jumlah Assist", default=0, help_text="Total assist dari screenshot")
+    kill_points_earned = models.IntegerField("Kill Points Earned", default=0)
+    assist_points_earned = models.IntegerField("Assist Points Earned", default=0)
+    total_points = models.IntegerField("Total War Points", default=0)
+    status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    admin_notes = models.TextField("Admin Notes", blank=True, null=True)
+    synced_to_activity = models.BooleanField("Synced to Activity", default=False)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(blank=True, null=True)
+    reviewed_by = models.ForeignKey(
+        'auth.User', on_delete=models.SET_NULL, blank=True, null=True,
+        related_name='war_reviews'
+    )
+
+    def calculate_points(self):
+        config = WarPointConfig.get_config()
+        self.kill_points_earned = self.kill_count * config.kill_points
+        self.assist_points_earned = self.assist_count * config.assist_points
+        self.total_points = self.kill_points_earned + self.assist_points_earned
+
+    def __str__(self):
+        return f"{self.character.name} - {self.war_date} ({self.kill_count}K/{self.assist_count}A)"
+
+    class Meta:
+        ordering = ['-submitted_at']
+        unique_together = ['character', 'war_date']
+

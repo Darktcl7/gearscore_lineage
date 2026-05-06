@@ -138,3 +138,5 @@ class HallOfFameAdmin(admin.ModelAdmin):
     ordering = ['-contribution']
 
 admin.site.register(HallOfFame, HallOfFameAdmin)
+from items.models import FeatureToggle
+admin.site.register(FeatureToggle)

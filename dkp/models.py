@@ -88,6 +88,8 @@ class AdminRole(models.Model):
         help_text="Access to verify/manage Soul collections")
     is_powerrank_admin = models.BooleanField("Power Rank Admin", default=False,
         help_text="Access to verify Power Rank entries")
+    is_raidboss_admin = models.BooleanField("Raid Boss Admin", default=False,
+        help_text="Access to input raid boss participation (cannot change boss points)")
         
     # Granular DKP Admin controls
     can_give_dkp = models.BooleanField("Can Give DKP", default=False)

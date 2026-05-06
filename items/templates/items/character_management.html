@@ -186,12 +186,7 @@
                             </a>
                             {% endif %}
 
-                            <!-- DKP Wallet Button -->
-                            <a href="{% url 'web-dkp-user-profile' character.owner.pk %}"
-                                style="color: #9b59b6; margin-right: 15px; text-decoration: none;"
-                                title="View {{ character.owner.username }}'s DKP Wallet">
-                                <i class="fas fa-wallet"></i>
-                            </a>
+
 
                             {% if is_super_admin %}
                             <!-- Toggle Admin Button -->
@@ -694,31 +689,7 @@
         <!-- Role checkboxes (only visible when promoting) -->
         <div id="subAdminRolesSection" style="padding: 0 25px 15px; text-align: left;">
             <p style="color: #999; font-size: 0.8rem; margin-bottom: 10px;"><i class="fas fa-info-circle"></i> Select feature access for this Sub Admin:</p>
-            <div style="margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 12px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-                <label style="display: flex; align-items: center; cursor: pointer; color: #ccc;">
-                    <input type="checkbox" id="cbDkpAdmin" style="margin-right: 12px; transform: scale(1.2);" onchange="toggleDkpSubOptions()">
-                    <div>
-                        <strong style="color: #fff; font-size: 0.95rem; display: block; margin-bottom: 2px;"><i class="fas fa-coins" style="color: #f1c40f;"></i> DKP Admin</strong>
-                        <small style="color: #888;">Full access to adjust balances and events</small>
-                    </div>
-                </label>
-                <!-- DKP Sub-permissions -->
-                <div id="dkpSubOptions" style="display: none; margin-top: 10px; margin-left: 30px; padding: 10px 15px; background: rgba(255,255,255,0.03); border-radius: 6px; border-left: 2px solid #f1c40f;">
-                    <p style="color: #999; font-size: 0.75rem; margin: 0 0 8px 0;"><i class="fas fa-sliders-h"></i> DKP Board Permissions:</p>
-                    <label style="display: flex; align-items: center; cursor: pointer; color: #ccc; margin-bottom: 6px;">
-                        <input type="checkbox" id="cbCanGiveDkp" style="margin-right: 10px; transform: scale(1.1);">
-                        <span style="font-size: 0.88rem;"><i class="fas fa-plus-circle" style="color: #2ecc71;"></i> Give DKP</span>
-                    </label>
-                    <label style="display: flex; align-items: center; cursor: pointer; color: #ccc; margin-bottom: 6px;">
-                        <input type="checkbox" id="cbCanRemoveDkp" style="margin-right: 10px; transform: scale(1.1);">
-                        <span style="font-size: 0.88rem;"><i class="fas fa-minus-circle" style="color: #e74c3c;"></i> Remove DKP</span>
-                    </label>
-                    <label style="display: flex; align-items: center; cursor: pointer; color: #ccc;">
-                        <input type="checkbox" id="cbCanDecayDkp" style="margin-right: 10px; transform: scale(1.1);">
-                        <span style="font-size: 0.88rem;"><i class="fas fa-chart-line-down" style="color: #e67e22;"></i> Decay DKP</span>
-                    </label>
-                </div>
-            </div>
+
             <div style="margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 12px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
                 <label style="display: flex; align-items: center; cursor: pointer; color: #ccc;">
                     <input type="checkbox" id="cbEventAdmin" style="margin-right: 12px; transform: scale(1.2);">
@@ -728,24 +699,17 @@
                     </div>
                 </label>
             </div>
+
             <div style="margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 12px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
                 <label style="display: flex; align-items: center; cursor: pointer; color: #ccc;">
-                    <input type="checkbox" id="cbTreasuryAdmin" style="margin-right: 12px; transform: scale(1.2);">
+                    <input type="checkbox" id="cbRaidBossAdmin" style="margin-right: 12px; transform: scale(1.2);">
                     <div>
-                        <strong style="color: #fff; font-size: 0.95rem; display: block; margin-bottom: 2px;"><i class="fas fa-warehouse" style="color: #FFD700;"></i> Treasury Admin</strong>
-                        <small style="color: #888;">Assign items, setting price & reject requests</small>
+                        <strong style="color: #fff; font-size: 0.95rem; display: block; margin-bottom: 2px;"><i class="fas fa-dragon" style="color: #e74c3c;"></i> Raid Boss Admin</strong>
+                        <small style="color: #888;">Access to input raid boss activity (no settings access)</small>
                     </div>
                 </label>
             </div>
-            <div style="margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 12px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-                <label style="display: flex; align-items: center; cursor: pointer; color: #ccc;">
-                    <input type="checkbox" id="cbAuctionAdmin" style="margin-right: 12px; transform: scale(1.2);">
-                    <div>
-                        <strong style="color: #fff; font-size: 0.95rem; display: block; margin-bottom: 2px;"><i class="fas fa-gavel" style="color: #e74c3c;"></i> Auction Admin</strong>
-                        <small style="color: #888;">Manage auction system</small>
-                    </div>
-                </label>
-            </div>
+
             <div style="margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 12px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
                 <label style="display: flex; align-items: center; cursor: pointer; color: #ccc;">
                     <input type="checkbox" id="cbSoulAdmin" style="margin-right: 12px; transform: scale(1.2);">
@@ -906,29 +870,17 @@
         rolesSection.style.display = 'block';
         
         // Load existing roles
-        var userRoles = adminRolesData[subAdminUserId] || { is_dkp_admin: false, is_treasury_admin: false, is_auction_admin: false, is_event_admin: false, is_soul_admin: false, is_powerrank_admin: false, can_give_dkp: false, can_remove_dkp: false, can_decay_dkp: false };
-        document.getElementById('cbDkpAdmin').checked = userRoles.is_dkp_admin;
+        var userRoles = adminRolesData[subAdminUserId] || { is_event_admin: false, is_raidboss_admin: false, is_soul_admin: false, is_powerrank_admin: false };
         document.getElementById('cbEventAdmin').checked = userRoles.is_event_admin;
-        document.getElementById('cbTreasuryAdmin').checked = userRoles.is_treasury_admin;
-        document.getElementById('cbAuctionAdmin').checked = userRoles.is_auction_admin;
+        document.getElementById('cbRaidBossAdmin').checked = userRoles.is_raidboss_admin;
         document.getElementById('cbSoulAdmin').checked = userRoles.is_soul_admin;
         document.getElementById('cbPowerRankAdmin').checked = userRoles.is_powerrank_admin;
-        document.getElementById('cbCanGiveDkp').checked = userRoles.can_give_dkp;
-        document.getElementById('cbCanRemoveDkp').checked = userRoles.can_remove_dkp;
-        document.getElementById('cbCanDecayDkp').checked = userRoles.can_decay_dkp;
-        toggleDkpSubOptions();
 
         document.getElementById('subAdminModal').style.display = 'flex';
     }
 
     function toggleDkpSubOptions() {
-        var dkpChecked = document.getElementById('cbDkpAdmin').checked;
-        document.getElementById('dkpSubOptions').style.display = dkpChecked ? 'block' : 'none';
-        if (!dkpChecked) {
-            document.getElementById('cbCanGiveDkp').checked = false;
-            document.getElementById('cbCanRemoveDkp').checked = false;
-            document.getElementById('cbCanDecayDkp').checked = false;
-        }
+        // No DKP
     }
 
     function closeSubAdminModal() {
@@ -940,27 +892,23 @@
     function executeSubAdminToggle() {
         if (!subAdminUrl) return;
         
-        var dkp = document.getElementById('cbDkpAdmin').checked;
         var evAdmin = document.getElementById('cbEventAdmin').checked;
-        var treasury = document.getElementById('cbTreasuryAdmin').checked;
-        var auction = document.getElementById('cbAuctionAdmin').checked;
+        var rbAdmin = document.getElementById('cbRaidBossAdmin').checked;
         var soul = document.getElementById('cbSoulAdmin').checked;
         var prAdmin = document.getElementById('cbPowerRankAdmin').checked;
-        var canGive = document.getElementById('cbCanGiveDkp').checked;
-        var canRemove = document.getElementById('cbCanRemoveDkp').checked;
-        var canDecay = document.getElementById('cbCanDecayDkp').checked;
-        var anyChecked = dkp || evAdmin || treasury || auction || soul || prAdmin;
+        var anyChecked = evAdmin || rbAdmin || soul || prAdmin;
         
         var rolePayload = { 
-            is_dkp_admin: dkp, 
+            is_dkp_admin: false, 
             is_event_admin: evAdmin, 
-            is_treasury_admin: treasury, 
-            is_auction_admin: auction, 
+            is_raidboss_admin: rbAdmin,
+            is_treasury_admin: false, 
+            is_auction_admin: false, 
             is_soul_admin: soul, 
             is_powerrank_admin: prAdmin,
-            can_give_dkp: canGive, 
-            can_remove_dkp: canRemove, 
-            can_decay_dkp: canDecay 
+            can_give_dkp: false, 
+            can_remove_dkp: false, 
+            can_decay_dkp: false 
         };
         var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}';
         

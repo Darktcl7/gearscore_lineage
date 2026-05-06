@@ -261,12 +261,13 @@
         font-weight: 700;
         text-transform: uppercase;
     }
-    .event-invasion { background: #e74c3c; color: #fff; }
+    .event-invasion, .event-inv_dragon_beast, .event-inv_carnifex, .event-inv_orfen { background: #e74c3c; color: #fff; }
     .event-boss_rush { background: #9b59b6; color: #fff; }
     .event-catacombs { background: #3498db; color: #fff; }
     .event-dimensional { background: #1abc9c; color: #fff; }
     .event-isle_awakening { background: #f39c12; color: #fff; }
-    .event-custom { background: #7f8c8d; color: #fff; }
+    .event-war_day { background: #e74c3c; color: #fff; }
+    .event-custom { background: #e67e22; color: #fff; }
     
     /* Scrollbar */
     .main-column::-webkit-scrollbar, .sidebar-column::-webkit-scrollbar { width: 6px; }
@@ -677,19 +678,19 @@
                 <div class="stats-grid">
                     <div class="stat-box core">
                         <div class="count">{{ weekly_guild_stats.core }}</div>
-                        <div class="label">Core Member{% if is_admin %}<br>(&gt; 950 pts, max 15){% endif %}</div>
+                        <div class="label">Core Member{% if is_admin %}<br>(&gt; 2350 pts, max 15){% endif %}</div>
                     </div>
                     <div class="stat-box elite">
                         <div class="count">{{ weekly_guild_stats.elite }}</div>
-                        <div class="label">Elite Member{% if is_admin %}<br>(676 - 950 pts, max 15){% endif %}</div>
+                        <div class="label">Elite Member{% if is_admin %}<br>(2051 - 2350 pts, max 15){% endif %}</div>
                     </div>
                     <div class="stat-box active">
                         <div class="count">{{ weekly_guild_stats.active }}</div>
-                        <div class="label">Active Member{% if is_admin %}<br>(401 - 675 pts, max 20){% endif %}</div>
+                        <div class="label">Active Member{% if is_admin %}<br>(1501 - 2050 pts, max 20){% endif %}</div>
                     </div>
                     <div class="stat-box inactive">
                         <div class="count">{{ weekly_guild_stats.inactive }}</div>
-                        <div class="label">Inactive Member{% if is_admin %}<br>(0 - 400 pts){% endif %}</div>
+                        <div class="label">Inactive Member{% if is_admin %}<br>(0 - 1500 pts){% endif %}</div>
                     </div>
                 </div>
             </div>
@@ -699,19 +700,19 @@
                 <div class="stats-grid">
                     <div class="stat-box core">
                         <div class="count">{{ guild_stats.core }}</div>
-                        <div class="label">Core Member{% if is_admin %}<br>(&gt; 950 pts, max 15){% endif %}</div>
+                        <div class="label">Core Member{% if is_admin %}<br>(&gt; 2350 pts, max 15){% endif %}</div>
                     </div>
                     <div class="stat-box elite">
                         <div class="count">{{ guild_stats.elite }}</div>
-                        <div class="label">Elite Member{% if is_admin %}<br>(676 - 950 pts, max 15){% endif %}</div>
+                        <div class="label">Elite Member{% if is_admin %}<br>(2051 - 2350 pts, max 15){% endif %}</div>
                     </div>
                     <div class="stat-box active">
                         <div class="count">{{ guild_stats.active }}</div>
-                        <div class="label">Active Member{% if is_admin %}<br>(401 - 675 pts, max 20){% endif %}</div>
+                        <div class="label">Active Member{% if is_admin %}<br>(1501 - 2050 pts, max 20){% endif %}</div>
                     </div>
                     <div class="stat-box inactive">
                         <div class="count">{{ guild_stats.inactive }}</div>
-                        <div class="label">Inactive Member{% if is_admin %}<br>(0 - 400 pts){% endif %}</div>
+                        <div class="label">Inactive Member{% if is_admin %}<br>(0 - 1500 pts){% endif %}</div>
                     </div>
                 </div>
             </div>
@@ -732,9 +733,15 @@
                                 {{ event.name }}
                             </span>
                             <div style="display: flex; gap: 8px; align-items: center;">
+                                {% if event.event_type == 'CUSTOM' %}
+                                <span class="event-type-badge event-custom">
+                                    🐉 Raid Boss
+                                </span>
+                                {% else %}
                                 <span class="event-type-badge event-{{ event.event_type|lower }}">
                                     {{ event.get_event_type_display }}
                                 </span>
+                                {% endif %}
                                 <span style="font-size: 0.75rem; color: #888;"><i class="fas fa-calendar"></i> {{ event.date|date:"M d, Y" }}</span>
                             </div>
                         </div>

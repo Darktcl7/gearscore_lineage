@@ -1,4 +1,4 @@
-# D:\Django Project\Alto Project\items\api_views.py
+﻿# D:\Django Project\Alto Project\items\api_views.py
 """
 API Views for Discord Bot Integration (Phase 2)
 These endpoints will be called by the Discord Bot to sync data.
@@ -331,13 +331,13 @@ def api_get_leaderboard(request):
             active_count = 0
             for e in clan_entries:
                 score = e['score']
-                if score > 950 and core_count < 15:
+                if score > 2350 and core_count < 15:
                     e['tier'] = '👑 Core'
                     core_count += 1
-                elif score > 675 and elite_count < 15:
+                elif score > 2050 and elite_count < 15:
                     e['tier'] = '🛡️ Elite'
                     elite_count += 1
-                elif score > 400 and active_count < 20:
+                elif score > 1500 and active_count < 20:
                     e['tier'] = '⚔️ Active'
                     active_count += 1
                 else:
@@ -493,11 +493,11 @@ def api_player_stats_discord(request, discord_id):
                 break
         
         # Tier
-        if total_score > 950:
+        if total_score > 2350 and core_count < 15:
             tier = '👑 Core'
-        elif total_score > 675:
+        elif total_score > 2050 and elite_count < 15:
             tier = '🛡️ Elite'
-        elif total_score > 400:
+        elif total_score > 1500 and active_count < 20:
             tier = '⚔️ Active'
         else:
             tier = '💤 Inactive'
@@ -805,5 +805,58 @@ def api_delete_event(request):
         
     except ActivityEvent.DoesNotExist:
         return JsonResponse({'error': 'Event not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+@csrf_exempt
+def api_submit_war_point(request):
+    """
+    API for Discord bot to submit War Point proofs.
+    """
+    if not verify_api_key(request):
+        return JsonResponse({'error': 'Invalid API key'}, status=401)
+        
+    try:
+        data = json.loads(request.body)
+        discord_id = data.get('discord_id')
+        kill_count = data.get('kill_count', 0)
+        assist_count = data.get('assist_count', 0)
+        image_url = data.get('image_url')
+        war_date_str = data.get('war_date')
+        
+        if not all([discord_id, image_url, war_date_str]):
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
+            
+        from items.models import Character, WarPointSubmission
+        import requests
+        from django.core.files.base import ContentFile
+        from datetime import datetime
+        
+        try:
+            character = Character.objects.get(owner__discord_id=discord_id, is_main=True)
+        except Character.DoesNotExist:
+            return JsonResponse({'error': 'Main character not found for this Discord ID'}, status=404)
+            
+        war_date = datetime.strptime(war_date_str, '%Y-%m-%d').date()
+        
+        # Download image
+        response = requests.get(image_url)
+        if response.status_code != 200:
+            return JsonResponse({'error': 'Failed to download image from Discord'}, status=400)
+            
+        # Create submission
+        submission = WarPointSubmission.objects.create(
+            character=character,
+            war_date=war_date,
+            kill_count=int(kill_count),
+            assist_count=int(assist_count),
+            status='PENDING'
+        )
+        
+        file_name = f"war_proof_{character.name}_{war_date_str}.jpg"
+        submission.screenshot.save(file_name, ContentFile(response.content), save=True)
+        
+        return JsonResponse({'success': True, 'submission_id': submission.pk})
+        
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)

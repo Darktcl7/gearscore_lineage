@@ -16,18 +16,132 @@ main{flex:1;overflow:hidden}
 .sab{display:flex;justify-content:space-between;align-items:center;padding:15px 20px;background:rgba(255,255,255,.05);border-radius:10px;margin-bottom:20px}
 .sab label{display:flex;align-items:center;gap:10px;cursor:pointer;color:#DAA520;font-weight:600}
 .sab input[type="checkbox"]{width:20px;height:20px;accent-color:#DAA520}
-.cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:15px}
-.cc{display:flex;flex-direction:column;gap:15px;padding:15px 20px;background:rgba(255,255,255,.05);border:2px solid transparent;border-radius:10px;cursor:pointer;transition:all .3s ease}
-.cch{display:flex;align-items:center;gap:15px}
-.cc:hover{background:rgba(255,255,255,.1)}
-.cc.selected{background:rgba(46,204,113,.15);border-color:#2ecc71}
-.cc input[type="checkbox"].ack{width:22px;height:22px;accent-color:#2ecc71}
-.ci{flex:1}
-.cn{font-weight:600;color:#fff;margin-bottom:3px}
-.cl{font-size:.85rem;color:#888}
-.bs{border-top:1px solid rgba(255,255,255,.1);padding-top:10px;display:flex;flex-direction:column;gap:8px}
-.bo{display:flex;align-items:center;gap:8px;font-size:.85rem;color:#ddd}
-.bo input{accent-color:#DAA520}
+
+/* Dual Column Layout */
+.attendance-layout {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+.clan-col {
+    flex: 1;
+    background: rgba(0,0,0,0.2);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.05);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.clan-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 18px;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #fff;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.valkyrie-header{background:linear-gradient(135deg,rgba(155,89,182,.3),rgba(142,68,173,.2));}
+.valhalla-header{background:linear-gradient(135deg,rgba(52,152,219,.3),rgba(41,128,185,.2));}
+.clan-count{color:#DAA520;font-weight:700}
+
+.clan-search-bar {
+    padding: 10px;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    margin-bottom: 15px;
+}
+.clan-search-input {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.3);
+    color: #fff;
+}
+.clan-search-input:focus {
+    outline: none;
+    border-color: #DAA520;
+}
+
+.table-wrapper {
+    max-height: 55vh;
+    overflow-y: auto;
+    padding: 0 10px 10px 10px;
+}
+.attendance-table {
+    width: 100%;
+    display: block;
+}
+.attendance-table thead {
+    display: none; /* Hide header for grid layout */
+}
+.attendance-table tbody {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+.attendance-table tbody tr {
+    display: flex;
+    align-items: center;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 6px;
+}
+.attendance-table tbody tr:hover {
+    background: rgba(255,255,255,0.08);
+}
+.attendance-table tbody tr.selected {
+    background: rgba(46,204,113,0.15);
+    border-color: rgba(46,204,113,0.4);
+}
+.attendance-table td {
+    padding: 4px;
+    border: none;
+}
+.att-col-chk {
+    width: 30px;
+    display: flex;
+    justify-content: center;
+}
+.att-col-info {
+    flex: 1;
+    min-width: 0; /* allows text truncation if needed */
+}
+.att-col-bosses {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-left: 8px;
+    border-left: 1px solid rgba(255,255,255,0.1);
+}
+.attendance-table input[type="checkbox"].ack {
+    width: 18px;
+    height: 18px;
+    accent-color: #2ecc71;
+    pointer-events: none; /* Let the row handle the click */
+}
+.boss-chk {
+    accent-color: #DAA520;
+    margin-right: 5px;
+}
+.boss-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 0.8rem;
+    color: #ddd;
+}
+.boss-group label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
 .bc{margin-top:25px;display:flex;gap:15px}
 .bsub{flex:1;padding:15px;background:linear-gradient(145deg,#2ecc71,#27ae60);border:none;border-radius:10px;color:#fff;font-size:1.1rem;font-weight:600;cursor:pointer;transition:all .3s ease}
 .bsub:hover{transform:translateY(-2px);box-shadow:0 5px 20px rgba(46,204,113,.4)}
@@ -47,11 +161,6 @@ main{flex:1;overflow:hidden}
 .boss-pts-row label{display:flex;align-items:center;gap:8px;color:#ddd;font-size:.85rem}
 .bp-input{width:60px;padding:4px 6px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#fff;font-size:.85rem;text-align:center}
 .bp-input:focus{outline:none;border-color:#DAA520;box-shadow:0 0 5px rgba(218,165,32,.3)}
-.clan-section{margin-bottom:25px}
-.clan-header{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-radius:10px;margin-bottom:12px;font-weight:600;font-size:1rem;color:#fff}
-.valkyrie-header{background:linear-gradient(135deg,rgba(155,89,182,.3),rgba(142,68,173,.2));border:1px solid rgba(155,89,182,.4)}
-.valhalla-header{background:linear-gradient(135deg,rgba(52,152,219,.3),rgba(41,128,185,.2));border:1px solid rgba(52,152,219,.4)}
-.clan-count{color:#DAA520;font-weight:700}
 </style>
 {% endblock %}
 
@@ -83,62 +192,98 @@ main{flex:1;overflow:hidden}
 <span style="color:#888"><span id="sc">0</span> / {{ characters|length }} selected</span>
 </div>
 
-<!-- VALKYRIE CLAN -->
-<div class="clan-section">
-<div class="clan-header valkyrie-header">
-<span><i class="fas fa-shield-alt"></i> Valkyrie Clan</span>
-<span class="clan-count" id="vc">0</span> / {{ valkyrie_chars|length }}
-</div>
-<div class="cg">
-{% for character in valkyrie_chars %}
-<div class="cc {% if character.is_attended %}selected{% endif %}" onclick="toggleCard(this,event)">
-<div class="cch">
-<input type="checkbox" name="characters" value="{{ character.pk }}" class="ack" {% if character.is_attended %}checked{% endif %}>
-<div class="ci">
-<div class="cn">{{ character.name }}</div>
-<div class="cl">{{ character.character_class }} - Lv.{{ character.level }}</div>
-</div></div>
-{% if event.event_type == 'INVASION' %}
-<div class="bs" onclick="event.stopPropagation()">
-<div class="bo"><input type="checkbox" name="boss_dragon_beast_{{ character.pk }}" value="true" {% if character.bosses_killed.dragon_beast %}checked{% endif %}> &#x1F432; Dragon Beast</div>
-<div class="bo"><input type="checkbox" name="boss_carnifex_{{ character.pk }}" value="true" {% if character.bosses_killed.carnifex %}checked{% endif %}> &#x1F479; Carnifex</div>
-<div class="bo"><input type="checkbox" name="boss_orfen_{{ character.pk }}" value="true" {% if character.bosses_killed.orfen %}checked{% endif %}> &#x1F577;&#xFE0F; Orfen</div>
-</div>
-{% endif %}
-</div>
-{% empty %}
-<div style="color:#555; padding:20px; text-align:center;">No Valkyrie members.</div>
-{% endfor %}
-</div>
-</div>
+<div class="attendance-layout">
+    <!-- VALKYRIE CLAN -->
+    <div class="clan-col">
+        <div class="clan-header valkyrie-header">
+            <span><i class="fas fa-shield-alt"></i> Valkyrie</span>
+            <span><span class="clan-count" id="vc">0</span> / {{ valkyrie_chars|length }}</span>
+        </div>
+        <div class="clan-search-bar">
+            <input type="text" class="clan-search-input" id="search-valkyrie" placeholder="Search Valkyrie member...">
+        </div>
+        <div class="table-wrapper">
+            <table class="attendance-table" id="table-valkyrie">
+                <thead>
+                    <tr>
+                        <th style="width: 40px; text-align: center;">Att</th>
+                        <th>Member</th>
+                        {% if event.event_type == 'INVASION' %}<th>Bosses Killed</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for character in valkyrie_chars %}
+                    <tr class="att-row {% if character.is_attended %}selected{% endif %}">
+                        <td class="att-col-chk">
+                            <input type="checkbox" name="characters" value="{{ character.pk }}" class="ack" {% if character.is_attended %}checked{% endif %}>
+                        </td>
+                        <td class="att-col-info">
+                            <div class="member-name" style="font-weight: 600; color: #fff; font-size: 0.95rem;">{{ character.name }}</div>
+                            <div style="font-size: 0.75rem; color: #888;">{{ character.character_class }}</div>
+                        </td>
+                        {% if event.event_type == 'INVASION' %}
+                        <td class="att-col-bosses" onclick="event.stopPropagation()">
+                            <div class="boss-group" style="flex-direction: column; gap: 4px;">
+                                <label style="font-size: 0.75rem;"><input type="checkbox" class="boss-chk" name="boss_dragon_beast_{{ character.pk }}" value="true" {% if character.bosses_killed.dragon_beast %}checked{% endif %}> &#x1F432; Dragon Beast</label>
+                                <label style="font-size: 0.75rem;"><input type="checkbox" class="boss-chk" name="boss_carnifex_{{ character.pk }}" value="true" {% if character.bosses_killed.carnifex %}checked{% endif %}> &#x1F479; Carnifex</label>
+                                <label style="font-size: 0.75rem;"><input type="checkbox" class="boss-chk" name="boss_orfen_{{ character.pk }}" value="true" {% if character.bosses_killed.orfen %}checked{% endif %}> &#x1F577;&#xFE0F; Orfen</label>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="{% if event.event_type == 'INVASION' %}3{% else %}2{% endif %}" style="text-align: center; color: #555;">No Valkyrie members.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-<!-- VALHALLA CLAN -->
-<div class="clan-section">
-<div class="clan-header valhalla-header">
-<span><i class="fas fa-shield-alt"></i> Valhalla Clan</span>
-<span class="clan-count" id="vh">0</span> / {{ valhalla_chars|length }}
-</div>
-<div class="cg">
-{% for character in valhalla_chars %}
-<div class="cc {% if character.is_attended %}selected{% endif %}" onclick="toggleCard(this,event)">
-<div class="cch">
-<input type="checkbox" name="characters" value="{{ character.pk }}" class="ack" {% if character.is_attended %}checked{% endif %}>
-<div class="ci">
-<div class="cn">{{ character.name }}</div>
-<div class="cl">{{ character.character_class }} - Lv.{{ character.level }}</div>
-</div></div>
-{% if event.event_type == 'INVASION' %}
-<div class="bs" onclick="event.stopPropagation()">
-<div class="bo"><input type="checkbox" name="boss_dragon_beast_{{ character.pk }}" value="true" {% if character.bosses_killed.dragon_beast %}checked{% endif %}> &#x1F432; Dragon Beast</div>
-<div class="bo"><input type="checkbox" name="boss_carnifex_{{ character.pk }}" value="true" {% if character.bosses_killed.carnifex %}checked{% endif %}> &#x1F479; Carnifex</div>
-<div class="bo"><input type="checkbox" name="boss_orfen_{{ character.pk }}" value="true" {% if character.bosses_killed.orfen %}checked{% endif %}> &#x1F577;&#xFE0F; Orfen</div>
-</div>
-{% endif %}
-</div>
-{% empty %}
-<div style="color:#555; padding:20px; text-align:center;">No Valhalla members.</div>
-{% endfor %}
-</div>
+    <!-- VALHALLA CLAN -->
+    <div class="clan-col">
+        <div class="clan-header valhalla-header">
+            <span><i class="fas fa-shield-alt"></i> Valhalla</span>
+            <span><span class="clan-count" id="vh">0</span> / {{ valhalla_chars|length }}</span>
+        </div>
+        <div class="clan-search-bar">
+            <input type="text" class="clan-search-input" id="search-valhalla" placeholder="Search Valhalla member...">
+        </div>
+        <div class="table-wrapper">
+            <table class="attendance-table" id="table-valhalla">
+                <thead>
+                    <tr>
+                        <th style="width: 40px; text-align: center;">Att</th>
+                        <th>Member</th>
+                        {% if event.event_type == 'INVASION' %}<th>Bosses Killed</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for character in valhalla_chars %}
+                    <tr class="att-row {% if character.is_attended %}selected{% endif %}">
+                        <td class="att-col-chk">
+                            <input type="checkbox" name="characters" value="{{ character.pk }}" class="ack" {% if character.is_attended %}checked{% endif %}>
+                        </td>
+                        <td class="att-col-info">
+                            <div class="member-name" style="font-weight: 600; color: #fff; font-size: 0.95rem;">{{ character.name }}</div>
+                            <div style="font-size: 0.75rem; color: #888;">{{ character.character_class }}</div>
+                        </td>
+                        {% if event.event_type == 'INVASION' %}
+                        <td class="att-col-bosses" onclick="event.stopPropagation()">
+                            <div class="boss-group" style="flex-direction: column; gap: 4px;">
+                                <label style="font-size: 0.75rem;"><input type="checkbox" class="boss-chk" name="boss_dragon_beast_{{ character.pk }}" value="true" {% if character.bosses_killed.dragon_beast %}checked{% endif %}> &#x1F432; Dragon Beast</label>
+                                <label style="font-size: 0.75rem;"><input type="checkbox" class="boss-chk" name="boss_carnifex_{{ character.pk }}" value="true" {% if character.bosses_killed.carnifex %}checked{% endif %}> &#x1F479; Carnifex</label>
+                                <label style="font-size: 0.75rem;"><input type="checkbox" class="boss-chk" name="boss_orfen_{{ character.pk }}" value="true" {% if character.bosses_killed.orfen %}checked{% endif %}> &#x1F577;&#xFE0F; Orfen</label>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="{% if event.event_type == 'INVASION' %}3{% else %}2{% endif %}" style="text-align: center; color: #555;">No Valhalla members.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <div class="bc">
@@ -147,30 +292,80 @@ main{flex:1;overflow:hidden}
 </div>
 </div></form></div>
 <script>
-function toggleCard(c,e){
-if(e.target.type==='checkbox')return;
-var x=c.querySelector('input.ack');
-x.checked=!x.checked;
-x.dispatchEvent(new Event('change'));}
-document.querySelectorAll('input.ack').forEach(function(cb){
-cb.addEventListener('change',function(){
-var card=this.closest('.cc');
-if(this.checked){card.classList.add('selected');}
-else{card.classList.remove('selected');}
-uc();});});
+// Row click to toggle checkbox
+document.querySelectorAll('.att-row').forEach(function(row){
+    row.addEventListener('click', function(e){
+        // Avoid double trigger if clicking directly on boss checkbox
+        if(e.target.type === 'checkbox' && e.target.classList.contains('boss-chk')) return;
+        
+        var cb = this.querySelector('input.ack');
+        if(cb){
+            cb.checked = !cb.checked;
+            if(cb.checked){
+                this.classList.add('selected');
+            } else {
+                this.classList.remove('selected');
+            }
+            updateCounters();
+        }
+    });
+});
+
+// Select All
 document.getElementById('select-all').addEventListener('change',function(){
-var cbs=document.querySelectorAll('input.ack');
-var s=this.checked;
-cbs.forEach(function(cb){cb.checked=s;cb.closest('.cc').classList.toggle('selected',s);});
-uc();});
-function uc(){
-var total=document.querySelectorAll('input.ack:checked').length;
-document.getElementById('sc').textContent=total;
-var valkSec=document.querySelector('.valkyrie-header');
-if(valkSec){document.getElementById('vc').textContent=valkSec.closest('.clan-section').querySelectorAll('input.ack:checked').length;}
-var valhSec=document.querySelector('.valhalla-header');
-if(valhSec){document.getElementById('vh').textContent=valhSec.closest('.clan-section').querySelectorAll('input.ack:checked').length;}
+    var isChecked = this.checked;
+    document.querySelectorAll('.att-row:not([style*="display: none"])').forEach(function(row){
+        var cb = row.querySelector('input.ack');
+        if(cb){
+            cb.checked = isChecked;
+            if(isChecked) row.classList.add('selected');
+            else row.classList.remove('selected');
+        }
+    });
+    updateCounters();
+});
+
+// Update Counters
+function updateCounters(){
+    var total = document.querySelectorAll('input.ack:checked').length;
+    document.getElementById('sc').textContent = total;
+    
+    var vTable = document.getElementById('table-valkyrie');
+    if(vTable) {
+        document.getElementById('vc').textContent = vTable.querySelectorAll('input.ack:checked').length;
+    }
+    
+    var hTable = document.getElementById('table-valhalla');
+    if(hTable) {
+        document.getElementById('vh').textContent = hTable.querySelectorAll('input.ack:checked').length;
+    }
 }
-uc();
+updateCounters();
+
+// Search Functions
+function setupSearch(inputId, tableId) {
+    const input = document.getElementById(inputId);
+    const table = document.getElementById(tableId);
+    if(!input || !table) return;
+    
+    input.addEventListener('keyup', function() {
+        const filter = this.value.toLowerCase();
+        const rows = table.querySelectorAll('tbody .att-row');
+        
+        rows.forEach(row => {
+            const nameEl = row.querySelector('.member-name');
+            if(nameEl) {
+                const text = nameEl.textContent || nameEl.innerText;
+                if(text.toLowerCase().indexOf(filter) > -1) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            }
+        });
+    });
+}
+setupSearch('search-valkyrie', 'table-valkyrie');
+setupSearch('search-valhalla', 'table-valhalla');
 </script>
 {% endblock %}

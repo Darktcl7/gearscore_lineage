@@ -142,7 +142,10 @@
         font-weight: 600;
     }
 
-    .event-invasion {
+    .event-invasion,
+    .event-inv_dragon_beast,
+    .event-inv_carnifex,
+    .event-inv_orfen {
         background: #e74c3c;
         color: #fff;
     }
@@ -454,6 +457,8 @@
                                 <span style="color: #e74c3c; margin-left: 5px; font-size: 0.9em;" title="Mandatory Event (-{{ event.mandatory_penalty }} Act{% if event.is_dkp_penalty %}, -{{ event.dkp_mandatory_penalty }} DKP{% endif %} for absent)"><i class="fas fa-exclamation-circle"></i></span>
                             {% endif %}
                         {% endif %}
+
+
                     </td>
                     <td>{{ event.date|date:"M d, Y H:i" }}</td>
                     <td>

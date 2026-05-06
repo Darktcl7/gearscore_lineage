@@ -1,0 +1,197 @@
+{% extends 'items/base.html' %}
+{% load static %}
+
+{% block title %}Check-In Event{% endblock %}
+
+{% block extra_head %}
+<style>
+    .checkin-container {
+        max-width: 600px;
+        margin: 40px auto;
+        background: rgba(18, 18, 18, 0.85);
+        border-radius: 20px;
+        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .checkin-header {
+        padding: 25px;
+        background: linear-gradient(145deg, #2c3e50, #34495e);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        text-align: center;
+    }
+    .checkin-header h1 {
+        margin: 0;
+        color: #ffffff;
+        font-size: 1.8rem;
+    }
+    .checkin-content {
+        padding: 30px;
+    }
+    .form-group {
+        margin-bottom: 25px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #DAA520;
+        font-weight: 600;
+    }
+    .form-group select, .form-group input[type="file"] {
+        width: 100%;
+        padding: 12px 15px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        color: #fff;
+        font-size: 1rem;
+        box-sizing: border-box;
+    }
+    .form-group select option {
+        background: #222;
+        color: #fff;
+    }
+    .upload-area {
+        border: 2px dashed rgba(218, 165, 32, 0.5);
+        border-radius: 12px;
+        padding: 40px 20px;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.02);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 15px;
+    }
+    .upload-area:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: #DAA520;
+    }
+    .upload-area i {
+        font-size: 3rem;
+        color: #DAA520;
+        margin-bottom: 15px;
+    }
+    .upload-area p {
+        margin: 0;
+        color: #aaa;
+    }
+    .btn-submit {
+        width: 100%;
+        padding: 15px;
+        background: linear-gradient(145deg, #3498db, #2980b9);
+        border: none;
+        border-radius: 10px;
+        color: #fff;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(52, 152, 219, 0.4);
+    }
+    .loader {
+        display: none;
+        text-align: center;
+        margin-top: 15px;
+        color: #fff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="checkin-container">
+    <div class="checkin-header">
+        <h1><i class="fas fa-camera"></i> Check-In Event</h1>
+        <p style="margin: 10px 0 0 0; color: #bbb; font-size: 0.9rem;">Upload screenshot in-game untuk absen otomatis</p>
+    </div>
+
+    <div class="checkin-content">
+        {% if messages %}
+        <div class="messages" style="margin-bottom: 20px;">
+            {% for message in messages %}
+            <div style="padding: 15px; border-radius: 8px; margin-bottom: 10px; {% if message.tags == 'success' %}background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid #2ecc71;{% elif message.tags == 'error' %}background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid #e74c3c;{% else %}background: rgba(241, 196, 15, 0.2); color: #f1c40f; border: 1px solid #f1c40f;{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if not user_characters %}
+        <div style="text-align: center; padding: 20px;">
+            <i class="fas fa-user-slash" style="font-size: 3rem; color: #e74c3c; margin-bottom: 15px;"></i>
+            <p style="color: #fff;">Anda belum membuat Karakter.</p>
+            <a href="{% url 'create-character' %}" style="color: #3498db;">Buat Karakter Sekarang</a>
+        </div>
+        {% else %}
+        <form method="POST" enctype="multipart/form-data" id="checkin-form">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label>1. Pilih Event Aktif</label>
+                <select name="event" required>
+                    <option value="">-- Pilih Event --</option>
+                    {% for event in active_events %}
+                        <option value="{{ event.pk }}" {% if preselected_event and preselected_event.pk == event.pk %}selected{% endif %}>
+                            {{ event.name }} (Token: {{ event.checkin_token }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>2. Pilih Perwakilan Party (Karakter Anda)</label>
+                <select name="submitter" required>
+                    {% for char in user_characters %}
+                        <option value="{{ char.pk }}">{{ char.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>3. Upload Bukti Screenshot</label>
+                <div class="upload-area" onclick="document.getElementById('screenshot').click();">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p id="file-name-display">Klik untuk memilih gambar<br><small>(Mendukung PNG, JPG, WEBP)</small></p>
+                </div>
+                <input type="file" name="screenshot" id="screenshot" accept="image/png, image/jpeg, image/webp" style="display: none;" required>
+            </div>
+            
+            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 25px; border-left: 3px solid #DAA520;">
+                <h4 style="margin: 0 0 8px 0; color: #DAA520; font-size: 0.95rem;">Syarat Validasi AI:</h4>
+                <ul style="margin: 0; padding-left: 20px; color: #bbb; font-size: 0.85rem; line-height: 1.5;">
+                    <li>Ketik Token Event di Clan Chat (warna hijau) agar terlihat di layar.</li>
+                    <li>Pastikan daftar Party terbuka di sebelah kiri (Minimal 2 anggota).</li>
+                    <li>Gambar tidak boleh blur agar nama terbaca jelas.</li>
+                </ul>
+            </div>
+
+            <button type="submit" class="btn-submit" onclick="showLoader()">
+                <i class="fas fa-check-circle"></i> Submit & Scan Gambar
+            </button>
+            
+            <div class="loader" id="loader">
+                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 10px; color: #3498db;"></i>
+                <p>Sedang memindai gambar... Harap tunggu sebentar.</p>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    document.getElementById('screenshot').addEventListener('change', function(e) {
+        if(e.target.files.length > 0) {
+            document.getElementById('file-name-display').innerHTML = '<span style="color: #2ecc71; font-weight: bold;">File terpilih:</span><br>' + e.target.files[0].name;
+        }
+    });
+    
+    function showLoader() {
+        if(document.getElementById('checkin-form').checkValidity()) {
+            document.querySelector('.btn-submit').style.display = 'none';
+            document.getElementById('loader').style.display = 'block';
+        }
+    }
+</script>
+{% endblock %}

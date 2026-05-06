@@ -1,0 +1,480 @@
+{% extends 'items/base.html' %}
+{% load static %}
+
+{% block title %}War Point Management{% endblock %}
+
+{% block extra_head %}
+<style>
+    main { max-width:1400px !important; padding:20px !important; }
+    .wpm-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0;
+    }
+    .wpm-wrap {
+        min-height: 80vh;
+        margin: 0 auto 50px;
+        background: rgba(18,18,18,0.65);
+        border-radius: 20px;
+        box-shadow: 0 10px 35px rgba(0,0,0,0.8);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.08);
+        padding-bottom: 20px;
+    }
+    .wpm-header {
+        padding: 20px 30px;
+        background: linear-gradient(135deg, rgba(231,76,60,0.2), rgba(192,57,43,0.3));
+        border-bottom: 1px solid rgba(231,76,60,0.15);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 20px 20px 0 0;
+        margin-bottom: 30px;
+    }
+    .wpm-header h1 {
+        font-size: 1.8rem;
+        color: #fff;
+        margin: 0;
+    }
+    .btn-back-wp {
+        padding: 8px 16px;
+        background: rgba(255,255,255,0.08);
+        color: #ddd;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 0.85rem;
+        transition: all 0.3s;
+    }
+    .btn-back-wp:hover {
+        background: rgba(255,255,255,0.15);
+    }
+    .wpm-grid {
+        display: grid;
+        grid-template-columns: 340px 1fr;
+        gap: 25px;
+    }
+    @media (max-width: 768px) {
+        .wpm-grid { grid-template-columns: 1fr; }
+    }
+    .wpm-card {
+        background: rgba(18,18,18,0.85);
+        border-radius: 16px;
+        border: 1px solid rgba(255,255,255,0.1);
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+    }
+    .wpm-card-header {
+        padding: 18px 22px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .wpm-card-header h2 {
+        margin: 0;
+        font-size: 1.1rem;
+        color: #DAA520;
+    }
+    .wpm-card-body {
+        padding: 22px;
+    }
+
+    /* Settings Form */
+    .settings-form .form-group {
+        margin-bottom: 18px;
+    }
+    .settings-form label {
+        display: block;
+        margin-bottom: 6px;
+        color: #DAA520;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+    .settings-form input[type="number"] {
+        width: 100%;
+        padding: 10px 14px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 8px;
+        color: #fff;
+        font-size: 1rem;
+        box-sizing: border-box;
+    }
+    .settings-form input:focus {
+        outline: none;
+        border-color: #DAA520;
+    }
+    .checkbox-setting {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px;
+        background: rgba(255,255,255,0.04);
+        border-radius: 8px;
+        cursor: pointer;
+        margin-bottom: 18px;
+    }
+    .checkbox-setting input {
+        width: 20px;
+        height: 20px;
+        accent-color: #2ecc71;
+    }
+    .checkbox-setting span {
+        color: #ddd;
+        font-size: 0.9rem;
+    }
+    .btn-save-settings {
+        width: 100%;
+        padding: 12px;
+        background: linear-gradient(145deg, #2ecc71, #27ae60);
+        border: none;
+        border-radius: 8px;
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .btn-save-settings:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(46,204,113,0.3);
+    }
+
+    /* Pending Submissions */
+    .pending-item {
+        padding: 18px;
+        background: rgba(255,255,255,0.03);
+        border-radius: 10px;
+        margin-bottom: 15px;
+        border: 1px solid rgba(255,255,255,0.06);
+    }
+    .pending-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+    .pending-player {
+        font-weight: 700;
+        color: #fff;
+        font-size: 1rem;
+    }
+    .pending-date {
+        color: #888;
+        font-size: 0.85rem;
+    }
+    .pending-stats {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 12px;
+    }
+    .stat-box {
+        flex: 1;
+        text-align: center;
+        padding: 10px;
+        border-radius: 8px;
+        background: rgba(0,0,0,0.3);
+    }
+    .stat-box .stat-val {
+        font-size: 1.3rem;
+        font-weight: 700;
+    }
+    .stat-box .stat-label {
+        font-size: 0.75rem;
+        color: #888;
+    }
+    .stat-kill .stat-val { color: #e74c3c; }
+    .stat-assist .stat-val { color: #3498db; }
+    .stat-total .stat-val { color: #DAA520; }
+    .pending-screenshot {
+        margin-bottom: 12px;
+    }
+    .pending-screenshot a {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: rgba(52,152,219,0.15);
+        color: #3498db;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 0.85rem;
+    }
+    .pending-screenshot a:hover {
+        background: rgba(52,152,219,0.25);
+    }
+    .pending-actions {
+        display: flex;
+        gap: 10px;
+    }
+    .pending-actions form {
+        flex: 1;
+    }
+    .pending-actions input[type="text"] {
+        width: 100%;
+        padding: 8px 12px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 6px;
+        color: #fff;
+        font-size: 0.85rem;
+        margin-bottom: 8px;
+        box-sizing: border-box;
+    }
+    .btn-approve {
+        padding: 8px 18px;
+        background: linear-gradient(135deg, #2ecc71, #27ae60);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.3s;
+        width: 100%;
+    }
+    .btn-reject {
+        padding: 8px 18px;
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.3s;
+        width: 100%;
+    }
+    .btn-approve:hover { box-shadow: 0 4px 12px rgba(46,204,113,0.3); }
+    .btn-reject:hover { box-shadow: 0 4px 12px rgba(231,76,60,0.3); }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 10px;
+        opacity: 0.3;
+    }
+
+    /* Recent History */
+    .recent-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        font-size: 0.85rem;
+    }
+    .recent-item:last-child { border-bottom: none; }
+    .recent-status-approved { color: #2ecc71; }
+    .recent-status-rejected { color: #e74c3c; }
+
+    /* Messages */
+    .msg-box {
+        padding: 12px 18px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        font-size: 0.9rem;
+    }
+    .msg-success { background: rgba(46,204,113,0.15); color: #2ecc71; border: 1px solid rgba(46,204,113,0.3); }
+    .msg-error { background: rgba(231,76,60,0.15); color: #e74c3c; border: 1px solid rgba(231,76,60,0.3); }
+    .msg-warning { background: rgba(243,156,18,0.15); color: #f39c12; border: 1px solid rgba(243,156,18,0.3); }
+
+    /* Screenshot Preview Modal */
+    .ss-modal {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0; top: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.85);
+        align-items: center;
+        justify-content: center;
+    }
+    .ss-modal.active { display: flex; }
+    .ss-modal img {
+        max-width: 90%;
+        max-height: 90%;
+        border-radius: 10px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+    .ss-modal-close {
+        position: absolute;
+        top: 20px;
+        right: 30px;
+        color: #fff;
+        font-size: 2rem;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wpm-container">
+    <div class="wpm-wrap">
+        <div class="wpm-header">
+            <h1><i class="fas fa-cog"></i> War Point Management</h1>
+            <a href="{% url 'war-point' %}" class="btn-back-wp"><i class="fas fa-arrow-left"></i> Back to War Point</a>
+        </div>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="msg-box msg-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="wpm-grid">
+        <!-- SETTINGS -->
+        <div>
+            <div class="wpm-card">
+                <div class="wpm-card-header">
+                    <h2><i class="fas fa-sliders-h"></i> Point Settings</h2>
+                </div>
+                <div class="wpm-card-body">
+                    <form method="POST" class="settings-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="update_settings" value="1">
+
+                        <div class="form-group">
+                            <label><i class="fas fa-skull-crossbones" style="color:#e74c3c;"></i> Points per Kill</label>
+                            <input type="number" name="kill_points" value="{{ config.kill_points }}" min="0" max="100">
+                        </div>
+
+                        <div class="form-group">
+                            <label><i class="fas fa-hands-helping" style="color:#3498db;"></i> Points per Assist</label>
+                            <input type="number" name="assist_points" value="{{ config.assist_points }}" min="0" max="100">
+                        </div>
+
+                        <label class="checkbox-setting">
+                            <input type="checkbox" name="sync_to_activity" {% if config.sync_to_activity %}checked{% endif %}>
+                            <span>Sync War Points to Activity Points</span>
+                        </label>
+
+                        <button type="submit" class="btn-save-settings">
+                            <i class="fas fa-save"></i> Save Settings
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Recent Review History -->
+            <div class="wpm-card" style="margin-top: 20px;">
+                <div class="wpm-card-header">
+                    <h2><i class="fas fa-history"></i> Recent Reviews</h2>
+                </div>
+                <div class="wpm-card-body" style="padding: 0;">
+                    {% if recent %}
+                    {% for sub in recent %}
+                    <div class="recent-item">
+                        <div>
+                            <strong style="color:#ddd;">{{ sub.character.name }}</strong>
+                            <span style="color:#888;"> — {{ sub.war_date|date:"d M" }}</span>
+                        </div>
+                        <span class="recent-status-{{ sub.status|lower }}">
+                            {% if sub.status == 'APPROVED' %}<i class="fas fa-check"></i>{% else %}<i class="fas fa-times"></i>{% endif %}
+                            {{ sub.total_points }}pts
+                        </span>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="empty-state">
+                        <p>No reviews yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- PENDING SUBMISSIONS -->
+        <div>
+            <div class="wpm-card">
+                <div class="wpm-card-header">
+                    <h2><i class="fas fa-clock"></i> Pending Submissions ({{ pending|length }})</h2>
+                </div>
+                <div class="wpm-card-body">
+                    {% if pending %}
+                    {% for sub in pending %}
+                    <div class="pending-item">
+                        <div class="pending-top">
+                            <div>
+                                <div class="pending-player">{{ sub.character.name }}</div>
+                                <div class="pending-date">
+                                    <i class="fas fa-calendar"></i> War: {{ sub.war_date|date:"d M Y" }}
+                                    &nbsp;·&nbsp;
+                                    <i class="fas fa-clock"></i> Submitted: {{ sub.submitted_at|date:"d M Y H:i" }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <form method="POST" id="form-approve-{{ sub.pk }}">
+                            {% csrf_token %}
+                            <input type="hidden" name="review_submission" value="1">
+                            <input type="hidden" name="submission_id" value="{{ sub.pk }}">
+                            <input type="hidden" name="action" value="approve">
+
+                            <div class="pending-stats">
+                                <div class="stat-box stat-kill">
+                                    <input type="number" name="kill_count" value="{{ sub.kill_count }}" style="width:100%; text-align:center; background:transparent; border:1px solid rgba(231,76,60,0.3); color:#e74c3c; font-size:1.3rem; font-weight:700; border-radius:6px; padding:4px;">
+                                    <div class="stat-label">Kill (Editable)</div>
+                                </div>
+                                <div class="stat-box stat-assist">
+                                    <input type="number" name="assist_count" value="{{ sub.assist_count }}" style="width:100%; text-align:center; background:transparent; border:1px solid rgba(52,152,219,0.3); color:#3498db; font-size:1.3rem; font-weight:700; border-radius:6px; padding:4px;">
+                                    <div class="stat-label">Assist (Editable)</div>
+                                </div>
+                                <div class="stat-box stat-total">
+                                    <div class="stat-val">{{ sub.total_points }}</div>
+                                    <div class="stat-label">Claimed Pts</div>
+                                </div>
+                            </div>
+
+                            <div class="pending-screenshot">
+                                <a href="{{ sub.screenshot.url }}" target="_blank" onclick="event.preventDefault(); showScreenshot('{{ sub.screenshot.url }}');">
+                                    <i class="fas fa-image"></i> View Screenshot
+                                </a>
+                            </div>
+
+                            <div class="pending-actions">
+                                <div style="flex: 1;">
+                                    <input type="text" name="admin_notes" placeholder="Notes (optional)..." style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; margin-bottom: 8px; box-sizing: border-box;">
+                                    <button type="submit" class="btn-approve"><i class="fas fa-check"></i> Approve</button>
+                                </div>
+                            </div>
+                        </form>
+                        <form method="POST" style="margin-top: 10px;">
+                            {% csrf_token %}
+                            <input type="hidden" name="review_submission" value="1">
+                            <input type="hidden" name="submission_id" value="{{ sub.pk }}">
+                            <input type="hidden" name="action" value="reject">
+                            <div style="display:flex; gap:10px;">
+                                <input type="text" name="admin_notes" placeholder="Reason for rejection..." style="flex:1; padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; box-sizing: border-box;">
+                                <button type="submit" class="btn-reject" style="width:auto;"><i class="fas fa-times"></i> Reject</button>
+                            </div>
+                        </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-check-circle"></i>
+                        <p>No submissions to review.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    </div> <!-- end wpm-wrap -->
+</div>
+
+<!-- Screenshot Preview Modal -->
+<div class="ss-modal" id="ss-modal" onclick="this.classList.remove('active')">
+    <span class="ss-modal-close" onclick="document.getElementById('ss-modal').classList.remove('active')">&times;</span>
+    <img id="ss-modal-img" src="" alt="Screenshot Preview">
+</div>
+
+<script>
+function showScreenshot(url) {
+    document.getElementById('ss-modal-img').src = url;
+    document.getElementById('ss-modal').classList.add('active');
+}
+</script>
+{% endblock %}

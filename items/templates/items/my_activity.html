@@ -5,6 +5,7 @@
 
 {% block extra_body_attributes %}class="fullscreen-page"{% endblock %}
 
+
 {% block extra_head %}
 <style>
     html,
@@ -173,12 +174,13 @@
         font-weight: 600;
         color: #fff;
     }
-    .event-invasion { background: #e74c3c; }
+    .event-invasion, .event-inv_dragon_beast, .event-inv_carnifex, .event-inv_orfen { background: #e74c3c; }
     .event-boss_rush { background: #9b59b6; }
     .event-catacombs { background: #3498db; }
     .event-dimensional { background: #1abc9c; }
     .event-isle_awakening { background: #f39c12; }
-    .event-custom { background: #7f8c8d; }
+    .event-war_day { background: #e74c3c; }
+    .event-custom { background: #e67e22; }
 
     .no-character {
         text-align: center;
@@ -242,8 +244,39 @@
             font-size: 0.8rem;
         }
     }
+
+    .tab-nav {
+        display: flex; gap: 10px; margin-bottom: 20px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding-bottom: 10px;
+    }
+    .tab-btn {
+        background: transparent; border: none; color: #888;
+        padding: 10px 20px; cursor: pointer; font-size: 1rem;
+        font-weight: 600; border-radius: 8px; transition: all 0.3s;
+    }
+    .tab-btn:hover { background: rgba(255,255,255,0.05); color: #fff; }
+    .tab-btn.active {
+        background: rgba(218,165,32,0.15); color: #DAA520;
+        box-shadow: 0 4px 15px rgba(218,165,32,0.1);
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
 </style>
+
+<script>
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    event.currentTarget.classList.add('active');
+    document.getElementById('tab-' + tabId).classList.add('active');
+}
+</script>
 {% endblock %}
+
 
 {% block content %}
 <div class="activity-container">
@@ -396,8 +429,15 @@
         <!-- Activity History -->
         <div class="history-section">
             <div class="glass-card">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h3><i class="fas fa-history"></i> Activity History (Last 30 Days)</h3>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                    <div class="tab-nav" style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">
+                        <button class="tab-btn active" data-tab="regular-history" type="button" onclick="switchTab('regular-history')">
+                            <i class="fas fa-history" style="margin-right:6px;"></i>Activity Events History
+                        </button>
+                        <button class="tab-btn" data-tab="raid-history" type="button" onclick="switchTab('raid-history')">
+                            <i class="fas fa-dragon" style="margin-right:6px;"></i>Raid Boss History
+                        </button>
+                    </div>
                     {% if is_admin %}
                     <form action="{% url 'reset-leaderboard-data' %}" method="POST" onsubmit="return confirm('Reset ALL activity history data?\\nThis will permanently delete all activities and events!');" style="margin:0;">
                         {% csrf_token %}
@@ -419,7 +459,8 @@
                     {% endif %}
                 </div>
 
-                {% if activities %}
+                <div id="tab-regular-history" class="tab-content active">
+{% if activities %}
                 <table class="activity-table">
                     <thead>
                         <tr>
@@ -442,10 +483,21 @@
                                     </span>
                                     <span style="margin-left: 5px; color: #bbb;">{{ activity.adjustment_reason }}</span>
                                 {% else %}
+                                    {% if activity.event.event_type == 'CUSTOM' %}
+                                    <span class="event-type-badge event-custom">
+                                        🐉 Raid Boss
+                                    </span>
+                                    {% else %}
                                     <span class="event-type-badge event-{{ activity.event.event_type|lower }}">
                                         {{ activity.event.get_event_type_display }}
                                     </span>
+                                    {% endif %}
                                     <span style="margin-left: 5px;">{{ activity.event.name }}</span>
+                                    {% if activity.event.description %}
+                                        <div style="font-size: 0.75rem; color: #aaa; margin-top: 4px; padding-left: 5px; border-left: 2px solid #555;">
+                                            <i class="fas fa-sticky-note" style="margin-right: 3px; color:#FFD700;"></i>{{ activity.event.description }}
+                                        </div>
+                                    {% endif %}
                                     {% if activity.event.is_mandatory %}
                                     <span style="color: #e74c3c; margin-left: 5px; font-size: 0.8rem;" title="Mandatory Event"><i class="fas fa-exclamation-circle"></i> Mandatory</span>
                                         {% if activity.event.event_type == 'INVASION' %}
@@ -465,6 +517,8 @@
                             </td>
                             <td>
                                 {% if activity.is_adjustment %}
+                                    <span style="color: #666;">-</span>
+                                {% elif activity.event.event_type == 'CUSTOM' %}
                                     <span style="color: #666;">-</span>
                                 {% elif "War Day:" in activity.event.name %}
                                     <span style="color: #666;">-</span>
@@ -554,9 +608,171 @@
                     <p>No activity records found.</p>
                 </div>
                 {% endif %}
-            </div>
+            
+</div>
+<div id="tab-raid-history" class="tab-content">
+{% if raid_activities %}
+                <table class="activity-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Event</th>
+                            <th>Result</th>
+                            <th>Status</th>
+                            <th>Points</th>
+                            <th>Win Streak</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for activity in raid_activities %}
+                        <tr>
+                            <td>{{ activity.event.date|date:"M d, H:i" }}</td>
+                            <td>
+                                {% if activity.is_adjustment %}
+                                    <span class="event-type-badge" style="background: {% if activity.points_earned > 0 %}#2ecc71{% else %}#e74c3c{% endif %};">
+                                        {{ activity.adjustment_type }}
+                                    </span>
+                                    <span style="margin-left: 5px; color: #bbb;">{{ activity.adjustment_reason }}</span>
+                                {% else %}
+                                    {% if activity.event.event_type == 'CUSTOM' %}
+                                    <span class="event-type-badge event-custom">
+                                        🐉 Raid Boss
+                                    </span>
+                                    {% else %}
+                                    <span class="event-type-badge event-{{ activity.event.event_type|lower }}">
+                                        {{ activity.event.get_event_type_display }}
+                                    </span>
+                                    {% endif %}
+                                    <span style="margin-left: 5px;">{{ activity.event.name }}</span>
+                                    {% if activity.event.description %}
+                                        <div style="font-size: 0.75rem; color: #aaa; margin-top: 4px; padding-left: 5px; border-left: 2px solid #555;">
+                                            <i class="fas fa-sticky-note" style="margin-right: 3px; color:#FFD700;"></i>{{ activity.event.description }}
+                                        </div>
+                                    {% endif %}
+                                    {% if activity.event.is_mandatory %}
+                                    <span style="color: #e74c3c; margin-left: 5px; font-size: 0.8rem;" title="Mandatory Event"><i class="fas fa-exclamation-circle"></i> Mandatory</span>
+                                        {% if activity.event.event_type == 'INVASION' %}
+                                            {% with missed_bosses=activity.get_missed_mandatory_bosses %}
+                                                {% if missed_bosses %}
+                                                    <div style="font-size: 0.75rem; color: #e74c3c; margin-top: 4px; padding-left: 5px; border-left: 2px solid #e74c3c;">
+                                                        Missed: 
+                                                        {% for missed in missed_bosses %}
+                                                            {{ missed }}{% if not forloop.last %}, {% endif %}
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                            {% endwith %}
+                                        {% endif %}
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if activity.is_adjustment %}
+                                    <span style="color: #666;">-</span>
+                                {% elif activity.event.event_type == 'CUSTOM' %}
+                                    <span style="color: #666;">-</span>
+                                {% elif "War Day:" in activity.event.name %}
+                                    <span style="color: #666;">-</span>
+                                {% elif activity.event.is_completed %}
+                                    {% if activity.event.event_type == 'BOSS_RUSH' or activity.event.event_type == 'CATACOMBS' or activity.event.event_type == 'DIMENSIONAL' %}
+                                        {% if character.clan == 'Valhalla' %}
+                                            {% if activity.event.is_win_valhalla %}
+                                            <span style="color:#2ecc71; font-weight:600;"><i class="fas fa-trophy"></i> Win</span>
+                                            {% else %}
+                                            <span style="color:#e74c3c; font-weight:600;"><i class="fas fa-skull"></i> Lose</span>
+                                            {% endif %}
+                                        {% else %}
+                                            {% if activity.event.is_win_valkyrie %}
+                                            <span style="color:#2ecc71; font-weight:600;"><i class="fas fa-trophy"></i> Win</span>
+                                            {% else %}
+                                            <span style="color:#e74c3c; font-weight:600;"><i class="fas fa-skull"></i> Lose</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% else %}
+                                        {% if activity.event.is_win %}
+                                        <span style="color:#2ecc71; font-weight:600;"><i class="fas fa-trophy"></i> Win</span>
+                                        {% else %}
+                                        <span style="color:#e74c3c; font-weight:600;"><i class="fas fa-skull"></i> Lose</span>
+                                        {% endif %}
+                                    {% endif %}
+                                {% else %}
+                                    <span style="color: #666;">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if activity.is_adjustment %}
+                                    {% if activity.points_earned > 0 %}
+                                    <span style="color: #2ecc71; font-weight: 600;"><i class="fas fa-plus-circle"></i> Give</span>
+                                    {% else %}
+                                    <span style="color: #e74c3c; font-weight: 600;"><i class="fas fa-minus-circle"></i> Remove</span>
+                                    {% endif %}
+                                {% else %}
+                                    {% if activity.status == 'ATTENDED' %}
+                                    <span class="status-attended"><i class="fas fa-check-circle"></i> Attended</span>
+                                    {% else %}
+                                    <span class="status-absent"><i class="fas fa-times-circle"></i> Absent</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if activity.points_earned > 0 %}
+                                <strong style="color: #2ecc71;">+{{ activity.points_earned }}</strong>
+                                {% elif activity.points_earned < 0 %}
+                                <strong style="color: #e74c3c;">{{ activity.points_earned }}</strong>
+                                {% else %}
+                                <span style="color: #888;">0</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if activity.win_streak_bonus > 0 %}
+                                <strong style="color: #FFD700;">+{{ activity.win_streak_bonus }}</strong>
+                                {% else %}
+                                <span style="color: #555;">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                {% if raid_activities.has_other_pages %}
+                <div style="display:flex; justify-content:center; margin-top:20px; gap: 5px; padding-bottom: 20px;">
+                    {% if raid_activities.has_previous %}
+                        <a href="?page={{ raid_activities.previous_page_number }}" style="padding: 5px 12px; background: rgba(218,165,32,0.1); color: #DAA520; border: 1px solid rgba(218,165,32,0.3); border-radius: 4px; text-decoration: none;">&laquo; Prev</a>
+                    {% else %}
+                        <span style="padding: 5px 12px; background: rgba(255,255,255,0.05); color: #555; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">&laquo; Prev</span>
+                    {% endif %}
+
+                    <span style="padding: 5px 12px; color: #ccc;">Page {{ raid_activities.number }} of {{ raid_activities.paginator.num_pages }}</span>
+
+                    {% if raid_activities.has_next %}
+                        <a href="?page={{ raid_activities.next_page_number }}" style="padding: 5px 12px; background: rgba(218,165,32,0.1); color: #DAA520; border: 1px solid rgba(218,165,32,0.3); border-radius: 4px; text-decoration: none;">Next &raquo;</a>
+                    {% else %}
+                        <span style="padding: 5px 12px; background: rgba(255,255,255,0.05); color: #555; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">Next &raquo;</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                {% else %}
+                <div style="text-align: center; padding: 40px; color: #888;">
+                    <i class="fas fa-calendar-times" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.3;"></i>
+                    <p>No activity records found.</p>
+                </div>
+                {% endif %}
+            
+</div></div>
         </div>
     </div>
     {% endif %}
 </div>
+
+<script>
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    event.currentTarget.classList.add('active');
+    document.getElementById('tab-' + tabId).classList.add('active');
+}
+</script>
 {% endblock %}

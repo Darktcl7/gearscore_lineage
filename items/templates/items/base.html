@@ -710,18 +710,27 @@
                         {% if user.is_staff or user.admin_role.is_event_admin %}
                         <a href="{% url 'manage-events' %}" style="color: #FF7777;">Battle Command</a>
                         {% endif %}
+                        {% if user.is_staff or user.admin_role.is_event_admin or user.admin_role.is_raidboss_admin %}
+                        <a href="{% url 'raid-boss-activity' %}" style="color: #FF7777;">Raid Boss Activity</a>
+                        {% endif %}
 
                         <!-- 2. Activity Rank -->
                         <a href="{% url 'activity-leaderboard' %}">Activity Rank</a>
 
-                        <!-- 3. My Activity -->
+
+                        <!-- 4. My Activity -->
                         {% if user.is_authenticated %}
                         <a href="{% url 'my-activity' %}">My Activity</a>
                         {% endif %}
                     </div>
                 </div>
 
+                <!-- WAR POINT MENU -->
+                <a href="{% url 'war-point' %}"
+                    class="{% if request.resolver_match.url_name == 'war-point' or request.resolver_match.url_name == 'war-point-manage' %}active{% endif %}">War Point</a>
+
                 <!-- DKP MENU (DROPDOWN) -->
+                {% if feature_toggles.enable_dkp_system %}
                 <div class="dropdown">
                     <a href="#" class="dropbtn" style="cursor: default;">DKP System ▾</a>
                     <div class="dropdown-content">
@@ -739,10 +748,13 @@
                         {% endif %}
                     </div>
                 </div>
+                {% endif %}
 
                 <!-- TREASURY MENU -->
+                {% if feature_toggles.enable_dkp_system %}
                 <a href="{% url 'web-dkp-treasury' %}"
                     class="{% if request.resolver_match.url_name == 'web-dkp-treasury' %}active{% endif %}">Treasury</a>
+                {% endif %}
 
                 <!-- SOUL MENU -->
                 <a href="{% url 'soul-page' %}"
@@ -766,9 +778,7 @@
                         {% if user.is_staff %}
                         <a href="{% url 'discord-dashboard' %}">Discord Control</a>
                         {% endif %}
-                        {% if user.is_staff or user.admin_role.is_auction_admin %}
-                        <a href="{% url 'web-portal-auction' %}">Auction House</a>
-                        {% endif %}
+                        {% comment %}Auction House disabled - DKP no longer used{% endcomment %}
                     </div>
                 </div>
                 {% endif %}

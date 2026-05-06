@@ -41,6 +41,7 @@ from .views import (
     edit_power_rank,
     delete_power_rank_screenshot,
     update_power_rank_validation,
+    update_power_rank_farm_snapshot,
     
     # Activity - Admin All Members
     admin_all_members_activity,
@@ -167,6 +168,9 @@ urlpatterns = [
     # URL: /items/activity/events/ -> Admin: Manage Events
     path('activity/events/', manage_events, name='manage-events'),
     
+    # URL: /items/activity/raid-boss/ -> Admin: Raid Boss Activity
+    path('activity/raid-boss/', __import__('items.views', fromlist=['raid_boss_activity']).raid_boss_activity, name='raid-boss-activity'),
+    
     # URL: /items/activity/ap_adjust/ -> Admin: Adjust AP manually
     path('activity/ap_adjust/', __import__('items.views', fromlist=['adjust_ap']).adjust_ap, name='adjust_ap'),
     
@@ -175,6 +179,12 @@ urlpatterns = [
     
     # URL: /items/activity/events/new/ -> Admin: Create Event
     path('activity/events/new/', create_event, name='create-event'),
+
+    
+    # War Point System
+    path('war-point/', __import__('items.views', fromlist=['war_point_page']).war_point_page, name='war-point'),
+    path('war-point/manage/', __import__('items.views', fromlist=['war_point_manage']).war_point_manage, name='war-point-manage'),
+    path('war-point/analyze-image/', __import__('items.views', fromlist=['analyze_war_image']).analyze_war_image, name='analyze-war-image'),
     
     # URL: /items/activity/events/1/attendance/ -> Admin: Record Attendance
     path('activity/events/<int:event_pk>/attendance/', record_attendance, name='record-attendance'),
@@ -260,6 +270,11 @@ urlpatterns = [
     path('api/discord/announcements/', 
          __import__('items.api_views', fromlist=['api_check_discord_announcements']).api_check_discord_announcements, 
          name='api-discord-announcements'),
+         
+    # API: Submit War Point
+    path('api/war-point/submit/', 
+         __import__('items.api_views', fromlist=['api_submit_war_point']).api_submit_war_point, 
+         name='api-submit-war-point'),
     
     # ===============================================
     # 6. DISCORD LINK
@@ -284,6 +299,9 @@ urlpatterns = [
 
     # URL: /portal/power-rank/validation/update/ -> AJAX: Update Validation Admin
     path('power-rank/validation/update/', update_power_rank_validation, name='update-power-rank-validation'),
+
+    # URL: /portal/power-rank/farm-snapshot/update/ -> Manual update farm spot snapshot
+    path('power-rank/farm-snapshot/update/', update_power_rank_farm_snapshot, name='update-power-rank-farm-snapshot'),
 
     # ===============================================
     # 8. HALL OF FAME
@@ -321,3 +339,4 @@ urlpatterns = [
     path('soul/batch-update/', batch_update_souls, name='batch-update-souls'),
 
 ]
+
