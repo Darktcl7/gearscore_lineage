@@ -53,8 +53,21 @@
         grid-template-columns: 340px 1fr;
         gap: 25px;
     }
-    @media (max-width: 768px) {
+    @media (max-width: 900px) {
         .wpm-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+        main { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+        .wpm-container { padding: 0; }
+        .wpm-wrap { margin: 0; border-radius: 0; border-left: none; border-right: none; }
+        .wpm-header { border-radius: 0; padding: 12px 15px; }
+        .wpm-header h1 { font-size: 1.2rem; }
+        .wpm-card-body { padding: 12px; }
+        .pending-item { padding: 10px !important; }
+        .pending-stats { flex-direction: row !important; gap: 5px !important; }
+        .stat-box { padding: 4px !important; }
+        .stat-box .stat-val, .stat-box input { font-size: 0.95rem !important; }
+        .btn-approve, .btn-reject { padding: 6px 8px !important; font-size: 0.75rem !important; }
     }
     .wpm-card {
         background: rgba(18,18,18,0.85);
@@ -218,26 +231,26 @@
         box-sizing: border-box;
     }
     .btn-approve {
-        padding: 8px 18px;
+        padding: 6px 12px;
         background: linear-gradient(135deg, #2ecc71, #27ae60);
         color: #fff;
         border: none;
-        border-radius: 6px;
+        border-radius: 5px;
         cursor: pointer;
         font-weight: 600;
-        font-size: 0.85rem;
+        font-size: 0.78rem;
         transition: all 0.3s;
         width: 100%;
     }
     .btn-reject {
-        padding: 8px 18px;
+        padding: 6px 12px;
         background: linear-gradient(135deg, #e74c3c, #c0392b);
         color: #fff;
         border: none;
-        border-radius: 6px;
+        border-radius: 5px;
         cursor: pointer;
         font-weight: 600;
-        font-size: 0.85rem;
+        font-size: 0.78rem;
         transition: all 0.3s;
         width: 100%;
     }
@@ -344,6 +357,12 @@
                             <input type="number" name="assist_points" value="{{ config.assist_points }}" min="0" max="100">
                         </div>
 
+                        <div class="form-group">
+                            <label><i class="fas fa-trash-alt" style="color:#DAA520;"></i> Auto-Delete Images (Days)</label>
+                            <input type="number" name="auto_delete_days" value="{{ config.auto_delete_days }}" min="0" max="365">
+                            <div style="font-size: 0.75rem; color: #888; margin-top: 4px;">0 = never delete</div>
+                        </div>
+
                         <label class="checkbox-setting">
                             <input type="checkbox" name="sync_to_activity" {% if config.sync_to_activity %}checked{% endif %}>
                             <span>Sync War Points to Activity Points</span>
@@ -358,25 +377,75 @@
 
             <!-- Recent Review History -->
             <div class="wpm-card" style="margin-top: 20px;">
-                <div class="wpm-card-header">
+                <div class="wpm-card-header" style="display: flex; justify-content: space-between; align-items: center;">
                     <h2><i class="fas fa-history"></i> Recent Reviews</h2>
                 </div>
                 <div class="wpm-card-body" style="padding: 0;">
                     {% if recent %}
-                    {% for sub in recent %}
-                    <div class="recent-item">
-                        <div>
-                            <strong style="color:#ddd;">{{ sub.character.name }}</strong>
-                            <span style="color:#888;"> — {{ sub.war_date|date:"d M" }}</span>
+                    <form method="POST" id="recentDeleteForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="bulk_delete">
+                        <input type="hidden" name="submission_ids" id="submissionIdsInput" value="">
+                        
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            {% for sub in recent %}
+                            <div class="recent-item" style="display: flex; align-items: center; gap: 10px;">
+                                <input type="checkbox" class="recent-cb" value="{{ sub.id }}" style="cursor: pointer;">
+                                <div style="flex: 1;">
+                                    <strong style="color:#ddd;">{{ sub.character.name }}</strong>
+                                    <span style="color:#888;"> — {{ sub.war_date|date:"d M" }}</span>
+                                </div>
+                                <span class="recent-status-{{ sub.status|lower }}">
+                                    {% if sub.status == 'APPROVED' %}<i class="fas fa-check"></i>{% else %}<i class="fas fa-times"></i>{% endif %}
+                                    {{ sub.total_points }}pts
+                                </span>
+                            </div>
+                            {% endfor %}
                         </div>
-                        <span class="recent-status-{{ sub.status|lower }}">
-                            {% if sub.status == 'APPROVED' %}<i class="fas fa-check"></i>{% else %}<i class="fas fa-times"></i>{% endif %}
-                            {{ sub.total_points }}pts
-                        </span>
+                        <div style="padding: 10px; border-top: 1px solid rgba(255,255,255,0.05); text-align: right;">
+                            <button type="button" onclick="showRecentDeleteModal()" style="background: rgba(231,76,60,0.2); color: #e74c3c; border: 1px solid rgba(231,76,60,0.3); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem;"><i class="fas fa-trash"></i> Hapus Terpilih</button>
+                        </div>
+                    </form>
+
+                    <!-- Delete Modal for Recent Reviews -->
+                    <div id="recentDeleteModal" class="ss-modal" style="flex-direction:column; z-index:1000;" onclick="if(event.target===this) closeRecentDeleteModal()">
+                        <div style="background: #1e1e1e; padding: 25px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; border: 1px solid rgba(231,76,60,0.3); position: relative;">
+                            <h3 style="margin-top: 0; color: #e74c3c;"><i class="fas fa-exclamation-triangle"></i> Konfirmasi Hapus</h3>
+                            <p id="recentDeleteModalMsg" style="color: #ddd; font-size: 0.95rem; margin-bottom: 25px;">Hapus data?</p>
+                            <div style="display: flex; gap: 15px; justify-content: center;">
+                                <button onclick="closeRecentDeleteModal()" style="padding: 8px 16px; background: rgba(255,255,255,0.1); border: none; border-radius: 6px; color: #fff; cursor: pointer; transition: 0.3s;">Batal</button>
+                                <button onclick="confirmRecentDelete()" style="padding: 8px 16px; background: #e74c3c; border: none; border-radius: 6px; color: #fff; cursor: pointer; font-weight: bold; transition: 0.3s;"><i class="fas fa-trash"></i> Hapus</button>
+                            </div>
+                        </div>
                     </div>
-                    {% endfor %}
+                    
+                    <script>
+                    function showRecentDeleteModal() {
+                        var ids = [];
+                        document.querySelectorAll('.recent-cb:checked').forEach(function(cb) {
+                            ids.push(cb.value);
+                        });
+                        if (ids.length === 0) {
+                            alert('Pilih minimal 1 data untuk dihapus.');
+                            return;
+                        }
+                        document.getElementById('recentDeleteModalMsg').textContent = 'Hapus ' + ids.length + ' data war point secara permanen? Poin akan ikut terhapus.';
+                        document.getElementById('recentDeleteModal').classList.add('active');
+                    }
+                    function confirmRecentDelete() {
+                        var ids = [];
+                        document.querySelectorAll('.recent-cb:checked').forEach(function(cb) {
+                            ids.push(cb.value);
+                        });
+                        document.getElementById('submissionIdsInput').value = ids.join(',');
+                        document.getElementById('recentDeleteForm').submit();
+                    }
+                    function closeRecentDeleteModal() {
+                        document.getElementById('recentDeleteModal').classList.remove('active');
+                    }
+                    </script>
                     {% else %}
-                    <div class="empty-state">
+                    <div class="empty-state" style="padding: 20px;">
                         <p>No reviews yet.</p>
                     </div>
                     {% endif %}
@@ -392,66 +461,62 @@
                 </div>
                 <div class="wpm-card-body">
                     {% if pending %}
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 15px;">
                     {% for sub in pending %}
-                    <div class="pending-item">
-                        <div class="pending-top">
+                    <div class="pending-item" style="padding: 12px; margin-bottom: 0;">
+                        <div class="pending-top" style="margin-bottom: 8px;">
                             <div>
-                                <div class="pending-player">{{ sub.character.name }}</div>
-                                <div class="pending-date">
+                                <div class="pending-player" style="font-size: 0.95rem;">{{ sub.character.name }}</div>
+                                <div class="pending-date" style="font-size: 0.75rem;">
                                     <i class="fas fa-calendar"></i> War: {{ sub.war_date|date:"d M Y" }}
                                     &nbsp;·&nbsp;
-                                    <i class="fas fa-clock"></i> Submitted: {{ sub.submitted_at|date:"d M Y H:i" }}
+                                    <i class="fas fa-clock"></i> Sub: {{ sub.submitted_at|date:"d M, H:i" }}
                                 </div>
+                                {% if sub.admin_notes %}
+                                <div style="font-size: 0.75rem; color: #f39c12; margin-top: 4px;">{{ sub.admin_notes }}</div>
+                                {% endif %}
                             </div>
                         </div>
 
-                        <form method="POST" id="form-approve-{{ sub.pk }}">
+                        <form method="POST" id="form-approve-{{ sub.pk }}" style="margin: 0;">
                             {% csrf_token %}
                             <input type="hidden" name="review_submission" value="1">
                             <input type="hidden" name="submission_id" value="{{ sub.pk }}">
                             <input type="hidden" name="action" value="approve">
 
-                            <div class="pending-stats">
-                                <div class="stat-box stat-kill">
-                                    <input type="number" name="kill_count" value="{{ sub.kill_count }}" style="width:100%; text-align:center; background:transparent; border:1px solid rgba(231,76,60,0.3); color:#e74c3c; font-size:1.3rem; font-weight:700; border-radius:6px; padding:4px;">
-                                    <div class="stat-label">Kill (Editable)</div>
+                            <div class="pending-stats" style="gap: 8px; margin-bottom: 8px;">
+                                <div class="stat-box stat-kill" style="padding: 6px;">
+                                    <input type="number" name="kill_count" value="{{ sub.kill_count }}" style="width:100%; text-align:center; background:transparent; border:1px solid rgba(231,76,60,0.3); color:#e74c3c; font-size:1.1rem; font-weight:700; border-radius:4px; padding:2px;">
+                                    <div class="stat-label" style="font-size: 0.65rem;">Kill</div>
                                 </div>
-                                <div class="stat-box stat-assist">
-                                    <input type="number" name="assist_count" value="{{ sub.assist_count }}" style="width:100%; text-align:center; background:transparent; border:1px solid rgba(52,152,219,0.3); color:#3498db; font-size:1.3rem; font-weight:700; border-radius:6px; padding:4px;">
-                                    <div class="stat-label">Assist (Editable)</div>
+                                <div class="stat-box stat-assist" style="padding: 6px;">
+                                    <input type="number" name="assist_count" value="{{ sub.assist_count }}" style="width:100%; text-align:center; background:transparent; border:1px solid rgba(52,152,219,0.3); color:#3498db; font-size:1.1rem; font-weight:700; border-radius:4px; padding:2px;">
+                                    <div class="stat-label" style="font-size: 0.65rem;">Assist</div>
                                 </div>
-                                <div class="stat-box stat-total">
-                                    <div class="stat-val">{{ sub.total_points }}</div>
-                                    <div class="stat-label">Claimed Pts</div>
+                                <div class="stat-box stat-total" style="padding: 6px;">
+                                    <div class="stat-val" style="font-size: 1.1rem;">{{ sub.total_points }}</div>
+                                    <div class="stat-label" style="font-size: 0.65rem;">Pts</div>
                                 </div>
                             </div>
 
-                            <div class="pending-screenshot">
-                                <a href="{{ sub.screenshot.url }}" target="_blank" onclick="event.preventDefault(); showScreenshot('{{ sub.screenshot.url }}');">
+                            <div class="pending-screenshot" style="padding: 6px; margin-bottom: 8px;">
+                                <a href="{{ sub.screenshot.url }}" target="_blank" onclick="event.preventDefault(); showScreenshot('{{ sub.screenshot.url }}');" style="font-size: 0.85rem;">
                                     <i class="fas fa-image"></i> View Screenshot
                                 </a>
                             </div>
 
-                            <div class="pending-actions">
-                                <div style="flex: 1;">
-                                    <input type="text" name="admin_notes" placeholder="Notes (optional)..." style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; margin-bottom: 8px; box-sizing: border-box;">
-                                    <button type="submit" class="btn-approve"><i class="fas fa-check"></i> Approve</button>
+                            <div class="pending-actions" style="margin-top: 0;">
+                                <input type="text" name="admin_notes" id="notes-{{ sub.pk }}" placeholder="Notes (required for reject)..." style="width: 100%; padding: 8px 10px; font-size: 0.85rem; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; margin-bottom: 8px; box-sizing: border-box;">
+                                
+                                <div style="display: flex; gap: 8px;">
+                                    <button type="submit" name="action" value="approve" class="btn-approve" style="flex: 1; padding: 8px; font-size: 0.85rem;" onclick="return confirm('Approve this submission?');"><i class="fas fa-check"></i> Approve</button>
+                                    <button type="submit" name="action" value="reject" class="btn-reject" style="flex: 1; padding: 8px; font-size: 0.85rem;" onclick="if(!document.getElementById('notes-{{ sub.pk }}').value.trim()) { alert('Keterangan (Notes) wajib diisi jika ingin Reject!'); return false; } return confirm('Reject this submission?');"><i class="fas fa-times"></i> Reject</button>
                                 </div>
                             </div>
                         </form>
-                        <form method="POST" style="margin-top: 10px;">
-                            {% csrf_token %}
-                            <input type="hidden" name="review_submission" value="1">
-                            <input type="hidden" name="submission_id" value="{{ sub.pk }}">
-                            <input type="hidden" name="action" value="reject">
-                            <div style="display:flex; gap:10px;">
-                                <input type="text" name="admin_notes" placeholder="Reason for rejection..." style="flex:1; padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; box-sizing: border-box;">
-                                <button type="submit" class="btn-reject" style="width:auto;"><i class="fas fa-times"></i> Reject</button>
-                            </div>
-                        </form>
-                        </div>
                     </div>
                     {% endfor %}
+                    </div>
                     {% else %}
                     <div class="empty-state">
                         <i class="fas fa-check-circle"></i>

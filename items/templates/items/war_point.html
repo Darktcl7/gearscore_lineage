@@ -48,6 +48,18 @@
     @media (max-width: 768px) {
         .wp-grid { grid-template-columns: 1fr; }
     }
+    @media (max-width: 600px) {
+        main { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+        .wp-container { padding: 0; }
+        .wp-wrap { margin: 0; border-radius: 0; border-left: none; border-right: none; }
+        .wp-header { border-radius: 0; padding: 15px; margin-bottom: 15px; }
+        .wp-header h1 { font-size: 1.4rem; }
+        .wp-grid { padding: 0 12px !important; gap: 15px; }
+        .wp-card { border-radius: 10px; }
+        .wp-card-header { padding: 12px 15px; }
+        .wp-card-body { padding: 12px 15px; }
+        .kill-assist-row { gap: 8px; }
+    }
     .wp-card {
         background: rgba(18,18,18,0.85);
         border-radius: 16px;
@@ -292,11 +304,6 @@
     <div class="wp-wrap">
         <div class="wp-header">
             <h1><i class="fas fa-crosshairs"></i> WAR POINT</h1>
-            <p>Upload your Kill/Assist screenshot in the Discord forum to earn War Points</p>
-            <div style="margin-top: 12px; display: flex; gap: 10px; justify-content: center;">
-                <span class="config-badge config-kill"><i class="fas fa-skull-crossbones"></i> Kill = {{ config.kill_points }} pts</span>
-                <span class="config-badge config-assist"><i class="fas fa-hands-helping"></i> Assist = {{ config.assist_points }} pts</span>
-            </div>
         </div>
 
         {% if messages %}
@@ -308,8 +315,119 @@
         {% endif %}
 
         <div class="wp-grid" style="padding: 0 25px;">
-        <!-- LEADERBOARD -->
+        <!-- SUBMISSION FORM -->
         <div class="wp-card">
+            <div class="wp-card-header">
+                <h2><i class="fas fa-upload"></i> Submit War Screenshot</h2>
+            </div>
+            <div class="wp-card-body">
+                <form method="POST" enctype="multipart/form-data" class="wp-form" id="wp-submit-form">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-user-circle"></i> Character</label>
+                        {% if user_characters %}
+                            {% with char=user_characters.0 %}
+                            <input type="text" value="{{ char.name }} {% if char.clan %}({{ char.clan }}){% endif %}" readonly style="background: rgba(0,0,0,0.3); color:#aaa; cursor:not-allowed;">
+                            <input type="hidden" name="character" value="{{ char.id }}">
+                            {% endwith %}
+                        {% else %}
+                            <p style="color:#e74c3c; font-size:0.9rem;">You don't have any characters registered.</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="kill-assist-row">
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar-alt"></i> War Date</label>
+                            <input type="date" name="war_date" required max="{{ today|date:'Y-m-d' }}">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-clock"></i> War Time (00:00 - 23:59)</label>
+                            <input type="time" name="war_time" required lang="en-GB">
+                        </div>
+                    </div>
+
+                    <div class="kill-assist-row">
+                        <div class="form-group">
+                            <label><i class="fas fa-skull-crossbones" style="color:#e74c3c;"></i> My Kills</label>
+                            <input type="number" name="kill_count" min="0" value="0" required onfocus="if(this.value=='0') this.value='';" onblur="if(this.value=='') this.value='0';">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-hands-helping" style="color:#3498db;"></i> My Assists</label>
+                            <input type="number" name="assist_count" min="0" value="0" required onfocus="if(this.value=='0') this.value='';" onblur="if(this.value=='') this.value='0';">
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label><i class="fas fa-image"></i> Upload Screenshot</label>
+                        <input type="file" name="screenshot" id="ss-input" accept="image/png, image/jpeg, image/jpg, image/webp, image/heic, image/heif, image/gif, image/bmp" style="display: none;" required>
+                        
+                        <div style="display: flex; gap: 15px; align-items: stretch; min-height: 140px;">
+                            <div class="upload-zone" id="upload-zone" onclick="document.getElementById('ss-input').click()" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                                <i class="fas fa-cloud-upload-alt" id="upload-icon"></i>
+                                <p id="upload-text">Click here to select image</p>
+                            </div>
+                            
+                            <div id="preview-container" style="display: none; flex: 1; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(0,0,0,0.3); align-items: center; justify-content: center; padding: 10px;">
+                                <img id="upload-preview" src="" style="max-width: 100%; max-height: 120px; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit-wp" id="btn-submit">
+                        <i class="fas fa-paper-plane"></i> Submit War Point
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- MY SUBMISSIONS -->
+        <div class="wp-card">
+            <div class="wp-card-header">
+                <h2><i class="fas fa-history"></i> My Submission History</h2>
+            </div>
+            <div class="wp-card-body">
+                {% if my_submissions %}
+                {% for sub in my_submissions %}
+                <div class="sub-item sub-{{ sub.status|lower }}">
+                    
+                    <!-- Thumbnail Image -->
+                    <div style="width: 60px; height: 60px; margin-right: 15px; flex-shrink: 0; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5);">
+                        {% if sub.screenshot %}
+                        <img src="{{ sub.screenshot.url }}" onclick="openModal('{{ sub.screenshot.url }}')" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                        {% else %}
+                        <div style="display:flex; height:100%; align-items:center; justify-content:center; color:#555;"><i class="fas fa-image"></i></div>
+                        {% endif %}
+                    </div>
+
+                    <div class="sub-info">
+                        <div class="sub-date">{{ sub.war_date|date:"d M Y" }} — {{ sub.character.name }}</div>
+                        <div class="sub-stats">
+                            <span style="color: #e74c3c;"><i class="fas fa-skull-crossbones"></i> {{ sub.kill_count }} Kill</span>
+                            &nbsp;·&nbsp;
+                            <span style="color: #3498db;"><i class="fas fa-hands-helping"></i> {{ sub.assist_count }} Assist</span>
+                            {% if sub.admin_notes %}
+                            <br><small style="color: #888;">Admin: {{ sub.admin_notes }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <span class="sub-status status-{{ sub.status|lower }}">{{ sub.get_status_display }}</span>
+                    <span class="sub-points {% if sub.status == 'APPROVED' %}pts-approved{% elif sub.status == 'PENDING' %}pts-pending{% else %}pts-rejected{% endif %}">
+                        {% if sub.status == 'APPROVED' %}+{% endif %}{{ sub.total_points }} pts
+                    </span>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>No submissions yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- LEADERBOARD -->
+        <div class="wp-card wp-card-full">
             <div class="wp-card-header">
                 <h2><i class="fas fa-trophy"></i> Leaderboard - {{ current_month }}</h2>
                 {% if is_admin_user %}
@@ -359,45 +477,48 @@
                 {% endif %}
             </div>
         </div>
-
-
-
-        <!-- MY SUBMISSIONS -->
-        <div class="wp-card">
-            <div class="wp-card-header">
-                <h2><i class="fas fa-history"></i> My Submission History</h2>
-            </div>
-            <div class="wp-card-body">
-                {% if my_submissions %}
-                {% for sub in my_submissions %}
-                <div class="sub-item sub-{{ sub.status|lower }}">
-                    <div class="sub-info">
-                        <div class="sub-date">{{ sub.war_date|date:"d M Y" }} — {{ sub.character.name }}</div>
-                        <div class="sub-stats">
-                            <span style="color: #e74c3c;"><i class="fas fa-skull-crossbones"></i> {{ sub.kill_count }} Kill</span>
-                            &nbsp;·&nbsp;
-                            <span style="color: #3498db;"><i class="fas fa-hands-helping"></i> {{ sub.assist_count }} Assist</span>
-                            {% if sub.admin_notes %}
-                            <br><small style="color: #888;">Admin: {{ sub.admin_notes }}</small>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <span class="sub-status status-{{ sub.status|lower }}">{{ sub.get_status_display }}</span>
-                    <span class="sub-points {% if sub.status == 'APPROVED' %}pts-approved{% elif sub.status == 'PENDING' %}pts-pending{% else %}pts-rejected{% endif %}">
-                        {% if sub.status == 'APPROVED' %}+{% endif %}{{ sub.total_points }} pts
-                    </span>
-                </div>
-                {% endfor %}
-                {% else %}
-                <div class="empty-state">
-                    <i class="fas fa-inbox"></i>
-                    <p>No submissions yet.</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
     </div>
     </div> <!-- End wp-wrap -->
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<!-- Image Modal -->
+<div id="imageModal" style="display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+    <span onclick="document.getElementById('imageModal').style.display='none'" style="position: absolute; top: 20px; right: 35px; color: #f1f1f1; font-size: 40px; font-weight: bold; cursor: pointer;">&times;</span>
+    <img id="modalImg" style="max-width: 90%; max-height: 90%; border-radius: 8px; box-shadow: 0 5px 25px rgba(0,0,0,0.8);">
+</div>
+
+<script>
+    // 1. Upload Preview Logic
+    const fileInput = document.getElementById('ss-input');
+    const uploadText = document.getElementById('upload-text');
+    const uploadIcon = document.getElementById('upload-icon');
+    const uploadPreview = document.getElementById('upload-preview');
+    const previewContainer = document.getElementById('preview-container');
+
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                uploadPreview.src = e.target.result;
+                previewContainer.style.display = 'flex';
+                uploadText.textContent = "Change Image: " + file.name;
+            }
+            
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // 2. Image Modal Popup Logic
+    function openModal(imgSrc) {
+        const modal = document.getElementById("imageModal");
+        const modalImg = document.getElementById("modalImg");
+        modal.style.display = "flex";
+        modalImg.src = imgSrc;
+    }
+</script>
 {% endblock %}

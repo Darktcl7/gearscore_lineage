@@ -90,6 +90,8 @@ class AdminRole(models.Model):
         help_text="Access to verify Power Rank entries")
     is_raidboss_admin = models.BooleanField("Raid Boss Admin", default=False,
         help_text="Access to input raid boss participation (cannot change boss points)")
+    is_warpoint_admin = models.BooleanField("War Point Admin", default=False,
+        help_text="Access to manage War Points")
         
     # Granular DKP Admin controls
     can_give_dkp = models.BooleanField("Can Give DKP", default=False)

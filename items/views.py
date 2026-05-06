@@ -70,6 +70,7 @@ def character_management(request):
             'is_auction_admin': role.is_auction_admin,
             'is_soul_admin': role.is_soul_admin,
             'is_powerrank_admin': role.is_powerrank_admin,
+            'is_warpoint_admin': role.is_warpoint_admin,
             'can_give_dkp': role.can_give_dkp,
             'can_remove_dkp': role.can_remove_dkp,
             'can_decay_dkp': role.can_decay_dkp,
@@ -1856,6 +1857,7 @@ def toggle_admin_role(request, user_pk):
         role.is_auction_admin = data.get('is_auction_admin', role.is_auction_admin)
         role.is_soul_admin = data.get('is_soul_admin', role.is_soul_admin)
         role.is_powerrank_admin = data.get('is_powerrank_admin', role.is_powerrank_admin)
+        role.is_warpoint_admin = data.get('is_warpoint_admin', role.is_warpoint_admin)
         role.can_give_dkp = data.get('can_give_dkp', role.can_give_dkp)
         role.can_remove_dkp = data.get('can_remove_dkp', role.can_remove_dkp)
         role.can_decay_dkp = data.get('can_decay_dkp', role.can_decay_dkp)
@@ -2909,12 +2911,13 @@ def war_point_page(request):
     if request.method == 'POST':
         character_id = request.POST.get('character')
         war_date_str = request.POST.get('war_date')
+        war_time_str = request.POST.get('war_time', '')
         kill_count = int(request.POST.get('kill_count', 0))
         assist_count = int(request.POST.get('assist_count', 0))
         screenshot = request.FILES.get('screenshot')
         
         if not character_id or not war_date_str or not screenshot:
-            messages.error(request, 'Mohon lengkapi semua data dan upload screenshot.')
+            messages.error(request, 'Please fill in all fields and upload a screenshot.')
             return redirect('war-point')
         
         character = get_object_or_404(Character, pk=character_id, owner=request.user)
@@ -2924,82 +2927,29 @@ def war_point_page(request):
         try:
             war_date = datetime.strptime(war_date_str, '%Y-%m-%d').date()
         except ValueError:
-            messages.error(request, 'Format tanggal tidak valid.')
+            messages.error(request, 'Invalid date format.')
             return redirect('war-point')
         
-        # Verify date is not in the future
-        if war_date > date.today():
-            messages.error(request, 'Tanggal war tidak boleh di masa depan.')
+        # Verify date is not in the future (allowing +1 day for timezone differences)
+        from django.utils import timezone
+        if war_date > timezone.localtime().date() + timedelta(days=1):
+            messages.error(request, 'War date cannot be in the future.')
             return redirect('war-point')
         
         # Verify date is not too old (max 7 days)
         if war_date < date.today() - timedelta(days=7):
-            messages.error(request, 'Screenshot hanya bisa disubmit maksimal 7 hari setelah tanggal war.')
+            messages.error(request, 'Screenshots can only be submitted within 7 days of the war date.')
             return redirect('war-point')
         
         # Check duplicate
         if WarPointSubmission.objects.filter(character=character, war_date=war_date).exists():
-            messages.error(request, f'Anda sudah pernah mengirim data untuk tanggal {war_date}. Hubungi admin jika ingin mengubah.')
+            messages.error(request, f'You have already submitted data for {war_date}. Contact admin to make changes.')
             return redirect('war-point')
         
-        # --- EasyOCR Logic to scan Kill/Assist and Date ---
-        ocr_note = ""
-        try:
-            import numpy as np
-            from PIL import Image
-            import re
-            import logging
-            from paddleocr import PaddleOCR
-            
-            # Load the image
-            img = Image.open(screenshot).convert('RGB')
-            img_np = np.array(img)
-            
-            # Initialize PaddleOCR (suppress logs)
-            logging.getLogger('ppocr').setLevel(logging.ERROR)
-            ocr = PaddleOCR(use_angle_cls=False, lang='en', show_log=False)
-            
-            # Read text
-            results = ocr.ocr(img_np, cls=False)
-            extracted_texts = []
-            if results and results[0]:
-                extracted_texts = [line[1][0] for line in results[0]]
-            
-            # 1. Verify Date (Game format is YYYY.MM.DD)
-            expected_date_str = war_date.strftime("%Y.%m.%d")
-            # Replace dot with wildcard pattern in case OCR misses dots
-            regex_date_str = expected_date_str.replace(".", r"[.\- ]")
-            date_pattern = re.compile(regex_date_str)
-            
-            date_found = False
-            for text in extracted_texts:
-                if date_pattern.search(text):
-                    date_found = True
-                    break
-                    
-            # 2. Count Kills and Assists
-            ocr_kill_count = 0
-            ocr_assist_count = 0
-            for text in extracted_texts:
-                text_lower = text.lower()
-                clean_text = re.sub(r'[^a-z]', '', text_lower)
-                
-                if 'kill' in clean_text or 'kil' in clean_text or 'kll' in clean_text:
-                    if len(clean_text) <= 5:
-                        ocr_kill_count += 1
-                if 'assist' in clean_text or 'asist' in clean_text or 'assis' in clean_text:
-                    if len(clean_text) <= 7:
-                        ocr_assist_count += 1
-            
-            # Build note for admin
-            ocr_note = f"[Auto-OCR] Date Match: {'Yes' if date_found else 'No (Not Found)'}. "
-            ocr_note += f"Detected: {ocr_kill_count} Kills, {ocr_assist_count} Assists."
-            
-            if ocr_kill_count != kill_count or ocr_assist_count != assist_count:
-                 ocr_note += " (Mismatch with player input!)"
-                 
-        except Exception as e:
-            ocr_note = f"[Auto-OCR] Error reading image: {str(e)}"
+        # Build admin note with time info
+        admin_note = ""
+        if war_time_str:
+            admin_note = f"[Player Input] War Time: {war_time_str}"
             
         # Create submission
         submission = WarPointSubmission(
@@ -3008,12 +2958,12 @@ def war_point_page(request):
             war_date=war_date,
             kill_count=kill_count,
             assist_count=assist_count,
-            admin_notes=ocr_note,  # Save OCR result here
+            admin_notes=admin_note,
         )
         submission.calculate_points()
         submission.save()
         
-        messages.success(request, f'Screenshot berhasil disubmit! ({kill_count} Kill, {assist_count} Assist = {submission.total_points} pts). Menunggu verifikasi admin.')
+        messages.success(request, f'Screenshot submitted successfully! ({kill_count} Kill, {assist_count} Assist = {submission.total_points} pts). Waiting for admin verification.')
         return redirect('war-point')
     
     # GET - Leaderboard (this month)
@@ -3056,7 +3006,11 @@ def war_point_manage(request):
     """
     Admin page to manage War Point settings and review submissions
     """
-    if not is_admin(request.user):
+    has_access = is_admin(request.user)
+    if not has_access and getattr(request.user, 'admin_role', None):
+        has_access = request.user.admin_role.is_warpoint_admin
+        
+    if not has_access:
         return HttpResponseForbidden("Only administrators can access this page.")
     
     from django.utils import timezone
@@ -3068,12 +3022,19 @@ def war_point_manage(request):
         try:
             config.kill_points = int(request.POST.get('kill_points', 2))
             config.assist_points = int(request.POST.get('assist_points', 1))
+            config.auto_delete_days = int(request.POST.get('auto_delete_days', 0))
             config.sync_to_activity = request.POST.get('sync_to_activity') == 'on'
             config.save()
             messages.success(request, 'War Point settings berhasil diperbarui!')
         except (ValueError, TypeError):
             messages.error(request, 'Invalid input.')
         return redirect('war-point-manage')
+    
+    # Auto-cleanup old submissions based on config
+    if config.auto_delete_days > 0:
+        threshold_date = timezone.now() - timezone.timedelta(days=config.auto_delete_days)
+        # Hapus submission yang sudah lewat hari (berdasarkan war_date atau submitted_at, kita pakai submitted_at)
+        WarPointSubmission.objects.filter(submitted_at__lt=threshold_date).delete()
     
     # Handle approve/reject
     if request.method == 'POST' and 'review_submission' in request.POST:
@@ -3122,6 +3083,16 @@ def war_point_manage(request):
             submission.reviewed_by = request.user
             submission.save()
             messages.warning(request, f'Submission dari {submission.character.name} telah di-REJECT.')
+        
+        return redirect('war-point-manage')
+        
+    if request.method == 'POST' and request.POST.get('action') == 'bulk_delete':
+        sub_ids_str = request.POST.get('submission_ids', '')
+        if sub_ids_str:
+            ids = [int(x.strip()) for x in sub_ids_str.split(',') if x.strip().isdigit()]
+            if ids:
+                WarPointSubmission.objects.filter(id__in=ids).delete()
+                messages.success(request, f'{len(ids)} data war point berhasil dihapus secara permanen.')
         
         return redirect('war-point-manage')
     

@@ -728,6 +728,15 @@
                     </div>
                 </label>
             </div>
+            <div style="margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 12px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                <label style="display: flex; align-items: center; cursor: pointer; color: #ccc;">
+                    <input type="checkbox" id="cbWarPointAdmin" style="margin-right: 12px; transform: scale(1.2);">
+                    <div>
+                        <strong style="color: #fff; font-size: 0.95rem; display: block; margin-bottom: 2px;"><i class="fas fa-crosshairs" style="color: #e67e22;"></i> War Point Admin</strong>
+                        <small style="color: #888;">Verify & manage War Point entries</small>
+                    </div>
+                </label>
+            </div>
         </div>
         <div class="confirm-actions">
             <button class="btn-no" onclick="closeSubAdminModal()">Cancel</button>
@@ -870,11 +879,12 @@
         rolesSection.style.display = 'block';
         
         // Load existing roles
-        var userRoles = adminRolesData[subAdminUserId] || { is_event_admin: false, is_raidboss_admin: false, is_soul_admin: false, is_powerrank_admin: false };
+        var userRoles = adminRolesData[subAdminUserId] || { is_event_admin: false, is_raidboss_admin: false, is_soul_admin: false, is_powerrank_admin: false, is_warpoint_admin: false };
         document.getElementById('cbEventAdmin').checked = userRoles.is_event_admin;
         document.getElementById('cbRaidBossAdmin').checked = userRoles.is_raidboss_admin;
         document.getElementById('cbSoulAdmin').checked = userRoles.is_soul_admin;
         document.getElementById('cbPowerRankAdmin').checked = userRoles.is_powerrank_admin;
+        document.getElementById('cbWarPointAdmin').checked = userRoles.is_warpoint_admin;
 
         document.getElementById('subAdminModal').style.display = 'flex';
     }
@@ -896,7 +906,8 @@
         var rbAdmin = document.getElementById('cbRaidBossAdmin').checked;
         var soul = document.getElementById('cbSoulAdmin').checked;
         var prAdmin = document.getElementById('cbPowerRankAdmin').checked;
-        var anyChecked = evAdmin || rbAdmin || soul || prAdmin;
+        var wpAdmin = document.getElementById('cbWarPointAdmin').checked;
+        var anyChecked = evAdmin || rbAdmin || soul || prAdmin || wpAdmin;
         
         var rolePayload = { 
             is_dkp_admin: false, 
@@ -906,6 +917,7 @@
             is_auction_admin: false, 
             is_soul_admin: soul, 
             is_powerrank_admin: prAdmin,
+            is_warpoint_admin: wpAdmin,
             can_give_dkp: false, 
             can_remove_dkp: false, 
             can_decay_dkp: false 

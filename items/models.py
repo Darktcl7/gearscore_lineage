@@ -2069,6 +2069,10 @@ class WarPointConfig(models.Model):
         "Sync to Activity Points", default=False,
         help_text="Jika dicentang, War Points juga akan ditambahkan ke Activity Points player"
     )
+    auto_delete_days = models.IntegerField(
+        "Auto-Delete (Hari)", default=0,
+        help_text="Hapus otomatis image & log setelah N hari (0 = tidak pernah dihapus)"
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
