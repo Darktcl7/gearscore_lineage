@@ -16,6 +16,24 @@ main{flex:1;overflow:hidden}
 .sab{display:flex;justify-content:space-between;align-items:center;padding:15px 20px;background:rgba(255,255,255,.05);border-radius:10px;margin-bottom:20px}
 .sab label{display:flex;align-items:center;gap:10px;cursor:pointer;color:#DAA520;font-weight:600}
 .sab input[type="checkbox"]{width:20px;height:20px;accent-color:#DAA520}
+.scanner-panel{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.scanner-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.scanner-title{font-weight:700;color:#fff}
+.scanner-meta{font-size:.78rem;color:#888;margin-top:3px}
+.scan-controls{display:flex;align-items:center;gap:8px}
+.scan-file{display:none}
+.scan-btn{padding:9px 12px;border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;background:linear-gradient(145deg,#3498db,#2471a3)}
+.scan-btn:disabled{opacity:.55;cursor:not-allowed}
+.scan-result{font-size:.78rem;color:#aaa;min-width:145px;text-align:right}
+.scan-result.ok{color:#88ffaa}
+.scan-result.warn{color:#ffdd57}
+.validation-stack{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}
+.v-badge{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.4px;border-radius:999px;padding:3px 7px;border:1px solid rgba(255,255,255,.12);color:#777;background:rgba(255,255,255,.04)}
+.v-badge.on{color:#88ffaa;border-color:rgba(136,255,170,.35);background:rgba(46,204,113,.12)}
+.v-badge.final.on{color:#fff;background:rgba(46,204,113,.55);border-color:rgba(46,204,113,.75)}
+.v-badge.final{color:#ff9999;border-color:rgba(231,76,60,.35);background:rgba(231,76,60,.08)}
+.validation-toggle{cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.validation-toggle input{width:12px;height:12px;margin:0;accent-color:#2ecc71}
 
 /* Dual Column Layout */
 .attendance-layout {
@@ -103,11 +121,6 @@ main{flex:1;overflow:hidden}
     padding: 4px;
     border: none;
 }
-.att-col-chk {
-    width: 30px;
-    display: flex;
-    justify-content: center;
-}
 .att-col-info {
     flex: 1;
     min-width: 0; /* allows text truncation if needed */
@@ -161,6 +174,41 @@ main{flex:1;overflow:hidden}
 .boss-pts-row label{display:flex;align-items:center;gap:8px;color:#ddd;font-size:.85rem}
 .bp-input{width:60px;padding:4px 6px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#fff;font-size:.85rem;text-align:center}
 .bp-input:focus{outline:none;border-color:#DAA520;box-shadow:0 0 5px rgba(218,165,32,.3)}
+@media(max-width:900px){
+    main { padding: 0 !important; margin: 0 !important; max-width: 100vw !important; overflow-x: hidden; }
+    .ac { margin: 0; border-radius: 0; border: none; height: auto; min-height: calc(100vh - var(--header-height)); box-shadow: none; display: block; }
+    .ah { padding: 15px 10px; }
+    .ah h1 { font-size: 1.2rem; }
+    .eii { padding: 6px 10px; font-size: 0.8rem; }
+    .boss-pts-editor { padding: 10px; }
+    .boss-pts-row { gap: 10px; }
+    .bp-input { width: 50px; font-size: 0.8rem; }
+    .acn { padding: 10px; height: auto; overflow-y: visible; }
+    .scanner-panel{grid-template-columns:1fr; margin-bottom: 10px;}
+    .scanner-card{align-items:flex-start;flex-direction:column; padding: 10px;}
+    .scan-result{text-align:left; font-size: 0.7rem;}
+    .scan-btn { padding: 6px 10px; font-size: 0.75rem; }
+    .sab { padding: 10px; margin-bottom: 10px; flex-direction: column; align-items: flex-start; gap: 5px; }
+    .sab label { font-size: 0.8rem; }
+    .sab input[type="checkbox"] { width: 16px; height: 16px; }
+    .attendance-layout { flex-direction: column; gap: 15px; }
+    .clan-col { border-radius: 8px; }
+    .clan-header { padding: 10px 12px; font-size: 0.9rem; }
+    .clan-search-input { padding: 6px 10px; font-size: 0.8rem; }
+    .table-wrapper { padding: 0 5px 5px 5px; max-height: unset; overflow-y: visible; }
+    .attendance-table tbody { grid-template-columns: 1fr; gap: 5px; }
+    .attendance-table td { padding: 4px; }
+    .member-name { font-size: 0.85rem !important; }
+    .att-col-info > div { font-size: 0.7rem !important; }
+    .v-badge { font-size: 0.55rem; padding: 2px 5px; }
+    .validation-toggle input { width: 10px; height: 10px; }
+    .attendance-table input[type="checkbox"].ack { width: 14px; height: 14px; }
+    .boss-group { font-size: 0.7rem; gap: 5px; }
+    .boss-chk { width: 12px; height: 12px; }
+    .boss-group label { font-size: 0.65rem !important; }
+    .bc { flex-direction: column; gap: 10px; margin-top: 15px; }
+    .bsub, .bcan { padding: 10px 15px; font-size: 0.9rem; text-align: center; }
+}
 </style>
 {% endblock %}
 
@@ -188,8 +236,33 @@ main{flex:1;overflow:hidden}
 </div>
 <div class="acn">
 <div class="sab">
-<label><input type="checkbox" id="select-all"> Select All</label>
-<span style="color:#888"><span id="sc">0</span> / {{ characters|length }} selected</span>
+<label style="cursor:default"><i class="fas fa-check-double"></i> Final = Discord Check-in + Party Scan</label>
+<span style="color:#888"><span id="sc">0</span> / {{ characters|length }} final attended</span>
+</div>
+
+<div class="scanner-panel" id="party-scanner">
+    <div class="scanner-card">
+        <div>
+            <div class="scanner-title"><i class="fas fa-shield-alt"></i> Valkyrie Party Scan</div>
+            <div class="scanner-meta">Upload screenshot party Valkyrie untuk event ini.</div>
+        </div>
+        <div class="scan-controls">
+            <input type="file" id="scan-file-valkyrie" class="scan-file" accept="image/png,image/jpeg,image/webp">
+            <button type="button" class="scan-btn" data-clan="Valkyrie" data-file="scan-file-valkyrie"><i class="fas fa-camera"></i> Scan</button>
+            <div class="scan-result" id="scan-result-valkyrie">Not scanned</div>
+        </div>
+    </div>
+    <div class="scanner-card">
+        <div>
+            <div class="scanner-title"><i class="fas fa-shield-alt"></i> Valhalla Party Scan</div>
+            <div class="scanner-meta">Upload screenshot party Valhalla untuk event ini.</div>
+        </div>
+        <div class="scan-controls">
+            <input type="file" id="scan-file-valhalla" class="scan-file" accept="image/png,image/jpeg,image/webp">
+            <button type="button" class="scan-btn" data-clan="Valhalla" data-file="scan-file-valhalla"><i class="fas fa-camera"></i> Scan</button>
+            <div class="scan-result" id="scan-result-valhalla">Not scanned</div>
+        </div>
+    </div>
 </div>
 
 <div class="attendance-layout">
@@ -213,13 +286,19 @@ main{flex:1;overflow:hidden}
                 </thead>
                 <tbody>
                     {% for character in valkyrie_chars %}
-                    <tr class="att-row {% if character.is_attended %}selected{% endif %}">
-                        <td class="att-col-chk">
-                            <input type="checkbox" name="characters" value="{{ character.pk }}" class="ack" {% if character.is_attended %}checked{% endif %}>
-                        </td>
+                    <tr class="att-row {% if character.is_attended %}selected{% endif %}" data-character-id="{{ character.pk }}" data-clan="Valkyrie">
                         <td class="att-col-info">
                             <div class="member-name" style="font-weight: 600; color: #fff; font-size: 0.95rem;">{{ character.name }}</div>
                             <div style="font-size: 0.75rem; color: #888;">{{ character.character_class }}</div>
+                            <div class="validation-stack">
+                                <label class="v-badge validation-toggle checkin {% if character.checkin_verified %}on{% endif %}" onclick="event.stopPropagation()">
+                                    <input type="checkbox" name="checkin_verified" value="{{ character.pk }}" {% if character.checkin_verified %}checked{% endif %}> Check-in
+                                </label>
+                                <label class="v-badge validation-toggle scan {% if character.party_scan_verified %}on{% endif %}" onclick="event.stopPropagation()">
+                                    <input type="checkbox" name="party_scan_verified" value="{{ character.pk }}" {% if character.party_scan_verified %}checked{% endif %}> Party Scan
+                                </label>
+                                <span class="v-badge final {% if character.is_attended %}on{% endif %}">Final</span>
+                            </div>
                         </td>
                         {% if event.event_type == 'INVASION' %}
                         <td class="att-col-bosses" onclick="event.stopPropagation()">
@@ -259,13 +338,19 @@ main{flex:1;overflow:hidden}
                 </thead>
                 <tbody>
                     {% for character in valhalla_chars %}
-                    <tr class="att-row {% if character.is_attended %}selected{% endif %}">
-                        <td class="att-col-chk">
-                            <input type="checkbox" name="characters" value="{{ character.pk }}" class="ack" {% if character.is_attended %}checked{% endif %}>
-                        </td>
+                    <tr class="att-row {% if character.is_attended %}selected{% endif %}" data-character-id="{{ character.pk }}" data-clan="Valhalla">
                         <td class="att-col-info">
                             <div class="member-name" style="font-weight: 600; color: #fff; font-size: 0.95rem;">{{ character.name }}</div>
                             <div style="font-size: 0.75rem; color: #888;">{{ character.character_class }}</div>
+                            <div class="validation-stack">
+                                <label class="v-badge validation-toggle checkin {% if character.checkin_verified %}on{% endif %}" onclick="event.stopPropagation()">
+                                    <input type="checkbox" name="checkin_verified" value="{{ character.pk }}" {% if character.checkin_verified %}checked{% endif %}> Check-in
+                                </label>
+                                <label class="v-badge validation-toggle scan {% if character.party_scan_verified %}on{% endif %}" onclick="event.stopPropagation()">
+                                    <input type="checkbox" name="party_scan_verified" value="{{ character.pk }}" {% if character.party_scan_verified %}checked{% endif %}> Party Scan
+                                </label>
+                                <span class="v-badge final {% if character.is_attended %}on{% endif %}">Final</span>
+                            </div>
                         </td>
                         {% if event.event_type == 'INVASION' %}
                         <td class="att-col-bosses" onclick="event.stopPropagation()">
@@ -292,55 +377,126 @@ main{flex:1;overflow:hidden}
 </div>
 </div></form></div>
 <script>
-// Row click to toggle checkbox
-document.querySelectorAll('.att-row').forEach(function(row){
-    row.addEventListener('click', function(e){
-        // Avoid double trigger if clicking directly on boss checkbox
-        if(e.target.type === 'checkbox' && e.target.classList.contains('boss-chk')) return;
-        
-        var cb = this.querySelector('input.ack');
-        if(cb){
-            cb.checked = !cb.checked;
-            if(cb.checked){
-                this.classList.add('selected');
-            } else {
-                this.classList.remove('selected');
-            }
-            updateCounters();
-        }
-    });
-});
+const scanUrl = "{% url 'scan-party-for-event' event.pk %}";
+const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-// Select All
-document.getElementById('select-all').addEventListener('change',function(){
-    var isChecked = this.checked;
-    document.querySelectorAll('.att-row:not([style*="display: none"])').forEach(function(row){
-        var cb = row.querySelector('input.ack');
-        if(cb){
-            cb.checked = isChecked;
-            if(isChecked) row.classList.add('selected');
-            else row.classList.remove('selected');
-        }
+function setBadge(row, cls, enabled) {
+    const badge = row.querySelector('.v-badge.' + cls);
+    if (badge) badge.classList.toggle('on', enabled);
+    const input = badge ? badge.querySelector('input[type="checkbox"]') : null;
+    if (input) input.checked = enabled;
+}
+
+function hasBadge(row, cls) {
+    const badge = row.querySelector('.v-badge.' + cls);
+    const input = badge ? badge.querySelector('input[type="checkbox"]') : null;
+    return input ? input.checked : !!(badge && badge.classList.contains('on'));
+}
+
+function recomputeFinal(row) {
+    const isFinal = hasBadge(row, 'checkin') && hasBadge(row, 'scan');
+    setBadge(row, 'final', isFinal);
+    row.classList.toggle('selected', isFinal);
+}
+
+document.querySelectorAll('.att-row').forEach(recomputeFinal);
+
+document.querySelectorAll('.validation-toggle input').forEach(function(input) {
+    input.addEventListener('change', function() {
+        const row = this.closest('.att-row');
+        if (!row) return;
+        this.closest('.v-badge').classList.toggle('on', this.checked);
+        recomputeFinal(row);
+        updateCounters();
     });
-    updateCounters();
 });
 
 // Update Counters
 function updateCounters(){
-    var total = document.querySelectorAll('input.ack:checked').length;
+    var total = document.querySelectorAll('.att-row.selected').length;
     document.getElementById('sc').textContent = total;
     
     var vTable = document.getElementById('table-valkyrie');
     if(vTable) {
-        document.getElementById('vc').textContent = vTable.querySelectorAll('input.ack:checked').length;
+        document.getElementById('vc').textContent = vTable.querySelectorAll('.att-row.selected').length;
     }
     
     var hTable = document.getElementById('table-valhalla');
     if(hTable) {
-        document.getElementById('vh').textContent = hTable.querySelectorAll('input.ack:checked').length;
+        document.getElementById('vh').textContent = hTable.querySelectorAll('.att-row.selected').length;
     }
 }
 updateCounters();
+
+document.querySelectorAll('.scan-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        const clan = this.dataset.clan;
+        const fileInput = document.getElementById(this.dataset.file);
+        if (!fileInput.files.length) {
+            fileInput.click();
+            return;
+        }
+        scanClanImage(clan, fileInput.files[0], this);
+    });
+});
+
+document.querySelectorAll('.scan-file').forEach(function(input) {
+    input.addEventListener('change', function() {
+        const btn = document.querySelector('.scan-btn[data-file="' + this.id + '"]');
+        if (btn && this.files.length) {
+            scanClanImage(btn.dataset.clan, this.files[0], btn);
+        }
+    });
+});
+
+function scanClanImage(clan, file, btn) {
+    const resultEl = document.getElementById('scan-result-' + clan.toLowerCase());
+    const originalHtml = btn.innerHTML;
+    const formData = new FormData();
+    formData.append('clan', clan);
+    formData.append('screenshot', file);
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning';
+    resultEl.textContent = 'Scanning image...';
+    resultEl.className = 'scan-result';
+
+    fetch(scanUrl, {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrfToken},
+        body: formData
+    })
+    .then(response => response.json().then(data => ({ok: response.ok, data: data})))
+    .then(({ok, data}) => {
+        if (!ok || !data.success) {
+            throw new Error(data.error || 'Scan failed');
+        }
+
+        document.querySelectorAll('.att-row[data-clan="' + clan + '"]').forEach(function(row) {
+            setBadge(row, 'scan', false);
+            recomputeFinal(row);
+        });
+
+        data.matched.forEach(function(member) {
+            const row = document.querySelector('.att-row[data-character-id="' + member.id + '"]');
+            if (!row) return;
+            setBadge(row, 'scan', member.party_scan_verified);
+            recomputeFinal(row);
+        });
+
+        updateCounters();
+        resultEl.textContent = data.matched_count + ' matched / ' + data.detected_count + ' detected';
+        resultEl.className = data.matched_count > 0 ? 'scan-result ok' : 'scan-result warn';
+    })
+    .catch(error => {
+        resultEl.textContent = error.message;
+        resultEl.className = 'scan-result warn';
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+    });
+}
 
 // Search Functions
 function setupSearch(inputId, tableId) {

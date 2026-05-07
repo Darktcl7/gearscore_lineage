@@ -307,6 +307,43 @@
         color: #888; font-size: 0.8rem; font-style: italic;
         margin-top: 4px; display: block;
     }
+    /* Participant dropdown toggle */
+    .participant-toggle-btn {
+        display:inline-flex; align-items:center; gap:5px; cursor:pointer;
+        background:rgba(129,199,132,.10); border:1px solid rgba(129,199,132,.25);
+        color:#81c784; border-radius:20px; padding:4px 12px; font-size:.78rem; font-weight:600;
+        transition:all .25s ease; user-select:none;
+    }
+    .participant-toggle-btn:hover {
+        background:rgba(129,199,132,.20); border-color:rgba(129,199,132,.45);
+        color:#a5d6a7; transform:translateY(-1px);
+        box-shadow:0 2px 8px rgba(129,199,132,.15);
+    }
+    .participant-toggle-btn .toggle-icon {
+        font-size:.6rem; transition:transform .25s ease; display:inline-block;
+    }
+    .participant-toggle-btn.open .toggle-icon {
+        transform:rotate(180deg);
+    }
+    .participant-name-list {
+        display:none; flex-wrap:wrap; gap:5px; margin-top:8px; max-width:360px;
+        padding:8px 10px; background:rgba(0,0,0,.25); border:1px solid rgba(129,199,132,.12);
+        border-radius:10px; animation:fadeSlideDown .25s ease;
+    }
+    .participant-name-list.show { display:flex; }
+    @keyframes fadeSlideDown {
+        from { opacity:0; transform:translateY(-6px); }
+        to   { opacity:1; transform:translateY(0); }
+    }
+    .participant-name-chip {
+        border:1px solid rgba(129,199,132,.28); background:rgba(129,199,132,.08);
+        color:#b7e1ba; border-radius:999px; padding:2px 7px; font-size:.72rem; font-weight:600;
+    }
+    .btn-edit-row {
+        background:rgba(52,152,219,.14); border:1px solid rgba(52,152,219,.35); color:#5dade2;
+        padding:5px 10px; border-radius:6px; cursor:pointer; font-size:.8rem; transition:all .2s; margin-right:5px;
+    }
+    .btn-edit-row:hover { background:rgba(52,152,219,.28); }
 
     /* Bulk delete bar for Recent Activities */
     .activity-bulk-bar {
@@ -532,7 +569,7 @@
                         <i class="fas fa-chevron-down chevron"></i>
                     </div>
                     <div class="region-body" style="display:flex;">
-                        <p style="color:#555; font-size:0.85rem; margin:0;">â€” No boss listed â€”</p>
+                        <p style="color:#555; font-size:0.85rem; margin:0;">— No boss listed —</p>
                     </div>
                 </div>
 
@@ -901,7 +938,7 @@
                 <th>Participants</th>
                 <th>Input By</th>
                 <th>Date</th>
-                <th style="width:60px; text-align:center;">Action</th>
+                <th style="width:100px; text-align:center;">Action</th>
             </tr>
         </thead>
         <tbody>
@@ -912,13 +949,40 @@
                     {% if e.description %}<span class="activity-note-text"><i class="fas fa-sticky-note" style="margin-right:4px;"></i>{{ e.description }}</span>{% endif %}
                 </td>
                 <td style="color:#FFD700;">{{ e.base_points }} pts</td>
-                <td><span style="color:#81c784;">{{ e.participants.count }} users</span></td>
+                <td>
+                    <span class="participant-toggle-btn" onclick="toggleParticipantList(this)">
+                        <i class="fas fa-users" style="font-size:.7rem;"></i>
+                        {{ e.participants.count }} users
+                        <span class="toggle-icon">▼</span>
+                    </span>
+                    <div class="participant-name-list">
+                        {% for pa in e.participants.all %}
+                            <span class="participant-name-chip">{{ pa.player.name }}</span>
+                        {% empty %}
+                            <span style="color:#777; font-size:.75rem;">No participants</span>
+                        {% endfor %}
+                    </div>
+                </td>
                 <td style="color:#aaa;">{% if e.input_by %}{{ e.input_by.username }}{% else %}-{% endif %}</td>
                 <td>{{ e.date|date:"d M H:i" }}</td>
                 <td style="text-align:center;">
+                    <div style="display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:nowrap;">
+                    <button type="button" class="btn-edit-row"
+                        data-id="{{ e.id }}"
+                        data-tab="{{ e.edit_tab }}"
+                        data-boss-type="{{ e.edit_boss_type|escapejs }}"
+                        data-boss-name="{{ e.edit_boss_name|escapejs }}"
+                        data-pts="{{ e.edit_base_points }}"
+                        data-note="{{ e.description|default_if_none:''|escapejs }}"
+                        data-war-day="{% if e.edit_is_war_day %}1{% else %}0{% endif %}"
+                        data-participants="{{ e.edit_participant_ids|escape }}"
+                        title="Edit participants">
+                        <i class="fas fa-edit"></i>
+                    </button>
                     <button type="button" class="btn-delete-row" data-id="{{ e.id }}" data-name="{{ e.name }}" data-pts="{{ e.base_points }}" data-date="{{ e.date|date:'d M H:i' }}" data-count="{{ e.participants.count }}" style="background: rgba(231,76,60,0.15); border: 1px solid rgba(231,76,60,0.3); color: #e74c3c; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;" onmouseover="this.style.background='rgba(231,76,60,0.3)'" onmouseout="this.style.background='rgba(231,76,60,0.15)'">
                         <i class="fas fa-trash-alt"></i>
                     </button>
+                    </div>
                 </td>
             </tr>
             {% empty %}
@@ -1105,6 +1169,11 @@ document.querySelectorAll('.tab-btn').forEach(function(btn) {
     });
 });
 
+function activateTab(tab) {
+    var btn = document.querySelector('.tab-btn[data-tab="' + tab + '"]');
+    if (btn) btn.click();
+}
+
 // ===== REGION ACCORDION =====
 function toggleRegion(header) {
     var group = header.closest('.region-group');
@@ -1177,27 +1246,66 @@ function selectAllParts(btn) {
         pill.querySelector('.part-check').textContent = '\u2713';
     });
     updatePartCounter(section.closest('form'));
+
 }
+
+
 
 function clearParts(btn) {
+
     var section = btn.closest('.participant-section');
+
     section.querySelectorAll('.part-pill').forEach(function(pill) {
+
         var cb = pill.querySelector('input[type="checkbox"]');
+
         cb.checked = false;
+
         pill.classList.remove('checked');
+
         pill.querySelector('.part-check').textContent = '';
+
     });
+
     updatePartCounter(section.closest('form'));
+
 }
 
+
+
 function updatePartCounter(form) {
+
     var tabContent = form.closest('.tab-content');
+
     if (!tabContent) return;
+
     var tabId = tabContent.id.replace('tab-', '');
+
     var count = form.querySelectorAll('.participant-section input[type="checkbox"]:checked').length;
+
     var counter = document.getElementById('part-counter-' + tabId);
+
     if (counter) counter.textContent = count + ' selected';
+
 }
+
+
+
+// ===== TOGGLE PARTICIPANT LIST IN RECENT ACTIVITIES =====
+
+function toggleParticipantList(btn) {
+
+    var list = btn.parentElement.querySelector('.participant-name-list');
+
+    if (!list) return;
+
+    btn.classList.toggle('open');
+
+    list.classList.toggle('show');
+
+}
+
+
 
 // ===== BUILD FORM & VALIDATE =====
 function buildBossForm(form) {
@@ -1210,6 +1318,86 @@ function buildBossForm(form) {
     form.querySelector('input[name="name"]').value = rb.value;
     return true;
 }
+
+// ===== EDIT RECENT ACTIVITY PARTICIPANTS =====
+document.querySelectorAll('.btn-edit-row').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var tab = this.dataset.tab || 'raid';
+        var eventId = this.dataset.id;
+        var bossName = this.dataset.bossName || '';
+        var points = this.dataset.pts || '0';
+        var note = this.dataset.note || '';
+        var isWarDay = this.dataset.warDay === '1';
+        var participantIds = [];
+        try { participantIds = JSON.parse(this.dataset.participants || '[]').map(String); } catch(e) {}
+
+        activateTab(tab);
+        var tabContent = document.getElementById('tab-' + tab);
+        if (!tabContent) return;
+        var form = tabContent.querySelector('form');
+        if (!form) return;
+
+        var actionInput = form.querySelector('input[name="action"]');
+        if (actionInput) actionInput.value = 'update';
+        var eventInput = form.querySelector('input[name="event_id"]');
+        if (!eventInput) {
+            eventInput = document.createElement('input');
+            eventInput.type = 'hidden';
+            eventInput.name = 'event_id';
+            form.appendChild(eventInput);
+        }
+        eventInput.value = eventId;
+
+        form.querySelectorAll('.boss-pill').forEach(function(pill) {
+            pill.classList.remove('checked');
+            var icon = pill.querySelector('.check-icon');
+            if (icon) icon.textContent = '';
+            var radio = pill.querySelector('input[type="radio"]');
+            if (radio) radio.checked = false;
+        });
+
+        var bossRadio = Array.from(form.querySelectorAll('input[type="radio"]')).find(function(r) {
+            return r.value === bossName;
+        });
+        if (bossRadio) {
+            bossRadio.checked = true;
+            var bossPill = bossRadio.closest('.boss-pill');
+            if (bossPill) {
+                bossPill.classList.add('checked');
+                var icon = bossPill.querySelector('.check-icon');
+                if (icon) icon.textContent = '\u2713';
+            }
+        }
+
+        var warDayInput = form.querySelector('input[name="war_day"]');
+        if (warDayInput) warDayInput.checked = isWarDay;
+        var hiddenPts = document.getElementById('pts-hidden-' + tab);
+        if (hiddenPts) hiddenPts.value = points;
+        var ptsBadge = document.getElementById('pts-badge-' + tab);
+        if (ptsBadge) ptsBadge.textContent = points + ' pts';
+        var noteInput = form.querySelector('textarea[name="activity_note"]');
+        if (noteInput) noteInput.value = note;
+
+        var partSection = document.getElementById('part-section-' + tab);
+        if (partSection) partSection.style.display = 'block';
+        form.querySelectorAll('.part-pill').forEach(function(pill) {
+            var cb = pill.querySelector('input[type="checkbox"]');
+            if (!cb) return;
+            var checked = participantIds.indexOf(cb.value) !== -1;
+            cb.checked = checked;
+            pill.classList.toggle('checked', checked);
+            var check = pill.querySelector('.part-check');
+            if (check) check.textContent = checked ? '\u2713' : '';
+        });
+        updatePartCounter(form);
+
+        var summaryEl = tabContent.querySelector('.selected-summary');
+        if (summaryEl) summaryEl.textContent = 'Editing ' + bossName + ' — adjust participants, then save.';
+        var submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save" style="margin-right:6px;"></i>SAVE CHANGES';
+        tabContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+});
 // ===== BULK DELETE FOR RECENT ACTIVITIES =====
 function toggleEventSelectAll() {
     var sa = document.getElementById('eventSelectAll');

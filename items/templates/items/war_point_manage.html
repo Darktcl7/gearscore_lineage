@@ -57,17 +57,27 @@
         .wpm-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 600px) {
-        main { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
-        .wpm-container { padding: 0; }
-        .wpm-wrap { margin: 0; border-radius: 0; border-left: none; border-right: none; }
-        .wpm-header { border-radius: 0; padding: 12px 15px; }
+        html, body { overflow-x: hidden; width: 100%; margin: 0; padding: 0; }
+        main { padding: 0 !important; margin: 0 !important; max-width: 100vw !important; overflow-x: hidden; }
+        .wpm-container { padding: 0; width: 100%; overflow-x: hidden; }
+        .wpm-wrap { margin: 0; border-radius: 0; border: none; min-height: calc(100vh - var(--header-height)); box-shadow: none; width: 100%; padding-bottom: 0; overflow-x: hidden; }
+        .wpm-header { border-radius: 0; padding: 12px 15px; flex-direction: column; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
         .wpm-header h1 { font-size: 1.2rem; }
-        .wpm-card-body { padding: 12px; }
-        .pending-item { padding: 10px !important; }
+        .btn-back-wp { padding: 6px 10px; font-size: 0.8rem; width: 100%; text-align: center; box-sizing: border-box; }
+        .wpm-grid { display: flex; flex-direction: column; gap: 10px; }
+        .wpm-card { border-radius: 0; border-left: none; border-right: none; margin-bottom: 10px; }
+        .wpm-card-header { padding: 12px 15px; }
+        .wpm-card-body { padding: 12px 10px; }
+        .pending-item { padding: 10px !important; border-radius: 6px; }
         .pending-stats { flex-direction: row !important; gap: 5px !important; }
         .stat-box { padding: 4px !important; }
-        .stat-box .stat-val, .stat-box input { font-size: 0.95rem !important; }
-        .btn-approve, .btn-reject { padding: 6px 8px !important; font-size: 0.75rem !important; }
+        .stat-box .stat-val, .stat-box input { font-size: 0.9rem !important; }
+        .btn-approve, .btn-reject { padding: 8px !important; font-size: 0.8rem !important; }
+        .pending-actions { flex-direction: column; gap: 5px; }
+        .pending-actions > div { display: flex; gap: 8px; width: 100%; }
+        .pending-actions input[type="text"] { font-size: 0.8rem; padding: 6px 8px; }
+        .settings-form input[type="number"] { font-size: 0.9rem; padding: 8px 10px; }
+        .recent-item { padding: 8px 10px; font-size: 0.8rem; }
     }
     .wpm-card {
         background: rgba(18,18,18,0.85);

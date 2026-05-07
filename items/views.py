@@ -1538,17 +1538,18 @@ def record_attendance(request, event_pk):
     
     event = get_object_or_404(ActivityEvent, pk=event_pk)
     # Optimized: prefetch related data
-    all_characters = Character.objects.all().select_related('owner').only('id', 'name', 'level', 'character_class', 'owner_id').order_by('name')
+    all_characters = Character.objects.all().select_related('owner').only('id', 'name', 'level', 'character_class', 'clan', 'owner_id').order_by('name')
     
     # Get existing attendance details
     attendance_map = {}
     activities = PlayerActivity.objects.filter(event=event)
     for act in activities:
-        if act.status == 'ATTENDED':
-            attendance_map[act.player_id] = {
-                'status': act.status,
-                'bosses_killed': act.bosses_killed or {}
-            }
+        attendance_map[act.player_id] = {
+            'status': act.status,
+            'bosses_killed': act.bosses_killed or {},
+            'checkin_verified': act.checkin_verified,
+            'party_scan_verified': act.party_scan_verified,
+        }
     
     if request.method == 'POST':
         # Save boss points if Invasion
@@ -1572,41 +1573,40 @@ def record_attendance(request, event_pk):
             }
             event.save()
         
-        # Get selected characters
-        selected_ids = request.POST.getlist('characters')
-        
-        # Create/update attendance records
-        for char_id in selected_ids:
-            character = Character.objects.get(pk=char_id)
-            
-            defaults = {'status': 'ATTENDED', 'points_earned': 0}
-            
+        checkin_ids = set(request.POST.getlist('checkin_verified'))
+        party_scan_ids = set(request.POST.getlist('party_scan_verified'))
+
+        # Create/update validation records. Final attendance is always derived
+        # from both validations, including admin corrections.
+        for char in all_characters:
+            char_id = str(char.pk)
+            checkin_verified = char_id in checkin_ids
+            party_scan_verified = char_id in party_scan_ids
+
+            defaults = {
+                'status': 'ATTENDED' if checkin_verified and party_scan_verified else 'ABSENT',
+                'points_earned': 0,
+                'checkin_verified': checkin_verified,
+                'party_scan_verified': party_scan_verified,
+            }
+
             # For Invasion, capture INDIVIDUAL boss checkboxes
             if event.event_type == 'INVASION':
-                bosses = {
-                    'dragon_beast': request.POST.get(f'boss_dragon_beast_{char_id}') == 'true',
-                    'carnifex': request.POST.get(f'boss_carnifex_{char_id}') == 'true',
-                    'orfen': request.POST.get(f'boss_orfen_{char_id}') == 'true',
+                defaults['bosses_killed'] = {
+                    'dragon_beast': request.POST.get(f'boss_dragon_beast_{char.pk}') == 'true',
+                    'carnifex': request.POST.get(f'boss_carnifex_{char.pk}') == 'true',
+                    'orfen': request.POST.get(f'boss_orfen_{char.pk}') == 'true',
                 }
-                defaults['bosses_killed'] = bosses
-            
+            else:
+                defaults['bosses_killed'] = {}
+
             activity, created = PlayerActivity.objects.update_or_create(
-                player=character,
+                player=char,
                 event=event,
                 defaults=defaults
             )
-            # Force re-save to trigger point calculation in model's save()
+            # Force re-save to trigger point calculation in model's save().
             activity.save()
-        
-        # Mark absent for unselected
-        for char in all_characters:
-            if str(char.pk) not in selected_ids:
-                activity, created = PlayerActivity.objects.update_or_create(
-                    player=char,
-                    event=event,
-                    defaults={'status': 'ABSENT', 'points_earned': 0, 'bosses_killed': {}}
-                )
-                activity.save()
         
         # Recalculate win streak bonuses since attendance status changed
         from items.api_views import recalculate_win_streak_bonuses
@@ -1626,7 +1626,9 @@ def record_attendance(request, event_pk):
     processed_characters = []
     for char in all_characters:
         att = attendance_map.get(char.pk)
-        char.is_attended = att is not None
+        char.checkin_verified = att['checkin_verified'] if att else False
+        char.party_scan_verified = att['party_scan_verified'] if att else False
+        char.is_attended = bool(att and att['status'] == 'ATTENDED')
         char.bosses_killed = att['bosses_killed'] if att else {}
         processed_characters.append(char)
         
@@ -1650,6 +1652,83 @@ def record_attendance(request, event_pk):
         'is_admin': True,
     }
     return render(request, 'items/record_attendance.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def scan_party_for_event(request, event_pk):
+    """
+    Scan one clan's party screenshot and store party-scan validation for the event.
+    """
+    if not check_event_admin(request.user):
+        return JsonResponse({'error': 'Only Event administrators can scan party attendance.'}, status=403)
+
+    event = get_object_or_404(ActivityEvent, pk=event_pk)
+    clan = request.POST.get('clan')
+    screenshot = request.FILES.get('screenshot')
+
+    if clan not in ('Valkyrie', 'Valhalla'):
+        return JsonResponse({'error': 'Invalid clan selected.'}, status=400)
+    if not screenshot:
+        return JsonResponse({'error': 'No image provided'}, status=400)
+
+    try:
+        scan_result = _scan_party_members_from_image(screenshot)
+        if not scan_result.get('success'):
+            return JsonResponse({'error': scan_result.get('error', 'Unable to scan image')}, status=scan_result.get('status', 500))
+
+        detected_names = scan_result.get('all_names', [])
+        detected_lookup = {name.lower(): name for name in detected_names}
+
+        clan_characters = Character.objects.filter(clan=clan).only('id', 'name', 'clan')
+        matched = []
+        unmatched_detected = []
+        matched_name_keys = set()
+
+        for character in clan_characters:
+            activity, _created = PlayerActivity.objects.get_or_create(
+                player=character,
+                event=event,
+                defaults={'status': 'ABSENT', 'points_earned': 0}
+            )
+
+            is_matched = character.name.lower() in detected_lookup
+            activity.party_scan_verified = is_matched
+            activity.status = 'ATTENDED' if activity.checkin_verified and activity.party_scan_verified else 'ABSENT'
+            activity.save()
+
+            if is_matched:
+                matched.append({
+                    'id': character.pk,
+                    'name': character.name,
+                    'checkin_verified': activity.checkin_verified,
+                    'party_scan_verified': activity.party_scan_verified,
+                    'is_attended': activity.status == 'ATTENDED',
+                })
+                matched_name_keys.add(character.name.lower())
+
+        clan_name_lookup = {c.name.lower() for c in clan_characters}
+        for detected in detected_names:
+            detected_key = detected.lower()
+            if detected_key not in clan_name_lookup and detected_key not in matched_name_keys:
+                unmatched_detected.append(detected)
+
+        from .services import sync_event_dkp_penalties
+        sync_event_dkp_penalties(event)
+
+        return JsonResponse({
+            'success': True,
+            'clan': clan,
+            'detected_count': len(detected_names),
+            'matched_count': len(matched),
+            'matched': matched,
+            'unmatched_detected': unmatched_detected[:50],
+            'scan': scan_result,
+        })
+    except ImportError:
+        return JsonResponse({'error': 'EasyOCR is not installed on this server. Please install it with: pip install easyocr'}, status=500)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @login_required
@@ -2798,6 +2877,49 @@ def raid_boss_activity(request):
             event_id = request.POST.get('event_id')
             ActivityEvent.objects.filter(id=event_id).delete()
 
+        elif action == 'update':
+            event_id = request.POST.get('event_id')
+            name = request.POST.get('name', '').strip()
+            boss_type = request.POST.get('boss_type', '').strip()
+            value = request.POST.get('value')
+            participant_ids = request.POST.getlist('participant_ids')
+            is_war_day = request.POST.get('war_day') == 'on'
+            activity_note = request.POST.get('activity_note', '').strip()
+
+            activity_event = ActivityEvent.objects.filter(id=event_id, event_type='CUSTOM').first()
+            if activity_event and name and value:
+                try:
+                    points = int(value)
+                except (ValueError, TypeError):
+                    points = 0
+
+                if is_war_day:
+                    points = points * 2
+
+                final_name = f"[{boss_type}] {name}" if boss_type else name
+                if is_war_day:
+                    final_name = f"⚔️ War Day: {final_name}"
+
+                activity_event.name = final_name
+                activity_event.base_points = points
+                activity_event.max_points = points
+                activity_event.description = activity_note
+                activity_event.save()
+
+                activity_event.participants.all().delete()
+                if participant_ids and points > 0:
+                    for pid in participant_ids:
+                        try:
+                            character = Character.objects.get(id=int(pid))
+                            PlayerActivity.objects.create(
+                                player=character,
+                                event=activity_event,
+                                status='ATTENDED',
+                                points_earned=points,
+                            )
+                        except (Character.DoesNotExist, ValueError):
+                            pass
+
         elif action == 'bulk_delete':
             event_ids_str = request.POST.get('event_ids', '')
             if event_ids_str:
@@ -2807,11 +2929,39 @@ def raid_boss_activity(request):
 
         return redirect('raid-boss-activity')
             
-    all_events = ActivityEvent.objects.filter(event_type='CUSTOM').exclude(name__startswith='Score Adjustment:').exclude(name__startswith='AP Adjustment:').order_by('-date')
+    all_events = ActivityEvent.objects.filter(event_type='CUSTOM').exclude(name__startswith='Score Adjustment:').exclude(name__startswith='AP Adjustment:').prefetch_related('participants__player').order_by('-date')
     from django.core.paginator import Paginator
     paginator = Paginator(all_events, 20)
     page_number = request.GET.get('page')
     events = paginator.get_page(page_number)
+
+    boss_type_to_tab = {
+        'Raid Boss': 'raid',
+        'Territory Boss': 'territory',
+        'World Boss': 'world',
+        'Rift Boss': 'rift',
+        'Arena Boss': 'arena',
+    }
+    for event in events:
+        clean_name = event.name
+        is_war_day = 'War Day:' in clean_name
+        if is_war_day:
+            clean_name = clean_name.split('War Day:', 1)[1].strip()
+
+        boss_type = ''
+        boss_name = clean_name
+        if clean_name.startswith('[') and ']' in clean_name:
+            boss_type = clean_name[1:clean_name.index(']')]
+            boss_name = clean_name[clean_name.index(']') + 1:].strip()
+
+        event.edit_boss_type = boss_type
+        event.edit_boss_name = boss_name
+        event.edit_tab = boss_type_to_tab.get(boss_type, 'raid')
+        event.edit_is_war_day = is_war_day
+        event.edit_base_points = event.base_points // 2 if is_war_day else event.base_points
+        event.edit_participant_ids = json.dumps([
+            act.player_id for act in event.participants.all()
+        ])
     
     profiles = Character.objects.all().order_by('name')
     return render(request, 'items/raid_boss_activity.html', {
@@ -2827,6 +2977,196 @@ def raid_boss_activity(request):
 
 from django.views.decorators.csrf import csrf_exempt
 
+_EASYOCR_READER = None
+
+
+def _get_easyocr_reader():
+    """
+    Lazily load EasyOCR once per Django worker. Loading the model on every scan
+    makes OCR requests much slower, especially on CPU-only Windows machines.
+    """
+    global _EASYOCR_READER
+    if _EASYOCR_READER is None:
+        import easyocr
+        _EASYOCR_READER = easyocr.Reader(['en'], gpu=False, verbose=False)
+    return _EASYOCR_READER
+
+
+def _scan_party_members_from_image(image_file):
+    """
+    Read party screenshot and return grouped party data plus a flat detected name list.
+    Supports cropped screenshots where Party 1-4 headers are missing but Party 5-8
+    headers are visible.
+    """
+    import numpy as np
+    from PIL import Image, ImageOps
+    import re
+
+    img = ImageOps.exif_transpose(Image.open(image_file)).convert('RGB')
+    img_np = np.array(img)
+    img_width, img_height = img.size
+    character_name_lookup = {
+        name.lower(): name
+        for name in Character.objects.values_list('name', flat=True)
+    }
+
+    def normalize_member_name(name):
+        return character_name_lookup.get(name.lower(), name)
+
+    reader = _get_easyocr_reader()
+    results = reader.readtext(img_np, detail=1, paragraph=False)
+
+    if not results:
+        return {
+            'success': False,
+            'error': 'No text detected in image',
+            'status': 400,
+        }
+
+    text_items = []
+    for coords, text, confidence in results:
+        center_x = sum(p[0] for p in coords) / 4
+        center_y = sum(p[1] for p in coords) / 4
+        text_items.append({
+            'text': text.strip(),
+            'x': center_x,
+            'y': center_y,
+            'confidence': confidence
+        })
+
+    text_items.sort(key=lambda t: (t['y'], t['x']))
+
+    party_pattern = re.compile(r'[Pp]art[yv]\s*(\d+)', re.IGNORECASE)
+    party_headers = []
+    other_texts = []
+
+    for item in text_items:
+        match = party_pattern.search(item['text'])
+        if match:
+            party_headers.append({
+                'party_number': int(match.group(1)),
+                'x': item['x'],
+                'y': item['y']
+            })
+        else:
+            other_texts.append(item)
+
+    party_headers.sort(key=lambda p: (p['y'], p['x']))
+
+    header_rows = []
+    for header in party_headers:
+        for row in header_rows:
+            if abs(row['y'] - header['y']) <= 40:
+                row['headers'].append(header)
+                row['y'] = sum(h['y'] for h in row['headers']) / len(row['headers'])
+                break
+        else:
+            header_rows.append({'y': header['y'], 'headers': [header]})
+
+    for row in header_rows:
+        row['headers'].sort(key=lambda p: p['x'])
+    header_rows.sort(key=lambda r: r['y'])
+
+    if header_rows:
+        first_row = header_rows[0]
+        first_numbers = [h['party_number'] for h in first_row['headers']]
+        min_number = min(first_numbers)
+        row_size = len(first_row['headers'])
+        if row_size > 1 and min_number > 1:
+            inferred_start = min_number - row_size
+            if inferred_start >= 1:
+                inferred_headers = []
+                for idx, header in enumerate(first_row['headers']):
+                    inferred_headers.append({
+                        'party_number': inferred_start + idx,
+                        'x': header['x'],
+                        'y': -1,
+                        'inferred': True
+                    })
+                header_rows.insert(0, {'y': -1, 'headers': inferred_headers, 'inferred': True})
+
+    party_headers = [header for row in header_rows for header in row['headers']]
+    party_headers.sort(key=lambda p: p['party_number'])
+
+    if not party_headers:
+        names = [normalize_member_name(t['text']) for t in other_texts
+                 if len(t['text']) >= 2
+                 and not t['text'].replace(' ', '').isdigit()
+                 and t['confidence'] > 0.5]
+        return {
+            'success': True,
+            'mode': 'flat',
+            'parties': [],
+            'all_names': names,
+            'raw_count': len(names),
+        }
+
+    columns = []
+    for row_index, row in enumerate(header_rows):
+        row_y = row['y']
+        next_row_y = header_rows[row_index + 1]['y'] if row_index + 1 < len(header_rows) else img_height + 1
+        for header in row['headers']:
+            columns.append({
+                'party_number': header['party_number'],
+                'x_center': header['x'],
+                'y_start': row_y,
+                'y_end': next_row_y,
+                'members': []
+            })
+
+    for item in other_texts:
+        text = item['text'].strip()
+        if len(text) < 2 or text.replace(' ', '').isdigit():
+            continue
+        if item['confidence'] < 0.4:
+            continue
+        skip_words = ['lv', 'level', 'hp', 'mp', 'party', 'guild', 'clan', 'member']
+        if text.lower() in skip_words:
+            continue
+
+        min_dist = float('inf')
+        best_col = None
+        for col in columns:
+            dist = abs(item['x'] - col['x_center'])
+            in_row = item['y'] > col['y_start'] and item['y'] < col['y_end']
+            if in_row and dist < min_dist:
+                min_dist = dist
+                best_col = col
+
+        if best_col is not None:
+            best_col['members'].append({
+                'name': text,
+                'y': item['y'],
+                'confidence': round(item['confidence'], 2)
+            })
+
+    parties = []
+    for col in columns:
+        col['members'].sort(key=lambda m: m['y'])
+        party_data = {
+            'party_number': col['party_number'],
+            'members': []
+        }
+        for i, member in enumerate(col['members']):
+            party_data['members'].append({
+                'name': normalize_member_name(member['name']),
+                'is_leader': i == 0,
+                'confidence': member['confidence']
+            })
+        parties.append(party_data)
+
+    all_names = [member['name'] for party in parties for member in party['members']]
+    return {
+        'success': True,
+        'mode': 'structured',
+        'parties': parties,
+        'all_names': all_names,
+        'total_parties': len(parties),
+        'total_players': len(all_names),
+        'raw_texts': [t['text'] for t in text_items[:50]],
+    }
+
+
 @login_required
 @require_http_methods(["POST"])
 def analyze_war_image(request):
@@ -2839,27 +3179,18 @@ def analyze_war_image(request):
         return JsonResponse({'error': 'No image provided'}, status=400)
         
     try:
-        import easyocr
         import numpy as np
-        from PIL import Image
+        from PIL import Image, ImageOps
         import re
-        import logging
-        from paddleocr import PaddleOCR
         
         # Load the image
-        img = Image.open(screenshot).convert('RGB')
+        img = ImageOps.exif_transpose(Image.open(screenshot)).convert('RGB')
         img_np = np.array(img)
         
-        # Initialize PaddleOCR (disabling noisy logs)
-        logging.getLogger('ppocr').setLevel(logging.ERROR)
-        ocr = PaddleOCR(use_angle_cls=False, lang='en', show_log=False)
-        
         # Read text
-        results = ocr.ocr(img_np, cls=False)
-        # PaddleOCR returns a list of lists, where each element contains coords and a tuple ('text', confidence)
-        extracted_texts = []
-        if results and results[0]:
-            extracted_texts = [line[1][0] for line in results[0]]
+        reader = _get_easyocr_reader()
+        results = reader.readtext(img_np, detail=1, paragraph=False)
+        extracted_texts = [text for _coords, text, _confidence in results]
         
         # 1. Find Date (Format YYYY.MM.DD)
         # Regex to match 2026.05.04 or similar, allowing spaces or typos in dots
@@ -3210,14 +3541,14 @@ def check_in_event(request):
                                 player=character,
                                 event=event,
                                 defaults={
-                                    'status': 'ATTENDED',
-                                    'points_earned': event.max_points
+                                    'status': 'ABSENT',
+                                    'points_earned': 0
                                 }
                             )
-                            if not created and activity.status != 'ATTENDED':
-                                activity.status = 'ATTENDED'
-                                activity.points_earned = event.max_points
-                                activity.save()
+                            activity.checkin_verified = True
+                            activity.checked_in_at = timezone.now()
+                            activity.status = 'ATTENDED' if activity.party_scan_verified else 'ABSENT'
+                            activity.save()
                     
                     messages.success(request, f'Sukses! Kehadiran {len(party_members)} member party telah dikonfirmasi.')
                     return redirect('my-activity')
@@ -3235,8 +3566,10 @@ def check_in_event(request):
                     player=submitter,
                     event=event,
                     defaults={
-                        'status': 'ATTENDED',
-                        'points_earned': event.max_points
+                        'status': 'ABSENT',
+                        'points_earned': 0,
+                        'checkin_verified': True,
+                        'checked_in_at': timezone.now(),
                     }
                 )
                 messages.warning(request, 'Mode Simulasi: Tesseract tidak terinstall di server. Kehadiran Anda dicatat sebagai simulasi.')
@@ -3264,3 +3597,39 @@ def check_in_event(request):
         'preselected_event': preselected_event,
     }
     return render(request, 'items/check_in_event.html', context)
+
+
+# ======================================================
+# PARTY SCANNER
+# ======================================================
+@login_required
+def party_scanner_page(request):
+    """
+    Party Scanner page - Upload party screenshot and extract data to JSON.
+    """
+    return render(request, 'items/party_scanner.html')
+
+
+@login_required
+def analyze_party_image(request):
+    """
+    API Endpoint to scan party screenshot via EasyOCR and return structured JSON.
+    Reads party groups and player names from the uploaded image.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    screenshot = request.FILES.get('screenshot')
+    if not screenshot:
+        return JsonResponse({'error': 'No image provided'}, status=400)
+
+    try:
+        result = _scan_party_members_from_image(screenshot)
+        if not result.get('success'):
+            return JsonResponse({'error': result.get('error', 'Unable to scan image')}, status=result.get('status', 500))
+        return JsonResponse(result)
+
+    except ImportError:
+        return JsonResponse({'error': 'EasyOCR is not installed on this server. Please install it with: pip install easyocr'}, status=500)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

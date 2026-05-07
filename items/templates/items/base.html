@@ -729,6 +729,8 @@
                 <a href="{% url 'war-point' %}"
                     class="{% if request.resolver_match.url_name == 'war-point' or request.resolver_match.url_name == 'war-point-manage' %}active{% endif %}">War Point</a>
 
+                <!-- PARTY SCANNER REMOVED (testing only) -->
+
                 <!-- DKP MENU (DROPDOWN) -->
                 {% if feature_toggles.enable_dkp_system %}
                 <div class="dropdown">

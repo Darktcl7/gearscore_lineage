@@ -499,7 +499,6 @@
                             title="Manage Attendance">
                             <i class="fas fa-user-check"></i>
                         </a>
-
                         {% if not event.is_completed %}
                         <button
                             onclick="confirmAction('complete', '{{ event.pk }}', '{{ event.event_id }}', '{{ event.name|escapejs }}', '{{ event.event_type }}')"

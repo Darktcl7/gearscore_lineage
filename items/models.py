@@ -1496,6 +1496,8 @@ class PlayerActivity(models.Model):
     points_earned = models.IntegerField("Poin Didapat", default=0)
     checked_in_at = models.DateTimeField("Check-in Time", null=True, blank=True)
     discord_user_id = models.CharField("Discord User ID", max_length=100, blank=True)
+    checkin_verified = models.BooleanField("Check-in Verified", default=False)
+    party_scan_verified = models.BooleanField("Party Scan Verified", default=False)
     
     # Boss kills tracking for INVASION events
     bosses_killed = models.JSONField("Bosses Killed", default=dict, blank=True,

@@ -22,6 +22,7 @@ from .views import (
     manage_events,
     create_event,
     record_attendance,
+    scan_party_for_event,
     duplicate_event,
     toggle_event_repeatable,
     # Discord Link
@@ -186,8 +187,13 @@ urlpatterns = [
     path('war-point/manage/', __import__('items.views', fromlist=['war_point_manage']).war_point_manage, name='war-point-manage'),
     path('war-point/analyze-image/', __import__('items.views', fromlist=['analyze_war_image']).analyze_war_image, name='analyze-war-image'),
     
+    # Party Scanner System
+    path('party-scanner/', __import__('items.views', fromlist=['party_scanner_page']).party_scanner_page, name='party-scanner'),
+    path('party-scanner/analyze/', __import__('items.views', fromlist=['analyze_party_image']).analyze_party_image, name='analyze-party-image'),
+    
     # URL: /items/activity/events/1/attendance/ -> Admin: Record Attendance
     path('activity/events/<int:event_pk>/attendance/', record_attendance, name='record-attendance'),
+    path('activity/events/<int:event_pk>/party-scan/', scan_party_for_event, name='scan-party-for-event'),
 
     # URL: /items/activity/events/1/duplicate/ -> Admin: Duplicate Event
     path('activity/events/<int:event_pk>/duplicate/', duplicate_event, name='duplicate-event'),
