@@ -97,6 +97,21 @@ def reject_user(request, user_id):
     return redirect('character-management')
 
 
+# Admin: Bulk Delete Users
+@login_required(login_url='/login/')
+def bulk_delete_users(request):
+    if not (request.user.is_staff or request.user.is_superuser):
+        return HttpResponseForbidden("Admin only.")
+    if request.method == 'POST':
+        user_ids = request.POST.get('user_ids', '').split(',')
+        user_ids = [uid for uid in user_ids if uid.isdigit()]
+        if user_ids:
+            # Filter out staff/superuser to be safe
+            users_to_delete = User.objects.filter(id__in=user_ids, is_staff=False, is_superuser=False)
+            users_to_delete.delete()
+    return redirect('character-management')
+
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     
@@ -108,6 +123,7 @@ urlpatterns = [
     # Admin user approval
     path('portal/manage/approve-user/<int:user_id>/', approve_user, name='approve-user'),
     path('portal/manage/reject-user/<int:user_id>/', reject_user, name='reject-user'),
+    path('portal/manage/bulk-delete-users/', bulk_delete_users, name='bulk-delete-users'),
     
     # Redirect the root URL '/' to the new portal
     path('', RedirectView.as_view(url='/portal/profiles/', permanent=False), name='index'),
