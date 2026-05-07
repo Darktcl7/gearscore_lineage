@@ -1426,6 +1426,11 @@ class ActivityEvent(models.Model):
     checkin_token = models.CharField("Check-in Token", max_length=10, blank=True, null=True)
     token_expires_at = models.DateTimeField("Token Expires At", blank=True, null=True)
     
+    # OCR Scan Info
+    scan_info = models.JSONField("Scan Info", default=dict, blank=True,
+        help_text="Stores OCR party scan result stats (matched/detected) per clan")
+
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     input_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='input_events', verbose_name="Input By")

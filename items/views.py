@@ -1716,6 +1716,15 @@ def scan_party_for_event(request, event_pk):
         from .services import sync_event_dkp_penalties
         sync_event_dkp_penalties(event)
 
+        if not event.scan_info:
+            event.scan_info = {}
+        event.scan_info[clan.lower()] = {
+            'detected_count': len(detected_names),
+            'matched_count': len(matched)
+        }
+        event.save(update_fields=['scan_info'])
+
+
         return JsonResponse({
             'success': True,
             'clan': clan,

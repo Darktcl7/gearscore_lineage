@@ -249,7 +249,11 @@ main{flex:1;overflow:hidden}
         <div class="scan-controls">
             <input type="file" id="scan-file-valkyrie" class="scan-file" accept="image/png,image/jpeg,image/webp">
             <button type="button" class="scan-btn" data-clan="Valkyrie" data-file="scan-file-valkyrie"><i class="fas fa-camera"></i> Scan</button>
-            <div class="scan-result" id="scan-result-valkyrie">Not scanned</div>
+            {% if event.scan_info and event.scan_info.valkyrie %}
+                <div class="scan-result ok" id="scan-result-valkyrie">{{ event.scan_info.valkyrie.matched_count }} matched / {{ event.scan_info.valkyrie.detected_count }} detected</div>
+            {% else %}
+                <div class="scan-result" id="scan-result-valkyrie">Not scanned</div>
+            {% endif %}
         </div>
     </div>
     <div class="scanner-card">
@@ -260,7 +264,11 @@ main{flex:1;overflow:hidden}
         <div class="scan-controls">
             <input type="file" id="scan-file-valhalla" class="scan-file" accept="image/png,image/jpeg,image/webp">
             <button type="button" class="scan-btn" data-clan="Valhalla" data-file="scan-file-valhalla"><i class="fas fa-camera"></i> Scan</button>
-            <div class="scan-result" id="scan-result-valhalla">Not scanned</div>
+            {% if event.scan_info and event.scan_info.valhalla %}
+                <div class="scan-result ok" id="scan-result-valhalla">{{ event.scan_info.valhalla.matched_count }} matched / {{ event.scan_info.valhalla.detected_count }} detected</div>
+            {% else %}
+                <div class="scan-result" id="scan-result-valhalla">Not scanned</div>
+            {% endif %}
         </div>
     </div>
 </div>
