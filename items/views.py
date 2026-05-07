@@ -53,6 +53,14 @@ def character_management(request):
     from django.contrib.auth.models import User, Group
     pending_users = User.objects.filter(is_active=False, is_staff=False).order_by('-date_joined')
     
+    # Users who are active but have no characters
+    users_no_char = User.objects.filter(
+        is_active=True, 
+        is_staff=False, 
+        is_superuser=False,
+        characters__isnull=True
+    ).order_by('-date_joined')
+    
     # Get list of Sub Admin user IDs
     sub_admin_group = Group.objects.filter(name='Sub Admin').first()
     sub_admin_ids = list(sub_admin_group.user_set.values_list('id', flat=True)) if sub_admin_group else []
@@ -80,6 +88,7 @@ def character_management(request):
     return render(request, 'items/character_management.html', {
         'characters': characters,
         'pending_users': pending_users,
+        'users_no_char': users_no_char,
         'is_super_admin': is_admin(request.user),
         'sub_admin_ids': sub_admin_ids,
         'admin_roles_json': admin_roles_json,
