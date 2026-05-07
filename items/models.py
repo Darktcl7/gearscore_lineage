@@ -1337,15 +1337,15 @@ class CharacteristicsStats(models.Model):
 class ActivityEvent(models.Model):
     "\"\"Model untuk event/aktivitas guild\"\""
     EVENT_TYPE_CHOICES = (
-        ('INV_DRAGON_BEAST', '⚔️ Invasion Dragon Beast'),
-        ('INV_CARNIFEX', '⚔️ Invasion Carnifex'),
-        ('INV_ORFEN', '⚔️ Invasion Orfen'),
-        ('BOSS_RUSH', '🐉 Boss Rush'),
-        ('CATACOMBS', '🏰 Catacombs'),
-        ('DIMENSIONAL', '🌀 Dimensional Siege'),
-        ('ISLE_AWAKENING', '🏝️ Isle of Awakening'),
-        ('WAR_DAY', '⚔️ War Day'),
-        ('CUSTOM', '📋 Custom'),
+        ('INV_DRAGON_BEAST', 'Invasion Dragon Beast'),
+        ('INV_CARNIFEX', 'Invasion Carnifex'),
+        ('INV_ORFEN', 'Invasion Orfen'),
+        ('BOSS_RUSH', 'Boss Rush'),
+        ('CATACOMBS', 'Catacombs'),
+        ('DIMENSIONAL', 'Dimensional Siege'),
+        ('ISLE_AWAKENING', 'Isle of Awakening'),
+        ('WAR_DAY', 'War Day'),
+        ('CUSTOM', 'Custom'),
     )
 
     DEFAULT_POINTS = {
@@ -1458,6 +1458,21 @@ class ActivityEvent(models.Model):
     def is_upcoming(self):
         from django.utils import timezone
         return self.date > timezone.now()
+
+    @property
+    def get_icon_url(self):
+        icon_map = {
+            'INV_DRAGON_BEAST': 'images/events/invasion.png',
+            'INV_CARNIFEX': 'images/events/invasion.png',
+            'INV_ORFEN': 'images/events/invasion.png',
+            'BOSS_RUSH': 'images/events/boss_rush.png',
+            'CATACOMBS': 'images/events/catacombs.png',
+            'DIMENSIONAL': 'images/events/dimensional.png',
+            'ISLE_AWAKENING': 'images/events/isle_awakening.png',
+            'WAR_DAY': 'images/events/war_day.png',
+            'CUSTOM': 'images/events/custom.png',
+        }
+        return icon_map.get(self.event_type, 'images/events/custom.png')
 
     def get_mandatory_boss_details(self):
         if not self.is_mandatory or self.event_type != 'INVASION':

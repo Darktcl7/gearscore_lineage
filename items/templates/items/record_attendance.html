@@ -160,13 +160,13 @@ main{flex:1;overflow:hidden}
 .bsub:hover{transform:translateY(-2px);box-shadow:0 5px 20px rgba(46,204,113,.4)}
 .bcan{padding:15px 30px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:10px;color:#fff;font-size:1rem;text-decoration:none;display:flex;align-items:center;justify-content:center}
 .bcan:hover{background:rgba(255,255,255,.2)}
-.etb{padding:6px 12px;border-radius:6px;font-size:.8rem;font-weight:600}
-.event-invasion{background:#e74c3c;color:#fff}
-.event-boss_rush{background:#9b59b6;color:#fff}
-.event-catacombs{background:#3498db;color:#fff}
-.event-dimensional{background:#1abc9c;color:#fff}
-.event-isle_awakening{background:#f39c12;color:#fff}
-.event-custom{background:#7f8c8d;color:#fff}
+.etb{display:inline-flex;align-items:center;gap:6px;font-size:.9rem;font-weight:700;background:transparent;text-shadow:0 2px 4px rgba(0,0,0,0.8)}
+.event-invasion{color:#ff7675}
+.event-boss_rush{color:#a29bfe}
+.event-catacombs{color:#74b9ff}
+.event-dimensional{color:#55efc4}
+.event-isle_awakening{color:#fdcb6e}
+.event-custom{color:#dfe6e9}
 .pb{padding:4px 10px;background:#DAA520;color:#000;border-radius:20px;font-size:.8rem;font-weight:600}
 .boss-pts-editor{margin-top:15px;padding:12px 15px;background:rgba(255,255,255,.06);border:1px solid rgba(218,165,32,.3);border-radius:10px}
 .boss-pts-title{color:#DAA520;font-weight:600;font-size:.9rem;margin-bottom:10px}
@@ -219,7 +219,7 @@ main{flex:1;overflow:hidden}
 <div class="ah">
 <h1><i class="fas fa-user-check"></i> Record Attendance</h1>
 <div class="ei">
-<div class="eii"><span class="etb event-{{ event.event_type|lower }}">{{ event.get_event_type_display }}</span></div>
+<div class="eii"><span class="etb event-{{ event.event_type|lower }}"><img src="{% static event.get_icon_url %}" class="event-icon" alt="icon" style="width:16px;height:24px;"> {{ event.get_event_type_display }}</span></div>
 <div class="eii"><i class="fas fa-calendar"></i> {{ event.date|date:"M d, Y H:i" }}</div>
 <div class="eii"><span class="pb"><i class="fas fa-star"></i> {{ event.calculate_max_points }} pts</span></div>
 </div>

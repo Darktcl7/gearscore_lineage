@@ -136,43 +136,41 @@
     }
 
     .event-type-badge {
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-size: 0.8rem;
-        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        padding: 0;
+        background: transparent !important;
     }
 
     .event-invasion,
     .event-inv_dragon_beast,
     .event-inv_carnifex,
     .event-inv_orfen {
-        background: #e74c3c;
-        color: #fff;
+        color: #ff7675; /* invasion */
     }
 
     .event-boss_rush {
-        background: #9b59b6;
-        color: #fff;
+        color: #a29bfe; /* boss_rush */
     }
 
     .event-catacombs {
-        background: #3498db;
-        color: #fff;
+        color: #74b9ff; /* catacombs */
     }
 
     .event-dimensional {
-        background: #1abc9c;
-        color: #fff;
+        color: #55efc4; /* dimensional */
     }
 
     .event-isle_awakening {
-        background: #f39c12;
-        color: #fff;
+        color: #fdcb6e; /* isle_awakening */
     }
 
     .event-custom {
-        background: #7f8c8d;
-        color: #fff;
+        color: #dfe6e9; /* custom */
     }
 
     .status-badge {
@@ -187,8 +185,7 @@
     }
 
     .status-pending {
-        background: #f39c12;
-        color: #fff;
+        color: #fdcb6e; /* isle_awakening */
     }
 
     .win-badge {
@@ -208,8 +205,7 @@
     }
 
     .btn-attendance {
-        background: #3498db;
-        color: #fff;
+        color: #74b9ff; /* catacombs */
     }
 
     .btn-attendance:hover {
@@ -433,7 +429,7 @@
                 <tr>
                     <td>
                         <span class="event-type-badge event-{{ event.event_type|lower }}">
-                            {{ event.get_event_type_display }}
+                            <img src="{% static event.get_icon_url %}" class="event-icon" alt="icon"> {{ event.get_event_type_display }}
                         </span>
                     </td>
                     <td>

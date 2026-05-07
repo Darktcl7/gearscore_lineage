@@ -278,10 +278,21 @@
         border-color: #DAA520;
         box-shadow: 0 0 0 3px rgba(218,165,32,0.18);
     }
+
     .reward-points-input label {
         font-size: 0.8rem;
         color: #aaa;
         margin-bottom: 4px;
+    }
+    .event-icon-preview {
+        display: none;
+        width: 40px;
+        height: 60px;
+        border-radius: 6px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.8);
+        object-fit: cover;
+        margin-left: 15px;
+        border: 1px solid rgba(255,255,255,0.2);
     }
 </style>
 {% endblock %}
@@ -298,12 +309,15 @@
 
             <div class="form-group">
                 <label for="event_type">Event Type</label>
-                <select name="event_type" id="event_type" required>
-                    <option value="">-- Select Type --</option>
-                    {% for value, label in event_types %}
-                    <option value="{{ value }}">{{ label }}</option>
-                    {% endfor %}
-                </select>
+                <div style="display:flex; align-items:center;">
+                    <select name="event_type" id="event_type" required>
+                        <option value="">-- Select Type --</option>
+                        {% for value, label in event_types %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <img src="" id="event-icon-preview" class="event-icon-preview" alt="Event Icon">
+                </div>
             </div>
 
             <div class="form-group" id="custom-name-group" style="display:none;">
@@ -424,6 +438,27 @@
         var pointsHint = document.getElementById('event-points-hint');
         var rewardSection = document.getElementById('reward-section');
         var eventNameGroup = document.getElementById('event-name-group');
+        var iconPreview = document.getElementById('event-icon-preview');
+        
+        var iconMap = {
+            'INV_DRAGON_BEAST': 'invasion.png',
+            'INV_CARNIFEX': 'invasion.png',
+            'INV_ORFEN': 'invasion.png',
+            'BOSS_RUSH': 'boss_rush.png',
+            'CATACOMBS': 'catacombs.png',
+            'DIMENSIONAL': 'dimensional.png',
+            'ISLE_AWAKENING': 'isle_awakening.png',
+            'WAR_DAY': 'war_day.png',
+            'CUSTOM': 'custom.png'
+        };
+        
+        if (evType && iconMap[evType]) {
+            iconPreview.src = "/static/images/events/" + iconMap[evType];
+            iconPreview.style.display = "block";
+        } else {
+            iconPreview.style.display = "none";
+        }
+
 
         // Custom event name field & reward section
         if (evType === 'CUSTOM') {

@@ -255,19 +255,22 @@
     }
 
     .event-type-badge {
-        padding: 4px 10px;
-        border-radius: 4px;
-        font-size: 0.7rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
         font-weight: 700;
-        text-transform: uppercase;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        padding: 0;
+        background: transparent !important;
     }
-    .event-invasion, .event-inv_dragon_beast, .event-inv_carnifex, .event-inv_orfen { background: #e74c3c; color: #fff; }
-    .event-boss_rush { background: #9b59b6; color: #fff; }
-    .event-catacombs { background: #3498db; color: #fff; }
-    .event-dimensional { background: #1abc9c; color: #fff; }
-    .event-isle_awakening { background: #f39c12; color: #fff; }
-    .event-war_day { background: #e74c3c; color: #fff; }
-    .event-custom { background: #e67e22; color: #fff; }
+    .event-invasion, .event-inv_dragon_beast, .event-inv_carnifex, .event-inv_orfen { color: #ff7675; }
+    .event-boss_rush { color: #a29bfe; }
+    .event-catacombs { color: #74b9ff; }
+    .event-dimensional { color: #55efc4; }
+    .event-isle_awakening { color: #fdcb6e; }
+    .event-war_day { color: #ff7675; }
+    .event-custom { color: #dfe6e9; }
     
     /* Scrollbar */
     .main-column::-webkit-scrollbar, .sidebar-column::-webkit-scrollbar { width: 6px; }
@@ -735,7 +738,7 @@
                             <div style="display: flex; gap: 8px; align-items: center;">
                                 {% if event.event_type == 'CUSTOM' %}
                                 <span class="event-type-badge event-custom">
-                                    🐉 Raid Boss
+                                    Raid Boss
                                 </span>
                                 {% else %}
                                 <span class="event-type-badge event-{{ event.event_type|lower }}">
