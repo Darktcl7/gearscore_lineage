@@ -410,17 +410,17 @@
                     <i class="fas fa-exclamation-circle"></i> Mandatory Boss Penalties
                 </label>
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                    <label style="display: flex; align-items: center; gap: 8px; color: #ddd; margin: 0;">
+                    <label data-invasion-boss-row="INV_DRAGON_BEAST" style="display: flex; align-items: center; gap: 8px; color: #ddd; margin: 0;">
                         <input type="checkbox" name="mandatory_dragon_beast" id="mandatory_dragon_beast" checked style="width: 18px; height: 18px; accent-color: #e74c3c;">
                         Dragon Beast
                         <input type="number" name="penalty_dragon_beast" id="penalty_dragon_beast" value="5" min="1" style="width: 70px; padding: 6px;">
                     </label>
-                    <label style="display: flex; align-items: center; gap: 8px; color: #ddd; margin: 0;">
+                    <label data-invasion-boss-row="INV_CARNIFEX" style="display: flex; align-items: center; gap: 8px; color: #ddd; margin: 0;">
                         <input type="checkbox" name="mandatory_carnifex" id="mandatory_carnifex" checked style="width: 18px; height: 18px; accent-color: #e74c3c;">
                         Carnifex
                         <input type="number" name="penalty_carnifex" id="penalty_carnifex" value="5" min="1" style="width: 70px; padding: 6px;">
                     </label>
-                    <label style="display: flex; align-items: center; gap: 8px; color: #ddd; margin: 0;">
+                    <label data-invasion-boss-row="INV_ORFEN" style="display: flex; align-items: center; gap: 8px; color: #ddd; margin: 0;">
                         <input type="checkbox" name="mandatory_orfen" id="mandatory_orfen" checked style="width: 18px; height: 18px; accent-color: #e74c3c;">
                         Orfen
                         <input type="number" name="penalty_orfen" id="penalty_orfen" value="5" min="1" style="width: 70px; padding: 6px;">
@@ -543,6 +543,17 @@
             if (isInvasion && invasionMandatoryBosses) {
                 penaltyGroup.style.display = 'none';
                 invasionMandatoryBosses.style.display = 'block';
+                document.querySelectorAll('[data-invasion-boss-row]').forEach(function(row) {
+                    var shouldShow = row.dataset.invasionBossRow === evType || evType === 'INVASION';
+                    row.style.display = shouldShow ? 'flex' : 'none';
+                    row.querySelectorAll('input').forEach(function(input) {
+                        input.disabled = !shouldShow;
+                    });
+                    var checkbox = row.querySelector('input[type="checkbox"]');
+                    if (checkbox) {
+                        checkbox.checked = shouldShow;
+                    }
+                });
             } else {
                 penaltyGroup.style.display = 'flex';
                 if (invasionMandatoryBosses) {
@@ -554,6 +565,9 @@
             if (invasionMandatoryBosses) {
                 invasionMandatoryBosses.style.display = 'none';
             }
+            document.querySelectorAll('[data-invasion-boss-row] input').forEach(function(input) {
+                input.disabled = true;
+            });
         }
         
         ['dragon_beast', 'carnifex', 'orfen'].forEach(function(boss) {

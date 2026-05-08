@@ -1512,7 +1512,8 @@ def create_event(request):
                             pass
                 
                 if not mandatory_penalties:
-                    mandatory_penalties = ActivityEvent.DEFAULT_MANDATORY_BOSS_PENALTIES.copy()
+                    temp_event = ActivityEvent(event_type=event_type, is_mandatory=True)
+                    mandatory_penalties = temp_event.get_default_mandatory_boss_penalties()
 
                 event_kwargs['mandatory_boss_penalties'] = mandatory_penalties
                 event_kwargs['dkp_mandatory_boss_penalties'] = dkp_mandatory_penalties

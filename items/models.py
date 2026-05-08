@@ -1359,10 +1359,16 @@ class ActivityEvent(models.Model):
         'CUSTOM': 0,
     }
 
-    DEFAULT_MANDATORY_BOSS_PENALTIES = {
+    DEFAULT_INVASION_BOSS_PENALTIES = {
         'dragon_beast': 5,
         'carnifex': 5,
         'orfen': 5,
+    }
+
+    INVASION_BOSS_BY_EVENT_TYPE = {
+        'INV_DRAGON_BEAST': 'dragon_beast',
+        'INV_CARNIFEX': 'carnifex',
+        'INV_ORFEN': 'orfen',
     }
 
     event_id = models.CharField("Event ID", max_length=50, unique=True, blank=True)
@@ -1446,7 +1452,7 @@ class ActivityEvent(models.Model):
             import random, string
             self.event_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
         if self.is_mandatory and self.is_invasion_event and not self.mandatory_boss_penalties:
-            self.mandatory_boss_penalties = self.DEFAULT_MANDATORY_BOSS_PENALTIES.copy()
+            self.mandatory_boss_penalties = self.get_default_mandatory_boss_penalties()
             update_fields = kwargs.get('update_fields')
             if update_fields is not None:
                 kwargs['update_fields'] = set(update_fields) | {'mandatory_boss_penalties'}
@@ -1456,10 +1462,16 @@ class ActivityEvent(models.Model):
     def is_invasion_event(self):
         return self.event_type.startswith('INV_') or self.event_type == 'INVASION'
 
+    def get_default_mandatory_boss_penalties(self):
+        boss_key = self.INVASION_BOSS_BY_EVENT_TYPE.get(self.event_type)
+        if boss_key:
+            return {boss_key: self.DEFAULT_INVASION_BOSS_PENALTIES[boss_key]}
+        return self.DEFAULT_INVASION_BOSS_PENALTIES.copy()
+
     def get_mandatory_boss_penalty_map(self):
         if not self.is_mandatory or not self.is_invasion_event:
             return {}
-        return self.mandatory_boss_penalties or self.DEFAULT_MANDATORY_BOSS_PENALTIES.copy()
+        return self.mandatory_boss_penalties or self.get_default_mandatory_boss_penalties()
 
     def calculate_max_points(self):
         """Calculate max points based on event type and results"""
