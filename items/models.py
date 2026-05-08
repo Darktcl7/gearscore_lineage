@@ -1462,17 +1462,17 @@ class ActivityEvent(models.Model):
     @property
     def get_icon_url(self):
         icon_map = {
-            'INV_DRAGON_BEAST': 'images/events/invasion.png',
-            'INV_CARNIFEX': 'images/events/invasion.png',
-            'INV_ORFEN': 'images/events/invasion.png',
-            'BOSS_RUSH': 'images/events/boss_rush.png',
-            'CATACOMBS': 'images/events/catacombs.png',
-            'DIMENSIONAL': 'images/events/dimensional.png',
-            'ISLE_AWAKENING': 'images/events/isle_awakening.png',
-            'WAR_DAY': 'images/events/war_day.png',
-            'CUSTOM': 'images/events/custom.png',
+            'INV_DRAGON_BEAST': 'items/images/events/invasion.png',
+            'INV_CARNIFEX': 'items/images/events/invasion.png',
+            'INV_ORFEN': 'items/images/events/invasion.png',
+            'BOSS_RUSH': 'items/images/events/boss_rush.png',
+            'CATACOMBS': 'items/images/events/catacombs.png',
+            'DIMENSIONAL': 'items/images/events/dimensional.png',
+            'ISLE_AWAKENING': 'items/images/events/isle_awakening.png',
+            'WAR_DAY': 'items/images/events/war_day.png',
+            'CUSTOM': 'items/images/events/custom.png',
         }
-        return icon_map.get(self.event_type, 'images/events/custom.png')
+        return icon_map.get(self.event_type, 'items/images/events/custom.png')
 
     def get_mandatory_boss_details(self):
         if not self.is_mandatory or self.event_type != 'INVASION':

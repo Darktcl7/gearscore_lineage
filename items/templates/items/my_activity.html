@@ -345,16 +345,16 @@ function switchTab(tabId) {
                 <div style="text-align: center;">
                     <div class="tier-badge">
                         {% if tier == 'Core' %}
-                            <img src="{% static 'images/tiers/tier_core.png' %}" alt="Core">
+                            <img src="{% static 'items/images/tiers/tier_core.png' %}" alt="Core">
                             <span style="color: #FFD700;">Core Member</span>
                         {% elif tier == 'Elite' %}
-                            <img src="{% static 'images/tiers/tier_elite.png' %}" alt="Elite">
+                            <img src="{% static 'items/images/tiers/tier_elite.png' %}" alt="Elite">
                             <span style="color: #5dade2;">Elite Member</span>
                         {% elif tier == 'Active' %}
-                            <img src="{% static 'images/tiers/tier_active.png' %}" alt="Active">
+                            <img src="{% static 'items/images/tiers/tier_active.png' %}" alt="Active">
                             <span style="color: #2ecc71;">Active Member</span>
                         {% else %}
-                            <img src="{% static 'images/tiers/tier_unactive.png' %}" alt="Unactive">
+                            <img src="{% static 'items/images/tiers/tier_unactive.png' %}" alt="Unactive">
                             <span style="color: #95a5a6;">Unactive Member</span>
                         {% endif %}
                     </div>
@@ -482,7 +482,7 @@ function switchTab(tabId) {
                             <i class="fas fa-history" style="margin-right:6px;"></i>Activity Events History
                         </button>
                         <button class="tab-btn" data-tab="raid-history" type="button" onclick="switchTab('raid-history')" style="display: flex; align-items: center; gap: 8px;">
-                            <img src="{% static 'images/events/raid.png' %}" class="boss-icon" alt="">Raid Boss History
+                            <img src="{% static 'items/images/events/raid.png' %}" class="boss-icon" alt="">Raid Boss History
                         </button>
                     </div>
                     {% if is_admin %}
@@ -534,15 +534,15 @@ function switchTab(tabId) {
                                     {% if activity.event.event_type == 'CUSTOM' %}
                                     <span style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: {% if '[Territory Boss]' in activity.event.name %}#9b59b6{% elif '[World Boss]' in activity.event.name %}#3498db{% elif '[Rift Boss]' in activity.event.name %}#1abc9c{% elif '[Arena Boss]' in activity.event.name %}#f39c12{% else %}#e74c3c{% endif %};">
                                         {% if '[Territory Boss]' in activity.event.name %}
-                                            <img src="{% static 'images/events/territory.png' %}" class="boss-icon" alt="icon"> Territory Boss
+                                            <img src="{% static 'items/images/events/territory.png' %}" class="boss-icon" alt="icon"> Territory Boss
                                         {% elif '[World Boss]' in activity.event.name %}
-                                            <img src="{% static 'images/events/world.png' %}" class="boss-icon" alt="icon"> World Boss
+                                            <img src="{% static 'items/images/events/world.png' %}" class="boss-icon" alt="icon"> World Boss
                                         {% elif '[Rift Boss]' in activity.event.name %}
-                                            <img src="{% static 'images/events/rift.png' %}" class="boss-icon" alt="icon"> Rift Boss
+                                            <img src="{% static 'items/images/events/rift.png' %}" class="boss-icon" alt="icon"> Rift Boss
                                         {% elif '[Arena Boss]' in activity.event.name %}
-                                            <img src="{% static 'images/events/arena.png' %}" class="boss-icon" alt="icon"> Arena Boss
+                                            <img src="{% static 'items/images/events/arena.png' %}" class="boss-icon" alt="icon"> Arena Boss
                                         {% else %}
-                                            <img src="{% static 'images/events/raid.png' %}" class="boss-icon" alt="icon"> Raid Boss
+                                            <img src="{% static 'items/images/events/raid.png' %}" class="boss-icon" alt="icon"> Raid Boss
                                         {% endif %}
                                     </span>
                                     {% else %}
@@ -697,15 +697,15 @@ function switchTab(tabId) {
                                     {% if activity.event.event_type == 'CUSTOM' %}
                                     <span style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: {% if '[Territory Boss]' in activity.event.name %}#9b59b6{% elif '[World Boss]' in activity.event.name %}#3498db{% elif '[Rift Boss]' in activity.event.name %}#1abc9c{% elif '[Arena Boss]' in activity.event.name %}#f39c12{% else %}#e74c3c{% endif %};">
                                         {% if '[Territory Boss]' in activity.event.name %}
-                                            <img src="{% static 'images/events/territory.png' %}" class="boss-icon" alt="icon"> Territory Boss
+                                            <img src="{% static 'items/images/events/territory.png' %}" class="boss-icon" alt="icon"> Territory Boss
                                         {% elif '[World Boss]' in activity.event.name %}
-                                            <img src="{% static 'images/events/world.png' %}" class="boss-icon" alt="icon"> World Boss
+                                            <img src="{% static 'items/images/events/world.png' %}" class="boss-icon" alt="icon"> World Boss
                                         {% elif '[Rift Boss]' in activity.event.name %}
-                                            <img src="{% static 'images/events/rift.png' %}" class="boss-icon" alt="icon"> Rift Boss
+                                            <img src="{% static 'items/images/events/rift.png' %}" class="boss-icon" alt="icon"> Rift Boss
                                         {% elif '[Arena Boss]' in activity.event.name %}
-                                            <img src="{% static 'images/events/arena.png' %}" class="boss-icon" alt="icon"> Arena Boss
+                                            <img src="{% static 'items/images/events/arena.png' %}" class="boss-icon" alt="icon"> Arena Boss
                                         {% else %}
-                                            <img src="{% static 'images/events/raid.png' %}" class="boss-icon" alt="icon"> Raid Boss
+                                            <img src="{% static 'items/images/events/raid.png' %}" class="boss-icon" alt="icon"> Raid Boss
                                         {% endif %}
                                     </span>
                                     {% else %}
