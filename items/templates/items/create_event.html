@@ -405,7 +405,28 @@
                 </div>
             </div>
 
-            
+            <div class="form-group" id="invasion-mandatory-bosses" style="display:none; padding: 14px 16px; background: rgba(231, 76, 60, 0.08); border: 1px solid rgba(231, 76, 60, 0.25); border-radius: 10px;">
+                <label style="color: #e74c3c; margin-bottom: 12px; display: block;">
+                    <i class="fas fa-exclamation-circle"></i> Mandatory Boss Penalties
+                </label>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; gap: 8px; color: #ddd; margin: 0;">
+                        <input type="checkbox" name="mandatory_dragon_beast" id="mandatory_dragon_beast" checked style="width: 18px; height: 18px; accent-color: #e74c3c;">
+                        Dragon Beast
+                        <input type="number" name="penalty_dragon_beast" id="penalty_dragon_beast" value="5" min="1" style="width: 70px; padding: 6px;">
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; color: #ddd; margin: 0;">
+                        <input type="checkbox" name="mandatory_carnifex" id="mandatory_carnifex" checked style="width: 18px; height: 18px; accent-color: #e74c3c;">
+                        Carnifex
+                        <input type="number" name="penalty_carnifex" id="penalty_carnifex" value="5" min="1" style="width: 70px; padding: 6px;">
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; color: #ddd; margin: 0;">
+                        <input type="checkbox" name="mandatory_orfen" id="mandatory_orfen" checked style="width: 18px; height: 18px; accent-color: #e74c3c;">
+                        Orfen
+                        <input type="number" name="penalty_orfen" id="penalty_orfen" value="5" min="1" style="width: 70px; padding: 6px;">
+                    </label>
+                </div>
+            </div>
 
             <div class="form-group" style="margin-top: 30px;">
                 <button type="submit" class="btn-submit">

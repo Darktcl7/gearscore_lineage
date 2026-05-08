@@ -1359,6 +1359,12 @@ class ActivityEvent(models.Model):
         'CUSTOM': 0,
     }
 
+    DEFAULT_MANDATORY_BOSS_PENALTIES = {
+        'dragon_beast': 5,
+        'carnifex': 5,
+        'orfen': 5,
+    }
+
     event_id = models.CharField("Event ID", max_length=50, unique=True, blank=True)
     name = models.CharField("Nama Event", max_length=200)
     event_type = models.CharField("Tipe Event", max_length=20, choices=EVENT_TYPE_CHOICES)
@@ -1439,11 +1445,21 @@ class ActivityEvent(models.Model):
         if not self.event_id:
             import random, string
             self.event_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        if self.is_mandatory and self.is_invasion_event and not self.mandatory_boss_penalties:
+            self.mandatory_boss_penalties = self.DEFAULT_MANDATORY_BOSS_PENALTIES.copy()
+            update_fields = kwargs.get('update_fields')
+            if update_fields is not None:
+                kwargs['update_fields'] = set(update_fields) | {'mandatory_boss_penalties'}
         super().save(*args, **kwargs)
 
     @property
     def is_invasion_event(self):
         return self.event_type.startswith('INV_') or self.event_type == 'INVASION'
+
+    def get_mandatory_boss_penalty_map(self):
+        if not self.is_mandatory or not self.is_invasion_event:
+            return {}
+        return self.mandatory_boss_penalties or self.DEFAULT_MANDATORY_BOSS_PENALTIES.copy()
 
     def calculate_max_points(self):
         """Calculate max points based on event type and results"""
@@ -1482,7 +1498,7 @@ class ActivityEvent(models.Model):
         if not self.is_mandatory or not self.is_invasion_event:
             return []
         details = []
-        mandatory_map = self.mandatory_boss_penalties or {}
+        mandatory_map = self.get_mandatory_boss_penalty_map()
         dkp_map = self.dkp_mandatory_boss_penalties or {}
         for boss, penalty in mandatory_map.items():
             boss_name = boss.replace('_', ' ').title()
@@ -1561,7 +1577,7 @@ class PlayerActivity(models.Model):
             if self.event.is_invasion_event:
                 boss_points = 0
                 boss_point_map = self.event.boss_point_config or {}
-                mandatory_map = self.event.mandatory_boss_penalties or {}
+                mandatory_map = self.event.get_mandatory_boss_penalty_map()
                 
                 if self.bosses_killed:
                     for boss, killed in self.bosses_killed.items():
@@ -1582,7 +1598,7 @@ class PlayerActivity(models.Model):
             # Deduct points if it's a mandatory event, otherwise 0
             if self.event.is_mandatory:
                 if self.event.is_invasion_event:
-                    mandatory_map = self.event.mandatory_boss_penalties or {}
+                    mandatory_map = self.event.get_mandatory_boss_penalty_map()
                     penalty = sum([abs(p) for p in mandatory_map.values()])
                     self.points_earned = -abs(penalty)
                 else:
@@ -1698,7 +1714,7 @@ class PlayerActivity(models.Model):
         if not self.event.is_mandatory or not self.event.is_invasion_event:
             return []
         missed = []
-        mandatory_map = self.event.mandatory_boss_penalties or {}
+        mandatory_map = self.event.get_mandatory_boss_penalty_map()
         if self.status == 'ABSENT':
             for boss, penalty in mandatory_map.items():
                 if penalty > 0:
