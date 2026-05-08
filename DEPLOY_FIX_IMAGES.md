@@ -12,6 +12,8 @@ Gambar event icons dan background image tidak muncul di website production (valk
 
 3. **JavaScript di create_event.html menggunakan path lama**: `/static/images/events/` (SALAH)
 
+4. **File background lama masih ada di `static/images/`**: Django collectstatic mengambil file dari folder `static/` terlebih dahulu, sehingga file lama (`bg_main.jpg`) masih digunakan meskipun sudah ada file baru (`bg_main.jpeg`) di `items/static/items/images/`
+
 ## Solusi yang Sudah Diterapkan
 
 ### 1. Update Model (items/models.py)
@@ -38,6 +40,18 @@ Gambar event icons dan background image tidak muncul di website production (valk
 ✅ Path icon preview di JavaScript sudah diupdate:
 ```javascript
 iconPreview.src = "/static/items/images/events/" + iconMap[evType];
+```
+
+### 5. Hapus File Background Lama
+✅ File background lama di `static/images/` sudah dihapus:
+- ❌ `static/images/bg_main.jpg` (deleted)
+- ❌ `static/images/bg.jpg` (deleted)
+- ✅ `items/static/items/images/bg_main.jpeg` (digunakan)
+
+### 6. Tambah Cache Busting
+✅ Background image menggunakan versioning untuk bypass cache:
+```html
+background-image: url("{% static 'items/images/bg_main.jpeg' %}?v=2");
 ```
 
 ## Langkah Deploy ke Production Server
@@ -95,8 +109,9 @@ Setelah deploy, **WAJIB** clear browser cache atau buka website dalam **incognit
 5. ✅ `items/templates/items/activity_leaderboard.html` - Path tier badges
 6. ✅ `items/templates/items/manage_events.html` - Menggunakan `event.get_icon_url`
 7. ✅ `items/templates/items/create_event.html` - JavaScript icon preview path
-8. ✅ `items/templates/items/base.html` - Background image path (sudah benar)
+8. ✅ `items/templates/items/base.html` - Background image path + cache busting (?v=2)
 9. ✅ Struktur folder: `items/static/items/images/events/` dan `items/static/items/images/tiers/`
+10. ✅ **DELETED:** `static/images/bg_main.jpg` dan `static/images/bg.jpg` (file lama yang menyebabkan konflik)
 
 ## Catatan Penting
 - ⚠️ Folder lama `items/static/images/` masih ada tapi tidak digunakan lagi
