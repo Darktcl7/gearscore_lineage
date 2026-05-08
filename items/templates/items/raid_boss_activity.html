@@ -89,6 +89,7 @@
         margin-bottom: 24px; border-bottom: 1px solid #333; padding-bottom: 0;
     }
     .tab-btn {
+        display: flex; align-items: center; gap: 8px;
         background: transparent; border: none; color: #888;
         font-family: 'Outfit', sans-serif; font-size: 0.9rem; font-weight: 600;
         padding: 10px 20px; cursor: pointer;
@@ -310,15 +311,14 @@
     /* Participant dropdown toggle */
     .participant-toggle-btn {
         display:inline-flex; align-items:center; gap:5px; cursor:pointer;
-        background:rgba(129,199,132,.10); border:1px solid rgba(129,199,132,.25);
-        color:#81c784; border-radius:20px; padding:4px 12px; font-size:.78rem; font-weight:600;
+        background:transparent; border:none;
+        color:#81c784; padding:2px 4px; font-size:.78rem; font-weight:600;
         transition:all .25s ease; user-select:none;
     }
     .participant-toggle-btn:hover {
-        background:rgba(129,199,132,.20); border-color:rgba(129,199,132,.45);
-        color:#a5d6a7; transform:translateY(-1px);
-        box-shadow:0 2px 8px rgba(129,199,132,.15);
+        color:#a5d6a7;
     }
+    .boss-icon { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; }
     .participant-toggle-btn .toggle-icon {
         font-size:.6rem; transition:transform .25s ease; display:inline-block;
     }
@@ -379,7 +379,8 @@
         .rb-header h1 { font-size: 1.2rem; }
         .rb-content { padding: 0 10px !important; }
         .tab-bar { gap: 3px; padding: 0 5px; margin-bottom: 15px; }
-        .tab-btn { padding: 8px 10px; font-size: 0.75rem; }
+        .tab-btn { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 6px 6px; font-size: 0.65rem; }
+        .boss-icon { width: 14px; height: 14px; }
         .boss-pill { padding: 6px 10px; font-size: 0.8rem; }
         .participant-grid { grid-template-columns: repeat(2, 1fr) !important; }
         .part-pill { padding: 6px 8px; font-size: 0.8rem; }
@@ -429,19 +430,19 @@
 
         <div class="tab-nav">
             <button class="tab-btn active" data-tab="raid" type="button">
-                <i class="fas fa-dragon" style="margin-right:6px;"></i>Raid Boss
+                <img src="{% static 'images/events/raid.png' %}" class="boss-icon" alt="">Raid Boss
             </button>
             <button class="tab-btn" data-tab="territory" type="button">
-                <i class="fas fa-chess-rook" style="margin-right:6px;"></i>Territory Boss
+                <img src="{% static 'images/events/territory.png' %}" class="boss-icon" alt="">Territory Boss
             </button>
             <button class="tab-btn" data-tab="world" type="button">
-                <i class="fas fa-globe" style="margin-right:6px;"></i>World Boss
+                <img src="{% static 'images/events/world.png' %}" class="boss-icon" alt="">World Boss
             </button>
             <button class="tab-btn" data-tab="rift" type="button">
-                <i class="fas fa-circle-nodes" style="margin-right:6px;"></i>Rift Boss
+                <img src="{% static 'images/events/rift.png' %}" class="boss-icon" alt="">Rift Boss
             </button>
             <button class="tab-btn" data-tab="arena" type="button">
-                <i class="fas fa-shield-halved" style="margin-right:6px;"></i>Arena Boss
+                <img src="{% static 'images/events/arena.png' %}" class="boss-icon" alt="">Arena Boss
             </button>
         </div>
 
@@ -955,9 +956,9 @@
                         {{ e.participants.count }} users
                         <span class="toggle-icon">▼</span>
                     </span>
-                    <div class="participant-name-list">
+                    <div class="participant-name-list" style="margin-top: 8px; color: #b7e1ba; font-size: 0.85rem; line-height: 1.5;">
                         {% for pa in e.participants.all %}
-                            <span class="participant-name-chip">{{ pa.player.name }}</span>
+                            {{ pa.player.name }}{% if not forloop.last %}, {% endif %}
                         {% empty %}
                             <span style="color:#777; font-size:.75rem;">No participants</span>
                         {% endfor %}

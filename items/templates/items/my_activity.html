@@ -135,12 +135,23 @@
     }
 
     .tier-badge {
-        display: inline-block;
-        padding: 8px 20px;
-        border-radius: 25px;
-        font-size: 1.2rem;
-        font-weight: 600;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
         margin-top: 15px;
+    }
+    .tier-badge img {
+        width: 80px;
+        height: 80px;
+        object-fit: contain;
+        filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+    }
+    .tier-badge span {
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
     }
 
     .activity-table {
@@ -214,6 +225,8 @@
     }
 
     /* ── MOBILE RESPONSIVE ── */
+    .boss-icon { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; }
+
     @media (max-width: 768px) {
         html, body { overflow: auto; }
         #site-content { height: auto; overflow: auto; }
@@ -247,6 +260,7 @@
         .stat-label { font-size: 0.75rem; }
         .glass-card { padding: 12px; }
         .glass-card h3 { font-size: 0.95rem; }
+        .boss-icon { width: 14px; height: 14px; }
 
         .activity-table th, .activity-table td {
             padding: 8px 6px;
@@ -329,14 +343,20 @@ function switchTab(tabId) {
             <div class="glass-card char-card">
                 <h3><i class="fas fa-user"></i> {{ character.name }}</h3>
                 <div style="text-align: center;">
-                    <div class="tier-badge" style="
-                        {% if tier == 'Core' %}background: linear-gradient(145deg, #FFD700, #FFA500); color: #000;
-                        {% elif tier == 'Elite' %}background: linear-gradient(145deg, #9B59B6, #8E44AD); color: #fff;
-                        {% elif tier == 'Active' %}background: linear-gradient(145deg, #3498DB, #2980B9); color: #fff;
-                        {% else %}background: linear-gradient(145deg, #7F8C8D, #6C7A7D); color: #fff;{% endif %}
-                    ">
-                        {% if tier == 'Core' %}👑{% elif tier == 'Elite' %}🛡️{% elif tier == 'Active' %}⚔️{% else %}💤{% endif %}
-                        {{ tier }} Member
+                    <div class="tier-badge">
+                        {% if tier == 'Core' %}
+                            <img src="{% static 'images/tiers/tier_core.png' %}" alt="Core">
+                            <span style="color: #FFD700;">Core Member</span>
+                        {% elif tier == 'Elite' %}
+                            <img src="{% static 'images/tiers/tier_elite.png' %}" alt="Elite">
+                            <span style="color: #5dade2;">Elite Member</span>
+                        {% elif tier == 'Active' %}
+                            <img src="{% static 'images/tiers/tier_active.png' %}" alt="Active">
+                            <span style="color: #2ecc71;">Active Member</span>
+                        {% else %}
+                            <img src="{% static 'images/tiers/tier_unactive.png' %}" alt="Unactive">
+                            <span style="color: #95a5a6;">Unactive Member</span>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -461,8 +481,8 @@ function switchTab(tabId) {
                         <button class="tab-btn active" data-tab="regular-history" type="button" onclick="switchTab('regular-history')">
                             <i class="fas fa-history" style="margin-right:6px;"></i>Activity Events History
                         </button>
-                        <button class="tab-btn" data-tab="raid-history" type="button" onclick="switchTab('raid-history')">
-                            <i class="fas fa-dragon" style="margin-right:6px;"></i>Raid Boss History
+                        <button class="tab-btn" data-tab="raid-history" type="button" onclick="switchTab('raid-history')" style="display: flex; align-items: center; gap: 8px;">
+                            <img src="{% static 'images/events/raid.png' %}" class="boss-icon" alt="">Raid Boss History
                         </button>
                     </div>
                     {% if is_admin %}
@@ -512,8 +532,18 @@ function switchTab(tabId) {
                                     <span style="margin-left: 5px; color: #bbb;">{{ activity.adjustment_reason }}</span>
                                 {% else %}
                                     {% if activity.event.event_type == 'CUSTOM' %}
-                                    <span class="event-type-badge event-custom">
-                                        🐉 Raid Boss
+                                    <span style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: {% if '[Territory Boss]' in activity.event.name %}#9b59b6{% elif '[World Boss]' in activity.event.name %}#3498db{% elif '[Rift Boss]' in activity.event.name %}#1abc9c{% elif '[Arena Boss]' in activity.event.name %}#f39c12{% else %}#e74c3c{% endif %};">
+                                        {% if '[Territory Boss]' in activity.event.name %}
+                                            <img src="{% static 'images/events/territory.png' %}" class="boss-icon" alt="icon"> Territory Boss
+                                        {% elif '[World Boss]' in activity.event.name %}
+                                            <img src="{% static 'images/events/world.png' %}" class="boss-icon" alt="icon"> World Boss
+                                        {% elif '[Rift Boss]' in activity.event.name %}
+                                            <img src="{% static 'images/events/rift.png' %}" class="boss-icon" alt="icon"> Rift Boss
+                                        {% elif '[Arena Boss]' in activity.event.name %}
+                                            <img src="{% static 'images/events/arena.png' %}" class="boss-icon" alt="icon"> Arena Boss
+                                        {% else %}
+                                            <img src="{% static 'images/events/raid.png' %}" class="boss-icon" alt="icon"> Raid Boss
+                                        {% endif %}
                                     </span>
                                     {% else %}
                                     <span class="event-type-badge event-{{ activity.event.event_type|lower }}">
@@ -665,8 +695,18 @@ function switchTab(tabId) {
                                     <span style="margin-left: 5px; color: #bbb;">{{ activity.adjustment_reason }}</span>
                                 {% else %}
                                     {% if activity.event.event_type == 'CUSTOM' %}
-                                    <span class="event-type-badge event-custom">
-                                        🐉 Raid Boss
+                                    <span style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: {% if '[Territory Boss]' in activity.event.name %}#9b59b6{% elif '[World Boss]' in activity.event.name %}#3498db{% elif '[Rift Boss]' in activity.event.name %}#1abc9c{% elif '[Arena Boss]' in activity.event.name %}#f39c12{% else %}#e74c3c{% endif %};">
+                                        {% if '[Territory Boss]' in activity.event.name %}
+                                            <img src="{% static 'images/events/territory.png' %}" class="boss-icon" alt="icon"> Territory Boss
+                                        {% elif '[World Boss]' in activity.event.name %}
+                                            <img src="{% static 'images/events/world.png' %}" class="boss-icon" alt="icon"> World Boss
+                                        {% elif '[Rift Boss]' in activity.event.name %}
+                                            <img src="{% static 'images/events/rift.png' %}" class="boss-icon" alt="icon"> Rift Boss
+                                        {% elif '[Arena Boss]' in activity.event.name %}
+                                            <img src="{% static 'images/events/arena.png' %}" class="boss-icon" alt="icon"> Arena Boss
+                                        {% else %}
+                                            <img src="{% static 'images/events/raid.png' %}" class="boss-icon" alt="icon"> Raid Boss
+                                        {% endif %}
                                     </span>
                                     {% else %}
                                     <span class="event-type-badge event-{{ activity.event.event_type|lower }}">

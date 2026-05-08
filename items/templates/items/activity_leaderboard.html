@@ -188,22 +188,17 @@
         font-size: 1.1rem;
     }
 
-    .tier-badge {
-        display: inline-flex;
+    .tier-icon-cell {
+        display: flex;
         align-items: center;
-        gap: 6px;
-        padding: 5px 12px;
-        border-radius: 6px;
-        font-weight: 600;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        justify-content: center;
     }
-
-    .tier-core { color: #FFD700; background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.3); }
-    .tier-elite { color: #9B59B6; background: rgba(155, 89, 182, 0.1); border: 1px solid rgba(155, 89, 182, 0.3); }
-    .tier-active { color: #3498DB; background: rgba(52, 152, 219, 0.1); border: 1px solid rgba(52, 152, 219, 0.3); }
-    .tier-inactive { color: #95a5a6; background: rgba(149, 165, 166, 0.1); border: 1px solid rgba(149, 165, 166, 0.3); }
+    .tier-icon-cell img {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
+        filter: drop-shadow(0 1px 4px rgba(0,0,0,0.4));
+    }
 
     .stats-grid {
         display: grid;
@@ -556,7 +551,7 @@
                             <th style="width: 70px;">Rank</th>
                             <th>Guardian</th>
                             <th>Total Score</th>
-                            <th>Tier Status</th>
+                            <th style="text-align: center;">Tier Status</th>
                             {% if is_admin %}
                             <th style="text-align: center;">AP</th>
                             {% endif %}
@@ -580,10 +575,13 @@
                                 <span style="font-size: 0.8rem; color: #888;">pts</span>
                             </td>
                             <td>
-                                <span class="tier-badge tier-{{ row.tier_class }}">
-                                    {% if row.tier == 'Core' %}👑{% elif row.tier == 'Elite' %}🛡️{% elif row.tier == 'Active' %}⚔️{% else %}💤{% endif %}
-                                    {{ row.tier }}
-                                </span>
+                                <div class="tier-icon-cell">
+                                    {% if row.tier == 'Core' %}<img src="{% static 'images/tiers/tier_core.png' %}" alt="Core" title="Core">
+                                    {% elif row.tier == 'Elite' %}<img src="{% static 'images/tiers/tier_elite.png' %}" alt="Elite" title="Elite">
+                                    {% elif row.tier == 'Active' %}<img src="{% static 'images/tiers/tier_active.png' %}" alt="Active" title="Active">
+                                    {% else %}<img src="{% static 'images/tiers/tier_unactive.png' %}" alt="Inactive" title="Inactive">
+                                    {% endif %}
+                                </div>
                             </td>
                             {% if is_admin %}
                             <td style="text-align: center;">
@@ -622,7 +620,7 @@
                             <th style="width: 70px;">Rank</th>
                             <th>Guardian</th>
                             <th>Total Score</th>
-                            <th>Tier Status</th>
+                            <th style="text-align: center;">Tier Status</th>
                             {% if is_admin %}
                             <th style="text-align: center;">AP</th>
                             {% endif %}
@@ -646,10 +644,13 @@
                                 <span style="font-size: 0.8rem; color: #888;">pts</span>
                             </td>
                             <td>
-                                <span class="tier-badge tier-{{ row.tier_class }}">
-                                    {% if row.tier == 'Core' %}👑{% elif row.tier == 'Elite' %}🛡️{% elif row.tier == 'Active' %}⚔️{% else %}💤{% endif %}
-                                    {{ row.tier }}
-                                </span>
+                                <div class="tier-icon-cell">
+                                    {% if row.tier == 'Core' %}<img src="{% static 'images/tiers/tier_core.png' %}" alt="Core" title="Core">
+                                    {% elif row.tier == 'Elite' %}<img src="{% static 'images/tiers/tier_elite.png' %}" alt="Elite" title="Elite">
+                                    {% elif row.tier == 'Active' %}<img src="{% static 'images/tiers/tier_active.png' %}" alt="Active" title="Active">
+                                    {% else %}<img src="{% static 'images/tiers/tier_unactive.png' %}" alt="Inactive" title="Inactive">
+                                    {% endif %}
+                                </div>
                             </td>
                             {% if is_admin %}
                             <td style="text-align: center;">
