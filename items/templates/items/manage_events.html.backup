@@ -438,7 +438,7 @@
                         <span style="color: #9b59b6; margin-left: 5px; font-size: 0.9em;" title="Repeatable Weekly"><i class="fas fa-redo"></i></span>
                         {% endif %}
                         {% if event.is_mandatory %}
-                            {% if event.is_invasion_event %}
+                            {% if event.event_type == 'INVASION' %}
                                 <div style="margin-top: 5px; padding: 4px 8px; background: rgba(231, 76, 60, 0.1); border-left: 2px solid #e74c3c; border-radius: 4px; font-size: 0.8rem;">
                                     <strong style="color: #e74c3c;"><i class="fas fa-exclamation-circle"></i> Mandatory Bosses:</strong>
                                     <ul style="margin: 3px 0 0 15px; padding: 0; color: #ccc; list-style-type: square;">
@@ -497,11 +497,7 @@
                         </a>
                         
                         <button
-                            data-event-pk="{{ event.pk }}"
-                            data-event-name="{{ event.name|escapejs }}"
-                            data-event-points="{{ event.max_points }}"
-                            data-event-type="{{ event.event_type }}"
-                            onclick="openEditPointsModal(this.dataset.eventPk, this.dataset.eventName, this.dataset.eventPoints, this.dataset.eventType)"
+                            onclick="openEditPointsModal('{{ event.pk }}', '{{ event.name|escapejs }}', {{ event.event_points }}, '{{ event.event_type }}')"
                             class="action-btn-icon" title="Edit Attendance Points" style="color: #f39c12;">
                             <i class="fas fa-edit"></i>
                         </button>
@@ -780,7 +776,7 @@
                 
                 // Show/hide invasion note
                 const invasionNote = document.getElementById('invasionPointsNote');
-                if (eventType.startsWith('INV_')) {
+                if (eventType === 'INVASION') {
                     invasionNote.style.display = 'block';
                 } else {
                     invasionNote.style.display = 'none';

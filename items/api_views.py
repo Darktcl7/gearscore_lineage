@@ -1,4 +1,4 @@
-﻿# D:\Django Project\Alto Project\items\api_views.py
+# D:\Django Project\Alto Project\items\api_views.py
 """
 API Views for Discord Bot Integration (Phase 2)
 These endpoints will be called by the Discord Bot to sync data.
@@ -7,12 +7,14 @@ These endpoints will be called by the Discord Bot to sync data.
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 import json
 from datetime import datetime
 
 from .models import ActivityEvent, PlayerActivity, Character, MonthlyReport, DiscordAlarm, DiscordAnnouncement
 from .services import calculate_monthly_reports, recalculate_event_points, sync_event_dkp_penalties
+from .views import check_event_admin
 
 # ... (Existing code) ...
 
@@ -608,24 +610,56 @@ def api_toggle_event_status(request, event_pk):
                 f"*Points have been calculated and added to the leaderboard!*"
             )
             DiscordAnnouncement.objects.create(message=announcement_msg)
-            
-            # Recalculate win streak bonuses
-            try:
-                recalculate_win_streak_bonuses()
-            except Exception:
-                pass
         
-        status_text = "Completed" if event.is_completed else "Re-opened"
         return JsonResponse({
-            'success': True, 
-            'message': f'Event {event.name} is now {status_text}',
+            'success': True,
+            'event_id': event.event_id,
             'is_completed': event.is_completed
         })
-        
     except ActivityEvent.DoesNotExist:
         return JsonResponse({'error': 'Event not found'}, status=404)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=400)
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@login_required
+@require_http_methods(["POST"])
+def update_event_points(request, event_pk):
+    """
+    Update attendance points for an event.
+    """
+    if not check_event_admin(request.user):
+        return JsonResponse({'error': 'Only Event administrators can update event points.'}, status=403)
+    
+    try:
+        event = ActivityEvent.objects.get(pk=event_pk)
+        data = json.loads(request.body)
+        new_points = data.get('event_points')
+        
+        if new_points is None:
+            return JsonResponse({'error': 'event_points is required'}, status=400)
+        
+        new_points = int(new_points)
+        if new_points < 0 or new_points > 9999:
+            return JsonResponse({'error': 'Points must be between 0 and 9999'}, status=400)
+        
+        event.max_points = new_points
+        event.save(update_fields=['max_points'])
+        recalculate_event_points(event)
+        
+        return JsonResponse({
+            'success': True,
+            'event_id': event.event_id,
+            'event_points': event.max_points,
+            'message': f'Event points updated to {new_points}'
+        })
+    except ActivityEvent.DoesNotExist:
+        return JsonResponse({'error': 'Event not found'}, status=404)
+    except (json.JSONDecodeError, ValueError) as e:
+        return JsonResponse({'error': f'Invalid request data: {str(e)}'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @csrf_exempt

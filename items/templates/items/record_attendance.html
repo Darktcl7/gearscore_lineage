@@ -223,7 +223,7 @@ main{flex:1;overflow:hidden}
 <div class="eii"><i class="fas fa-calendar"></i> {{ event.date|date:"M d, Y H:i" }}</div>
 <div class="eii"><span class="pb"><i class="fas fa-star"></i> {{ event.calculate_max_points }} pts</span></div>
 </div>
-{% if event.event_type == 'INVASION' %}
+{% if event.is_invasion_event %}
 <div class="boss-pts-editor">
 <div class="boss-pts-title"><i class="fas fa-skull-crossbones"></i> Boss Points (editable)</div>
 <div class="boss-pts-row">
@@ -249,6 +249,7 @@ main{flex:1;overflow:hidden}
         <div class="scan-controls">
             <input type="file" id="scan-file-valkyrie" class="scan-file" accept="image/png,image/jpeg,image/webp">
             <button type="button" class="scan-btn" data-clan="Valkyrie" data-file="scan-file-valkyrie"><i class="fas fa-camera"></i> Scan</button>
+            <button type="button" class="scan-btn" style="background:linear-gradient(145deg,#e74c3c,#c0392b)" onclick="clearClanScan('Valkyrie')" title="Clear all party scans for Valkyrie"><i class="fas fa-eraser"></i></button>
             {% if event.scan_info and event.scan_info.valkyrie %}
                 <div class="scan-result ok" id="scan-result-valkyrie">{{ event.scan_info.valkyrie.matched_count }} matched / {{ event.scan_info.valkyrie.detected_count }} detected</div>
             {% else %}
@@ -264,6 +265,7 @@ main{flex:1;overflow:hidden}
         <div class="scan-controls">
             <input type="file" id="scan-file-valhalla" class="scan-file" accept="image/png,image/jpeg,image/webp">
             <button type="button" class="scan-btn" data-clan="Valhalla" data-file="scan-file-valhalla"><i class="fas fa-camera"></i> Scan</button>
+            <button type="button" class="scan-btn" style="background:linear-gradient(145deg,#e74c3c,#c0392b)" onclick="clearClanScan('Valhalla')" title="Clear all party scans for Valhalla"><i class="fas fa-eraser"></i></button>
             {% if event.scan_info and event.scan_info.valhalla %}
                 <div class="scan-result ok" id="scan-result-valhalla">{{ event.scan_info.valhalla.matched_count }} matched / {{ event.scan_info.valhalla.detected_count }} detected</div>
             {% else %}
@@ -289,7 +291,7 @@ main{flex:1;overflow:hidden}
                     <tr>
                         <th style="width: 40px; text-align: center;">Att</th>
                         <th>Member</th>
-                        {% if event.event_type == 'INVASION' %}<th>Bosses Killed</th>{% endif %}
+                        {% if event.is_invasion_event %}<th>Bosses Killed</th>{% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -308,7 +310,7 @@ main{flex:1;overflow:hidden}
                                 <span class="v-badge final {% if character.is_attended %}on{% endif %}">Final</span>
                             </div>
                         </td>
-                        {% if event.event_type == 'INVASION' %}
+                        {% if event.is_invasion_event %}
                         <td class="att-col-bosses" onclick="event.stopPropagation()">
                             <div class="boss-group" style="flex-direction: column; gap: 4px;">
                                 <label style="font-size: 0.75rem;"><input type="checkbox" class="boss-chk" name="boss_dragon_beast_{{ character.pk }}" value="true" {% if character.bosses_killed.dragon_beast %}checked{% endif %}> &#x1F432; Dragon Beast</label>
@@ -319,7 +321,7 @@ main{flex:1;overflow:hidden}
                         {% endif %}
                     </tr>
                     {% empty %}
-                    <tr><td colspan="{% if event.event_type == 'INVASION' %}3{% else %}2{% endif %}" style="text-align: center; color: #555;">No Valkyrie members.</td></tr>
+                    <tr><td colspan="{% if event.is_invasion_event %}3{% else %}2{% endif %}" style="text-align: center; color: #555;">No Valkyrie members.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -341,7 +343,7 @@ main{flex:1;overflow:hidden}
                     <tr>
                         <th style="width: 40px; text-align: center;">Att</th>
                         <th>Member</th>
-                        {% if event.event_type == 'INVASION' %}<th>Bosses Killed</th>{% endif %}
+                        {% if event.is_invasion_event %}<th>Bosses Killed</th>{% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -360,7 +362,7 @@ main{flex:1;overflow:hidden}
                                 <span class="v-badge final {% if character.is_attended %}on{% endif %}">Final</span>
                             </div>
                         </td>
-                        {% if event.event_type == 'INVASION' %}
+                        {% if event.is_invasion_event %}
                         <td class="att-col-bosses" onclick="event.stopPropagation()">
                             <div class="boss-group" style="flex-direction: column; gap: 4px;">
                                 <label style="font-size: 0.75rem;"><input type="checkbox" class="boss-chk" name="boss_dragon_beast_{{ character.pk }}" value="true" {% if character.bosses_killed.dragon_beast %}checked{% endif %}> &#x1F432; Dragon Beast</label>
@@ -371,7 +373,7 @@ main{flex:1;overflow:hidden}
                         {% endif %}
                     </tr>
                     {% empty %}
-                    <tr><td colspan="{% if event.event_type == 'INVASION' %}3{% else %}2{% endif %}" style="text-align: center; color: #555;">No Valhalla members.</td></tr>
+                    <tr><td colspan="{% if event.is_invasion_event %}3{% else %}2{% endif %}" style="text-align: center; color: #555;">No Valhalla members.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -480,11 +482,8 @@ function scanClanImage(clan, file, btn) {
             throw new Error(data.error || 'Scan failed');
         }
 
-        document.querySelectorAll('.att-row[data-clan="' + clan + '"]').forEach(function(row) {
-            setBadge(row, 'scan', false);
-            recomputeFinal(row);
-        });
-
+        // ADDITIVE SCAN: Tidak reset yang sudah ada, hanya tambahkan yang baru
+        // Hanya update member yang ditemukan di scan ini
         data.matched.forEach(function(member) {
             const row = document.querySelector('.att-row[data-character-id="' + member.id + '"]');
             if (!row) return;
@@ -493,8 +492,19 @@ function scanClanImage(clan, file, btn) {
         });
 
         updateCounters();
-        resultEl.textContent = data.matched_count + ' matched / ' + data.detected_count + ' detected';
+        
+        // Gunakan total_scanned dari server response
+        const totalScanned = data.total_scanned || data.matched_count;
+        
+        resultEl.textContent = data.matched_count + ' new matched / ' + data.detected_count + ' detected (Total: ' + totalScanned + ' scanned)';
         resultEl.className = data.matched_count > 0 ? 'scan-result ok' : 'scan-result warn';
+        
+        // Clear file input after successful scan so next click prompts for new file
+        const fileInputId = btn.dataset.file;
+        const fileInput = document.getElementById(fileInputId);
+        if (fileInput) {
+            fileInput.value = '';
+        }
     })
     .catch(error => {
         resultEl.textContent = error.message;
@@ -504,6 +514,27 @@ function scanClanImage(clan, file, btn) {
         btn.disabled = false;
         btn.innerHTML = originalHtml;
     });
+}
+
+// Clear all party scans for a specific clan
+function clearClanScan(clan) {
+    if (!confirm('Clear all party scan data for ' + clan + '?')) return;
+    
+    const resultEl = document.getElementById('scan-result-' + clan.toLowerCase());
+    
+    // Reset all party_scan_verified badges for this clan
+    document.querySelectorAll('.att-row[data-clan="' + clan + '"]').forEach(function(row) {
+        setBadge(row, 'scan', false);
+        recomputeFinal(row);
+    });
+    
+    updateCounters();
+    resultEl.textContent = 'Cleared - ready to scan';
+    resultEl.className = 'scan-result';
+    
+    // Clear file input
+    const fileInput = document.getElementById('scan-file-' + clan.toLowerCase());
+    if (fileInput) fileInput.value = '';
 }
 
 // Search Functions

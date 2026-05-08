@@ -474,8 +474,10 @@
             eventNameGroup.style.display = 'block';
         }
 
-        // Points field - show for all except INVASION (which uses boss config)
-        if (evType && evType !== 'INVASION') {
+        var isInvasion = evType && (evType === 'INVASION' || evType.startsWith('INV_'));
+
+        // Points field - show for all except Invasion (which uses boss config)
+        if (evType && !isInvasion) {
             pointsGroup.style.display = 'block';
             var defaultPts = (evType in DEFAULT_POINTS) ? DEFAULT_POINTS[evType] : 0;
             pointsInput.value = defaultPts;
@@ -501,6 +503,7 @@
         var isMandatory = document.getElementById('is_mandatory').checked;
         var isDkp = false;
         var evType = document.getElementById('event_type').value;
+        var isInvasion = evType && (evType === 'INVASION' || evType.startsWith('INV_'));
         var penaltyGroup = document.getElementById('penalty-points-group');
         var invasionMandatoryBosses = document.getElementById('invasion-mandatory-bosses');
         
@@ -516,16 +519,20 @@
         }
         
         if (isMandatory) {
-            if (false) {
+            if (isInvasion && invasionMandatoryBosses) {
                 penaltyGroup.style.display = 'none';
                 invasionMandatoryBosses.style.display = 'block';
             } else {
                 penaltyGroup.style.display = 'flex';
-                invasionMandatoryBosses.style.display = 'none';
+                if (invasionMandatoryBosses) {
+                    invasionMandatoryBosses.style.display = 'none';
+                }
             }
         } else {
             penaltyGroup.style.display = 'none';
-            invasionMandatoryBosses.style.display = 'none';
+            if (invasionMandatoryBosses) {
+                invasionMandatoryBosses.style.display = 'none';
+            }
         }
         
         ['dragon_beast', 'carnifex', 'orfen'].forEach(function(boss) {

@@ -194,6 +194,11 @@ urlpatterns = [
     # URL: /items/activity/events/1/attendance/ -> Admin: Record Attendance
     path('activity/events/<int:event_pk>/attendance/', record_attendance, name='record-attendance'),
     path('activity/events/<int:event_pk>/party-scan/', scan_party_for_event, name='scan-party-for-event'),
+    
+    # URL: /items/activity/events/1/update-points/ -> Admin: Update Event Points
+    path('activity/events/<int:event_pk>/update-points/', 
+         __import__('items.api_views', fromlist=['update_event_points']).update_event_points, 
+         name='update-event-points'),
 
     # URL: /items/activity/events/1/duplicate/ -> Admin: Duplicate Event
     path('activity/events/<int:event_pk>/duplicate/', duplicate_event, name='duplicate-event'),

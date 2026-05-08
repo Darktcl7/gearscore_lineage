@@ -1467,7 +1467,7 @@ def create_event(request):
         }
         
 
-        if event_type == 'INVASION':
+        if event_type.startswith('INV_') or event_type == 'INVASION':
             event_kwargs['boss_point_config'] = {
                 'dragon_beast': 50,
                 'carnifex': 25,
@@ -1553,7 +1553,7 @@ def record_attendance(request, event_pk):
     
     if request.method == 'POST':
         # Save boss points if Invasion
-        if event.event_type == 'INVASION':
+        if event.is_invasion_event:
             try:
                 db_pts = int(request.POST.get('dragon_beast_points', 50))
             except (ValueError, TypeError):
@@ -1591,7 +1591,7 @@ def record_attendance(request, event_pk):
             }
 
             # For Invasion, capture INDIVIDUAL boss checkboxes
-            if event.event_type == 'INVASION':
+            if event.is_invasion_event:
                 defaults['bosses_killed'] = {
                     'dragon_beast': request.POST.get(f'boss_dragon_beast_{char.pk}') == 'true',
                     'carnifex': request.POST.get(f'boss_carnifex_{char.pk}') == 'true',
@@ -1659,6 +1659,7 @@ def record_attendance(request, event_pk):
 def scan_party_for_event(request, event_pk):
     """
     Scan one clan's party screenshot and store party-scan validation for the event.
+    ADDITIVE MODE: Multiple scans will ADD members, not replace previous scans.
     """
     if not check_event_admin(request.user):
         return JsonResponse({'error': 'Only Event administrators can scan party attendance.'}, status=403)
@@ -1685,6 +1686,8 @@ def scan_party_for_event(request, event_pk):
         unmatched_detected = []
         matched_name_keys = set()
 
+        # ADDITIVE MODE: Hanya update member yang ditemukan di scan ini
+        # Member yang sudah ter-scan sebelumnya TIDAK di-reset
         for character in clan_characters:
             activity, _created = PlayerActivity.objects.get_or_create(
                 player=character,
@@ -1692,12 +1695,17 @@ def scan_party_for_event(request, event_pk):
                 defaults={'status': 'ABSENT', 'points_earned': 0}
             )
 
-            is_matched = character.name.lower() in detected_lookup
-            activity.party_scan_verified = is_matched
-            activity.status = 'ATTENDED' if activity.checkin_verified and activity.party_scan_verified else 'ABSENT'
-            activity.save()
+            # Cek apakah character ini ditemukan di scan saat ini
+            is_matched_now = character.name.lower() in detected_lookup
+            
+            # ADDITIVE: Jika sudah ter-scan sebelumnya ATAU ditemukan di scan ini, set True
+            if is_matched_now:
+                activity.party_scan_verified = True
+                activity.status = 'ATTENDED' if activity.checkin_verified and activity.party_scan_verified else 'ABSENT'
+                activity.save()
 
-            if is_matched:
+            # Return semua member yang ter-scan (baik dari scan sebelumnya maupun scan ini)
+            if activity.party_scan_verified:
                 matched.append({
                     'id': character.pk,
                     'name': character.name,
@@ -1716,11 +1724,14 @@ def scan_party_for_event(request, event_pk):
         from .services import sync_event_dkp_penalties
         sync_event_dkp_penalties(event)
 
+        # Update scan_info dengan total yang ter-scan (bukan hanya scan ini)
+        total_scanned = len(matched)
         if not event.scan_info:
             event.scan_info = {}
         event.scan_info[clan.lower()] = {
             'detected_count': len(detected_names),
-            'matched_count': len(matched)
+            'matched_count': len([m for m in matched if m['name'].lower() in detected_lookup]),  # Hanya yang baru di-scan
+            'total_scanned': total_scanned  # Total keseluruhan
         }
         event.save(update_fields=['scan_info'])
 
@@ -1729,8 +1740,9 @@ def scan_party_for_event(request, event_pk):
             'success': True,
             'clan': clan,
             'detected_count': len(detected_names),
-            'matched_count': len(matched),
-            'matched': matched,
+            'matched_count': len([m for m in matched if m['name'].lower() in detected_lookup]),  # Yang baru di-scan
+            'total_scanned': total_scanned,  # Total keseluruhan
+            'matched': matched,  # Semua yang ter-scan (termasuk scan sebelumnya)
             'unmatched_detected': unmatched_detected[:50],
             'scan': scan_result,
         })
