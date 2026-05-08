@@ -1541,6 +1541,7 @@ def record_attendance(request, event_pk):
         return HttpResponseForbidden("Only Event administrators can record attendance.")
     
     event = get_object_or_404(ActivityEvent, pk=event_pk)
+    invasion_boss_keys = event.get_invasion_boss_keys()
     # Optimized: prefetch related data
     all_characters = Character.objects.all().select_related('owner').only('id', 'name', 'level', 'character_class', 'clan', 'owner_id').order_by('name')
     
@@ -1558,23 +1559,18 @@ def record_attendance(request, event_pk):
     if request.method == 'POST':
         # Save boss points if Invasion
         if event.is_invasion_event:
-            try:
-                db_pts = int(request.POST.get('dragon_beast_points', 50))
-            except (ValueError, TypeError):
-                db_pts = 50
-            try:
-                carnifex_pts = int(request.POST.get('carnifex_points', 25))
-            except (ValueError, TypeError):
-                carnifex_pts = 25
-            try:
-                orfen_pts = int(request.POST.get('orfen_points', 100))
-            except (ValueError, TypeError):
-                orfen_pts = 100
-            event.boss_point_config = {
-                'dragon_beast': db_pts,
-                'carnifex': carnifex_pts,
-                'orfen': orfen_pts,
+            boss_defaults = {
+                'dragon_beast': 50,
+                'carnifex': 25,
+                'orfen': 100,
             }
+            boss_point_config = {}
+            for boss_key in invasion_boss_keys:
+                try:
+                    boss_point_config[boss_key] = int(request.POST.get(f'{boss_key}_points', boss_defaults.get(boss_key, 0)))
+                except (ValueError, TypeError):
+                    boss_point_config[boss_key] = boss_defaults.get(boss_key, 0)
+            event.boss_point_config = boss_point_config
             event.save()
         
         checkin_ids = set(request.POST.getlist('checkin_verified'))
@@ -1597,9 +1593,8 @@ def record_attendance(request, event_pk):
             # For Invasion, capture INDIVIDUAL boss checkboxes
             if event.is_invasion_event:
                 defaults['bosses_killed'] = {
-                    'dragon_beast': request.POST.get(f'boss_dragon_beast_{char.pk}') == 'true',
-                    'carnifex': request.POST.get(f'boss_carnifex_{char.pk}') == 'true',
-                    'orfen': request.POST.get(f'boss_orfen_{char.pk}') == 'true',
+                    boss_key: request.POST.get(f'boss_{boss_key}_{char.pk}') == 'true'
+                    for boss_key in invasion_boss_keys
                 }
             else:
                 defaults['bosses_killed'] = {}
@@ -1634,14 +1629,30 @@ def record_attendance(request, event_pk):
         char.party_scan_verified = att['party_scan_verified'] if att else False
         char.is_attended = bool(att and att['status'] == 'ATTENDED')
         char.bosses_killed = att['bosses_killed'] if att else {}
+        char.invasion_bosses = [
+            {
+                'key': boss_key,
+                'label': ActivityEvent.INVASION_BOSS_LABELS.get(boss_key, boss_key.replace('_', ' ').title()),
+                'checked': char.bosses_killed.get(boss_key, False),
+            }
+            for boss_key in invasion_boss_keys
+        ]
         processed_characters.append(char)
         
     bosspc = event.boss_point_config or {}
-    boss_points = {
-        'dragon_beast': bosspc.get('dragon_beast', 50),
-        'carnifex': bosspc.get('carnifex', 25),
-        'orfen': bosspc.get('orfen', 100),
+    boss_defaults = {
+        'dragon_beast': 50,
+        'carnifex': 25,
+        'orfen': 100,
     }
+    boss_points = [
+        {
+            'key': boss_key,
+            'label': ActivityEvent.INVASION_BOSS_LABELS.get(boss_key, boss_key.replace('_', ' ').title()),
+            'value': bosspc.get(boss_key, boss_defaults.get(boss_key, 0)),
+        }
+        for boss_key in invasion_boss_keys
+    ]
     
     # Split characters by clan
     valkyrie_chars = [c for c in processed_characters if getattr(c, 'clan', 'Valkyrie') == 'Valkyrie']

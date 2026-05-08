@@ -1371,6 +1371,12 @@ class ActivityEvent(models.Model):
         'INV_ORFEN': 'orfen',
     }
 
+    INVASION_BOSS_LABELS = {
+        'dragon_beast': 'Dragon Beast',
+        'carnifex': 'Carnifex',
+        'orfen': 'Orfen',
+    }
+
     event_id = models.CharField("Event ID", max_length=50, unique=True, blank=True)
     name = models.CharField("Nama Event", max_length=200)
     event_type = models.CharField("Tipe Event", max_length=20, choices=EVENT_TYPE_CHOICES)
@@ -1467,6 +1473,14 @@ class ActivityEvent(models.Model):
         if boss_key:
             return {boss_key: self.DEFAULT_INVASION_BOSS_PENALTIES[boss_key]}
         return self.DEFAULT_INVASION_BOSS_PENALTIES.copy()
+
+    def get_invasion_boss_keys(self):
+        boss_key = self.INVASION_BOSS_BY_EVENT_TYPE.get(self.event_type)
+        if boss_key:
+            return [boss_key]
+        if self.is_invasion_event:
+            return list(self.DEFAULT_INVASION_BOSS_PENALTIES.keys())
+        return []
 
     def get_mandatory_boss_penalty_map(self):
         if not self.is_mandatory or not self.is_invasion_event:
