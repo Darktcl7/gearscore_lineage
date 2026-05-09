@@ -1802,11 +1802,24 @@ class PrizePoolConfig(models.Model):
 
 
 class LeaderboardConfig(models.Model):
-    """Singleton config for leaderboard reset timestamps."""
+    """Singleton config for leaderboard reset timestamps and tier settings."""
     weekly_reset_at = models.DateTimeField("Weekly Reset At", null=True, blank=True,
         help_text="Timestamp of the last weekly reset. Weekly ranking only shows events after this time.")
     monthly_reset_at = models.DateTimeField("Monthly Reset At", null=True, blank=True,
         help_text="Timestamp of the last monthly reset. Monthly ranking only shows events after this time.")
+
+    # Tier configuration
+    core_event_points = models.IntegerField("Core: Min Event Points", default=2050)
+    core_raid_points = models.IntegerField("Core: Min Raid Points", default=300)
+    core_max_slots = models.IntegerField("Core: Max Slots", default=15)
+
+    elite_event_points = models.IntegerField("Elite: Min Event Points", default=2050)
+    elite_raid_points = models.IntegerField("Elite: Min Raid Points", default=0)
+    elite_max_slots = models.IntegerField("Elite: Max Slots", default=15)
+
+    active_event_points = models.IntegerField("Active: Min Event Points", default=1200)
+    active_raid_points = models.IntegerField("Active: Min Raid Points", default=300)
+    active_max_slots = models.IntegerField("Active: Max Slots", default=20)
 
     class Meta:
         verbose_name = "Leaderboard Configuration"

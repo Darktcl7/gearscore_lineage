@@ -698,19 +698,26 @@
         <div class="sidebar-column">
             
             <div class="glass-card stat-panel active" id="stats-weekly">
-                <h3><i class="fas fa-chart-pie"></i> Guild Statistics (Weekly)</h3>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <h3><i class="fas fa-chart-pie"></i> Guild Statistics (Weekly)</h3>
+                    {% if is_admin %}
+                    <button onclick="document.getElementById('tierConfigModal').style.display='flex'" style="background:rgba(218,165,32,0.15); border:1px solid rgba(218,165,32,0.4); border-radius:8px; color:#DAA520; padding:5px 12px; font-size:0.75rem; font-weight:600; cursor:pointer;" title="Tier Settings">
+                        <i class="fas fa-cog"></i> Settings
+                    </button>
+                    {% endif %}
+                </div>
                 <div class="stats-grid">
                     <div class="stat-box core">
                         <div class="count">{{ weekly_guild_stats.core }}</div>
-                        <div class="label">Core Member{% if is_admin %}<br>(Event >= 2050 + Raid >= 300, max 15){% endif %}</div>
+                        <div class="label">Core Member{% if is_admin %}<br>(Event >= {{ tier_config.core_event_points }}{% if tier_config.core_raid_points > 0 %} + Raid >= {{ tier_config.core_raid_points }}{% endif %}, max {{ tier_config.core_max_slots }}){% endif %}</div>
                     </div>
                     <div class="stat-box elite">
                         <div class="count">{{ weekly_guild_stats.elite }}</div>
-                        <div class="label">Elite Member{% if is_admin %}<br>(Event >= 2050, max 15){% endif %}</div>
+                        <div class="label">Elite Member{% if is_admin %}<br>(Event >= {{ tier_config.elite_event_points }}{% if tier_config.elite_raid_points > 0 %} + Raid >= {{ tier_config.elite_raid_points }}{% endif %}, max {{ tier_config.elite_max_slots }}){% endif %}</div>
                     </div>
                     <div class="stat-box active">
                         <div class="count">{{ weekly_guild_stats.active }}</div>
-                        <div class="label">Active Member{% if is_admin %}<br>(Event >= 1200 + Raid >= 300, max 20){% endif %}</div>
+                        <div class="label">Active Member{% if is_admin %}<br>(Event >= {{ tier_config.active_event_points }}{% if tier_config.active_raid_points > 0 %} + Raid >= {{ tier_config.active_raid_points }}{% endif %}, max {{ tier_config.active_max_slots }}){% endif %}</div>
                     </div>
                     <div class="stat-box inactive">
                         <div class="count">{{ weekly_guild_stats.inactive }}</div>
@@ -720,19 +727,26 @@
             </div>
 
             <div class="glass-card stat-panel" id="stats-monthly" style="display: none;">
-                <h3><i class="fas fa-chart-pie"></i> Guild Statistics (Monthly)</h3>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <h3><i class="fas fa-chart-pie"></i> Guild Statistics (Monthly)</h3>
+                    {% if is_admin %}
+                    <button onclick="document.getElementById('tierConfigModal').style.display='flex'" style="background:rgba(218,165,32,0.15); border:1px solid rgba(218,165,32,0.4); border-radius:8px; color:#DAA520; padding:5px 12px; font-size:0.75rem; font-weight:600; cursor:pointer;" title="Tier Settings">
+                        <i class="fas fa-cog"></i> Settings
+                    </button>
+                    {% endif %}
+                </div>
                 <div class="stats-grid">
                     <div class="stat-box core">
                         <div class="count">{{ guild_stats.core }}</div>
-                        <div class="label">Core Member{% if is_admin %}<br>(Event >= 2050 + Raid >= 300, max 15){% endif %}</div>
+                        <div class="label">Core Member{% if is_admin %}<br>(Event >= {{ tier_config.core_event_points }}{% if tier_config.core_raid_points > 0 %} + Raid >= {{ tier_config.core_raid_points }}{% endif %}, max {{ tier_config.core_max_slots }}){% endif %}</div>
                     </div>
                     <div class="stat-box elite">
                         <div class="count">{{ guild_stats.elite }}</div>
-                        <div class="label">Elite Member{% if is_admin %}<br>(Event >= 2050, max 15){% endif %}</div>
+                        <div class="label">Elite Member{% if is_admin %}<br>(Event >= {{ tier_config.elite_event_points }}{% if tier_config.elite_raid_points > 0 %} + Raid >= {{ tier_config.elite_raid_points }}{% endif %}, max {{ tier_config.elite_max_slots }}){% endif %}</div>
                     </div>
                     <div class="stat-box active">
                         <div class="count">{{ guild_stats.active }}</div>
-                        <div class="label">Active Member{% if is_admin %}<br>(Event >= 1200 + Raid >= 300, max 20){% endif %}</div>
+                        <div class="label">Active Member{% if is_admin %}<br>(Event >= {{ tier_config.active_event_points }}{% if tier_config.active_raid_points > 0 %} + Raid >= {{ tier_config.active_raid_points }}{% endif %}, max {{ tier_config.active_max_slots }}){% endif %}</div>
                     </div>
                     <div class="stat-box inactive">
                         <div class="count">{{ guild_stats.inactive }}</div>
@@ -977,7 +991,7 @@
 <script>
 function downloadActivityPdf() {
     var { jsPDF } = window.jspdf;
-    var doc = new jsPDF();
+    var doc = new jsPDF('landscape');
     var now = new Date();
     var timestamp = now.toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit' });
     var clan = '{{ selected_clan }}';
@@ -1007,24 +1021,30 @@ function downloadActivityPdf() {
         var tds = row.querySelectorAll('td');
         if (tds.length < 3) return;
 
-        // Find rank, name, score, tier
         var rankEl = row.querySelector('.rank-badge');
         var rank = rankEl ? rankEl.textContent.trim() : '';
+        
         var nameEl = row.querySelector('td[style*="font-weight: 600"]');
         var name = nameEl ? nameEl.textContent.trim() : '';
-        var scoreEl = row.querySelector('.score-cell');
-        var score = scoreEl ? scoreEl.textContent.trim() : '';
-        var tierEl = row.querySelector('.tier-badge');
-        var tier = tierEl ? tierEl.textContent.trim() : '';
+        
+        // Get all score-cell elements (event points, raid boss points, total score)
+        var scoreCells = row.querySelectorAll('.score-cell');
+        var eventPts = scoreCells[0] ? scoreCells[0].textContent.trim() : '0';
+        var raidPts = scoreCells[1] ? scoreCells[1].textContent.trim() : '0';
+        var totalScore = scoreCells[2] ? scoreCells[2].textContent.trim() : '0';
+        
+        // Get tier from the img alt attribute in .tier-icon-cell
+        var tierImg = row.querySelector('.tier-icon-cell img');
+        var tier = tierImg ? (tierImg.getAttribute('alt') || tierImg.getAttribute('title') || '') : '';
 
         if (name) {
-            data.push([rank, name, score + ' pts', tier]);
+            data.push([rank, name, eventPts, raidPts, totalScore, tier]);
         }
     });
 
     doc.autoTable({
         startY: 34,
-        head: [['Rank', 'Guardian', 'Total Score', 'Tier Status']],
+        head: [['Rank', 'Guardian', 'Event Points', 'Raid Boss Points', 'Total Score', 'Tier Status']],
         body: data,
         theme: 'grid',
         headStyles: { fillColor: [41, 41, 41], textColor: [255, 215, 0], fontStyle: 'bold', fontSize: 9 },
@@ -1032,8 +1052,10 @@ function downloadActivityPdf() {
         alternateRowStyles: { fillColor: [245, 245, 245] },
         columnStyles: {
             0: { halign: 'center', cellWidth: 15 },
-            2: { halign: 'center', fontStyle: 'bold' },
-            3: { halign: 'center' }
+            2: { halign: 'center' },
+            3: { halign: 'center' },
+            4: { halign: 'center', fontStyle: 'bold' },
+            5: { halign: 'center' }
         },
         didDrawPage: function(data) {
             doc.setFontSize(7);
@@ -1046,4 +1068,92 @@ function downloadActivityPdf() {
 }
 </script>
 {% endif %}
+
+{% if is_admin %}
+<!-- Tier Configuration Modal -->
+<div id="tierConfigModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; justify-content:center; align-items:center; backdrop-filter:blur(4px);">
+    <div style="background:#1a1a1a; border:1px solid rgba(218,165,32,0.4); border-radius:16px; padding:30px; max-width:500px; width:90%; box-shadow:0 15px 40px rgba(0,0,0,0.5); max-height:85vh; overflow-y:auto;">
+        <h3 style="color:#DAA520; margin:0 0 20px 0; display:flex; align-items:center; gap:10px;">
+            <i class="fas fa-cog"></i> Tier Requirements Settings
+        </h3>
+        <form method="POST" action="{% url 'save-tier-config' %}">
+            {% csrf_token %}
+            
+            <!-- Core -->
+            <div style="padding:15px; background:rgba(255,215,0,0.08); border:1px solid rgba(255,215,0,0.25); border-radius:10px; margin-bottom:12px;">
+                <div style="color:#FFD700; font-weight:700; margin-bottom:10px; font-size:0.95rem;"><i class="fas fa-crown"></i> Core Member</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+                    <div>
+                        <label style="display:block; color:#aaa; font-size:0.75rem; margin-bottom:4px;">Event Points</label>
+                        <input type="number" name="core_event_points" value="{{ tier_config.core_event_points }}" min="0" style="width:100%; padding:8px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:#fff; box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="display:block; color:#aaa; font-size:0.75rem; margin-bottom:4px;">Raid Points</label>
+                        <input type="number" name="core_raid_points" value="{{ tier_config.core_raid_points }}" min="0" style="width:100%; padding:8px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:#fff; box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="display:block; color:#aaa; font-size:0.75rem; margin-bottom:4px;">Max Players</label>
+                        <input type="number" name="core_max_slots" value="{{ tier_config.core_max_slots }}" min="1" style="width:100%; padding:8px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:#fff; box-sizing:border-box;">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Elite -->
+            <div style="padding:15px; background:rgba(93,173,226,0.08); border:1px solid rgba(93,173,226,0.25); border-radius:10px; margin-bottom:12px;">
+                <div style="color:#5dade2; font-weight:700; margin-bottom:10px; font-size:0.95rem;"><i class="fas fa-gem"></i> Elite Member</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+                    <div>
+                        <label style="display:block; color:#aaa; font-size:0.75rem; margin-bottom:4px;">Event Points</label>
+                        <input type="number" name="elite_event_points" value="{{ tier_config.elite_event_points }}" min="0" style="width:100%; padding:8px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:#fff; box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="display:block; color:#aaa; font-size:0.75rem; margin-bottom:4px;">Raid Points</label>
+                        <input type="number" name="elite_raid_points" value="{{ tier_config.elite_raid_points }}" min="0" style="width:100%; padding:8px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:#fff; box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="display:block; color:#aaa; font-size:0.75rem; margin-bottom:4px;">Max Players</label>
+                        <input type="number" name="elite_max_slots" value="{{ tier_config.elite_max_slots }}" min="1" style="width:100%; padding:8px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:#fff; box-sizing:border-box;">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Active -->
+            <div style="padding:15px; background:rgba(46,204,113,0.08); border:1px solid rgba(46,204,113,0.25); border-radius:10px; margin-bottom:12px;">
+                <div style="color:#2ecc71; font-weight:700; margin-bottom:10px; font-size:0.95rem;"><i class="fas fa-bolt"></i> Active Member</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+                    <div>
+                        <label style="display:block; color:#aaa; font-size:0.75rem; margin-bottom:4px;">Event Points</label>
+                        <input type="number" name="active_event_points" value="{{ tier_config.active_event_points }}" min="0" style="width:100%; padding:8px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:#fff; box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="display:block; color:#aaa; font-size:0.75rem; margin-bottom:4px;">Raid Points</label>
+                        <input type="number" name="active_raid_points" value="{{ tier_config.active_raid_points }}" min="0" style="width:100%; padding:8px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:#fff; box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="display:block; color:#aaa; font-size:0.75rem; margin-bottom:4px;">Max Players</label>
+                        <input type="number" name="active_max_slots" value="{{ tier_config.active_max_slots }}" min="1" style="width:100%; padding:8px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:#fff; box-sizing:border-box;">
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:20px;">
+                <button type="button" onclick="document.getElementById('tierConfigModal').style.display='none'"
+                    style="padding:10px 24px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:8px; color:#fff; font-weight:600; cursor:pointer;">
+                    Cancel
+                </button>
+                <button type="submit"
+                    style="padding:10px 24px; background:linear-gradient(145deg,#DAA520,#B8860B); border:none; border-radius:8px; color:#000; font-weight:600; cursor:pointer;">
+                    <i class="fas fa-save"></i> Save Settings
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+document.getElementById('tierConfigModal').addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+});
+</script>
+{% endif %}
+
 {% endblock %}

@@ -662,15 +662,15 @@ def activity_leaderboard(request):
     w_active_count = 0
     
     for r in weekly_ranking:
-        if r['event_points'] >= 2050 and r['raid_boss_points'] >= 300 and w_core_count < 15:
+        if r['event_points'] >= lb_config.core_event_points and r['raid_boss_points'] >= lb_config.core_raid_points and w_core_count < lb_config.core_max_slots:
             r['tier'] = 'Core'
             r['tier_class'] = 'core'
             w_core_count += 1
-        elif r['event_points'] >= 2050 and w_elite_count < 15:
+        elif r['event_points'] >= lb_config.elite_event_points and (lb_config.elite_raid_points == 0 or r['raid_boss_points'] >= lb_config.elite_raid_points) and w_elite_count < lb_config.elite_max_slots:
             r['tier'] = 'Elite'
             r['tier_class'] = 'elite'
             w_elite_count += 1
-        elif r['event_points'] >= 1200 and r['raid_boss_points'] >= 300 and w_active_count < 20:
+        elif r['event_points'] >= lb_config.active_event_points and r['raid_boss_points'] >= lb_config.active_raid_points and w_active_count < lb_config.active_max_slots:
             r['tier'] = 'Active'
             r['tier_class'] = 'active'
             w_active_count += 1
@@ -691,15 +691,15 @@ def activity_leaderboard(request):
     elite_count = 0
     active_count = 0
     for r in monthly_ranking:
-        if r['event_points'] >= 2050 and r['raid_boss_points'] >= 300 and core_count < 15:
+        if r['event_points'] >= lb_config.core_event_points and r['raid_boss_points'] >= lb_config.core_raid_points and core_count < lb_config.core_max_slots:
             r['tier'] = 'Core'
             r['tier_class'] = 'core'
             core_count += 1
-        elif r['event_points'] >= 2050 and elite_count < 15:
+        elif r['event_points'] >= lb_config.elite_event_points and (lb_config.elite_raid_points == 0 or r['raid_boss_points'] >= lb_config.elite_raid_points) and elite_count < lb_config.elite_max_slots:
             r['tier'] = 'Elite'
             r['tier_class'] = 'elite'
             elite_count += 1
-        elif r['event_points'] >= 1200 and r['raid_boss_points'] >= 300 and active_count < 20:
+        elif r['event_points'] >= lb_config.active_event_points and r['raid_boss_points'] >= lb_config.active_raid_points and active_count < lb_config.active_max_slots:
             r['tier'] = 'Active'
             r['tier_class'] = 'active'
             active_count += 1
@@ -733,6 +733,7 @@ def activity_leaderboard(request):
         'guild_stats': guild_stats,
         'weekly_guild_stats': weekly_guild_stats,
         'recent_events': recent_events,
+        'tier_config': lb_config,
         'current_month': today.strftime('%B %Y'),
         'current_week': f"01 {today.strftime('%b')} - {__import__('calendar').monthrange(today.year, today.month)[1]} {today.strftime('%b %Y')}",
         'is_admin': is_admin(request.user),
@@ -742,16 +743,49 @@ def activity_leaderboard(request):
     return render(request, 'items/activity_leaderboard.html', context)
 
 
-def _get_tier(event_points, raid_boss_points=0):
+def _get_tier(event_points, raid_boss_points=0, config=None):
     """Get tier from separate event and raid boss point requirements."""
-    if event_points >= 2050 and raid_boss_points >= 300:
+    if config is None:
+        from .models import LeaderboardConfig
+        config = LeaderboardConfig.get_config()
+    if event_points >= config.core_event_points and raid_boss_points >= config.core_raid_points:
         return 'Core'
-    elif event_points >= 2050:
+    elif event_points >= config.elite_event_points and (config.elite_raid_points == 0 or raid_boss_points >= config.elite_raid_points):
         return 'Elite'
-    elif event_points >= 1200 and raid_boss_points >= 300:
+    elif event_points >= config.active_event_points and raid_boss_points >= config.active_raid_points:
         return 'Active'
     else:
         return 'Inactive'
+
+
+@login_required
+def save_tier_config(request):
+    """Save tier configuration settings."""
+    if not is_admin(request.user):
+        return HttpResponseForbidden("Unauthorized")
+    
+    if request.method == 'POST':
+        from .models import LeaderboardConfig
+        config = LeaderboardConfig.get_config()
+        
+        try:
+            config.core_event_points = int(request.POST.get('core_event_points', 2050))
+            config.core_raid_points = int(request.POST.get('core_raid_points', 300))
+            config.core_max_slots = int(request.POST.get('core_max_slots', 15))
+            
+            config.elite_event_points = int(request.POST.get('elite_event_points', 2050))
+            config.elite_raid_points = int(request.POST.get('elite_raid_points', 0))
+            config.elite_max_slots = int(request.POST.get('elite_max_slots', 15))
+            
+            config.active_event_points = int(request.POST.get('active_event_points', 1200))
+            config.active_raid_points = int(request.POST.get('active_raid_points', 300))
+            config.active_max_slots = int(request.POST.get('active_max_slots', 20))
+            
+            config.save()
+        except (ValueError, TypeError):
+            pass
+    
+    return redirect('activity-leaderboard')
 
 
 @login_required

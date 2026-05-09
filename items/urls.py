@@ -71,6 +71,9 @@ urlpatterns = [
     # URL: /items/activity/config/update/ -> Update Prize Config
     path('activity/config/update/', update_prize_config, name='update-prize-config'),
     
+    # URL: /items/activity/tier-config/ -> Save Tier Config
+    path('activity/tier-config/', __import__('items.views', fromlist=['save_tier_config']).save_tier_config, name='save-tier-config'),
+    
     # URL: /items/activity/adjust-score/ -> Admin Adjust Score
     path('activity/adjust-score/', admin_adjust_score, name='admin-adjust-score'),
     
