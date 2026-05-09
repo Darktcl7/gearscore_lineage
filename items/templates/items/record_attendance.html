@@ -6,7 +6,7 @@
 <style>
 html,body{height:100%;margin:0;padding:0;overflow:hidden;background:#0c0c0c}
 #site-content{height:calc(100vh - var(--header-height));display:flex;flex-direction:column;overflow:hidden}
-main{flex:1;overflow:hidden}
+main{flex:1;overflow:hidden;max-width:1800px !important;width:95% !important}
 .ac{height:calc(100% - 20px);display:flex;flex-direction:column;background:rgba(18,18,18,.85);border-radius:20px;box-shadow:0 10px 35px rgba(0,0,0,.7);overflow:hidden;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.15);margin:0 10px 10px}
 .ah{padding:25px;background:linear-gradient(145deg,#3a3a3a,#2a2a2a);border-bottom:1px solid rgba(255,255,255,.1)}
 .ah h1{margin:0;color:#fff;font-size:1.6rem}
@@ -84,7 +84,7 @@ main{flex:1;overflow:hidden}
 }
 
 .table-wrapper {
-    max-height: 55vh;
+    max-height: 75vh;
     overflow-y: auto;
     padding: 0 10px 10px 10px;
 }
@@ -299,7 +299,6 @@ main{flex:1;overflow:hidden}
                     <tr class="att-row {% if character.is_attended %}selected{% endif %}" data-character-id="{{ character.pk }}" data-clan="Valkyrie">
                         <td class="att-col-info">
                             <div class="member-name" style="font-weight: 600; color: #fff; font-size: 0.95rem;">{{ character.name }}</div>
-                            <div style="font-size: 0.75rem; color: #888;">{{ character.character_class }}</div>
                             <div class="validation-stack">
                                 <label class="v-badge validation-toggle checkin {% if character.checkin_verified %}on{% endif %}" onclick="event.stopPropagation()">
                                     <input type="checkbox" name="checkin_verified" value="{{ character.pk }}" {% if character.checkin_verified %}checked{% endif %}> Check-in
@@ -351,7 +350,6 @@ main{flex:1;overflow:hidden}
                     <tr class="att-row {% if character.is_attended %}selected{% endif %}" data-character-id="{{ character.pk }}" data-clan="Valhalla">
                         <td class="att-col-info">
                             <div class="member-name" style="font-weight: 600; color: #fff; font-size: 0.95rem;">{{ character.name }}</div>
-                            <div style="font-size: 0.75rem; color: #888;">{{ character.character_class }}</div>
                             <div class="validation-stack">
                                 <label class="v-badge validation-toggle checkin {% if character.checkin_verified %}on{% endif %}" onclick="event.stopPropagation()">
                                     <input type="checkbox" name="checkin_verified" value="{{ character.pk }}" {% if character.checkin_verified %}checked{% endif %}> Check-in
@@ -562,5 +560,32 @@ function setupSearch(inputId, tableId) {
 }
 setupSearch('search-valkyrie', 'table-valkyrie');
 setupSearch('search-valhalla', 'table-valhalla');
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var cards = document.querySelectorAll('.scanner-card');
+    var valkCard = null;
+    var valhCard = null;
+    cards.forEach(function(c) {
+        if (c.innerHTML.includes('Valkyrie Party Scan')) valkCard = c;
+        if (c.innerHTML.includes('Valhalla Party Scan')) valhCard = c;
+    });
+    
+    var valkHeader = document.querySelector('.valkyrie-header');
+    if (valkHeader && valkCard) {
+        valkCard.style.margin = "10px 10px 15px 10px";
+        valkHeader.parentNode.insertBefore(valkCard, valkHeader);
+    }
+    
+    var valhHeader = document.querySelector('.valhalla-header');
+    if (valhHeader && valhCard) {
+        valhCard.style.margin = "10px 10px 15px 10px";
+        valhHeader.parentNode.insertBefore(valhCard, valhHeader);
+    }
+    
+    var panel = document.getElementById('party-scanner');
+    if (panel) panel.style.display = 'none';
+});
 </script>
 {% endblock %}

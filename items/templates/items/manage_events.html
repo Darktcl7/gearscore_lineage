@@ -760,18 +760,28 @@
             }
 
             function toggleEventStatus(eventId) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = `/portal/activity/events/${eventId}/toggle-status/`;
-                
-                const csrfToken = document.createElement('input');
-                csrfToken.type = 'hidden';
-                csrfToken.name = 'csrfmiddlewaretoken';
-                csrfToken.value = getCookie('csrftoken');
-                
-                form.appendChild(csrfToken);
-                document.body.appendChild(form);
-                form.submit();
+                fetch(`/portal/api/activity/event/${eventId}/toggle-status/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'X-API-Key': 'alto-discord-bot-key-2026'
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success || data.status) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (data.error || 'Unknown error'));
+                        closeActionModal();
+                    }
+                })
+                .catch(err => {
+                    alert('Error toggling event status');
+                    console.error(err);
+                });
             }
 
             // ========== EDIT POINTS MODAL ==========

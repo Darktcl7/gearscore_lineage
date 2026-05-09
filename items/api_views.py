@@ -716,6 +716,8 @@ def recalculate_win_streak_bonuses():
     completed_events = list(ActivityEvent.objects.filter(
         is_completed=True,
     ).exclude(
+        event_type='CUSTOM'
+    ).exclude(
         name__startswith='AP Adjustment:'
     ).exclude(
         name__startswith='Score Adjustment:'

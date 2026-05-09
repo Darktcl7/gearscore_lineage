@@ -550,6 +550,8 @@
                             {% if is_admin %}<th style="width:40px;"></th>{% endif %}
                             <th style="width: 70px;">Rank</th>
                             <th>Guardian</th>
+                            <th>Event Points</th>
+                            <th>Raid Boss Points</th>
                             <th>Total Score</th>
                             <th style="text-align: center;">Tier Status</th>
                             {% if is_admin %}
@@ -570,6 +572,14 @@
                                 {% else %} <div class="rank-badge rank-other">{{ row.rank }}</div> {% endif %}
                             </td>
                             <td style="font-weight: 600; color: #fff;">{{ row.name }}</td>
+                            <td>
+                                <span class="score-cell">{{ row.event_points }}</span>
+                                <span style="font-size: 0.8rem; color: #888;">pts</span>
+                            </td>
+                            <td>
+                                <span class="score-cell">{{ row.raid_boss_points }}</span>
+                                <span style="font-size: 0.8rem; color: #888;">pts</span>
+                            </td>
                             <td>
                                 <span class="score-cell">{{ row.total_score }}</span>
                                 <span style="font-size: 0.8rem; color: #888;">pts</span>
@@ -619,6 +629,8 @@
                             {% if is_admin %}<th style="width:40px;"></th>{% endif %}
                             <th style="width: 70px;">Rank</th>
                             <th>Guardian</th>
+                            <th>Event Points</th>
+                            <th>Raid Boss Points</th>
                             <th>Total Score</th>
                             <th style="text-align: center;">Tier Status</th>
                             {% if is_admin %}
@@ -639,6 +651,14 @@
                                 {% else %} <div class="rank-badge rank-other">{{ row.rank }}</div> {% endif %}
                             </td>
                             <td style="font-weight: 600; color: #fff;">{{ row.name }}</td>
+                            <td>
+                                <span class="score-cell">{{ row.event_points }}</span>
+                                <span style="font-size: 0.8rem; color: #888;">pts</span>
+                            </td>
+                            <td>
+                                <span class="score-cell">{{ row.raid_boss_points }}</span>
+                                <span style="font-size: 0.8rem; color: #888;">pts</span>
+                            </td>
                             <td>
                                 <span class="score-cell">{{ row.total_score }}</span>
                                 <span style="font-size: 0.8rem; color: #888;">pts</span>
@@ -682,19 +702,19 @@
                 <div class="stats-grid">
                     <div class="stat-box core">
                         <div class="count">{{ weekly_guild_stats.core }}</div>
-                        <div class="label">Core Member{% if is_admin %}<br>(&gt; 2350 pts, max 15){% endif %}</div>
+                        <div class="label">Core Member{% if is_admin %}<br>(Event >= 2050 + Raid >= 300, max 15){% endif %}</div>
                     </div>
                     <div class="stat-box elite">
                         <div class="count">{{ weekly_guild_stats.elite }}</div>
-                        <div class="label">Elite Member{% if is_admin %}<br>(2051 - 2350 pts, max 15){% endif %}</div>
+                        <div class="label">Elite Member{% if is_admin %}<br>(Event >= 2050, max 15){% endif %}</div>
                     </div>
                     <div class="stat-box active">
                         <div class="count">{{ weekly_guild_stats.active }}</div>
-                        <div class="label">Active Member{% if is_admin %}<br>(1501 - 2050 pts, max 20){% endif %}</div>
+                        <div class="label">Active Member{% if is_admin %}<br>(Event >= 1200 + Raid >= 300, max 20){% endif %}</div>
                     </div>
                     <div class="stat-box inactive">
                         <div class="count">{{ weekly_guild_stats.inactive }}</div>
-                        <div class="label">Inactive Member{% if is_admin %}<br>(0 - 1500 pts){% endif %}</div>
+                        <div class="label">Inactive Member{% if is_admin %}<br>(below requirements / remaining players){% endif %}</div>
                     </div>
                 </div>
             </div>
@@ -704,19 +724,19 @@
                 <div class="stats-grid">
                     <div class="stat-box core">
                         <div class="count">{{ guild_stats.core }}</div>
-                        <div class="label">Core Member{% if is_admin %}<br>(&gt; 2350 pts, max 15){% endif %}</div>
+                        <div class="label">Core Member{% if is_admin %}<br>(Event >= 2050 + Raid >= 300, max 15){% endif %}</div>
                     </div>
                     <div class="stat-box elite">
                         <div class="count">{{ guild_stats.elite }}</div>
-                        <div class="label">Elite Member{% if is_admin %}<br>(2051 - 2350 pts, max 15){% endif %}</div>
+                        <div class="label">Elite Member{% if is_admin %}<br>(Event >= 2050, max 15){% endif %}</div>
                     </div>
                     <div class="stat-box active">
                         <div class="count">{{ guild_stats.active }}</div>
-                        <div class="label">Active Member{% if is_admin %}<br>(1501 - 2050 pts, max 20){% endif %}</div>
+                        <div class="label">Active Member{% if is_admin %}<br>(Event >= 1200 + Raid >= 300, max 20){% endif %}</div>
                     </div>
                     <div class="stat-box inactive">
                         <div class="count">{{ guild_stats.inactive }}</div>
-                        <div class="label">Inactive Member{% if is_admin %}<br>(0 - 1500 pts){% endif %}</div>
+                        <div class="label">Inactive Member{% if is_admin %}<br>(below requirements / remaining players){% endif %}</div>
                     </div>
                 </div>
             </div>

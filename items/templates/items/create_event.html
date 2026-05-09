@@ -497,17 +497,16 @@
 
         var isInvasion = evType && (evType === 'INVASION' || evType.startsWith('INV_'));
 
-        // Points field - show for all except Invasion (which uses boss config)
-        if (evType && !isInvasion) {
+        // Points field - show for all
+        if (evType) {
             pointsGroup.style.display = 'block';
-            var defaultPts = (evType in DEFAULT_POINTS) ? DEFAULT_POINTS[evType] : 0;
+            var defaultPts = (evType in DEFAULT_POINTS) ? DEFAULT_POINTS[evType] : 100;
+            if (defaultPts === 0 && isInvasion) defaultPts = 100; // fallback
             pointsInput.value = defaultPts;
             pointsHint.textContent = 'Default: ' + defaultPts + ' pts (you can edit this)';
         } else {
             pointsGroup.style.display = 'none';
-            if (false) {
-                pointsHint.textContent = '';
-            }
+            pointsHint.textContent = '';
         }
         
         toggleMandatoryFields();

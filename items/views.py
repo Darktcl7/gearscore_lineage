@@ -497,7 +497,8 @@ def edit_characteristics_stats(request, character_pk):
 # ACTIVITY VIEWS
 # ======================================================
 from .models import ActivityEvent, PlayerActivity, MonthlyReport
-from django.db.models import Sum, Q
+from django.db.models import Sum, Q, Value
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from datetime import datetime, timedelta
 
@@ -548,10 +549,12 @@ def activity_leaderboard(request):
     
     from .models import LeaderboardConfig
     lb_config = LeaderboardConfig.get_config()
+
+    tier_event_filter = ~Q(event__event_type='CUSTOM') | Q(event__name__startswith='Score Adjustment:')
+    tier_raid_filter = Q(event__event_type='CUSTOM') & ~Q(event__name__startswith='Score Adjustment:') & ~Q(event__name__startswith='AP Adjustment:')
     
     # ── MONTHLY RANKING ──
     # Total Score = event points only (EXCLUDE AP adjustments)
-    from django.db.models import Q
     monthly_qs = PlayerActivity.objects.filter(event__is_completed=True)
     if lb_config.monthly_reset_at:
         monthly_qs = monthly_qs.filter(event__date__gte=lb_config.monthly_reset_at)
@@ -566,7 +569,9 @@ def activity_leaderboard(request):
         monthly_qs
         .values('player__id', 'player__name')
         .annotate(
-            total_score=Sum('points_earned') + Sum('win_streak_bonus'),
+            event_points=Coalesce(Sum('points_earned', filter=tier_event_filter), Value(0)) + Coalesce(Sum('win_streak_bonus', filter=tier_event_filter), Value(0)),
+            raid_boss_points=Coalesce(Sum('points_earned', filter=tier_raid_filter), Value(0)) + Coalesce(Sum('win_streak_bonus', filter=tier_raid_filter), Value(0)),
+            total_score=Coalesce(Sum('points_earned'), Value(0)) + Coalesce(Sum('win_streak_bonus'), Value(0)),
         )
         .order_by('-total_score')
     )
@@ -574,7 +579,9 @@ def activity_leaderboard(request):
     monthly_ranking = []
     for i, entry in enumerate(monthly_data, 1):
         score = entry['total_score'] or 0
-        tier = _get_tier(score)
+        event_points = entry['event_points'] or 0
+        raid_boss_points = entry['raid_boss_points'] or 0
+        tier = _get_tier(event_points, raid_boss_points)
         
         # Calculate AP adjustments separately
         ap_qs = PlayerActivity.objects.filter(
@@ -591,6 +598,8 @@ def activity_leaderboard(request):
             'id': entry['player__id'],
             'name': entry['player__name'],
             'total_score': score,
+            'event_points': event_points,
+            'raid_boss_points': raid_boss_points,
             'ap_points': ap_points,
             'tier': tier,
             'tier_class': tier.lower().replace(' ', '_'),
@@ -613,7 +622,9 @@ def activity_leaderboard(request):
         weekly_qs
         .values('player__id', 'player__name')
         .annotate(
-            total_score=Sum('points_earned') + Sum('win_streak_bonus'),
+            event_points=Coalesce(Sum('points_earned', filter=tier_event_filter), Value(0)) + Coalesce(Sum('win_streak_bonus', filter=tier_event_filter), Value(0)),
+            raid_boss_points=Coalesce(Sum('points_earned', filter=tier_raid_filter), Value(0)) + Coalesce(Sum('win_streak_bonus', filter=tier_raid_filter), Value(0)),
+            total_score=Coalesce(Sum('points_earned'), Value(0)) + Coalesce(Sum('win_streak_bonus'), Value(0)),
         )
         .order_by('-total_score')
     )
@@ -621,7 +632,9 @@ def activity_leaderboard(request):
     weekly_ranking = []
     for i, entry in enumerate(weekly_data, 1):
         score = entry['total_score'] or 0
-        tier = _get_tier(score)
+        event_points = entry['event_points'] or 0
+        raid_boss_points = entry['raid_boss_points'] or 0
+        tier = _get_tier(event_points, raid_boss_points)
         
         ap_weekly_qs = PlayerActivity.objects.filter(
             player__id=entry['player__id'],
@@ -637,73 +650,68 @@ def activity_leaderboard(request):
             'id': entry['player__id'],
             'name': entry['player__name'],
             'total_score': score,
+            'event_points': event_points,
+            'raid_boss_points': raid_boss_points,
             'ap_points': ap_points,
             'tier': tier,
             'tier_class': tier.lower().replace(' ', '_'),
         })
-    # Apply slot-based tiers to weekly ranking (Target points + Slot Caps)
+    # Apply tier rules in ranking order with slot caps.
     w_core_count = 0
     w_elite_count = 0
     w_active_count = 0
-    w_inactive_count = 0
     
     for r in weekly_ranking:
-        score = r['total_score']
-        if score > 2350 and w_core_count < 15:
+        if r['event_points'] >= 2050 and r['raid_boss_points'] >= 300 and w_core_count < 15:
             r['tier'] = 'Core'
             r['tier_class'] = 'core'
             w_core_count += 1
-        elif score > 2050 and w_elite_count < 15:
+        elif r['event_points'] >= 2050 and w_elite_count < 15:
             r['tier'] = 'Elite'
             r['tier_class'] = 'elite'
             w_elite_count += 1
-        elif score > 1500 and w_active_count < 20:
+        elif r['event_points'] >= 1200 and r['raid_boss_points'] >= 300 and w_active_count < 20:
             r['tier'] = 'Active'
             r['tier_class'] = 'active'
             w_active_count += 1
         else:
             r['tier'] = 'Inactive'
             r['tier_class'] = 'inactive'
-            w_inactive_count += 1
 
     weekly_guild_stats = {
-        'core': w_core_count,
-        'elite': w_elite_count,
-        'active': w_active_count,
-        'inactive': w_inactive_count,
+        'core': sum(1 for r in weekly_ranking if r['tier'] == 'Core'),
+        'elite': sum(1 for r in weekly_ranking if r['tier'] == 'Elite'),
+        'active': sum(1 for r in weekly_ranking if r['tier'] == 'Active'),
+        'inactive': sum(1 for r in weekly_ranking if r['tier'] == 'Inactive'),
         'total': len(weekly_ranking),
     }
     # ── GUILD STATISTICS (slot-based tiers) ──
-    # Core: > 2350 pts, max 15 | Elite: > 2050 pts, max 15 | Active: > 1500 pts, max 20 | Inactive: rest
+    # Core: event >= 2050 + raid >= 300, max 15 | Elite: event >= 2050, max 15 | Active: event >= 1200 + raid >= 300, max 20 | Inactive: rest
     core_count = 0
     elite_count = 0
     active_count = 0
-    inactive_count = 0
-    
     for r in monthly_ranking:
-        score = r['total_score']
-        if score > 2350 and core_count < 15:
+        if r['event_points'] >= 2050 and r['raid_boss_points'] >= 300 and core_count < 15:
             r['tier'] = 'Core'
             r['tier_class'] = 'core'
             core_count += 1
-        elif score > 2050 and elite_count < 15:
+        elif r['event_points'] >= 2050 and elite_count < 15:
             r['tier'] = 'Elite'
             r['tier_class'] = 'elite'
             elite_count += 1
-        elif score > 1500 and active_count < 20:
+        elif r['event_points'] >= 1200 and r['raid_boss_points'] >= 300 and active_count < 20:
             r['tier'] = 'Active'
             r['tier_class'] = 'active'
             active_count += 1
         else:
             r['tier'] = 'Inactive'
             r['tier_class'] = 'inactive'
-            inactive_count += 1
     
     guild_stats = {
-        'core': core_count,
-        'elite': elite_count,
-        'active': active_count,
-        'inactive': inactive_count,
+        'core': sum(1 for r in monthly_ranking if r['tier'] == 'Core'),
+        'elite': sum(1 for r in monthly_ranking if r['tier'] == 'Elite'),
+        'active': sum(1 for r in monthly_ranking if r['tier'] == 'Active'),
+        'inactive': sum(1 for r in monthly_ranking if r['tier'] == 'Inactive'),
         'total': len(monthly_ranking),
     }
     
@@ -734,13 +742,13 @@ def activity_leaderboard(request):
     return render(request, 'items/activity_leaderboard.html', context)
 
 
-def _get_tier(score):
-    """Get tier based on total score (without slots for simple display)"""
-    if score > 2350:
+def _get_tier(event_points, raid_boss_points=0):
+    """Get tier from separate event and raid boss point requirements."""
+    if event_points >= 2050 and raid_boss_points >= 300:
         return 'Core'
-    elif score > 2050:
+    elif event_points >= 2050:
         return 'Elite'
-    elif score > 1500:
+    elif event_points >= 1200 and raid_boss_points >= 300:
         return 'Active'
     else:
         return 'Inactive'
@@ -1019,6 +1027,26 @@ def my_activity(request, character_pk=None):
     ).aggregate(total=Sum('win_streak_bonus'))['total'] or 0
     
     total_points = total_points_base + total_streak_bonus
+
+    tier_event_activities = activities.exclude(
+        event__event_type='CUSTOM'
+    ) | activities.filter(
+        event__event_type='CUSTOM',
+        event__name__startswith='Score Adjustment:'
+    )
+    tier_event_activities = tier_event_activities.exclude(event__name__startswith='AP Adjustment:')
+    event_points = (tier_event_activities.aggregate(
+        total=Sum('points_earned'))['total'] or 0) + (tier_event_activities.aggregate(
+        total=Sum('win_streak_bonus'))['total'] or 0)
+
+    tier_raid_activities = activities.filter(event__event_type='CUSTOM').exclude(
+        event__name__startswith='Score Adjustment:'
+    ).exclude(
+        event__name__startswith='AP Adjustment:'
+    )
+    raid_boss_points = (tier_raid_activities.aggregate(
+        total=Sum('points_earned'))['total'] or 0) + (tier_raid_activities.aggregate(
+        total=Sum('win_streak_bonus'))['total'] or 0)
     
     ap_points = activities.filter(
         event__name__startswith='AP Adjustment:'
@@ -1048,7 +1076,7 @@ def my_activity(request, character_pk=None):
     attendance_rate = (attended_count / total_events * 100) if total_events > 0 else 0
     
     # Calculate tier
-    tier = _get_tier(total_points)
+    tier = _get_tier(event_points, raid_boss_points)
     
     # Calculate monthly rewards from custom events
     monthly_custom_events = PlayerActivity.objects.filter(
@@ -1122,6 +1150,8 @@ def my_activity(request, character_pk=None):
         'activities': paginated_regular,
         'raid_activities': paginated_raid,
         'total_points': total_points,
+        'event_points': event_points,
+        'raid_boss_points': raid_boss_points,
         'ap_points': ap_points,
         'penalty_total': penalty_total,
         'attended_count': attended_count,
@@ -1159,6 +1189,21 @@ def admin_all_members_activity(request):
         total_points = (activities.aggregate(
             total=Sum('points_earned'))['total'] or 0) + (activities.aggregate(
             total=Sum('win_streak_bonus'))['total'] or 0)
+
+        event_activities = activities.exclude(event__event_type='CUSTOM') | activities.filter(
+            event__event_type='CUSTOM',
+            event__name__startswith='Score Adjustment:'
+        )
+        event_points = (event_activities.aggregate(
+            total=Sum('points_earned'))['total'] or 0) + (event_activities.aggregate(
+            total=Sum('win_streak_bonus'))['total'] or 0)
+
+        raid_activities = activities.filter(event__event_type='CUSTOM').exclude(
+            event__name__startswith='Score Adjustment:'
+        )
+        raid_boss_points = (raid_activities.aggregate(
+            total=Sum('points_earned'))['total'] or 0) + (raid_activities.aggregate(
+            total=Sum('win_streak_bonus'))['total'] or 0)
         
         attended = activities.filter(status='ATTENDED').count()
         
@@ -1166,7 +1211,7 @@ def admin_all_members_activity(request):
             'character': char,
             'total_points': total_points,
             'attended': attended,
-            'tier': _get_tier(total_points),
+            'tier': _get_tier(event_points, raid_boss_points),
         })
     
     members.sort(key=lambda x: x['total_points'], reverse=True)

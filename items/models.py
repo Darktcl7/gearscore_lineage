@@ -1349,9 +1349,9 @@ class ActivityEvent(models.Model):
     )
 
     DEFAULT_POINTS = {
-        'INV_DRAGON_BEAST': 0,
-        'INV_CARNIFEX': 0,
-        'INV_ORFEN': 0,
+        'INV_DRAGON_BEAST': 100,
+        'INV_CARNIFEX': 100,
+        'INV_ORFEN': 100,
         'BOSS_RUSH': 100,
         'CATACOMBS': 50,
         'DIMENSIONAL': 100,
