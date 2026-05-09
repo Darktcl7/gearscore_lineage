@@ -182,12 +182,15 @@ def api_record_checkin(request):
             })
         
         # Record attendance
+        from django.utils import timezone as tz
         activity, created = PlayerActivity.objects.update_or_create(
             player=character,
             event=event,
             defaults={
                 'status': 'ATTENDED',
                 'discord_user_id': discord_id or '',
+                'checkin_verified': True,
+                'checked_in_at': tz.now(),
             }
         )
         

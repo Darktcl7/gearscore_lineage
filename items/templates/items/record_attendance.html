@@ -223,7 +223,7 @@ main{flex:1;overflow:hidden}
 <div class="eii"><i class="fas fa-calendar"></i> {{ event.date|date:"M d, Y H:i" }}</div>
 <div class="eii"><span class="pb"><i class="fas fa-star"></i> {{ event.calculate_max_points }} pts</span></div>
 </div>
-{% if event.is_invasion_event %}
+{% if event.uses_boss_attendance %}
 <div class="boss-pts-editor">
 <div class="boss-pts-title"><i class="fas fa-skull-crossbones"></i> Boss Points (editable)</div>
 <div class="boss-pts-row">
@@ -291,7 +291,7 @@ main{flex:1;overflow:hidden}
                     <tr>
                         <th style="width: 40px; text-align: center;">Att</th>
                         <th>Member</th>
-                        {% if event.is_invasion_event %}<th>Bosses Killed</th>{% endif %}
+                        {% if event.uses_boss_attendance %}<th>Bosses Killed</th>{% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -310,7 +310,7 @@ main{flex:1;overflow:hidden}
                                 <span class="v-badge final {% if character.is_attended %}on{% endif %}">Final</span>
                             </div>
                         </td>
-                        {% if event.is_invasion_event %}
+                        {% if event.uses_boss_attendance %}
                         <td class="att-col-bosses" onclick="event.stopPropagation()">
                             <div class="boss-group" style="flex-direction: column; gap: 4px;">
                                 {% for boss in character.invasion_bosses %}
@@ -321,7 +321,7 @@ main{flex:1;overflow:hidden}
                         {% endif %}
                     </tr>
                     {% empty %}
-                    <tr><td colspan="{% if event.is_invasion_event %}3{% else %}2{% endif %}" style="text-align: center; color: #555;">No Valkyrie members.</td></tr>
+                    <tr><td colspan="{% if event.uses_boss_attendance %}3{% else %}2{% endif %}" style="text-align: center; color: #555;">No Valkyrie members.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -343,7 +343,7 @@ main{flex:1;overflow:hidden}
                     <tr>
                         <th style="width: 40px; text-align: center;">Att</th>
                         <th>Member</th>
-                        {% if event.is_invasion_event %}<th>Bosses Killed</th>{% endif %}
+                        {% if event.uses_boss_attendance %}<th>Bosses Killed</th>{% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -362,7 +362,7 @@ main{flex:1;overflow:hidden}
                                 <span class="v-badge final {% if character.is_attended %}on{% endif %}">Final</span>
                             </div>
                         </td>
-                        {% if event.is_invasion_event %}
+                        {% if event.uses_boss_attendance %}
                         <td class="att-col-bosses" onclick="event.stopPropagation()">
                             <div class="boss-group" style="flex-direction: column; gap: 4px;">
                                 {% for boss in character.invasion_bosses %}
@@ -373,7 +373,7 @@ main{flex:1;overflow:hidden}
                         {% endif %}
                     </tr>
                     {% empty %}
-                    <tr><td colspan="{% if event.is_invasion_event %}3{% else %}2{% endif %}" style="text-align: center; color: #555;">No Valhalla members.</td></tr>
+                    <tr><td colspan="{% if event.uses_boss_attendance %}3{% else %}2{% endif %}" style="text-align: center; color: #555;">No Valhalla members.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

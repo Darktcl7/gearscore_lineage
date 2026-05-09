@@ -896,20 +896,25 @@ def reset_leaderboard_data(request):
         
     if request.method == 'POST':
         reset_type = request.POST.get('type', 'all')
-        today = timezone.now()
+        
+        # We subtract 1 minute and strip seconds to ensure that any events created
+        # immediately after resetting (which default to the current minute without seconds)
+        # are safely evaluated as being >= the reset timestamp.
+        from datetime import timedelta
+        reset_timestamp = timezone.now().replace(second=0, microsecond=0) - timedelta(minutes=1)
         
         if reset_type == 'weekly':
             # Weekly reset: only update the reset timestamp
             # Data is NOT deleted, so monthly totals stay intact
             from .models import LeaderboardConfig
             config = LeaderboardConfig.get_config()
-            config.weekly_reset_at = today
+            config.weekly_reset_at = reset_timestamp
             config.save()
         elif reset_type == 'monthly':
             # Monthly reset: only update the monthly reset timestamp
             from .models import LeaderboardConfig
             config = LeaderboardConfig.get_config()
-            config.monthly_reset_at = today
+            config.monthly_reset_at = reset_timestamp
             config.save()
         else:
             PlayerActivity.objects.all().delete()
@@ -991,11 +996,16 @@ def my_activity(request, character_pk=None):
         month__month=today.month
     ).first()
     
-    # Get activity history (last 30 days)
-    month_ago = today - timedelta(days=30)
+    from .models import LeaderboardConfig
+    lb_config = LeaderboardConfig.get_config()
+    
+    # Get activity history since the last monthly reset (to match leaderboard)
+    # If no reset point, default to last 30 days
+    start_date = lb_config.monthly_reset_at or (today - timedelta(days=30))
+    
     activities = PlayerActivity.objects.filter(
         player=character,
-        event__date__gte=month_ago,
+        event__date__gte=start_date,
         event__is_completed=True
     ).select_related('event').order_by('-event__date')
     
@@ -1031,7 +1041,7 @@ def my_activity(request, character_pk=None):
     ).exclude(
         name__startswith='Score Adjustment:'
     ).filter(
-        date__gte=month_ago,
+        date__gte=start_date,
         is_completed=True
     ).count()
     
@@ -1558,7 +1568,7 @@ def record_attendance(request, event_pk):
     
     if request.method == 'POST':
         # Save boss points if Invasion
-        if event.is_invasion_event:
+        if event.uses_boss_attendance:
             boss_defaults = {
                 'dragon_beast': 50,
                 'carnifex': 25,
@@ -1591,7 +1601,7 @@ def record_attendance(request, event_pk):
             }
 
             # For Invasion, capture INDIVIDUAL boss checkboxes
-            if event.is_invasion_event:
+            if event.uses_boss_attendance:
                 defaults['bosses_killed'] = {
                     boss_key: request.POST.get(f'boss_{boss_key}_{char.pk}') == 'true'
                     for boss_key in invasion_boss_keys

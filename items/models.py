@@ -1468,6 +1468,10 @@ class ActivityEvent(models.Model):
     def is_invasion_event(self):
         return self.event_type.startswith('INV_') or self.event_type == 'INVASION'
 
+    @property
+    def uses_boss_attendance(self):
+        return self.event_type == 'INVASION'
+
     def get_default_mandatory_boss_penalties(self):
         boss_key = self.INVASION_BOSS_BY_EVENT_TYPE.get(self.event_type)
         if boss_key:
@@ -1475,21 +1479,33 @@ class ActivityEvent(models.Model):
         return self.DEFAULT_INVASION_BOSS_PENALTIES.copy()
 
     def get_invasion_boss_keys(self):
+        if not self.uses_boss_attendance:
+            return []
         boss_key = self.INVASION_BOSS_BY_EVENT_TYPE.get(self.event_type)
         if boss_key:
             return [boss_key]
-        if self.is_invasion_event:
-            return list(self.DEFAULT_INVASION_BOSS_PENALTIES.keys())
-        return []
+        return list(self.DEFAULT_INVASION_BOSS_PENALTIES.keys())
 
     def get_mandatory_boss_penalty_map(self):
         if not self.is_mandatory or not self.is_invasion_event:
             return {}
         return self.mandatory_boss_penalties or self.get_default_mandatory_boss_penalties()
 
+    @property
+    def total_mandatory_penalty(self):
+        if self.is_invasion_event:
+            return sum([abs(p) for p in self.get_mandatory_boss_penalty_map().values()])
+        return self.mandatory_penalty
+
+    @property
+    def total_dkp_mandatory_penalty(self):
+        if self.is_invasion_event:
+            return sum([abs(p) for p in (self.dkp_mandatory_boss_penalties or {}).values()])
+        return self.dkp_mandatory_penalty
+
     def calculate_max_points(self):
         """Calculate max points based on event type and results"""
-        if self.is_invasion_event:
+        if self.uses_boss_attendance:
             # INVASION: sum of all boss point values
             boss_points = 0
             if self.boss_point_config:
@@ -1600,7 +1616,7 @@ class PlayerActivity(models.Model):
             
         if self.status == 'ATTENDED':
             # For INVASION events, points come ONLY from boss kills (no base attendance)
-            if self.event.is_invasion_event:
+            if self.event.uses_boss_attendance:
                 boss_points = 0
                 boss_point_map = self.event.boss_point_config or {}
                 mandatory_map = self.event.get_mandatory_boss_penalty_map()
@@ -1623,12 +1639,7 @@ class PlayerActivity(models.Model):
         elif self.status == 'ABSENT':
             # Deduct points if it's a mandatory event, otherwise 0
             if self.event.is_mandatory:
-                if self.event.is_invasion_event:
-                    mandatory_map = self.event.get_mandatory_boss_penalty_map()
-                    penalty = sum([abs(p) for p in mandatory_map.values()])
-                    self.points_earned = -abs(penalty)
-                else:
-                    self.points_earned = -abs(self.event.mandatory_penalty)
+                self.points_earned = -abs(self.event.total_mandatory_penalty)
             else:
                 self.points_earned = 0
                 
@@ -1645,7 +1656,7 @@ class PlayerActivity(models.Model):
         dkp_penalty_amount = 0
         missed_details = []
 
-        if self.status == 'ATTENDED' and self.event.is_invasion_event:
+        if self.status == 'ATTENDED' and self.event.uses_boss_attendance:
             mandatory_map = self.event.dkp_mandatory_boss_penalties or {}
             for boss, penalty in mandatory_map.items():
                 if penalty > 0 and not self.bosses_killed.get(boss, False):
@@ -1653,15 +1664,7 @@ class PlayerActivity(models.Model):
                     boss_name = boss.replace('_', ' ').title()
                     missed_details.append(f"{boss_name} (-{abs(penalty)} DKP)")
         elif self.status == 'ABSENT':
-            if self.event.is_invasion_event:
-                mandatory_map = self.event.dkp_mandatory_boss_penalties or {}
-                for boss, penalty in mandatory_map.items():
-                    if penalty > 0:
-                        dkp_penalty_amount -= abs(penalty)
-                        boss_name = boss.replace('_', ' ').title()
-                        missed_details.append(f"{boss_name} (-{abs(penalty)} DKP)")
-            else:
-                dkp_penalty_amount -= abs(self.event.dkp_mandatory_penalty)
+            dkp_penalty_amount -= abs(self.event.total_dkp_mandatory_penalty)
 
         if dkp_penalty_amount >= 0:
             return 0, ""
@@ -1737,7 +1740,7 @@ class PlayerActivity(models.Model):
         self.dkp_penalty_log = log
 
     def get_missed_mandatory_bosses(self):
-        if not self.event.is_mandatory or not self.event.is_invasion_event:
+        if not self.event.is_mandatory or not self.event.uses_boss_attendance:
             return []
         missed = []
         mandatory_map = self.event.get_mandatory_boss_penalty_map()

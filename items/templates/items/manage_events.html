@@ -438,7 +438,7 @@
                         <span style="color: #9b59b6; margin-left: 5px; font-size: 0.9em;" title="Repeatable Weekly"><i class="fas fa-redo"></i></span>
                         {% endif %}
                         {% if event.is_mandatory %}
-                            {% if event.is_invasion_event %}
+                            {% if event.event_type == 'INVASION' %}
                                 {% with mandatory_details=event.get_mandatory_boss_details %}
                                 {% if mandatory_details %}
                                 <div style="margin-top: 5px; padding: 4px 8px; background: rgba(231, 76, 60, 0.1); border-left: 2px solid #e74c3c; border-radius: 4px; font-size: 0.8rem;">
@@ -454,7 +454,7 @@
                                 {% endif %}
                                 {% endwith %}
                             {% else %}
-                                <span style="color: #e74c3c; margin-left: 5px; font-size: 0.9em;" title="Mandatory Event (-{{ event.mandatory_penalty }} Act{% if event.is_dkp_penalty %}, -{{ event.dkp_mandatory_penalty }} DKP{% endif %} for absent)"><i class="fas fa-exclamation-circle"></i></span>
+                                <span style="color: #e74c3c; margin-left: 5px; font-size: 0.9em;" title="Mandatory Event (-{{ event.total_mandatory_penalty }} Act{% if event.is_dkp_penalty %}, -{{ event.total_dkp_mandatory_penalty }} DKP{% endif %} for absent)"><i class="fas fa-exclamation-circle"></i></span>
                             {% endif %}
                         {% endif %}
 
