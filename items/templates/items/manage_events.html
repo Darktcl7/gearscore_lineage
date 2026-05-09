@@ -483,7 +483,9 @@
                                 </span>
                             </div>
                         {% else %}
-                            {% if event.is_win %}
+                            {% if event.event_type == 'CUSTOM' %}
+                            <span style="color: #666;">-</span>
+                            {% elif event.is_win %}
                             <span class="win-badge"><i class="fas fa-trophy"></i> Win</span>
                             {% else %}
                             <span class="lose-badge"><i class="fas fa-times"></i> Lose</span>
@@ -626,6 +628,8 @@
                             '<input type="radio" name="result_valhalla" value="lose" style="width:14px;height:14px;"> <i class="fas fa-skull"></i> Lose</label>' +
                             '</div>' +
                             '</div>';
+                    } else if (eventType === 'CUSTOM') {
+                        message.innerHTML = 'Mark event <strong>' + eventName + '</strong> as Completed?';
                     } else {
                         message.innerHTML = 'Mark event <strong>' + eventName + '</strong> as Completed?' +
                             '<div style="margin-top:16px; display:flex; gap:16px; justify-content:center;">' +

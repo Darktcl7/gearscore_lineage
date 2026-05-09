@@ -550,8 +550,23 @@ def activity_leaderboard(request):
     from .models import LeaderboardConfig
     lb_config = LeaderboardConfig.get_config()
 
-    tier_event_filter = ~Q(event__event_type='CUSTOM') | Q(event__name__startswith='Score Adjustment:')
-    tier_raid_filter = Q(event__event_type='CUSTOM') & ~Q(event__name__startswith='Score Adjustment:') & ~Q(event__name__startswith='AP Adjustment:')
+    # Raid Boss CUSTOM events have boss type prefix in their name
+    _raid_boss_name_q = (
+        Q(event__name__contains='[Raid Boss]') |
+        Q(event__name__contains='[Territory Boss]') |
+        Q(event__name__contains='[World Boss]') |
+        Q(event__name__contains='[Rift Boss]') |
+        Q(event__name__contains='[Arena Boss]') |
+        Q(event__name__contains='War Day:')
+    )
+    # Event Points = everything EXCEPT raid-boss CUSTOM events and AP adjustments
+    tier_event_filter = (
+        ~Q(event__event_type='CUSTOM') |
+        Q(event__name__startswith='Score Adjustment:') |
+        (Q(event__event_type='CUSTOM') & ~_raid_boss_name_q & ~Q(event__name__startswith='Score Adjustment:') & ~Q(event__name__startswith='AP Adjustment:'))
+    )
+    # Raid Boss Points = only CUSTOM events WITH raid boss prefix
+    tier_raid_filter = Q(event__event_type='CUSTOM') & _raid_boss_name_q & ~Q(event__name__startswith='AP Adjustment:')
     
     # ── MONTHLY RANKING ──
     # Total Score = event points only (EXCLUDE AP adjustments)
@@ -1041,9 +1056,9 @@ def my_activity(request, character_pk=None):
     from .models import LeaderboardConfig
     lb_config = LeaderboardConfig.get_config()
     
-    # Get activity history since the last monthly reset (to match leaderboard)
-    # If no reset point, default to last 30 days
-    start_date = lb_config.monthly_reset_at or (today - timedelta(days=30))
+    # Get activity history since the last weekly reset (to match leaderboard)
+    # If no reset point, default to last 7 days
+    start_date = lb_config.weekly_reset_at or (today - timedelta(days=7))
     
     activities = PlayerActivity.objects.filter(
         player=character,
@@ -1062,20 +1077,29 @@ def my_activity(request, character_pk=None):
     
     total_points = total_points_base + total_streak_bonus
 
-    tier_event_activities = activities.exclude(
-        event__event_type='CUSTOM'
-    ) | activities.filter(
-        event__event_type='CUSTOM',
-        event__name__startswith='Score Adjustment:'
+    # Raid boss CUSTOM events have boss type prefix
+    from django.db.models import Q as Qmy
+    _rb_q = (
+        Qmy(event__name__contains='[Raid Boss]') |
+        Qmy(event__name__contains='[Territory Boss]') |
+        Qmy(event__name__contains='[World Boss]') |
+        Qmy(event__name__contains='[Rift Boss]') |
+        Qmy(event__name__contains='[Arena Boss]') |
+        Qmy(event__name__contains='War Day:')
+    )
+    # Event Points = non-CUSTOM + Score Adjustments + CUSTOM without raid boss prefix
+    tier_event_activities = (
+        activities.exclude(event__event_type='CUSTOM') |
+        activities.filter(event__event_type='CUSTOM', event__name__startswith='Score Adjustment:') |
+        activities.filter(event__event_type='CUSTOM').filter(~_rb_q).exclude(event__name__startswith='Score Adjustment:').exclude(event__name__startswith='AP Adjustment:')
     )
     tier_event_activities = tier_event_activities.exclude(event__name__startswith='AP Adjustment:')
     event_points = (tier_event_activities.aggregate(
         total=Sum('points_earned'))['total'] or 0) + (tier_event_activities.aggregate(
         total=Sum('win_streak_bonus'))['total'] or 0)
 
-    tier_raid_activities = activities.filter(event__event_type='CUSTOM').exclude(
-        event__name__startswith='Score Adjustment:'
-    ).exclude(
+    # Raid Boss Points = only CUSTOM events WITH raid boss prefix
+    tier_raid_activities = activities.filter(event__event_type='CUSTOM').filter(_rb_q).exclude(
         event__name__startswith='AP Adjustment:'
     )
     raid_boss_points = (tier_raid_activities.aggregate(
@@ -1153,19 +1177,33 @@ def my_activity(request, character_pk=None):
         'membership_count': membership_count,
     }
     
-    # Score/AP Adjustments are CUSTOM type but belong in Activity Events History
-    regular_activities = activities.exclude(event__event_type='CUSTOM') | activities.filter(
-        event__event_type='CUSTOM',
-        event__name__startswith='Score Adjustment:'
-    ) | activities.filter(
-        event__event_type='CUSTOM',
-        event__name__startswith='AP Adjustment:'
+    # All history should not be affected by the weekly reset start_date
+    all_activities = PlayerActivity.objects.filter(
+        player=character,
+        event__is_completed=True
+    ).select_related('event').order_by('-event__date')
+
+    # Raid boss detection: CUSTOM events with boss type prefix
+    from django.db.models import Q as Qhist
+    _rb_hist_q = (
+        Qhist(event__name__contains='[Raid Boss]') |
+        Qhist(event__name__contains='[Territory Boss]') |
+        Qhist(event__name__contains='[World Boss]') |
+        Qhist(event__name__contains='[Rift Boss]') |
+        Qhist(event__name__contains='[Arena Boss]') |
+        Qhist(event__name__contains='War Day:')
+    )
+    # Activity Events History = non-CUSTOM + Score/AP Adjustments + CUSTOM without raid boss prefix
+    regular_activities = (
+        all_activities.exclude(event__event_type='CUSTOM') |
+        all_activities.filter(event__event_type='CUSTOM', event__name__startswith='Score Adjustment:') |
+        all_activities.filter(event__event_type='CUSTOM', event__name__startswith='AP Adjustment:') |
+        all_activities.filter(event__event_type='CUSTOM').filter(~_rb_hist_q).exclude(event__name__startswith='Score Adjustment:').exclude(event__name__startswith='AP Adjustment:')
     )
     regular_activities = regular_activities.order_by('-event__date')
     
-    raid_activities = activities.filter(event__event_type='CUSTOM').exclude(
-        event__name__startswith='Score Adjustment:'
-    ).exclude(
+    # Raid Boss History = only CUSTOM events WITH raid boss prefix
+    raid_activities = all_activities.filter(event__event_type='CUSTOM').filter(_rb_hist_q).exclude(
         event__name__startswith='AP Adjustment:'
     )
 
@@ -1365,15 +1403,24 @@ def manage_events(request):
     # AUTO-GENERATE repeatable events that are due today (hari H jam 00:00)
     _generate_due_repeatable_events()
     
-    # Get all actual events (excluding manual point adjustments & War Day DKP events), ordered by date
+    # Get all actual events (excluding manual point adjustments & Raid Boss page events)
+    from django.db.models import Q
+    # Raid Boss page creates CUSTOM events with [Boss Type] prefix or War Day prefix
+    raid_boss_prefixes = ['[Raid Boss]', '[Territory Boss]', '[World Boss]', '[Rift Boss]', '[Arena Boss]']
+    raid_boss_q = Q()
+    for prefix in raid_boss_prefixes:
+        raid_boss_q |= Q(name__contains=prefix)
+    
     events = ActivityEvent.objects.exclude(
         name__startswith='AP Adjustment:'
     ).exclude(
         name__startswith='Score Adjustment:'
     ).exclude(
-        name__contains='War Day:'
+        # Exclude Raid Boss page events (CUSTOM with boss type prefix)
+        Q(event_type='CUSTOM') & raid_boss_q
     ).exclude(
-        event_type='CUSTOM'
+        # Exclude War Day raid boss events
+        Q(event_type='CUSTOM') & Q(name__contains='War Day:')
     ).order_by('-date')[:50]
     
     context = {
@@ -3054,7 +3101,14 @@ def raid_boss_activity(request):
 
         return redirect('raid-boss-activity')
             
-    all_events = ActivityEvent.objects.filter(event_type='CUSTOM').exclude(name__startswith='Score Adjustment:').exclude(name__startswith='AP Adjustment:').prefetch_related('participants__player').order_by('-date')
+    # Only show CUSTOM events with boss type prefix (from Raid Boss page)
+    from django.db.models import Q
+    raid_boss_prefixes_q = Q()
+    for prefix in ['[Raid Boss]', '[Territory Boss]', '[World Boss]', '[Rift Boss]', '[Arena Boss]']:
+        raid_boss_prefixes_q |= Q(name__contains=prefix)
+    all_events = ActivityEvent.objects.filter(
+        Q(event_type='CUSTOM') & (raid_boss_prefixes_q | Q(name__contains='War Day:'))
+    ).exclude(name__startswith='Score Adjustment:').exclude(name__startswith='AP Adjustment:').prefetch_related('participants__player').order_by('-date')
     from django.core.paginator import Paginator
     paginator = Paginator(all_events, 20)
     page_number = request.GET.get('page')
