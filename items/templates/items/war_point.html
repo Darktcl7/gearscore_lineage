@@ -4,6 +4,8 @@
 {% block title %}War Point{% endblock %}
 
 {% block extra_head %}
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
     main { max-width:1400px !important; padding:20px !important; }
     .wp-container {
@@ -318,7 +320,10 @@
         <!-- SUBMISSION FORM -->
         <div class="wp-card">
             <div class="wp-card-header">
-                <h2><i class="fas fa-upload"></i> Submit War Screenshot</h2>
+                <h2><i class="fas fa-{% if edit_sub %}edit{% else %}upload{% endif %}"></i> {% if edit_sub %}Edit Submission #{{ edit_sub.pk }}{% else %}Submit War Screenshot{% endif %}</h2>
+                {% if edit_sub %}
+                <a href="{% url 'war-point' %}" style="color: #aaa; font-size: 0.85rem; text-decoration: none;"><i class="fas fa-times"></i> Cancel</a>
+                {% endif %}
             </div>
             <div class="wp-card-body">
                 <form method="POST" enctype="multipart/form-data" class="wp-form" id="wp-submit-form">
@@ -338,29 +343,60 @@
 
                     <div class="kill-assist-row">
                         <div class="form-group">
-                            <label><i class="fas fa-calendar-alt"></i> War Date</label>
-                            <input type="date" name="war_date" required max="{{ today|date:'Y-m-d' }}">
+                            <label><i class="fas fa-globe"></i> World</label>
+                            <select name="world" id="world-select" required>
+                                {% for w in worlds %}
+                                <option value="{{ w.id }}">{{ w.name }}</option>
+                                {% empty %}
+                                <option value="">No Worlds Configured</option>
+                                {% endfor %}
+                            </select>
                         </div>
                         <div class="form-group">
-                            <label><i class="fas fa-clock"></i> War Time (00:00 - 23:59)</label>
-                            <input type="time" name="war_time" required lang="en-GB">
+                            <label><i class="fas fa-server"></i> Server</label>
+                            <select name="server" id="server-select" required>
+                                {% for i in "123456789"|make_list %}
+                                <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
+                                {% endfor %}
+                                <option value="10">10</option>
+                            </select>
                         </div>
                     </div>
 
+                    <h3 style="color:#DAA520; margin-top:15px; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px; font-size:1rem;"><i class="fas fa-crosshairs"></i> Top Targets</h3>
+                    <div id="top-targets-container">
+                        <!-- Populated via AJAX -->
+                    </div>
+
+                    <!-- Hidden inputs so they always exist for POST -->
+                    <div style="display:none;">
+                        <input type="number" name="kill_top1" id="val_kill_top1" value="0">
+                        <input type="number" name="assist_top1" id="val_assist_top1" value="0">
+                        <input type="number" name="kill_top2" id="val_kill_top2" value="0">
+                        <input type="number" name="assist_top2" id="val_assist_top2" value="0">
+                        <input type="number" name="kill_top3" id="val_kill_top3" value="0">
+                        <input type="number" name="assist_top3" id="val_assist_top3" value="0">
+                        <input type="number" name="kill_top4" id="val_kill_top4" value="0">
+                        <input type="number" name="assist_top4" id="val_assist_top4" value="0">
+                        <input type="number" name="kill_top5" id="val_kill_top5" value="0">
+                        <input type="number" name="assist_top5" id="val_assist_top5" value="0">
+                    </div>
+
+                    <h3 style="color:#DAA520; margin-top:15px; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px; font-size:1rem;"><i class="fas fa-users"></i> Normal Enemy (Non Top 1-5)</h3>
                     <div class="kill-assist-row">
                         <div class="form-group">
-                            <label><i class="fas fa-skull-crossbones" style="color:#e74c3c;"></i> My Kills</label>
-                            <input type="number" name="kill_count" min="0" value="0" required onfocus="if(this.value=='0') this.value='';" onblur="if(this.value=='') this.value='0';">
+                            <label><i class="fas fa-skull-crossbones" style="color:#e74c3c;"></i> Normal Kills</label>
+                            <input type="number" name="kill_normal" min="0" value="0" required onfocus="if(this.value=='0') this.value='';" onblur="if(this.value=='') this.value='0';">
                         </div>
                         <div class="form-group">
-                            <label><i class="fas fa-hands-helping" style="color:#3498db;"></i> My Assists</label>
-                            <input type="number" name="assist_count" min="0" value="0" required onfocus="if(this.value=='0') this.value='';" onblur="if(this.value=='') this.value='0';">
+                            <label><i class="fas fa-hands-helping" style="color:#3498db;"></i> Normal Assists</label>
+                            <input type="number" name="assist_normal" min="0" value="0" required onfocus="if(this.value=='0') this.value='';" onblur="if(this.value=='') this.value='0';">
                         </div>
                     </div>
 
                     <div class="form-group" style="margin-top: 20px;">
                         <label><i class="fas fa-image"></i> Upload Screenshot</label>
-                        <input type="file" name="screenshot" id="ss-input" accept="image/png, image/jpeg, image/jpg, image/webp, image/heic, image/heif, image/gif, image/bmp" style="display: none;" required>
+                        <input type="file" name="screenshot" id="ss-input" accept="image/png, image/jpeg, image/jpg, image/webp, image/heic, image/heif, image/gif, image/bmp" style="display: none;" multiple required>
                         
                         <div style="display: flex; gap: 15px; align-items: stretch; min-height: 140px;">
                             <div class="upload-zone" id="upload-zone" onclick="document.getElementById('ss-input').click()" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
@@ -368,14 +404,14 @@
                                 <p id="upload-text">Click here to select image</p>
                             </div>
                             
-                            <div id="preview-container" style="display: none; flex: 1; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(0,0,0,0.3); align-items: center; justify-content: center; padding: 10px;">
-                                <img id="upload-preview" src="" style="max-width: 100%; max-height: 120px; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                            <div id="preview-container" style="display: none; flex: 2; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(0,0,0,0.3); align-items: center; justify-content: center; padding: 10px; flex-wrap: wrap; gap: 8px;">
+                                <!-- dynamically added imgs -->
                             </div>
                         </div>
                     </div>
 
                     <button type="submit" class="btn-submit-wp" id="btn-submit">
-                        <i class="fas fa-paper-plane"></i> Submit War Point
+                        <i class="fas fa-paper-plane"></i> {% if edit_sub %}Update & Resubmit{% else %}Submit War Point{% endif %}
                     </button>
                 </form>
             </div>
@@ -391,17 +427,29 @@
                 {% for sub in my_submissions %}
                 <div class="sub-item sub-{{ sub.status|lower }}">
                     
-                    <!-- Thumbnail Image -->
-                    <div style="width: 60px; height: 60px; margin-right: 15px; flex-shrink: 0; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5);">
-                        {% if sub.screenshot %}
-                        <img src="{{ sub.screenshot.url }}" onclick="openModal('{{ sub.screenshot.url }}')" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-                        {% else %}
-                        <div style="display:flex; height:100%; align-items:center; justify-content:center; color:#555;"><i class="fas fa-image"></i></div>
+                    <!-- Thumbnail Images -->
+                    <div style="display: flex; gap: 5px; margin-right: 15px; flex-wrap: wrap; max-width: 130px;">
+                        {% if sub.screenshot and not sub.proof_images.all %}
+                        <div style="width: 40px; height: 40px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5);">
+                            <img src="{{ sub.screenshot.url }}" onclick="openModal('{{ sub.screenshot.url }}')" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                        </div>
+                        {% endif %}
+                        
+                        {% for img in sub.proof_images.all %}
+                        <div style="width: 40px; height: 40px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5);">
+                            <img src="{{ img.image.url }}" onclick="openModal('{{ img.image.url }}')" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                        </div>
+                        {% endfor %}
+                        
+                        {% if not sub.screenshot and not sub.proof_images.all %}
+                        <div style="width: 40px; height: 40px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; color:#555;">
+                            <i class="fas fa-image"></i>
+                        </div>
                         {% endif %}
                     </div>
 
                     <div class="sub-info">
-                        <div class="sub-date">{{ sub.war_date|date:"d M Y" }} — {{ sub.character.name }}</div>
+                        <div class="sub-date">{% if sub.world %}{{ sub.world.name }} {{ sub.server }}{% else %}Unknown{% endif %} — {{ sub.character.name }}</div>
                         <div class="sub-stats">
                             <span style="color: #e74c3c;"><i class="fas fa-skull-crossbones"></i> {{ sub.kill_count }} Kill</span>
                             &nbsp;·&nbsp;
@@ -415,6 +463,12 @@
                     <span class="sub-points {% if sub.status == 'APPROVED' %}pts-approved{% elif sub.status == 'PENDING' %}pts-pending{% else %}pts-rejected{% endif %}">
                         {% if sub.status == 'APPROVED' %}+{% endif %}{{ sub.total_points }} pts
                     </span>
+                    {% if sub.status != 'APPROVED' %}
+                    <div style="display: flex; gap: 6px; margin-left: 8px;">
+                        <a href="{% url 'war-point-edit' sub.pk %}" title="Edit Submission" style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: rgba(52,152,219,0.15); color: #3498db; border: 1px solid rgba(52,152,219,0.3); border-radius: 6px; text-decoration: none; font-size: 0.8rem; transition: all 0.2s;" onmouseover="this.style.background='rgba(52,152,219,0.35)'" onmouseout="this.style.background='rgba(52,152,219,0.15)'"><i class="fas fa-edit"></i></a>
+                        <button type="button" onclick="confirmDeleteSub({{ sub.pk }})" title="Delete Submission" style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: rgba(231,76,60,0.15); color: #e74c3c; border: 1px solid rgba(231,76,60,0.3); border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;" onmouseover="this.style.background='rgba(231,76,60,0.35)'" onmouseout="this.style.background='rgba(231,76,60,0.15)'"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                    {% endif %}
                 </div>
                 {% endfor %}
                 {% else %}
@@ -426,58 +480,6 @@
             </div>
         </div>
 
-        <!-- LEADERBOARD -->
-        <div class="wp-card wp-card-full">
-            <div class="wp-card-header">
-                <h2><i class="fas fa-trophy"></i> Leaderboard - {{ current_month }}</h2>
-                {% if is_admin_user %}
-                <a href="{% url 'war-point-manage' %}" class="btn-admin-link"><i class="fas fa-cog"></i> Manage</a>
-                {% endif %}
-            </div>
-            <div class="wp-card-body" style="padding: 0;">
-                {% if leaderboard %}
-                <table class="lb-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Player</th>
-                            <th>Kill</th>
-                            <th>Assist</th>
-                            <th>Points</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for entry in leaderboard %}
-                        <tr>
-                            <td>
-                                <span class="rank-num {% if forloop.counter == 1 %}rank-1{% elif forloop.counter == 2 %}rank-2{% elif forloop.counter == 3 %}rank-3{% else %}rank-default{% endif %}">
-                                    {{ forloop.counter }}
-                                </span>
-                            </td>
-                            <td>
-                                <strong style="color:#fff;">{{ entry.character__name }}</strong>
-                                {% if entry.character__clan %}
-                                <span class="clan-badge {% if entry.character__clan == 'Valkyrie' %}clan-vk{% else %}clan-vh{% endif %}">
-                                    {{ entry.character__clan|truncatechars:2 }}
-                                </span>
-                                {% endif %}
-                            </td>
-                            <td style="color: #e74c3c; font-weight: 600;">{{ entry.total_kills }}</td>
-                            <td style="color: #3498db; font-weight: 600;">{{ entry.total_assists }}</td>
-                            <td><strong style="color: #DAA520;">{{ entry.total_points }}</strong></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <div class="empty-state">
-                    <i class="fas fa-trophy"></i>
-                    <p>No data available for this month.</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
     </div> <!-- End wp-wrap -->
 </div>
 
@@ -494,22 +496,39 @@
     // 1. Upload Preview Logic
     const fileInput = document.getElementById('ss-input');
     const uploadText = document.getElementById('upload-text');
-    const uploadIcon = document.getElementById('upload-icon');
-    const uploadPreview = document.getElementById('upload-preview');
     const previewContainer = document.getElementById('preview-container');
 
     fileInput.addEventListener('change', function(e) {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            const reader = new FileReader();
+        previewContainer.innerHTML = ''; // clear previous images
+        if (e.target.files && e.target.files.length > 0) {
+            const count = e.target.files.length;
+            previewContainer.style.display = 'flex';
             
-            reader.onload = function(e) {
-                uploadPreview.src = e.target.result;
-                previewContainer.style.display = 'flex';
-                uploadText.textContent = "Change Image: " + file.name;
+            for(let i=0; i<count; i++) {
+                const file = e.target.files[i];
+                const reader = new FileReader();
+                
+                reader.onload = function(evt) {
+                    const img = document.createElement('img');
+                    img.src = evt.target.result;
+                    img.style.maxWidth = '60px';
+                    img.style.maxHeight = '60px';
+                    img.style.borderRadius = '4px';
+                    img.style.boxShadow = '0 2px 5px rgba(0,0,0,0.5)';
+                    img.style.objectFit = 'cover';
+                    previewContainer.appendChild(img);
+                }
+                reader.readAsDataURL(file);
             }
             
-            reader.readAsDataURL(file);
+            if(count > 1) {
+                uploadText.textContent = `${count} files selected`;
+            } else {
+                uploadText.textContent = "Change Image: " + e.target.files[0].name;
+            }
+        } else {
+            previewContainer.style.display = 'none';
+            uploadText.textContent = "Click here to select image";
         }
     });
 
@@ -519,6 +538,171 @@
         const modalImg = document.getElementById("modalImg");
         modal.style.display = "flex";
         modalImg.src = imgSrc;
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const worldSelect = document.getElementById('world-select');
+        const serverSelect = document.getElementById('server-select');
+        const targetsContainer = document.getElementById('top-targets-container');
+        
+        function loadTargets() {
+            if(!worldSelect || !serverSelect || !targetsContainer) return;
+            const worldId = worldSelect.value;
+            const server = serverSelect.value;
+            
+            if (!worldId || !server) return;
+            
+            fetch(`/portal/api/war-point/get-target-config/?world_id=${worldId}&server=${server}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.config) {
+                        targetsContainer.innerHTML = '';
+                        const cfg = data.config;
+                        
+                        function createTargetRow(num, name) {
+                            if (!name) return;
+                            const row = document.createElement('div');
+                            row.className = 'kill-assist-row';
+                            row.innerHTML = `
+                                <div class="form-group">
+                                    <label style="color:#e74c3c;">Kill ${name}</label>
+                                    <input type="number" min="0" value="0" required 
+                                        onfocus="if(this.value=='0') this.value='';" 
+                                        onblur="if(this.value=='') this.value='0';"
+                                        onchange="document.getElementById('val_kill_top${num}').value = this.value">
+                                </div>
+                                <div class="form-group">
+                                    <label style="color:#3498db;">Assist ${name}</label>
+                                    <input type="number" min="0" value="0" required 
+                                        onfocus="if(this.value=='0') this.value='';" 
+                                        onblur="if(this.value=='') this.value='0';"
+                                        onchange="document.getElementById('val_assist_top${num}').value = this.value">
+                                </div>
+                            `;
+                            targetsContainer.appendChild(row);
+                        }
+                        
+                        for(let i=1; i<=5; i++) {
+                            const valK = document.getElementById(`val_kill_top${i}`);
+                            const valA = document.getElementById(`val_assist_top${i}`);
+                            if(valK) valK.value = '0';
+                            if(valA) valA.value = '0';
+                        }
+                        
+                        createTargetRow(1, cfg.top1_name);
+                        createTargetRow(2, cfg.top2_name);
+                        createTargetRow(3, cfg.top3_name);
+                        createTargetRow(4, cfg.top4_name);
+                        createTargetRow(5, cfg.top5_name);
+                        
+                        if(targetsContainer.innerHTML === '') {
+                            targetsContainer.innerHTML = '<p style="color:#888; font-size:0.85rem;">No specific targets configured for this World & Server.</p>';
+                        }
+                    }
+                })
+                .catch(err => console.error(err));
+        }
+        
+        if(worldSelect) worldSelect.addEventListener('change', loadTargets);
+        if(serverSelect) serverSelect.addEventListener('change', loadTargets);
+        
+        {% if edit_sub %}
+        // Edit mode: set world & server, then load targets with pre-filled values
+        if (worldSelect) {
+            worldSelect.value = '{{ edit_sub.world_id }}';
+        }
+        if (serverSelect) {
+            serverSelect.value = '{{ edit_sub.server }}';
+        }
+        // Pre-fill normal kills/assists immediately
+        const killNormal = document.querySelector('input[name="kill_normal"]');
+        const assistNormal = document.querySelector('input[name="assist_normal"]');
+        if (killNormal) killNormal.value = '{{ edit_sub.kill_normal }}';
+        if (assistNormal) assistNormal.value = '{{ edit_sub.assist_normal }}';
+
+        // Load targets with the correct world/server, then fill values
+        if (worldSelect && serverSelect && targetsContainer) {
+            const worldId = worldSelect.value;
+            const server = serverSelect.value;
+            fetch(`/portal/api/war-point/get-target-config/?world_id=${worldId}&server=${server}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.config) {
+                        targetsContainer.innerHTML = '';
+                        const cfg = data.config;
+                        const editVals = {
+                            1: { k: {{ edit_sub.kill_top1 }}, a: {{ edit_sub.assist_top1 }} },
+                            2: { k: {{ edit_sub.kill_top2 }}, a: {{ edit_sub.assist_top2 }} },
+                            3: { k: {{ edit_sub.kill_top3 }}, a: {{ edit_sub.assist_top3 }} },
+                            4: { k: {{ edit_sub.kill_top4 }}, a: {{ edit_sub.assist_top4 }} },
+                            5: { k: {{ edit_sub.kill_top5 }}, a: {{ edit_sub.assist_top5 }} }
+                        };
+                        
+                        function createEditRow(num, name) {
+                            if (!name) return;
+                            const kVal = editVals[num] ? editVals[num].k : 0;
+                            const aVal = editVals[num] ? editVals[num].a : 0;
+                            const row = document.createElement('div');
+                            row.className = 'kill-assist-row';
+                            row.innerHTML = `
+                                <div class="form-group">
+                                    <label style="color:#e74c3c;">Kill ${name}</label>
+                                    <input type="number" min="0" value="${kVal}" required 
+                                        onfocus="if(this.value=='0') this.value='';" 
+                                        onblur="if(this.value=='') this.value='0';"
+                                        onchange="document.getElementById('val_kill_top${num}').value = this.value">
+                                </div>
+                                <div class="form-group">
+                                    <label style="color:#3498db;">Assist ${name}</label>
+                                    <input type="number" min="0" value="${aVal}" required 
+                                        onfocus="if(this.value=='0') this.value='';" 
+                                        onblur="if(this.value=='') this.value='0';"
+                                        onchange="document.getElementById('val_assist_top${num}').value = this.value">
+                                </div>
+                            `;
+                            targetsContainer.appendChild(row);
+                            // Sync hidden fields
+                            document.getElementById('val_kill_top' + num).value = kVal;
+                            document.getElementById('val_assist_top' + num).value = aVal;
+                        }
+                        
+                        createEditRow(1, cfg.top1_name);
+                        createEditRow(2, cfg.top2_name);
+                        createEditRow(3, cfg.top3_name);
+                        createEditRow(4, cfg.top4_name);
+                        createEditRow(5, cfg.top5_name);
+                        
+                        if(targetsContainer.innerHTML === '') {
+                            targetsContainer.innerHTML = '<p style="color:#888; font-size:0.85rem;">No specific targets configured for this World & Server.</p>';
+                        }
+                    }
+                })
+                .catch(err => console.error(err));
+        }
+        {% else %}
+        // Normal mode: load targets on page init
+        loadTargets();
+        {% endif %}
+    });
+
+    // Delete confirmation
+    function confirmDeleteSub(subPk) {
+        Swal.fire({
+            title: 'Delete Submission?',
+            text: 'This will permanently delete this submission.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e74c3c',
+            cancelButtonColor: '#555',
+            confirmButtonText: 'Yes, Delete!',
+            cancelButtonText: 'Cancel',
+            background: '#1e1e1e',
+            color: '#fff'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = '/portal/war-point/delete/' + subPk + '/';
+            }
+        });
     }
 </script>
 {% endblock %}

@@ -229,7 +229,7 @@
                                 {{ character.name }}
                             </a>
                         </td>
-                        <td style="padding: 15px;">{{ character.owner.username }}</td>
+                        <td style="padding: 15px;">{{ character.owner.username|default:"—" }}</td>
                         <td style="padding: 15px;">{{ character.character_class }}</td>
                         <td style="padding: 15px;">{{ character.level }}</td>
                         <td style="padding: 15px;">
@@ -237,6 +237,7 @@
                                 style="color: #4CAF50; margin-right: 15px; text-decoration: none;"
                                 title="Edit Character"><i class="fas fa-edit"></i></a>
 
+                            {% if character.owner %}
                             <!-- Reset Password: Super Admin sees all, Sub Admin sees only non-staff -->
                             {% if is_super_admin or not character.owner.is_staff %}
                             <a href="#"
@@ -246,8 +247,6 @@
                                 <i class="fas fa-key"></i>
                             </a>
                             {% endif %}
-
-
 
                             {% if is_super_admin %}
                             <!-- Toggle Admin Button -->
@@ -275,11 +274,22 @@
                                 <i class="fas fa-chart-line"></i>
                             </a>
 
-
-
                             <a href="{% url 'delete-character' character.pk %}"
                                 style="color: #E74C3C; text-decoration: none;" title="Delete Character"><i
                                     class="fas fa-trash"></i></a>
+                            {% endif %}
+                            {% else %}
+                            {% if is_super_admin %}
+                            <!-- No owner: only show activity + delete -->
+                            <a href="{% url 'member-activity' character.pk %}"
+                                style="color: #3498db; margin-right: 15px; text-decoration: none;"
+                                title="View Activity for {{ character.name }}">
+                                <i class="fas fa-chart-line"></i>
+                            </a>
+                            <a href="{% url 'delete-character' character.pk %}"
+                                style="color: #E74C3C; text-decoration: none;" title="Delete Character"><i
+                                    class="fas fa-trash"></i></a>
+                            {% endif %}
                             {% endif %}
                         </td>
                     </tr>

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Item, Character, SubclassStats, ActivityEvent, PlayerActivity, MonthlyReport, UniversalPowerRank, HallOfFame
+from .models import Item, Character, SubclassStats, ActivityEvent, PlayerActivity, MonthlyReport, UniversalPowerRank, HallOfFame, WarWorld, WarTargetConfig, WarPointConfig, WarPointSubmission
 from django.contrib import messages
 from django.utils import timezone
 from django import forms
@@ -138,5 +138,27 @@ class HallOfFameAdmin(admin.ModelAdmin):
     ordering = ['-contribution']
 
 admin.site.register(HallOfFame, HallOfFameAdmin)
+
 from items.models import FeatureToggle
 admin.site.register(FeatureToggle)
+
+# War Point Admins
+@admin.register(WarWorld)
+class WarWorldAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    search_fields = ('name',)
+
+@admin.register(WarTargetConfig)
+class WarTargetConfigAdmin(admin.ModelAdmin):
+    list_display = ('world', 'server', 'top1_name', 'top2_name', 'top3_name')
+    list_filter = ('world', 'server')
+
+@admin.register(WarPointConfig)
+class WarPointConfigAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'sync_to_activity', 'auto_delete_days')
+
+@admin.register(WarPointSubmission)
+class WarPointSubmissionAdmin(admin.ModelAdmin):
+    list_display = ('character', 'world', 'server', 'kill_count', 'assist_count', 'total_points', 'status', 'submitted_at')
+    list_filter = ('status', 'world', 'server')
+    search_fields = ('character__name',)

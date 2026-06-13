@@ -175,39 +175,43 @@ main{flex:1;overflow:hidden;max-width:1800px !important;width:95% !important}
 .bp-input{width:60px;padding:4px 6px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#fff;font-size:.85rem;text-align:center}
 .bp-input:focus{outline:none;border-color:#DAA520;box-shadow:0 0 5px rgba(218,165,32,.3)}
 @media(max-width:900px){
-    main { padding: 0 !important; margin: 0 !important; max-width: 100vw !important; overflow-x: hidden; }
-    .ac { margin: 0; border-radius: 0; border: none; height: auto; min-height: calc(100vh - var(--header-height)); box-shadow: none; display: block; }
-    .ah { padding: 15px 10px; }
-    .ah h1 { font-size: 1.2rem; }
-    .eii { padding: 6px 10px; font-size: 0.8rem; }
-    .boss-pts-editor { padding: 10px; }
-    .boss-pts-row { gap: 10px; }
-    .bp-input { width: 50px; font-size: 0.8rem; }
-    .acn { padding: 10px; height: auto; overflow-y: visible; }
-    .scanner-panel{grid-template-columns:1fr; margin-bottom: 10px;}
-    .scanner-card{align-items:flex-start;flex-direction:column; padding: 10px;}
-    .scan-result{text-align:left; font-size: 0.7rem;}
+    main { padding: 0 !important; margin: 0 auto !important; max-width: 100vw !important; width: 100% !important; overflow-x: hidden; }
+    #site-content { padding: 0 !important; margin: 0 !important; }
+    .ac { margin: 0 auto !important; border-radius: 0; border: none; height: auto; min-height: calc(100vh - var(--header-height)); box-shadow: none; display: block; }
+    .ah { padding: 12px 10px; text-align: center; }
+    .ah h1 { font-size: 1.1rem; justify-content: center; display: flex; align-items: center; gap: 8px; }
+    .ei { justify-content: center; margin-top: 12px; gap: 10px; }
+    .eii { padding: 4px 8px; font-size: 0.75rem; }
+    .boss-pts-editor { padding: 8px; margin-top: 10px; text-align: center; }
+    .boss-pts-row { justify-content: center; gap: 8px; }
+    .bp-input { width: 45px; font-size: 0.8rem; }
+    .acn { padding: 5px; height: auto; overflow-y: visible; }
+    .scanner-panel{grid-template-columns:1fr; margin-bottom: 5px;}
+    .scanner-card{align-items:center;flex-direction:column; padding: 10px; margin: 5px 0 !important; text-align: center;}
+    .scan-result{text-align:center; font-size: 0.7rem; width: 100%;}
+    .scan-controls { justify-content: center; width: 100%; flex-wrap: wrap; }
     .scan-btn { padding: 6px 10px; font-size: 0.75rem; }
-    .sab { padding: 10px; margin-bottom: 10px; flex-direction: column; align-items: flex-start; gap: 5px; }
-    .sab label { font-size: 0.8rem; }
+    .sab { padding: 10px; margin-bottom: 8px; flex-direction: column; align-items: center; text-align: center; gap: 5px; border-radius: 4px; }
+    .sab label { font-size: 0.75rem; }
     .sab input[type="checkbox"] { width: 16px; height: 16px; }
-    .attendance-layout { flex-direction: column; gap: 15px; }
-    .clan-col { border-radius: 8px; }
-    .clan-header { padding: 10px 12px; font-size: 0.9rem; }
-    .clan-search-input { padding: 6px 10px; font-size: 0.8rem; }
-    .table-wrapper { padding: 0 5px 5px 5px; max-height: unset; overflow-y: visible; }
-    .attendance-table tbody { grid-template-columns: 1fr; gap: 5px; }
-    .attendance-table td { padding: 4px; }
-    .member-name { font-size: 0.85rem !important; }
-    .att-col-info > div { font-size: 0.7rem !important; }
-    .v-badge { font-size: 0.55rem; padding: 2px 5px; }
+    .attendance-layout { flex-direction: column; gap: 10px; margin: 0; padding: 0; }
+    .clan-col { border-radius: 4px; border-left: none; border-right: none; }
+    .clan-header { padding: 8px 10px; font-size: 0.85rem; }
+    .clan-search-bar { padding: 5px; margin-bottom: 0; }
+    .clan-search-input { padding: 5px 8px; font-size: 0.8rem; }
+    .table-wrapper { padding: 0 0 5px 0; max-height: unset; overflow-y: visible; }
+    .attendance-table tbody { grid-template-columns: 1fr; gap: 3px; }
+    .attendance-table td { padding: 4px 2px; }
+    .member-name { font-size: 0.85rem !important; margin-left: 2px; }
+    .validation-stack { gap: 4px; margin-top: 3px; margin-left: 2px; }
+    .v-badge { font-size: 0.55rem; padding: 2px 4px; }
     .validation-toggle input { width: 10px; height: 10px; }
     .attendance-table input[type="checkbox"].ack { width: 14px; height: 14px; }
-    .boss-group { font-size: 0.7rem; gap: 5px; }
+    .boss-group { font-size: 0.7rem; gap: 4px; }
     .boss-chk { width: 12px; height: 12px; }
     .boss-group label { font-size: 0.65rem !important; }
-    .bc { flex-direction: column; gap: 10px; margin-top: 15px; }
-    .bsub, .bcan { padding: 10px 15px; font-size: 0.9rem; text-align: center; }
+    .bc { flex-direction: column; gap: 8px; margin-top: 10px; padding: 0 5px 15px 5px; }
+    .bsub, .bcan { padding: 10px; font-size: 0.9rem; text-align: center; }
 }
 </style>
 {% endblock %}

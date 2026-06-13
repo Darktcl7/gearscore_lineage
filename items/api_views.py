@@ -858,25 +858,44 @@ def api_submit_war_point(request):
     try:
         data = json.loads(request.body)
         discord_id = data.get('discord_id')
-        kill_count = data.get('kill_count', 0)
-        assist_count = data.get('assist_count', 0)
+        world_name = data.get('world_name')
+        server = data.get('server')
         image_url = data.get('image_url')
-        war_date_str = data.get('war_date')
         
-        if not all([discord_id, image_url, war_date_str]):
-            return JsonResponse({'error': 'Missing required fields'}, status=400)
+        kill_top1 = data.get('kill_top1', 0)
+        assist_top1 = data.get('assist_top1', 0)
+        kill_top2 = data.get('kill_top2', 0)
+        assist_top2 = data.get('assist_top2', 0)
+        kill_top3 = data.get('kill_top3', 0)
+        assist_top3 = data.get('assist_top3', 0)
+        kill_top4 = data.get('kill_top4', 0)
+        assist_top4 = data.get('assist_top4', 0)
+        kill_top5 = data.get('kill_top5', 0)
+        assist_top5 = data.get('assist_top5', 0)
+        kill_normal = data.get('kill_normal', 0)
+        assist_normal = data.get('assist_normal', 0)
+        
+        # Legacy fallback
+        if not world_name:
+            world_name = "Kain"
+        if not server:
+            server = 1
+        
+        if not discord_id or not image_url:
+            return JsonResponse({'error': 'Missing discord_id or image_url'}, status=400)
             
-        from items.models import Character, WarPointSubmission
+        from items.models import Character, WarPointSubmission, WarWorld
         import requests
         from django.core.files.base import ContentFile
-        from datetime import datetime
+        from django.utils import timezone
         
         try:
             character = Character.objects.get(owner__discord_id=discord_id, is_main=True)
         except Character.DoesNotExist:
             return JsonResponse({'error': 'Main character not found for this Discord ID'}, status=404)
             
-        war_date = datetime.strptime(war_date_str, '%Y-%m-%d').date()
+        world, _ = WarWorld.objects.get_or_create(name=world_name)
+        server = int(server)
         
         # Download image
         response = requests.get(image_url)
@@ -884,18 +903,54 @@ def api_submit_war_point(request):
             return JsonResponse({'error': 'Failed to download image from Discord'}, status=400)
             
         # Create submission
-        submission = WarPointSubmission.objects.create(
+        submission = WarPointSubmission(
             character=character,
-            war_date=war_date,
-            kill_count=int(kill_count),
-            assist_count=int(assist_count),
+            world=world,
+            server=server,
+            kill_top1=int(kill_top1),
+            assist_top1=int(assist_top1),
+            kill_top2=int(kill_top2),
+            assist_top2=int(assist_top2),
+            kill_top3=int(kill_top3),
+            assist_top3=int(assist_top3),
+            kill_top4=int(kill_top4),
+            assist_top4=int(assist_top4),
+            kill_top5=int(kill_top5),
+            assist_top5=int(assist_top5),
+            kill_normal=int(kill_normal) or int(data.get('kill_count', 0)),
+            assist_normal=int(assist_normal) or int(data.get('assist_count', 0)),
             status='PENDING'
         )
+        submission.calculate_points()
+        submission.save()
         
-        file_name = f"war_proof_{character.name}_{war_date_str}.jpg"
+        file_name = f"war_proof_{character.name}_{timezone.now().strftime('%Y%m%d%H%M')}.jpg"
         submission.screenshot.save(file_name, ContentFile(response.content), save=True)
         
         return JsonResponse({'success': True, 'submission_id': submission.pk})
         
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+
+
+@csrf_exempt
+def api_get_war_target_config(request):
+    try:
+        world_id = request.GET.get('world_id')
+        server = request.GET.get('server')
+        if not world_id or not server:
+            return JsonResponse({'error': 'Missing parameters'}, status=400)
+            
+        from items.models import WarTargetConfig
+        target_config = WarTargetConfig.objects.filter(world_id=world_id, server=int(server)).first()
+        
+        data = {
+            'top1_name': target_config.top1_name if target_config else '',
+            'top2_name': target_config.top2_name if target_config else '',
+            'top3_name': target_config.top3_name if target_config else '',
+            'top4_name': target_config.top4_name if target_config else '',
+            'top5_name': target_config.top5_name if target_config else '',
+        }
+        return JsonResponse({'success': True, 'config': data})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

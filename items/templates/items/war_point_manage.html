@@ -4,6 +4,8 @@
 {% block title %}War Point Management{% endblock %}
 
 {% block extra_head %}
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
     main { max-width:1400px !important; padding:20px !important; }
     .wpm-container {
@@ -357,26 +359,66 @@
                         {% csrf_token %}
                         <input type="hidden" name="update_settings" value="1">
 
-                        <div class="form-group">
-                            <label><i class="fas fa-skull-crossbones" style="color:#e74c3c;"></i> Points per Kill</label>
-                            <input type="number" name="kill_points" value="{{ config.kill_points }}" min="0" max="100">
+                        <h3 style="color:#DAA520; font-size:1rem; margin-top:0; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">Top Targets by World & Server</h3>
+                        
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <div class="form-group" style="flex:1;">
+                                <label style="font-size:0.75rem; color:#888;">Select World</label>
+                                <select name="world_id" onchange="window.location.href='?world='+this.value+'&server='+document.querySelector('select[name=server_id]').value">
+                                    {% for w in worlds %}
+                                    <option value="{{ w.id }}" {% if selected_world and selected_world.id == w.id %}selected{% endif %}>{{ w.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex:1;">
+                                <label style="font-size:0.75rem; color:#888;">Select Server</label>
+                                <select name="server_id" onchange="window.location.href='?world='+document.querySelector('select[name=world_id]').value+'&server='+this.value">
+                                    {% for i in "1234567890"|make_list %}
+                                    <option value="{{ forloop.counter }}" {% if selected_server == forloop.counter %}selected{% endif %}>Server {{ forloop.counter }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
                         </div>
 
-                        <div class="form-group">
-                            <label><i class="fas fa-hands-helping" style="color:#3498db;"></i> Points per Assist</label>
-                            <input type="number" name="assist_points" value="{{ config.assist_points }}" min="0" max="100">
+                        <div class="form-group" style="display:flex; gap:10px; margin-bottom:5px;">
+                            <div style="flex:2; font-size:0.75rem; color:#888;">Name</div>
+                            <div style="flex:1; font-size:0.75rem; color:#888;">Kill Pts</div>
+                            <div style="flex:1; font-size:0.75rem; color:#888;">Assist Pts</div>
+                        </div>
+                        <div class="form-group" style="display:flex; gap:10px;">
+                            <input type="text" name="top1_name" value="{{ target_config.top1_name|default_if_none:'' }}" placeholder="Top 1 Name" style="flex:2;">
+                            <input type="number" name="top1_kill" value="{{ target_config.top1_kill_points|default:100 }}" placeholder="K" style="flex:1;">
+                            <input type="number" name="top1_assist" value="{{ target_config.top1_assist_points|default:10 }}" placeholder="A" style="flex:1;">
+                        </div>
+                        <div class="form-group" style="display:flex; gap:10px;">
+                            <input type="text" name="top2_name" value="{{ target_config.top2_name|default_if_none:'' }}" placeholder="Top 2 Name" style="flex:2;">
+                            <input type="number" name="top2_kill" value="{{ target_config.top2_kill_points|default:50 }}" placeholder="K" style="flex:1;">
+                            <input type="number" name="top2_assist" value="{{ target_config.top2_assist_points|default:5 }}" placeholder="A" style="flex:1;">
+                        </div>
+                        <div class="form-group" style="display:flex; gap:10px;">
+                            <input type="text" name="top3_name" value="{{ target_config.top3_name|default_if_none:'' }}" placeholder="Top 3 Name" style="flex:2;">
+                            <input type="number" name="top3_kill" value="{{ target_config.top3_kill_points|default:50 }}" placeholder="K" style="flex:1;">
+                            <input type="number" name="top3_assist" value="{{ target_config.top3_assist_points|default:5 }}" placeholder="A" style="flex:1;">
+                        </div>
+                        <div class="form-group" style="display:flex; gap:10px;">
+                            <input type="text" name="top4_name" value="{{ target_config.top4_name|default_if_none:'' }}" placeholder="Top 4 Name" style="flex:2;">
+                            <input type="number" name="top4_kill" value="{{ target_config.top4_kill_points|default:50 }}" placeholder="K" style="flex:1;">
+                            <input type="number" name="top4_assist" value="{{ target_config.top4_assist_points|default:5 }}" placeholder="A" style="flex:1;">
+                        </div>
+                        <div class="form-group" style="display:flex; gap:10px;">
+                            <input type="text" name="top5_name" value="{{ target_config.top5_name|default_if_none:'' }}" placeholder="Top 5 Name" style="flex:2;">
+                            <input type="number" name="top5_kill" value="{{ target_config.top5_kill_points|default:50 }}" placeholder="K" style="flex:1;">
+                            <input type="number" name="top5_assist" value="{{ target_config.top5_assist_points|default:5 }}" placeholder="A" style="flex:1;">
                         </div>
 
-                        <div class="form-group">
-                            <label><i class="fas fa-trash-alt" style="color:#DAA520;"></i> Auto-Delete Images (Days)</label>
-                            <input type="number" name="auto_delete_days" value="{{ config.auto_delete_days }}" min="0" max="365">
-                            <div style="font-size: 0.75rem; color: #888; margin-top: 4px;">0 = never delete</div>
+                        <h3 style="color:#DAA520; font-size:1rem; margin-top:20px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">Normal Targets</h3>
+                        <div class="form-group" style="display:flex; gap:10px;">
+                            <div style="flex:2; font-size:0.85rem; color:#fff; display:flex; align-items:center;">Musuh Biasa (Selain Top 1-5)</div>
+                            <input type="number" name="normal_kill" value="{{ config.normal_kill_points }}" placeholder="Kill Pts" style="flex:1;">
+                            <input type="number" name="normal_assist" value="{{ config.normal_assist_points }}" placeholder="Assist Pts" style="flex:1;">
                         </div>
 
-                        <label class="checkbox-setting">
-                            <input type="checkbox" name="sync_to_activity" {% if config.sync_to_activity %}checked{% endif %}>
-                            <span>Sync War Points to Activity Points</span>
-                        </label>
+
 
                         <button type="submit" class="btn-save-settings">
                             <i class="fas fa-save"></i> Save Settings
@@ -392,68 +434,36 @@
                 </div>
                 <div class="wpm-card-body" style="padding: 0;">
                     {% if recent %}
-                    <form method="POST" id="recentDeleteForm">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="bulk_delete">
-                        <input type="hidden" name="submission_ids" id="submissionIdsInput" value="">
-                        
-                        <div style="max-height: 400px; overflow-y: auto;">
-                            {% for sub in recent %}
-                            <div class="recent-item" style="display: flex; align-items: center; gap: 10px;">
-                                <input type="checkbox" class="recent-cb" value="{{ sub.id }}" style="cursor: pointer;">
-                                <div style="flex: 1;">
-                                    <strong style="color:#ddd;">{{ sub.character.name }}</strong>
-                                    <span style="color:#888;"> — {{ sub.war_date|date:"d M" }}</span>
-                                </div>
-                                <span class="recent-status-{{ sub.status|lower }}">
-                                    {% if sub.status == 'APPROVED' %}<i class="fas fa-check"></i>{% else %}<i class="fas fa-times"></i>{% endif %}
-                                    {{ sub.total_points }}pts
-                                </span>
+                    <div style="max-height: 500px; overflow-y: auto;">
+                        {% for sub in recent %}
+                        <div class="recent-item" style="display: flex; align-items: center; gap: 10px;">
+                            <div style="flex: 1;">
+                                <strong style="color:#ddd;">{{ sub.character.name }}</strong>
+                                <span style="color:#888;"> — {% if sub.world %}{{ sub.world.name }} {{ sub.server }}{% endif %}</span>
                             </div>
-                            {% endfor %}
+                            <span class="recent-status-{{ sub.status|lower }}">
+                                {% if sub.status == 'APPROVED' %}<i class="fas fa-check"></i>{% else %}<i class="fas fa-times"></i>{% endif %}
+                                {{ sub.total_points }}pts
+                            </span>
                         </div>
-                        <div style="padding: 10px; border-top: 1px solid rgba(255,255,255,0.05); text-align: right;">
-                            <button type="button" onclick="showRecentDeleteModal()" style="background: rgba(231,76,60,0.2); color: #e74c3c; border: 1px solid rgba(231,76,60,0.3); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem;"><i class="fas fa-trash"></i> Hapus Terpilih</button>
-                        </div>
-                    </form>
-
-                    <!-- Delete Modal for Recent Reviews -->
-                    <div id="recentDeleteModal" class="ss-modal" style="flex-direction:column; z-index:1000;" onclick="if(event.target===this) closeRecentDeleteModal()">
-                        <div style="background: #1e1e1e; padding: 25px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; border: 1px solid rgba(231,76,60,0.3); position: relative;">
-                            <h3 style="margin-top: 0; color: #e74c3c;"><i class="fas fa-exclamation-triangle"></i> Konfirmasi Hapus</h3>
-                            <p id="recentDeleteModalMsg" style="color: #ddd; font-size: 0.95rem; margin-bottom: 25px;">Hapus data?</p>
-                            <div style="display: flex; gap: 15px; justify-content: center;">
-                                <button onclick="closeRecentDeleteModal()" style="padding: 8px 16px; background: rgba(255,255,255,0.1); border: none; border-radius: 6px; color: #fff; cursor: pointer; transition: 0.3s;">Batal</button>
-                                <button onclick="confirmRecentDelete()" style="padding: 8px 16px; background: #e74c3c; border: none; border-radius: 6px; color: #fff; cursor: pointer; font-weight: bold; transition: 0.3s;"><i class="fas fa-trash"></i> Hapus</button>
-                            </div>
-                        </div>
+                        {% endfor %}
                     </div>
                     
-                    <script>
-                    function showRecentDeleteModal() {
-                        var ids = [];
-                        document.querySelectorAll('.recent-cb:checked').forEach(function(cb) {
-                            ids.push(cb.value);
-                        });
-                        if (ids.length === 0) {
-                            alert('Pilih minimal 1 data untuk dihapus.');
-                            return;
-                        }
-                        document.getElementById('recentDeleteModalMsg').textContent = 'Hapus ' + ids.length + ' data war point secara permanen? Poin akan ikut terhapus.';
-                        document.getElementById('recentDeleteModal').classList.add('active');
-                    }
-                    function confirmRecentDelete() {
-                        var ids = [];
-                        document.querySelectorAll('.recent-cb:checked').forEach(function(cb) {
-                            ids.push(cb.value);
-                        });
-                        document.getElementById('submissionIdsInput').value = ids.join(',');
-                        document.getElementById('recentDeleteForm').submit();
-                    }
-                    function closeRecentDeleteModal() {
-                        document.getElementById('recentDeleteModal').classList.remove('active');
-                    }
-                    </script>
+                    {% if recent.has_other_pages %}
+                    <div style="display: flex; justify-content: center; gap: 5px; padding: 15px; border-top: 1px solid rgba(255,255,255,0.05);">
+                        {% if recent.has_previous %}
+                        <a href="?page={{ recent.previous_page_number }}&world={{ selected_world.id }}&server={{ selected_server }}" style="padding: 5px 10px; background: rgba(255,255,255,0.1); color: #fff; border-radius: 4px; text-decoration: none; font-size: 0.85rem;">&laquo; Prev</a>
+                        {% endif %}
+                        
+                        <span style="padding: 5px 10px; color: #888; font-size: 0.85rem;">
+                            Page {{ recent.number }} of {{ recent.paginator.num_pages }}
+                        </span>
+                        
+                        {% if recent.has_next %}
+                        <a href="?page={{ recent.next_page_number }}&world={{ selected_world.id }}&server={{ selected_server }}" style="padding: 5px 10px; background: rgba(255,255,255,0.1); color: #fff; border-radius: 4px; text-decoration: none; font-size: 0.85rem;">Next &raquo;</a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                     {% else %}
                     <div class="empty-state" style="padding: 20px;">
                         <p>No reviews yet.</p>
@@ -473,57 +483,16 @@
                     {% if pending %}
                     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 15px;">
                     {% for sub in pending %}
-                    <div class="pending-item" style="padding: 12px; margin-bottom: 0;">
-                        <div class="pending-top" style="margin-bottom: 8px;">
+                    <div class="pending-item" style="padding: 12px; margin-bottom: 0; cursor: pointer; transition: background 0.2s;" onclick="document.getElementById('modal-review-{{ sub.pk }}').classList.add('active');" onmouseover="this.style.background='rgba(255,255,255,0.08)';" onmouseout="this.style.background='rgba(255,255,255,0.03)';">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <div class="pending-player" style="font-size: 0.95rem;">{{ sub.character.name }}</div>
-                                <div class="pending-date" style="font-size: 0.75rem;">
-                                    <i class="fas fa-calendar"></i> War: {{ sub.war_date|date:"d M Y" }}
-                                    &nbsp;·&nbsp;
-                                    <i class="fas fa-clock"></i> Sub: {{ sub.submitted_at|date:"d M, H:i" }}
-                                </div>
-                                {% if sub.admin_notes %}
-                                <div style="font-size: 0.75rem; color: #f39c12; margin-top: 4px;">{{ sub.admin_notes }}</div>
-                                {% endif %}
+                                <strong style="color: #fff;">{{ sub.character.name }}</strong>
+                                <div style="font-size: 0.8rem; color: #aaa;"><i class="fas fa-globe"></i> {% if sub.world %}{{ sub.world.name }} {{ sub.server }}{% endif %} · {{ sub.submitted_at|date:"d M, H:i" }}</div>
+                            </div>
+                            <div style="text-align: right; font-size: 0.9rem;">
+                                <span style="color: #DAA520; font-weight: bold;">{{ sub.total_points }} pts</span>
                             </div>
                         </div>
-
-                        <form method="POST" id="form-approve-{{ sub.pk }}" style="margin: 0;">
-                            {% csrf_token %}
-                            <input type="hidden" name="review_submission" value="1">
-                            <input type="hidden" name="submission_id" value="{{ sub.pk }}">
-                            <input type="hidden" name="action" value="approve">
-
-                            <div class="pending-stats" style="gap: 8px; margin-bottom: 8px;">
-                                <div class="stat-box stat-kill" style="padding: 6px;">
-                                    <input type="number" name="kill_count" value="{{ sub.kill_count }}" style="width:100%; text-align:center; background:transparent; border:1px solid rgba(231,76,60,0.3); color:#e74c3c; font-size:1.1rem; font-weight:700; border-radius:4px; padding:2px;">
-                                    <div class="stat-label" style="font-size: 0.65rem;">Kill</div>
-                                </div>
-                                <div class="stat-box stat-assist" style="padding: 6px;">
-                                    <input type="number" name="assist_count" value="{{ sub.assist_count }}" style="width:100%; text-align:center; background:transparent; border:1px solid rgba(52,152,219,0.3); color:#3498db; font-size:1.1rem; font-weight:700; border-radius:4px; padding:2px;">
-                                    <div class="stat-label" style="font-size: 0.65rem;">Assist</div>
-                                </div>
-                                <div class="stat-box stat-total" style="padding: 6px;">
-                                    <div class="stat-val" style="font-size: 1.1rem;">{{ sub.total_points }}</div>
-                                    <div class="stat-label" style="font-size: 0.65rem;">Pts</div>
-                                </div>
-                            </div>
-
-                            <div class="pending-screenshot" style="padding: 6px; margin-bottom: 8px;">
-                                <a href="{{ sub.screenshot.url }}" target="_blank" onclick="event.preventDefault(); showScreenshot('{{ sub.screenshot.url }}');" style="font-size: 0.85rem;">
-                                    <i class="fas fa-image"></i> View Screenshot
-                                </a>
-                            </div>
-
-                            <div class="pending-actions" style="margin-top: 0;">
-                                <input type="text" name="admin_notes" id="notes-{{ sub.pk }}" placeholder="Notes (required for reject)..." style="width: 100%; padding: 8px 10px; font-size: 0.85rem; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; margin-bottom: 8px; box-sizing: border-box;">
-                                
-                                <div style="display: flex; gap: 8px;">
-                                    <button type="submit" name="action" value="approve" class="btn-approve" style="flex: 1; padding: 8px; font-size: 0.85rem;" onclick="return confirm('Approve this submission?');"><i class="fas fa-check"></i> Approve</button>
-                                    <button type="submit" name="action" value="reject" class="btn-reject" style="flex: 1; padding: 8px; font-size: 0.85rem;" onclick="if(!document.getElementById('notes-{{ sub.pk }}').value.trim()) { alert('Keterangan (Notes) wajib diisi jika ingin Reject!'); return false; } return confirm('Reject this submission?');"><i class="fas fa-times"></i> Reject</button>
-                                </div>
-                            </div>
-                        </form>
                     </div>
                     {% endfor %}
                     </div>
@@ -540,6 +509,124 @@
     </div> <!-- end wpm-wrap -->
 </div>
 
+<!-- Modals outside wpm-wrap to avoid backdrop-filter issues -->
+{% for sub in pending %}
+<!-- Review Modal for {{ sub.pk }} -->
+<div class="ss-modal" id="modal-review-{{ sub.pk }}" style="flex-direction:column; z-index:1000; align-items:center;" onclick="if(event.target===this) this.classList.remove('active');">
+    <div style="background: #1e1e1e; padding: 25px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; text-align: left; border: 1px solid rgba(255,255,255,0.1); position: relative;">
+        <span onclick="document.getElementById('modal-review-{{ sub.pk }}').classList.remove('active');" style="position:absolute; top:15px; right:20px; font-size:24px; color:#aaa; cursor:pointer;">&times;</span>
+        
+        <h3 style="margin-top:0; color:#fff; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;"><i class="fas fa-search"></i> Review: {{ sub.character.name }}</h3>
+        
+        <!-- Kill Details -->
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; font-size: 0.9rem;">
+            {% if sub.target_cfg %}
+                {% if sub.target_cfg.top1_name %}
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
+                    <span><strong style="color: #e74c3c;">Top 1:</strong> {{ sub.target_cfg.top1_name }}</span>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <input type="number" min="0" name="kill_top1" value="{{ sub.kill_top1 }}" form="form-review-{{ sub.pk }}" style="width: 45px; background: rgba(0,0,0,0.3); border: 1px solid rgba(231,76,60,0.5); color: #fff; text-align: center; border-radius: 4px; padding: 2px;"> <span style="color:#e74c3c; font-size:0.8rem;">K</span>
+                        <input type="number" min="0" name="assist_top1" value="{{ sub.assist_top1 }}" form="form-review-{{ sub.pk }}" style="width: 45px; background: rgba(0,0,0,0.3); border: 1px solid rgba(52,152,219,0.5); color: #fff; text-align: center; border-radius: 4px; padding: 2px;"> <span style="color:#3498db; font-size:0.8rem;">A</span>
+                    </div>
+                </div>
+                {% endif %}
+                {% if sub.target_cfg.top2_name %}
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
+                    <span><strong style="color: #e74c3c;">Top 2:</strong> {{ sub.target_cfg.top2_name }}</span>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <input type="number" min="0" name="kill_top2" value="{{ sub.kill_top2 }}" form="form-review-{{ sub.pk }}" style="width: 45px; background: rgba(0,0,0,0.3); border: 1px solid rgba(231,76,60,0.5); color: #fff; text-align: center; border-radius: 4px; padding: 2px;"> <span style="color:#e74c3c; font-size:0.8rem;">K</span>
+                        <input type="number" min="0" name="assist_top2" value="{{ sub.assist_top2 }}" form="form-review-{{ sub.pk }}" style="width: 45px; background: rgba(0,0,0,0.3); border: 1px solid rgba(52,152,219,0.5); color: #fff; text-align: center; border-radius: 4px; padding: 2px;"> <span style="color:#3498db; font-size:0.8rem;">A</span>
+                    </div>
+                </div>
+                {% endif %}
+                {% if sub.target_cfg.top3_name %}
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
+                    <span><strong style="color: #e74c3c;">Top 3:</strong> {{ sub.target_cfg.top3_name }}</span>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <input type="number" min="0" name="kill_top3" value="{{ sub.kill_top3 }}" form="form-review-{{ sub.pk }}" style="width: 45px; background: rgba(0,0,0,0.3); border: 1px solid rgba(231,76,60,0.5); color: #fff; text-align: center; border-radius: 4px; padding: 2px;"> <span style="color:#e74c3c; font-size:0.8rem;">K</span>
+                        <input type="number" min="0" name="assist_top3" value="{{ sub.assist_top3 }}" form="form-review-{{ sub.pk }}" style="width: 45px; background: rgba(0,0,0,0.3); border: 1px solid rgba(52,152,219,0.5); color: #fff; text-align: center; border-radius: 4px; padding: 2px;"> <span style="color:#3498db; font-size:0.8rem;">A</span>
+                    </div>
+                </div>
+                {% endif %}
+                {% if sub.target_cfg.top4_name %}
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
+                    <span><strong style="color: #e74c3c;">Top 4:</strong> {{ sub.target_cfg.top4_name }}</span>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <input type="number" min="0" name="kill_top4" value="{{ sub.kill_top4 }}" form="form-review-{{ sub.pk }}" style="width: 45px; background: rgba(0,0,0,0.3); border: 1px solid rgba(231,76,60,0.5); color: #fff; text-align: center; border-radius: 4px; padding: 2px;"> <span style="color:#e74c3c; font-size:0.8rem;">K</span>
+                        <input type="number" min="0" name="assist_top4" value="{{ sub.assist_top4 }}" form="form-review-{{ sub.pk }}" style="width: 45px; background: rgba(0,0,0,0.3); border: 1px solid rgba(52,152,219,0.5); color: #fff; text-align: center; border-radius: 4px; padding: 2px;"> <span style="color:#3498db; font-size:0.8rem;">A</span>
+                    </div>
+                </div>
+                {% endif %}
+                {% if sub.target_cfg.top5_name %}
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
+                    <span><strong style="color: #e74c3c;">Top 5:</strong> {{ sub.target_cfg.top5_name }}</span>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <input type="number" min="0" name="kill_top5" value="{{ sub.kill_top5 }}" form="form-review-{{ sub.pk }}" style="width: 45px; background: rgba(0,0,0,0.3); border: 1px solid rgba(231,76,60,0.5); color: #fff; text-align: center; border-radius: 4px; padding: 2px;"> <span style="color:#e74c3c; font-size:0.8rem;">K</span>
+                        <input type="number" min="0" name="assist_top5" value="{{ sub.assist_top5 }}" form="form-review-{{ sub.pk }}" style="width: 45px; background: rgba(0,0,0,0.3); border: 1px solid rgba(52,152,219,0.5); color: #fff; text-align: center; border-radius: 4px; padding: 2px;"> <span style="color:#3498db; font-size:0.8rem;">A</span>
+                    </div>
+                </div>
+                {% endif %}
+            {% else %}
+                <div style="color: #aaa; font-style: italic;">(No special targets configured for this server)</div>
+            {% endif %}
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
+                <span><strong style="color: #3498db;">Normal Enemy:</strong></span>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <input type="number" min="0" name="kill_normal" value="{{ sub.kill_normal }}" form="form-review-{{ sub.pk }}" style="width: 45px; background: rgba(0,0,0,0.3); border: 1px solid rgba(231,76,60,0.5); color: #fff; text-align: center; border-radius: 4px; padding: 2px;"> <span style="color:#e74c3c; font-size:0.8rem;">K</span>
+                    <input type="number" min="0" name="assist_normal" value="{{ sub.assist_normal }}" form="form-review-{{ sub.pk }}" style="width: 45px; background: rgba(0,0,0,0.3); border: 1px solid rgba(52,152,219,0.5); color: #fff; text-align: center; border-radius: 4px; padding: 2px;"> <span style="color:#3498db; font-size:0.8rem;">A</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stats summary -->
+        <div class="pending-stats" style="gap: 8px; margin-bottom: 20px;">
+            <div class="stat-box stat-kill" style="padding: 10px;">
+                <div class="stat-val" style="font-size: 1.3rem; color:#e74c3c;">{{ sub.kill_count }}</div>
+                <div class="stat-label" style="font-size: 0.75rem;">Total Kill</div>
+            </div>
+            <div class="stat-box stat-assist" style="padding: 10px;">
+                <div class="stat-val" style="font-size: 1.3rem; color:#3498db;">{{ sub.assist_count }}</div>
+                <div class="stat-label" style="font-size: 0.75rem;">Total Assist</div>
+            </div>
+            <div class="stat-box stat-total" style="padding: 10px;">
+                <div class="stat-val" style="font-size: 1.3rem; color:#DAA520;">{{ sub.total_points }}</div>
+                <div class="stat-label" style="font-size: 0.75rem;">Pts Calculated</div>
+            </div>
+        </div>
+        
+        <!-- Images -->
+        <h4 style="margin-top:0; color:#fff; font-size: 0.95rem;">Screenshots:</h4>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+            {% if sub.screenshot and not sub.proof_images.all %}
+            <div style="width: 80px; height: 80px; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2);">
+                <img src="{{ sub.screenshot.url }}" onclick="showScreenshot('{{ sub.screenshot.url }}')" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;">
+            </div>
+            {% endif %}
+            {% for img in sub.proof_images.all %}
+            <div style="width: 80px; height: 80px; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2);">
+                <img src="{{ img.image.url }}" onclick="showScreenshot('{{ img.image.url }}')" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;">
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Form Actions -->
+        <form method="POST" id="form-review-{{ sub.pk }}" style="margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="review_submission" value="1">
+            <input type="hidden" name="submission_id" value="{{ sub.pk }}">
+            <input type="hidden" name="action" id="action-{{ sub.pk }}" value="">
+            
+            <input type="text" name="admin_notes" id="notes-{{ sub.pk }}" placeholder="Notes (required for reject)..." style="width: 100%; padding: 10px; font-size: 0.9rem; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: #fff; margin-bottom: 15px; box-sizing: border-box;">
+            
+            <div style="display: flex; gap: 10px;">
+                <button type="button" style="flex: 1; padding: 12px; font-size: 0.95rem; background: linear-gradient(135deg, #2ecc71, #27ae60); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" onclick="confirmAction('approve', {{ sub.pk }});"><i class="fas fa-check"></i> Approve</button>
+                <button type="button" style="flex: 1; padding: 12px; font-size: 0.95rem; background: rgba(231,76,60,0.9); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" onclick="confirmAction('reject', {{ sub.pk }});"><i class="fas fa-times"></i> Reject</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
 <!-- Screenshot Preview Modal -->
 <div class="ss-modal" id="ss-modal" onclick="this.classList.remove('active')">
     <span class="ss-modal-close" onclick="document.getElementById('ss-modal').classList.remove('active')">&times;</span>
@@ -550,6 +637,44 @@
 function showScreenshot(url) {
     document.getElementById('ss-modal-img').src = url;
     document.getElementById('ss-modal').classList.add('active');
+}
+
+function confirmAction(actionType, subPk) {
+    const notesInput = document.getElementById('notes-' + subPk);
+    
+    if (actionType === 'reject' && !notesInput.value.trim()) {
+        Swal.fire({
+            title: 'Notes Required!',
+            text: 'Admin notes are required when rejecting a submission.',
+            icon: 'warning',
+            background: '#1e1e1e',
+            color: '#fff',
+            confirmButtonColor: '#e74c3c'
+        });
+        return;
+    }
+    
+    const titleText = actionType === 'approve' ? 'Approve Submission?' : 'Reject Submission?';
+    const bodyText = actionType === 'approve' ? 'Points will be awarded to the player.' : 'This submission will be permanently rejected.';
+    const confirmColor = actionType === 'approve' ? '#2ecc71' : '#e74c3c';
+    
+    Swal.fire({
+        title: titleText,
+        text: bodyText,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: confirmColor,
+        cancelButtonColor: '#555',
+        confirmButtonText: 'Yes, Proceed!',
+        cancelButtonText: 'Cancel',
+        background: '#1e1e1e',
+        color: '#fff'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('action-' + subPk).value = actionType;
+            document.getElementById('form-review-' + subPk).submit();
+        }
+    });
 }
 </script>
 {% endblock %}

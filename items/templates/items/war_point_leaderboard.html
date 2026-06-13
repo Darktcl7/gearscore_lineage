@@ -1,0 +1,327 @@
+{% extends 'items/base.html' %}
+{% load static %}
+{% block title %}War Point Leaderboard - Valkyrie{% endblock %}
+
+{% block content %}
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+    .wp-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+        max-width: 1300px;
+        margin: 0 auto;
+        animation: fadeIn 0.8s ease-out forwards;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .wp-card {
+        background: rgba(20, 10, 5, 0.85);
+        border: 1px solid rgba(170, 134, 71, 0.3);
+        border-radius: 12px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .wp-card-header {
+        background: linear-gradient(135deg, rgba(80, 20, 20, 0.9), rgba(120, 40, 20, 0.9));
+        padding: 20px 30px;
+        border-bottom: 2px solid rgba(212, 175, 55, 0.5);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .wp-card-header h2 {
+        margin: 0;
+        font-family: 'Cinzel', serif;
+        font-size: 1.4rem;
+        color: #fff;
+        text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .wp-card-body {
+        padding: 30px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .lb-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .lb-table th {
+        background: rgba(0,0,0,0.5);
+        color: var(--gold-light);
+        padding: 15px 20px;
+        text-align: left;
+        font-family: 'Cinzel', serif;
+        border-bottom: 1px solid rgba(170, 134, 71, 0.3);
+    }
+    .lb-table td {
+        padding: 15px 20px;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        color: #d0d0d0;
+    }
+    .lb-table tr:hover td {
+        background: rgba(255,255,255,0.02);
+    }
+    .rank-1 { color: #FFD700; font-weight: bold; font-size: 1.2rem; }
+    .rank-2 { color: #C0C0C0; font-weight: bold; font-size: 1.1rem; }
+    .rank-3 { color: #CD7F32; font-weight: bold; font-size: 1.1rem; }
+    
+    .empty-state {
+        text-align: center;
+        padding: 50px 20px;
+        color: #888;
+    }
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        opacity: 0.5;
+    }
+
+    .lb-admin-btn {
+        width: 34px; height: 34px;
+        display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 6px; border: 1px solid;
+        cursor: pointer; font-size: 0.9rem;
+        transition: all 0.2s; text-decoration: none;
+    }
+
+    /* Proof/Screenshot icon */
+    .proof-icon {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 30px; height: 30px; border-radius: 6px; cursor: pointer;
+        transition: all 0.3s; font-size: 0.8rem; position: relative;
+    }
+    .proof-icon.has-proof { background: rgba(50, 200, 100, 0.15); color: #88ffaa; border: 1px solid rgba(50, 200, 100, 0.3); }
+    .proof-icon.has-proof:hover { background: rgba(50, 200, 100, 0.3); transform: scale(1.15); box-shadow: 0 0 12px rgba(50, 200, 100, 0.3); }
+    .proof-icon.no-proof { background: rgba(255, 255, 255, 0.03); color: #555; border: 1px solid rgba(255, 255, 255, 0.06); cursor: default; }
+    .proof-count {
+        position: absolute; top: -6px; right: -6px; min-width: 16px; height: 16px;
+        background: #b88aff; color: #fff; font-size: 0.55rem; font-weight: 700;
+        border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 0 3px;
+    }
+
+    /* Screenshot Modal */
+    .ss-modal-overlay {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.9); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(8px);
+    }
+    .ss-modal-overlay.active { display: flex; }
+    .ss-modal-content { position: relative; max-width: 90vw; max-height: 85vh; text-align: center; }
+    .ss-modal-content img { max-width: 100%; max-height: 80vh; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5); }
+    .ss-modal-name { margin-top: 12px; color: #ccc; font-size: 0.9rem; }
+    .ss-modal-close {
+        position: absolute; top: -15px; right: -15px; width: 36px; height: 36px;
+        background: rgba(255, 60, 60, 0.8); color: #fff; border: none; border-radius: 50%;
+        cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; z-index: 10000;
+    }
+    .ss-modal-close:hover { background: #ff2222; transform: scale(1.1); }
+    .ss-nav {
+        position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px;
+        background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; z-index: 10000;
+    }
+    .ss-nav:hover { background: rgba(150, 100, 255, 0.4); border-color: rgba(150, 100, 255, 0.6); }
+    .ss-nav-prev { left: -55px; }
+    .ss-nav-next { right: -55px; }
+    .ss-modal-counter { margin-top: 6px; color: #888; font-size: 0.8rem; }
+    @media (max-width: 600px) {
+        .ss-nav-prev { left: 5px; }
+        .ss-nav-next { right: 5px; }
+        .ss-nav { width: 32px; height: 32px; font-size: 0.8rem; }
+    }
+</style>
+
+<div class="wp-wrap">
+    <div class="wp-card wp-card-full">
+        <div class="wp-card-header">
+            <h2><i class="fas fa-trophy"></i> Leaderboard - {{ current_month }}</h2>
+            {% if is_admin_user %}
+            <div style="display: flex; gap: 8px;">
+                <a href="{% url 'war-point-export-pdf' %}" title="Download Leaderboard (PDF)" class="lb-admin-btn" style="background: rgba(46,204,113,0.15); color: #2ecc71; border-color: rgba(46,204,113,0.3);" onmouseover="this.style.background='rgba(46,204,113,0.35)'" onmouseout="this.style.background='rgba(46,204,113,0.15)'"><i class="fas fa-file-pdf"></i></a>
+                <button type="button" onclick="confirmDeleteAll()" title="Delete All War Point Data" class="lb-admin-btn" style="background: rgba(231,76,60,0.15); color: #e74c3c; border-color: rgba(231,76,60,0.3);" onmouseover="this.style.background='rgba(231,76,60,0.35)'" onmouseout="this.style.background='rgba(231,76,60,0.15)'"><i class="fas fa-trash-alt"></i></button>
+            </div>
+            {% endif %}
+        </div>
+        <div class="wp-card-body" style="padding: 0;">
+            {% if leaderboard %}
+            <table class="lb-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="vertical-align:middle;">#</th>
+                        <th rowspan="2" style="vertical-align:middle;">Player</th>
+                        <th colspan="2" style="text-align:center; border-bottom:1px solid rgba(231,76,60,0.3); color:#e74c3c;"><i class="fas fa-crosshairs"></i> Top 1</th>
+                        <th colspan="2" style="text-align:center; border-bottom:1px solid rgba(230,126,34,0.3); color:#e67e22;"><i class="fas fa-crosshairs"></i> Top 2-5</th>
+                        <th colspan="2" style="text-align:center; border-bottom:1px solid rgba(149,165,166,0.3); color:#95a5a6;"><i class="fas fa-users"></i> Normal</th>
+                        <th rowspan="2" style="text-align:center; vertical-align:middle; color:#e74c3c;"><i class="fas fa-skull-crossbones"></i> Kill</th>
+                        <th rowspan="2" style="text-align:center; vertical-align:middle; color:#3498db;"><i class="fas fa-hands-helping"></i> Assist</th>
+                        <th rowspan="2" style="text-align:center; vertical-align:middle;">Points</th>
+                        <th rowspan="2" style="text-align:center; vertical-align:middle; width:60px;" title="Screenshot Bukti">Proof</th>
+                    </tr>
+                    <tr>
+                        <th style="text-align:center; font-size:0.7rem; color:#e74c3c;">K</th>
+                        <th style="text-align:center; font-size:0.7rem; color:#3498db;">A</th>
+                        <th style="text-align:center; font-size:0.7rem; color:#e67e22;">K</th>
+                        <th style="text-align:center; font-size:0.7rem; color:#3498db;">A</th>
+                        <th style="text-align:center; font-size:0.7rem; color:#95a5a6;">K</th>
+                        <th style="text-align:center; font-size:0.7rem; color:#3498db;">A</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in leaderboard %}
+                    <tr>
+                        <td class="{% if forloop.counter == 1 %}rank-1{% elif forloop.counter == 2 %}rank-2{% elif forloop.counter == 3 %}rank-3{% endif %}">
+                            {{ forloop.counter }}
+                        </td>
+                        <td>
+                            <strong style="color: #fff;">{{ p.character__name }}</strong>
+                            {% if p.character__clan %}
+                            <br><small style="color: #888;">{{ p.character__clan }}</small>
+                            {% endif %}
+                        </td>
+                        <td style="text-align:center; color: #e74c3c; font-weight: bold;">{{ p.top1_kills|default:"0" }}</td>
+                        <td style="text-align:center; color: #3498db;">{{ p.top1_assists|default:"0" }}</td>
+                        <td style="text-align:center; color: #e67e22;">{{ p.top2_5_kills|default:"0" }}</td>
+                        <td style="text-align:center; color: #3498db;">{{ p.top2_5_assists|default:"0" }}</td>
+                        <td style="text-align:center; color: #95a5a6;">{{ p.normal_kills|default:"0" }}</td>
+                        <td style="text-align:center; color: #3498db;">{{ p.normal_assists|default:"0" }}</td>
+                        <td style="text-align:center; color: #e74c3c;">{{ p.total_kills }}</td>
+                        <td style="text-align:center; color: #3498db;">{{ p.total_assists }}</td>
+                        <td style="text-align:center; color: var(--gold-light); font-weight: bold;">{{ p.total_points }}</td>
+                        <td style="text-align: center;">
+                            {% if p.images %}
+                            <span class="proof-icon has-proof" 
+                                onclick="openGallery('{{ p.character__name|escapejs }}', [{% for img in p.images %}'{{ img }}'{% if not forloop.last %},{% endif %}{% endfor %}])" 
+                                title="View {{ p.images|length }} screenshot{{ p.images|length|pluralize }}">
+                                <i class="fas fa-images"></i>
+                                {% if p.images|length > 1 %}
+                                <span class="proof-count">{{ p.images|length }}</span>
+                                {% endif %}
+                            </span>
+                            {% else %}
+                            <span class="proof-icon no-proof" title="No screenshots">
+                                <i class="fas fa-minus"></i>
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-trophy"></i>
+                <p>No data available for this month.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Screenshot Gallery Modal -->
+<div class="ss-modal-overlay" id="ssModal" onclick="closeGallery(event)">
+    <div class="ss-modal-content">
+        <button class="ss-modal-close" onclick="closeGalleryBtn()">
+            <i class="fas fa-times"></i>
+        </button>
+        <button class="ss-nav ss-nav-prev" id="ssPrev" onclick="prevImage(event)">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <img src="" alt="Screenshot" id="ssModalImg">
+        <button class="ss-nav ss-nav-next" id="ssNext" onclick="nextImage(event)">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+        <div class="ss-modal-name" id="ssModalName"></div>
+        <div class="ss-modal-counter" id="ssCounter"></div>
+    </div>
+</div>
+
+<!-- Delete All Confirmation Form (hidden) -->
+<form id="form-delete-all" method="POST" action="{% url 'war-point-delete-all' %}">
+    {% csrf_token %}
+</form>
+
+<script>
+function confirmDeleteAll() {
+    Swal.fire({
+        title: 'Delete All War Point Data?',
+        text: 'This will permanently delete ALL approved submissions, recent reviews, and their associated images. This action cannot be undone!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#555',
+        confirmButtonText: 'Yes, Delete Everything!',
+        cancelButtonText: 'Cancel',
+        background: '#1e1e1e',
+        color: '#fff'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('form-delete-all').submit();
+        }
+    });
+}
+
+// Screenshot Gallery JS
+let galleryImages = [];
+let galleryIndex = 0;
+let galleryName = '';
+
+function openGallery(name, images) {
+    galleryImages = images;
+    galleryIndex = 0;
+    galleryName = name;
+    showGalleryImage();
+    document.getElementById('ssModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function showGalleryImage() {
+    document.getElementById('ssModalImg').src = galleryImages[galleryIndex];
+    document.getElementById('ssModalName').textContent = 'War Point Proofs — ' + galleryName;
+    document.getElementById('ssCounter').textContent = (galleryIndex + 1) + ' / ' + galleryImages.length;
+    document.getElementById('ssPrev').style.display = galleryImages.length > 1 ? 'flex' : 'none';
+    document.getElementById('ssNext').style.display = galleryImages.length > 1 ? 'flex' : 'none';
+}
+
+function prevImage(e) {
+    e.stopPropagation();
+    galleryIndex = (galleryIndex - 1 + galleryImages.length) % galleryImages.length;
+    showGalleryImage();
+}
+
+function nextImage(e) {
+    e.stopPropagation();
+    galleryIndex = (galleryIndex + 1) % galleryImages.length;
+    showGalleryImage();
+}
+
+function closeGallery(e) {
+    if (e.target === document.getElementById('ssModal')) {
+        closeGalleryBtn();
+    }
+}
+
+function closeGalleryBtn() {
+    document.getElementById('ssModal').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeGalleryBtn();
+    if (e.key === 'ArrowLeft' && document.getElementById('ssModal').classList.contains('active')) prevImage(e);
+    if (e.key === 'ArrowRight' && document.getElementById('ssModal').classList.contains('active')) nextImage(e);
+});
+</script>
+{% endblock %}

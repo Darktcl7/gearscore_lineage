@@ -187,7 +187,12 @@ urlpatterns = [
     
     # War Point System
     path('war-point/', __import__('items.views', fromlist=['war_point_page']).war_point_page, name='war-point'),
+    path('war-point/edit/<int:sub_id>/', __import__('items.views', fromlist=['war_point_page']).war_point_page, name='war-point-edit'),
+    path('war-point/delete/<int:sub_id>/', __import__('items.views', fromlist=['delete_war_point_sub']).delete_war_point_sub, name='war-point-delete'),
     path('war-point/manage/', __import__('items.views', fromlist=['war_point_manage']).war_point_manage, name='war-point-manage'),
+    path('war-point/leaderboard/', __import__('items.views', fromlist=['war_point_leaderboard']).war_point_leaderboard, name='war-point-leaderboard'),
+    path('war-point/leaderboard/delete-all/', __import__('items.views', fromlist=['war_point_delete_all']).war_point_delete_all, name='war-point-delete-all'),
+    path('war-point/leaderboard/export-pdf/', __import__('items.views', fromlist=['war_point_export_pdf']).war_point_export_pdf, name='war-point-export-pdf'),
     path('war-point/analyze-image/', __import__('items.views', fromlist=['analyze_war_image']).analyze_war_image, name='analyze-war-image'),
     
     # Party Scanner System
@@ -289,6 +294,11 @@ urlpatterns = [
     path('api/war-point/submit/', 
          __import__('items.api_views', fromlist=['api_submit_war_point']).api_submit_war_point, 
          name='api-submit-war-point'),
+
+    # API: Get War Target Config
+    path('api/war-point/get-target-config/', 
+         __import__('items.api_views', fromlist=['api_get_war_target_config']).api_get_war_target_config, 
+         name='api-get-war-target-config'),
     
     # ===============================================
     # 6. DISCORD LINK

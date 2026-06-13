@@ -735,9 +735,17 @@
                     </div>
                 </div>
 
-                <!-- WAR POINT MENU -->
-                <a href="{% url 'war-point' %}"
-                    class="{% if request.resolver_match.url_name == 'war-point' or request.resolver_match.url_name == 'war-point-manage' %}active{% endif %}">War Point</a>
+                <!-- WAR POINT MENU (DROPDOWN) -->
+                <div class="dropdown">
+                    <a href="#" class="dropbtn" style="cursor: default;">War Point ▾</a>
+                    <div class="dropdown-content">
+                        {% if user.is_staff or user.admin_role.is_warpoint_admin %}
+                        <a href="{% url 'war-point-manage' %}" style="color: #FF7777;">War Point Control</a>
+                        {% endif %}
+                        <a href="{% url 'war-point' %}">Submit / History</a>
+                        <a href="{% url 'war-point-leaderboard' %}">Leaderboard</a>
+                    </div>
+                </div>
 
                 <!-- PARTY SCANNER REMOVED (testing only) -->
 

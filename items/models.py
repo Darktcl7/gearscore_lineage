@@ -2145,10 +2145,67 @@ class EventCheckInProof(models.Model):
         return f"Proof for {self.event.name} by {self.submitter.name}"
 
 
+class WarWorld(models.Model):
+    name = models.CharField("World Name", max_length=50, unique=True)
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "War World"
+        verbose_name_plural = "War Worlds"
+
+class WarTargetConfig(models.Model):
+    world = models.ForeignKey(WarWorld, on_delete=models.CASCADE)
+    server = models.IntegerField(default=1)
+    
+    top1_name = models.CharField("Top 1 Name", max_length=100, blank=True, null=True)
+    top1_kill_points = models.IntegerField("Top 1 Kill Points", default=100)
+    top1_assist_points = models.IntegerField("Top 1 Assist Points", default=10)
+    
+    top2_name = models.CharField("Top 2 Name", max_length=100, blank=True, null=True)
+    top2_kill_points = models.IntegerField("Top 2 Kill Points", default=50)
+    top2_assist_points = models.IntegerField("Top 2 Assist Points", default=5)
+    
+    top3_name = models.CharField("Top 3 Name", max_length=100, blank=True, null=True)
+    top3_kill_points = models.IntegerField("Top 3 Kill Points", default=50)
+    top3_assist_points = models.IntegerField("Top 3 Assist Points", default=5)
+    
+    top4_name = models.CharField("Top 4 Name", max_length=100, blank=True, null=True)
+    top4_kill_points = models.IntegerField("Top 4 Kill Points", default=50)
+    top4_assist_points = models.IntegerField("Top 4 Assist Points", default=5)
+    
+    top5_name = models.CharField("Top 5 Name", max_length=100, blank=True, null=True)
+    top5_kill_points = models.IntegerField("Top 5 Kill Points", default=50)
+    top5_assist_points = models.IntegerField("Top 5 Assist Points", default=5)
+
+    class Meta:
+        unique_together = ('world', 'server')
+
 class WarPointConfig(models.Model):
     """Singleton config for War Point system - admin sets kill/assist point values"""
-    kill_points = models.IntegerField("Points per Kill", default=2)
-    assist_points = models.IntegerField("Points per Assist", default=1)
+    top1_name = models.CharField("Top 1 Name", max_length=100, blank=True, null=True)
+    top1_kill_points = models.IntegerField("Top 1 Kill Points", default=100)
+    top1_assist_points = models.IntegerField("Top 1 Assist Points", default=10)
+
+    top2_name = models.CharField("Top 2 Name", max_length=100, blank=True, null=True)
+    top2_kill_points = models.IntegerField("Top 2 Kill Points", default=50)
+    top2_assist_points = models.IntegerField("Top 2 Assist Points", default=5)
+
+    top3_name = models.CharField("Top 3 Name", max_length=100, blank=True, null=True)
+    top3_kill_points = models.IntegerField("Top 3 Kill Points", default=50)
+    top3_assist_points = models.IntegerField("Top 3 Assist Points", default=5)
+
+    top4_name = models.CharField("Top 4 Name", max_length=100, blank=True, null=True)
+    top4_kill_points = models.IntegerField("Top 4 Kill Points", default=50)
+    top4_assist_points = models.IntegerField("Top 4 Assist Points", default=5)
+
+    top5_name = models.CharField("Top 5 Name", max_length=100, blank=True, null=True)
+    top5_kill_points = models.IntegerField("Top 5 Kill Points", default=50)
+    top5_assist_points = models.IntegerField("Top 5 Assist Points", default=5)
+
+    normal_kill_points = models.IntegerField("Normal/Top 6+ Kill Points", default=10)
+    normal_assist_points = models.IntegerField("Normal/Top 6+ Assist Points", default=2)
+
     sync_to_activity = models.BooleanField(
         "Sync to Activity Points", default=False,
         help_text="Jika dicentang, War Points juga akan ditambahkan ke Activity Points player"
@@ -2170,7 +2227,7 @@ class WarPointConfig(models.Model):
         return config
 
     def __str__(self):
-        return f"War Point Config (Kill: {self.kill_points}pts, Assist: {self.assist_points}pts)"
+        return "War Point Config"
 
     class Meta:
         verbose_name = "War Point Config"
@@ -2186,10 +2243,29 @@ class WarPointSubmission(models.Model):
     )
 
     character = models.ForeignKey(Character, on_delete=models.CASCADE, related_name='war_submissions')
-    screenshot = models.ImageField("Screenshot Bukti", upload_to='war_points/')
-    war_date = models.DateField("Tanggal War", help_text="Tanggal war yang ditampilkan di screenshot")
-    kill_count = models.IntegerField("Jumlah Kill", default=0, help_text="Total kill dari screenshot")
-    assist_count = models.IntegerField("Jumlah Assist", default=0, help_text="Total assist dari screenshot")
+    screenshot = models.ImageField("Screenshot Bukti", upload_to='war_points/', blank=True, null=True)
+    
+    world = models.ForeignKey(WarWorld, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="World")
+    server = models.IntegerField("Server", default=1)
+
+    kill_top1 = models.IntegerField("Kill Top 1", default=0)
+    assist_top1 = models.IntegerField("Assist Top 1", default=0)
+    kill_top2 = models.IntegerField("Kill Top 2", default=0)
+    assist_top2 = models.IntegerField("Assist Top 2", default=0)
+    kill_top3 = models.IntegerField("Kill Top 3", default=0)
+    assist_top3 = models.IntegerField("Assist Top 3", default=0)
+    kill_top4 = models.IntegerField("Kill Top 4", default=0)
+    assist_top4 = models.IntegerField("Assist Top 4", default=0)
+    kill_top5 = models.IntegerField("Kill Top 5", default=0)
+    assist_top5 = models.IntegerField("Assist Top 5", default=0)
+
+    kill_normal = models.IntegerField("Normal Kills", default=0)
+    assist_normal = models.IntegerField("Normal Assists", default=0)
+
+    # These fields can hold the aggregate totals
+    kill_count = models.IntegerField("Total Kill", default=0)
+    assist_count = models.IntegerField("Total Assist", default=0)
+    
     kill_points_earned = models.IntegerField("Kill Points Earned", default=0)
     assist_points_earned = models.IntegerField("Assist Points Earned", default=0)
     total_points = models.IntegerField("Total War Points", default=0)
@@ -2205,14 +2281,55 @@ class WarPointSubmission(models.Model):
 
     def calculate_points(self):
         config = WarPointConfig.get_config()
-        self.kill_points_earned = self.kill_count * config.kill_points
-        self.assist_points_earned = self.assist_count * config.assist_points
+        target_config = None
+        if self.world:
+            target_config = WarTargetConfig.objects.filter(world=self.world, server=self.server).first()
+            
+        t1_k = target_config.top1_kill_points if target_config else 0
+        t1_a = target_config.top1_assist_points if target_config else 0
+        t2_k = target_config.top2_kill_points if target_config else 0
+        t2_a = target_config.top2_assist_points if target_config else 0
+        t3_k = target_config.top3_kill_points if target_config else 0
+        t3_a = target_config.top3_assist_points if target_config else 0
+        t4_k = target_config.top4_kill_points if target_config else 0
+        t4_a = target_config.top4_assist_points if target_config else 0
+        t5_k = target_config.top5_kill_points if target_config else 0
+        t5_a = target_config.top5_assist_points if target_config else 0
+        
+        self.kill_points_earned = (
+            self.kill_top1 * t1_k +
+            self.kill_top2 * t2_k +
+            self.kill_top3 * t3_k +
+            self.kill_top4 * t4_k +
+            self.kill_top5 * t5_k +
+            self.kill_normal * config.normal_kill_points
+        )
+        self.assist_points_earned = (
+            self.assist_top1 * t1_a +
+            self.assist_top2 * t2_a +
+            self.assist_top3 * t3_a +
+            self.assist_top4 * t4_a +
+            self.assist_top5 * t5_a +
+            self.assist_normal * config.normal_assist_points
+        )
         self.total_points = self.kill_points_earned + self.assist_points_earned
+        
+        self.kill_count = self.kill_top1 + self.kill_top2 + self.kill_top3 + self.kill_top4 + self.kill_top5 + self.kill_normal
+        self.assist_count = self.assist_top1 + self.assist_top2 + self.assist_top3 + self.assist_top4 + self.assist_top5 + self.assist_normal
 
     def __str__(self):
-        return f"{self.character.name} - {self.war_date} ({self.kill_count}K/{self.assist_count}A)"
+        w_name = self.world.name if self.world else "Unknown"
+        return f"{self.character.name} - {w_name} {self.server} ({self.kill_count}K/{self.assist_count}A)"
 
     class Meta:
         ordering = ['-submitted_at']
-        unique_together = ['character', 'war_date']
+        unique_together = ['character', 'world', 'server', 'submitted_at']
+
+class WarPointProofImage(models.Model):
+    submission = models.ForeignKey(WarPointSubmission, on_delete=models.CASCADE, related_name='proof_images')
+    image = models.ImageField(upload_to='war_points/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Proof for {self.submission.id}"
 

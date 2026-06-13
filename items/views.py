@@ -3416,7 +3416,7 @@ def analyze_war_image(request):
 
 
 @login_required
-def war_point_page(request):
+def war_point_page(request, sub_id=None):
     """
     Main War Point page - Leaderboard + Player's own submissions
     """
@@ -3425,64 +3425,114 @@ def war_point_page(request):
     
     config = WarPointConfig.get_config()
     user_characters = Character.objects.filter(owner=request.user)
+    from .models import WarWorld
+    worlds = WarWorld.objects.all()
     
+    edit_sub = None
+    if sub_id:
+        edit_sub = get_object_or_404(WarPointSubmission, pk=sub_id, character__owner=request.user)
+        if edit_sub.status == 'APPROVED':
+            messages.error(request, 'Cannot edit an approved submission.')
+            return redirect('war-point')
+
     # Handle submission
     if request.method == 'POST':
         character_id = request.POST.get('character')
-        war_date_str = request.POST.get('war_date')
-        war_time_str = request.POST.get('war_time', '')
-        kill_count = int(request.POST.get('kill_count', 0))
-        assist_count = int(request.POST.get('assist_count', 0))
-        screenshot = request.FILES.get('screenshot')
+        world_id = request.POST.get('world')
+        server = request.POST.get('server')
+        screenshots = request.FILES.getlist('screenshot')
         
-        if not character_id or not war_date_str or not screenshot:
-            messages.error(request, 'Please fill in all fields and upload a screenshot.')
+        kill_top1 = int(request.POST.get('kill_top1', 0) or 0)
+        assist_top1 = int(request.POST.get('assist_top1', 0) or 0)
+        kill_top2 = int(request.POST.get('kill_top2', 0) or 0)
+        assist_top2 = int(request.POST.get('assist_top2', 0) or 0)
+        kill_top3 = int(request.POST.get('kill_top3', 0) or 0)
+        assist_top3 = int(request.POST.get('assist_top3', 0) or 0)
+        kill_top4 = int(request.POST.get('kill_top4', 0) or 0)
+        assist_top4 = int(request.POST.get('assist_top4', 0) or 0)
+        kill_top5 = int(request.POST.get('kill_top5', 0) or 0)
+        assist_top5 = int(request.POST.get('assist_top5', 0) or 0)
+        kill_normal = int(request.POST.get('kill_normal', 0) or 0)
+        assist_normal = int(request.POST.get('assist_normal', 0) or 0)
+        
+        if not character_id or not world_id or not server:
+            messages.error(request, 'Please fill in all fields.')
+            return redirect('war-point')
+            
+        if not sub_id and not screenshots:
+            messages.error(request, 'Please upload a screenshot.')
             return redirect('war-point')
         
         character = get_object_or_404(Character, pk=character_id, owner=request.user)
-        
-        # Parse date
-        from datetime import datetime
+        world = get_object_or_404(WarWorld, pk=world_id)
         try:
-            war_date = datetime.strptime(war_date_str, '%Y-%m-%d').date()
+            server = int(server)
         except ValueError:
-            messages.error(request, 'Invalid date format.')
-            return redirect('war-point')
+            server = 1
         
-        # Verify date is not in the future (allowing +1 day for timezone differences)
         from django.utils import timezone
-        if war_date > timezone.localtime().date() + timedelta(days=1):
-            messages.error(request, 'War date cannot be in the future.')
-            return redirect('war-point')
-        
-        # Verify date is not too old (max 7 days)
-        if war_date < date.today() - timedelta(days=7):
-            messages.error(request, 'Screenshots can only be submitted within 7 days of the war date.')
-            return redirect('war-point')
-        
-        # Check duplicate
-        if WarPointSubmission.objects.filter(character=character, war_date=war_date).exists():
-            messages.error(request, f'You have already submitted data for {war_date}. Contact admin to make changes.')
-            return redirect('war-point')
-        
-        # Build admin note with time info
-        admin_note = ""
-        if war_time_str:
-            admin_note = f"[Player Input] War Time: {war_time_str}"
             
-        # Create submission
-        submission = WarPointSubmission(
-            character=character,
-            screenshot=screenshot,
-            war_date=war_date,
-            kill_count=kill_count,
-            assist_count=assist_count,
-            admin_notes=admin_note,
-        )
-        submission.calculate_points()
-        submission.save()
-        
-        messages.success(request, f'Screenshot submitted successfully! ({kill_count} Kill, {assist_count} Assist = {submission.total_points} pts). Waiting for admin verification.')
+        from .models import WarPointProofImage
+        if sub_id:
+            # Edit existing
+            submission = edit_sub
+            submission.character = character
+            submission.world = world
+            submission.server = server
+            submission.kill_top1 = kill_top1
+            submission.assist_top1 = assist_top1
+            submission.kill_top2 = kill_top2
+            submission.assist_top2 = assist_top2
+            submission.kill_top3 = kill_top3
+            submission.assist_top3 = assist_top3
+            submission.kill_top4 = kill_top4
+            submission.assist_top4 = assist_top4
+            submission.kill_top5 = kill_top5
+            submission.assist_top5 = assist_top5
+            submission.kill_normal = kill_normal
+            submission.assist_normal = assist_normal
+            submission.status = 'PENDING' # Reset to pending
+            submission.calculate_points()
+            submission.save()
+            
+            if screenshots:
+                # Replace images if new ones provided
+                submission.proof_images.all().delete()
+                submission.screenshot = screenshots[0]
+                submission.save()
+                for img in screenshots:
+                    WarPointProofImage.objects.create(submission=submission, image=img)
+                    
+            messages.success(request, f'Submission updated! ({submission.kill_count} Kills, {submission.assist_count} Assists = {submission.total_points} pts). Status reset to Pending.')
+        else:
+            # Create new
+            submission = WarPointSubmission(
+                character=character,
+                screenshot=screenshots[0] if screenshots else None,
+                world=world,
+                server=server,
+                kill_top1=kill_top1,
+                assist_top1=assist_top1,
+                kill_top2=kill_top2,
+                assist_top2=assist_top2,
+                kill_top3=kill_top3,
+                assist_top3=assist_top3,
+                kill_top4=kill_top4,
+                assist_top4=assist_top4,
+                kill_top5=kill_top5,
+                assist_top5=assist_top5,
+                kill_normal=kill_normal,
+                assist_normal=assist_normal,
+                admin_notes="",
+            )
+            submission.calculate_points()
+            submission.save()
+            
+            for img in screenshots:
+                WarPointProofImage.objects.create(submission=submission, image=img)
+                
+            messages.success(request, f'Screenshot submitted successfully! ({submission.kill_count} Kills, {submission.assist_count} Assists = {submission.total_points} pts). Waiting for admin verification.')
+            
         return redirect('war-point')
     
     # GET - Leaderboard (this month)
@@ -3491,7 +3541,7 @@ def war_point_page(request):
     
     leaderboard = (
         WarPointSubmission.objects
-        .filter(status='APPROVED', war_date__gte=first_day)
+        .filter(status='APPROVED', submitted_at__gte=first_day)
         .values('character__name', 'character__clan')
         .annotate(
             total_kills=Sum('kill_count'),
@@ -3507,17 +3557,92 @@ def war_point_page(request):
     if user_characters.exists():
         my_submissions = WarPointSubmission.objects.filter(
             character__in=user_characters
-        ).order_by('-war_date')[:30]
+        ).order_by('-submitted_at')[:30]
     
+    has_wp_access = is_admin(request.user)
+    if not has_wp_access and getattr(request.user, 'admin_role', None):
+        has_wp_access = request.user.admin_role.is_warpoint_admin
+
     context = {
         'config': config,
-        'leaderboard': leaderboard,
+        'worlds': worlds,
         'my_submissions': my_submissions,
         'user_characters': user_characters,
-        'current_month': today.strftime('%B %Y'),
-        'is_admin_user': is_admin(request.user),
+        'is_admin_user': has_wp_access,
+        'edit_sub': edit_sub,
     }
     return render(request, 'items/war_point.html', context)
+
+
+@login_required
+def war_point_leaderboard(request):
+    from django.db.models import Sum, Count
+    from datetime import date
+    
+    today = date.today()
+    first_day = today.replace(day=1)
+    
+    leaderboard = (
+        WarPointSubmission.objects
+        .filter(status='APPROVED', submitted_at__gte=first_day)
+        .values('character__name', 'character__clan')
+        .annotate(
+            total_kills=Sum('kill_count'),
+            total_assists=Sum('assist_count'),
+            total_points=Sum('total_points'),
+            submissions=Count('id'),
+            top1_kills=Sum('kill_top1'),
+            top2_kills=Sum('kill_top2'),
+            top3_kills=Sum('kill_top3'),
+            top4_kills=Sum('kill_top4'),
+            top5_kills=Sum('kill_top5'),
+            normal_kills=Sum('kill_normal'),
+            top1_assists=Sum('assist_top1'),
+            top2_assists=Sum('assist_top2'),
+            top3_assists=Sum('assist_top3'),
+            top4_assists=Sum('assist_top4'),
+            top5_assists=Sum('assist_top5'),
+            normal_assists=Sum('assist_normal'),
+        )
+        .order_by('-total_points')
+    )
+    
+    # Calculate Top 2-5 combined for kills and assists
+    char_names = [p['character__name'] for p in leaderboard]
+    
+    # Collect proof images
+    submissions = WarPointSubmission.objects.filter(
+        character__name__in=char_names,
+        status='APPROVED',
+        submitted_at__gte=first_day
+    ).prefetch_related('proof_images')
+    
+    char_images = {}
+    for sub in submissions:
+        name = sub.character.name
+        if name not in char_images:
+            char_images[name] = []
+        if sub.screenshot and hasattr(sub.screenshot, 'url'):
+            char_images[name].append(sub.screenshot.url)
+        for proof in sub.proof_images.all():
+            if proof.image and hasattr(proof.image, 'url'):
+                char_images[name].append(proof.image.url)
+    
+    for p in leaderboard:
+        p['top2_5_kills'] = (p['top2_kills'] or 0) + (p['top3_kills'] or 0) + (p['top4_kills'] or 0) + (p['top5_kills'] or 0)
+        p['top2_5_assists'] = (p['top2_assists'] or 0) + (p['top3_assists'] or 0) + (p['top4_assists'] or 0) + (p['top5_assists'] or 0)
+        p['images'] = char_images.get(p['character__name'], [])
+    
+    has_wp_access = is_admin(request.user)
+    if not has_wp_access and getattr(request.user, 'admin_role', None):
+        has_wp_access = request.user.admin_role.is_warpoint_admin
+        
+    context = {
+        'leaderboard': leaderboard,
+        'current_month': today.strftime('%B %Y'),
+        'is_admin_user': has_wp_access,
+    }
+    return render(request, 'items/war_point_leaderboard.html', context)
 
 
 @login_required
@@ -3533,21 +3658,66 @@ def war_point_manage(request):
         return HttpResponseForbidden("Only administrators can access this page.")
     
     from django.utils import timezone
+    from .models import WarWorld, WarTargetConfig
     
     config = WarPointConfig.get_config()
+    worlds = WarWorld.objects.all()
+    
+    selected_world_id = request.GET.get('world')
+    selected_server = request.GET.get('server', 1)
+    
+    if selected_world_id:
+        selected_world = get_object_or_404(WarWorld, pk=selected_world_id)
+    else:
+        selected_world = worlds.first()
+        
+    try:
+        selected_server = int(selected_server)
+    except ValueError:
+        selected_server = 1
+        
+    target_config = None
+    if selected_world:
+        target_config, _ = WarTargetConfig.objects.get_or_create(world=selected_world, server=selected_server)
     
     # Handle settings update
     if request.method == 'POST' and 'update_settings' in request.POST:
+        world_id_post = request.POST.get('world_id')
+        server_post = request.POST.get('server_id')
+        
+        if world_id_post and server_post:
+            tc, _ = WarTargetConfig.objects.get_or_create(world_id=world_id_post, server=server_post)
+            tc.top1_name = request.POST.get('top1_name', '')
+            tc.top1_kill_points = int(request.POST.get('top1_kill', 100))
+            tc.top1_assist_points = int(request.POST.get('top1_assist', 10))
+            
+            tc.top2_name = request.POST.get('top2_name', '')
+            tc.top2_kill_points = int(request.POST.get('top2_kill', 50))
+            tc.top2_assist_points = int(request.POST.get('top2_assist', 5))
+            
+            tc.top3_name = request.POST.get('top3_name', '')
+            tc.top3_kill_points = int(request.POST.get('top3_kill', 50))
+            tc.top3_assist_points = int(request.POST.get('top3_assist', 5))
+            
+            tc.top4_name = request.POST.get('top4_name', '')
+            tc.top4_kill_points = int(request.POST.get('top4_kill', 50))
+            tc.top4_assist_points = int(request.POST.get('top4_assist', 5))
+            
+            tc.top5_name = request.POST.get('top5_name', '')
+            tc.top5_kill_points = int(request.POST.get('top5_kill', 50))
+            tc.top5_assist_points = int(request.POST.get('top5_assist', 5))
+            tc.save()
+            
         try:
-            config.kill_points = int(request.POST.get('kill_points', 2))
-            config.assist_points = int(request.POST.get('assist_points', 1))
+            config.normal_kill_points = int(request.POST.get('normal_kill', 10))
+            config.normal_assist_points = int(request.POST.get('normal_assist', 2))
             config.auto_delete_days = int(request.POST.get('auto_delete_days', 0))
-            config.sync_to_activity = request.POST.get('sync_to_activity') == 'on'
             config.save()
             messages.success(request, 'War Point settings berhasil diperbarui!')
         except (ValueError, TypeError):
             messages.error(request, 'Invalid input.')
-        return redirect('war-point-manage')
+            
+        return redirect(f"/portal/war-point/manage/?world={world_id_post}&server={server_post}")
     
     # Auto-cleanup old submissions based on config
     if config.auto_delete_days > 0:
@@ -3565,14 +3735,21 @@ def war_point_manage(request):
         
         if action == 'approve':
             try:
-                if 'kill_count' in request.POST:
-                    submission.kill_count = int(request.POST.get('kill_count', submission.kill_count))
-                if 'assist_count' in request.POST:
-                    submission.assist_count = int(request.POST.get('assist_count', submission.assist_count))
+                if 'kill_top1' in request.POST: submission.kill_top1 = int(request.POST.get('kill_top1', submission.kill_top1))
+                if 'assist_top1' in request.POST: submission.assist_top1 = int(request.POST.get('assist_top1', submission.assist_top1))
+                if 'kill_top2' in request.POST: submission.kill_top2 = int(request.POST.get('kill_top2', submission.kill_top2))
+                if 'assist_top2' in request.POST: submission.assist_top2 = int(request.POST.get('assist_top2', submission.assist_top2))
+                if 'kill_top3' in request.POST: submission.kill_top3 = int(request.POST.get('kill_top3', submission.kill_top3))
+                if 'assist_top3' in request.POST: submission.assist_top3 = int(request.POST.get('assist_top3', submission.assist_top3))
+                if 'kill_top4' in request.POST: submission.kill_top4 = int(request.POST.get('kill_top4', submission.kill_top4))
+                if 'assist_top4' in request.POST: submission.assist_top4 = int(request.POST.get('assist_top4', submission.assist_top4))
+                if 'kill_top5' in request.POST: submission.kill_top5 = int(request.POST.get('kill_top5', submission.kill_top5))
+                if 'assist_top5' in request.POST: submission.assist_top5 = int(request.POST.get('assist_top5', submission.assist_top5))
+                if 'kill_normal' in request.POST: submission.kill_normal = int(request.POST.get('kill_normal', submission.kill_normal))
+                if 'assist_normal' in request.POST: submission.assist_normal = int(request.POST.get('assist_normal', submission.assist_normal))
             except ValueError:
                 pass
                 
-            # Recalculate points with current config
             submission.calculate_points()
             submission.status = 'APPROVED'
             submission.admin_notes = admin_notes
@@ -3593,7 +3770,7 @@ def war_point_manage(request):
                 except Exception:
                     pass
             
-            messages.success(request, f'Submission dari {submission.character.name} telah di-APPROVE! (+{submission.total_points} pts)')
+            messages.success(request, f'Submission from {submission.character.name} has been APPROVED! (+{submission.total_points} pts)')
             
         elif action == 'reject':
             submission.status = 'REJECTED'
@@ -3601,7 +3778,7 @@ def war_point_manage(request):
             submission.reviewed_at = timezone.now()
             submission.reviewed_by = request.user
             submission.save()
-            messages.warning(request, f'Submission dari {submission.character.name} telah di-REJECT.')
+            messages.warning(request, f'Submission from {submission.character.name} has been REJECTED.')
         
         return redirect('war-point-manage')
         
@@ -3611,20 +3788,241 @@ def war_point_manage(request):
             ids = [int(x.strip()) for x in sub_ids_str.split(',') if x.strip().isdigit()]
             if ids:
                 WarPointSubmission.objects.filter(id__in=ids).delete()
-                messages.success(request, f'{len(ids)} data war point berhasil dihapus secara permanen.')
+                messages.success(request, f'{len(ids)} War Point submission(s) deleted permanently.')
         
         return redirect('war-point-manage')
-    
+
     # GET - Show pending submissions + all recent
     pending = WarPointSubmission.objects.filter(status='PENDING').order_by('-submitted_at')
-    recent = WarPointSubmission.objects.exclude(status='PENDING').order_by('-reviewed_at')[:50]
+    recent_qs = WarPointSubmission.objects.exclude(status='PENDING').order_by('-reviewed_at')
+    
+    from django.core.paginator import Paginator
+    paginator = Paginator(recent_qs, 20)  # Show 20 records per page
+    page_number = request.GET.get('page')
+    recent = paginator.get_page(page_number)
+    
+    from .models import WarTargetConfig
+    for sub in pending:
+        try:
+            sub.target_cfg = WarTargetConfig.objects.get(world=sub.world, server=sub.server)
+        except WarTargetConfig.DoesNotExist:
+            sub.target_cfg = None
     
     context = {
         'config': config,
+        'target_config': target_config,
+        'worlds': worlds,
+        'selected_world': selected_world,
+        'selected_server': selected_server,
         'pending': pending,
         'recent': recent,
     }
     return render(request, 'items/war_point_manage.html', context)
+
+
+@login_required
+def delete_war_point_sub(request, sub_id):
+    """
+    Allow players to delete their own pending/rejected submissions
+    """
+    submission = get_object_or_404(WarPointSubmission, pk=sub_id, character__owner=request.user)
+    if submission.status == 'APPROVED':
+        messages.error(request, 'Cannot delete an approved submission.')
+    else:
+        submission.delete()
+        messages.success(request, 'Submission deleted successfully.')
+    return redirect('war-point')
+
+@login_required
+def war_point_delete_all(request):
+    """
+    Admin only: Delete ALL completed war point data (APPROVED + REJECTED)
+    """
+    has_access = is_admin(request.user)
+    if not has_access and getattr(request.user, 'admin_role', None):
+        has_access = request.user.admin_role.is_warpoint_admin
+        
+    if not has_access:
+        return HttpResponseForbidden("Only administrators can perform this action.")
+        
+    if request.method == 'POST':
+        qs = WarPointSubmission.objects.filter(status__in=['APPROVED', 'REJECTED'])
+        count = qs.count()
+        qs.delete()
+        messages.success(request, f'Successfully deleted {count} completed War Point submissions & images (Approved + Recent Reviews).')
+    return redirect('war-point-leaderboard')
+
+@login_required
+def war_point_export_pdf(request):
+    """
+    Admin only: Export leaderboard as PDF
+    """
+    from django.http import HttpResponse
+    from django.db.models import Sum
+    from datetime import date
+    import io
+    
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.units import mm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    
+    has_access = is_admin(request.user)
+    if not has_access and getattr(request.user, 'admin_role', None):
+        has_access = request.user.admin_role.is_warpoint_admin
+        
+    if not has_access:
+        return HttpResponseForbidden("Only administrators can perform this action.")
+    
+    today = date.today()
+    month_str = today.strftime('%B %Y')
+    
+    leaderboard = (
+        WarPointSubmission.objects
+        .filter(status='APPROVED')
+        .values('character__name', 'character__clan')
+        .annotate(
+            total_kills=Sum('kill_count'),
+            total_assists=Sum('assist_count'),
+            total_points=Sum('total_points'),
+            top1_kills=Sum('kill_top1'),
+            top2_kills=Sum('kill_top2'),
+            top3_kills=Sum('kill_top3'),
+            top4_kills=Sum('kill_top4'),
+            top5_kills=Sum('kill_top5'),
+            normal_kills=Sum('kill_normal'),
+            top1_assists=Sum('assist_top1'),
+            top2_assists=Sum('assist_top2'),
+            top3_assists=Sum('assist_top3'),
+            top4_assists=Sum('assist_top4'),
+            top5_assists=Sum('assist_top5'),
+            normal_assists=Sum('assist_normal'),
+        )
+        .order_by('-total_points')
+    )
+    
+    # Create PDF (landscape for wider table)
+    from reportlab.lib.pagesizes import landscape
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), topMargin=15*mm, bottomMargin=15*mm, leftMargin=15*mm, rightMargin=15*mm)
+    
+    styles = getSampleStyleSheet()
+    
+    title_style = ParagraphStyle('Title', parent=styles['Title'], fontSize=22, textColor=colors.HexColor('#DAA520'), alignment=TA_CENTER, spaceAfter=4*mm)
+    subtitle_style = ParagraphStyle('Subtitle', parent=styles['Normal'], fontSize=12, textColor=colors.HexColor('#888888'), alignment=TA_CENTER, spaceAfter=8*mm)
+    footer_style = ParagraphStyle('Footer', parent=styles['Normal'], fontSize=8, textColor=colors.HexColor('#999999'), alignment=TA_CENTER, spaceBefore=10*mm)
+    
+    elements = []
+    
+    # Header
+    elements.append(Paragraph('⚔ VALKYRIE GUILD', title_style))
+    elements.append(Paragraph(f'War Point Leaderboard — {month_str}', subtitle_style))
+    
+    # Table data
+    header_row = ['Rank', 'Player', 'Clan', 'T1 Kill', 'T1 Ast', 'T2-5 Kill', 'T2-5 Ast', 'Norm Kill', 'Norm Ast', 'Total Kill', 'Total Ast', 'Points']
+    table_data = [header_row]
+    
+    for idx, p in enumerate(leaderboard, 1):
+        rank_label = f'#{idx}' if idx > 3 else f'#{idx}'
+        top2_5_kills = (p['top2_kills'] or 0) + (p['top3_kills'] or 0) + (p['top4_kills'] or 0) + (p['top5_kills'] or 0)
+        top2_5_assists = (p['top2_assists'] or 0) + (p['top3_assists'] or 0) + (p['top4_assists'] or 0) + (p['top5_assists'] or 0)
+        table_data.append([
+            rank_label,
+            p['character__name'],
+            p['character__clan'] or '-',
+            str(p['top1_kills'] or 0),
+            str(p['top1_assists'] or 0),
+            str(top2_5_kills),
+            str(top2_5_assists),
+            str(p['normal_kills'] or 0),
+            str(p['normal_assists'] or 0),
+            str(p['total_kills']),
+            str(p['total_assists']),
+            str(p['total_points']),
+        ])
+    
+    if len(table_data) == 1:
+        elements.append(Paragraph('No data available for this month.', subtitle_style))
+    else:
+        # 12 columns total: 800 roughly max points across landscape
+        col_widths = [35, 110, 80, 45, 45, 55, 55, 55, 55, 60, 55, 55]
+        table = Table(table_data, colWidths=col_widths)
+        
+        # Table style
+        style_cmds = [
+            # Header row
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a1a1a')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#DAA520')),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+            ('TOPPADDING', (0, 0), (-1, 0), 10),
+            
+            # Data rows
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+            ('TOPPADDING', (0, 1), (-1, -1), 6),
+            
+            # Grid
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#333333')),
+            ('LINEBELOW', (0, 0), (-1, 0), 2, colors.HexColor('#DAA520')),
+            
+            # Alignment
+            ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+            ('ALIGN', (3, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            
+            # Points column bold + gold (col 11)
+            ('FONTNAME', (11, 1), (11, -1), 'Helvetica-Bold'),
+            ('TEXTCOLOR', (11, 1), (11, -1), colors.HexColor('#DAA520')),
+            
+            # Top 1 Kill (3) - red bold
+            ('TEXTCOLOR', (3, 1), (3, -1), colors.HexColor('#C0392B')),
+            ('FONTNAME', (3, 1), (3, -1), 'Helvetica-Bold'),
+            # Top 1 Assist (4) - blue
+            ('TEXTCOLOR', (4, 1), (4, -1), colors.HexColor('#2980B9')),
+            
+            # Top 2-5 Kill (5) - orange
+            ('TEXTCOLOR', (5, 1), (5, -1), colors.HexColor('#E67E22')),
+            # Top 2-5 Assist (6) - blue
+            ('TEXTCOLOR', (6, 1), (6, -1), colors.HexColor('#2980B9')),
+            
+            # Normal Kill (7) - grey
+            ('TEXTCOLOR', (7, 1), (7, -1), colors.HexColor('#7F8C8D')),
+            # Normal Assist (8) - blue
+            ('TEXTCOLOR', (8, 1), (8, -1), colors.HexColor('#2980B9')),
+            
+            # Total Kill (9) - red
+            ('TEXTCOLOR', (9, 1), (9, -1), colors.HexColor('#C0392B')),
+            # Total Assist (10) - blue
+            ('TEXTCOLOR', (10, 1), (10, -1), colors.HexColor('#2980B9')),
+        ]
+        
+        # Alternating row colors
+        for i in range(1, len(table_data)):
+            bg = colors.HexColor('#f9f9f9') if i % 2 == 0 else colors.HexColor('#ffffff')
+            style_cmds.append(('BACKGROUND', (0, i), (-1, i), bg))
+        
+        # Top 3 highlight
+        for i in range(1, min(4, len(table_data))):
+            style_cmds.append(('FONTNAME', (0, i), (1, i), 'Helvetica-Bold'))
+        
+        table.setStyle(TableStyle(style_cmds))
+        elements.append(table)
+    
+    # Footer
+    elements.append(Spacer(1, 10*mm))
+    elements.append(Paragraph(f'Generated on {today.strftime("%d %B %Y")} • Valkyrie Guild Management System', footer_style))
+    
+    doc.build(elements)
+    
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="war_point_leaderboard_{today.strftime("%Y_%m")}.pdf"'
+    return response
 
 
 @login_required
