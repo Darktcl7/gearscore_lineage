@@ -1165,6 +1165,7 @@
                             <th class="hide-mobile" title="Conquer">Conq.</th>
                             <th class="hide-mobile" title="Duel">Duel</th>
                             <th class="hide-mobile" title="Purple Class/Agathion">Prpl</th>
+                            <th class="hide-mobile" title="Purple Skill Main Class">PrplS</th>
                             <th style="text-align:right;">Gear Score</th>
                             <th style="text-align:center; width:50px;" title="Screenshot Bukti">Proof</th>
                         </tr>
@@ -1260,6 +1261,7 @@
                             <td class="hide-mobile">{{ item.power_rank.conquer|floatformat:1 }}</td>
                             <td class="hide-mobile">{{ item.power_rank.duel|floatformat:1 }}</td>
                             <td class="hide-mobile">{{ item.power_rank.purple_class_aga|floatformat:0 }}</td>
+                            <td class="hide-mobile">{{ item.power_rank.purple_skill_main_class|floatformat:0 }}</td>
                             <td style="text-align: right;">
                                 <span class="score-cell {% if item.power_rank.gear_score >= 2000 %}score-high{% elif item.power_rank.gear_score >= 1500 %}score-mid{% else %}score-low{% endif %}">
                                     {{ item.power_rank.gear_score }}

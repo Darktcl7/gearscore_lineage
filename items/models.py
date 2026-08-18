@@ -1949,6 +1949,8 @@ class UniversalPowerRank(models.Model):
         help_text="Duel progression level")
     purple_class_aga = models.FloatField("Purple Class/Aga", default=0,
         help_text="Number of purple class or agathion")
+    purple_skill_main_class = models.FloatField("Purple Skill Main Class", default=0,
+        help_text="Number of purple skill main class (1-7)")
     gear_score = models.IntegerField("Gear Score", default=0,
         help_text="Auto-calculated from stats")
     updated_at = models.DateTimeField(auto_now=True)
@@ -1984,6 +1986,9 @@ class UniversalPowerRank(models.Model):
         score += self.guardian * 10.0
         score += self.conquer * 10.0
         score += self.duel * 10.0
+        
+        if self.purple_skill_main_class > 0:
+            score += (self.purple_skill_main_class * 10.0) + 30.0
         
         # Level and Purple Class are tracked but not added to the score in the original excel
         return int(score)

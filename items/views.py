@@ -2402,6 +2402,7 @@ def edit_power_rank(request, character_pk):
             original_conquer = power_rank.conquer
             original_duel = power_rank.duel
             original_purple_class_aga = power_rank.purple_class_aga
+            original_purple_skill_main_class = power_rank.purple_skill_main_class
 
             power_rank.server = request.POST.get('server', power_rank.server)
             power_rank.power_class = request.POST.get('power_class', '')
@@ -2419,6 +2420,7 @@ def edit_power_rank(request, character_pk):
             power_rank.conquer = float(request.POST.get('conquer', 0) or 0)
             power_rank.duel = float(request.POST.get('duel', 0) or 0)
             power_rank.purple_class_aga = float(request.POST.get('purple_class_aga', 0) or 0)
+            power_rank.purple_skill_main_class = float(request.POST.get('purple_skill_main_class', 0) or 0)
 
             change_logs = []
             if original_server != power_rank.server: change_logs.append(f"Server: {original_server} -> {power_rank.server}")
@@ -2437,6 +2439,8 @@ def edit_power_rank(request, character_pk):
             if original_conquer != power_rank.conquer: change_logs.append(f"Conq: {original_conquer:.1f} -> {power_rank.conquer:.1f}")
             if original_duel != power_rank.duel: change_logs.append(f"Duel: {original_duel:.1f} -> {power_rank.duel:.1f}")
             if original_purple_class_aga != power_rank.purple_class_aga: change_logs.append(f"Purple: {int(original_purple_class_aga)} -> {int(power_rank.purple_class_aga)}")
+            if original_purple_skill_main_class != power_rank.purple_skill_main_class: change_logs.append(f"Purple Skill Main Class: {int(original_purple_skill_main_class)} -> {int(power_rank.purple_skill_main_class)}")
+
 
             # Handle multiple stat screenshot uploads (max 2MB each)
             from .models import PowerRankScreenshot
