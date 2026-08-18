@@ -240,7 +240,7 @@ main{flex:1;overflow:hidden;max-width:1800px !important;width:95% !important}
 </div>
 <div class="acn">
 <div class="sab">
-<label style="cursor:default"><i class="fas fa-check-double"></i> Final = Discord Check-in + Party Scan</label>
+<label style="cursor:default"><i class="fas fa-check-double"></i> Final Attendance = Party Scan</label>
 <span style="color:#888"><span id="sc">0</span> / {{ characters|length }} final attended</span>
 </div>
 
@@ -261,22 +261,7 @@ main{flex:1;overflow:hidden;max-width:1800px !important;width:95% !important}
             {% endif %}
         </div>
     </div>
-    <div class="scanner-card">
-        <div>
-            <div class="scanner-title"><i class="fas fa-shield-alt"></i> Valhalla Party Scan</div>
-            <div class="scanner-meta">Upload screenshot party Valhalla untuk event ini.</div>
-        </div>
-        <div class="scan-controls">
-            <input type="file" id="scan-file-valhalla" class="scan-file" accept="image/png,image/jpeg,image/webp">
-            <button type="button" class="scan-btn" data-clan="Valhalla" data-file="scan-file-valhalla"><i class="fas fa-camera"></i> Scan</button>
-            <button type="button" class="scan-btn" style="background:linear-gradient(145deg,#e74c3c,#c0392b)" onclick="clearClanScan('Valhalla')" title="Clear all party scans for Valhalla"><i class="fas fa-eraser"></i></button>
-            {% if event.scan_info and event.scan_info.valhalla %}
-                <div class="scan-result ok" id="scan-result-valhalla">{{ event.scan_info.valhalla.matched_count }} matched / {{ event.scan_info.valhalla.detected_count }} detected</div>
-            {% else %}
-                <div class="scan-result" id="scan-result-valhalla">Not scanned</div>
-            {% endif %}
-        </div>
-    </div>
+    <!-- Removed Valhalla scanner card as requested -->
 </div>
 
 <div class="attendance-layout">
@@ -304,9 +289,6 @@ main{flex:1;overflow:hidden;max-width:1800px !important;width:95% !important}
                         <td class="att-col-info">
                             <div class="member-name" style="font-weight: 600; color: #fff; font-size: 0.95rem;">{{ character.name }}</div>
                             <div class="validation-stack">
-                                <label class="v-badge validation-toggle checkin {% if character.checkin_verified %}on{% endif %}" onclick="event.stopPropagation()">
-                                    <input type="checkbox" name="checkin_verified" value="{{ character.pk }}" {% if character.checkin_verified %}checked{% endif %}> Check-in
-                                </label>
                                 <label class="v-badge validation-toggle scan {% if character.party_scan_verified %}on{% endif %}" onclick="event.stopPropagation()">
                                     <input type="checkbox" name="party_scan_verified" value="{{ character.pk }}" {% if character.party_scan_verified %}checked{% endif %}> Party Scan
                                 </label>
@@ -331,56 +313,7 @@ main{flex:1;overflow:hidden;max-width:1800px !important;width:95% !important}
         </div>
     </div>
 
-    <!-- VALHALLA CLAN -->
-    <div class="clan-col">
-        <div class="clan-header valhalla-header">
-            <span><i class="fas fa-shield-alt"></i> Valhalla</span>
-            <span><span class="clan-count" id="vh">0</span> / {{ valhalla_chars|length }}</span>
-        </div>
-        <div class="clan-search-bar">
-            <input type="text" class="clan-search-input" id="search-valhalla" placeholder="Search Valhalla member...">
-        </div>
-        <div class="table-wrapper">
-            <table class="attendance-table" id="table-valhalla">
-                <thead>
-                    <tr>
-                        <th style="width: 40px; text-align: center;">Att</th>
-                        <th>Member</th>
-                        {% if event.uses_boss_attendance %}<th>Bosses Killed</th>{% endif %}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for character in valhalla_chars %}
-                    <tr class="att-row {% if character.is_attended %}selected{% endif %}" data-character-id="{{ character.pk }}" data-clan="Valhalla">
-                        <td class="att-col-info">
-                            <div class="member-name" style="font-weight: 600; color: #fff; font-size: 0.95rem;">{{ character.name }}</div>
-                            <div class="validation-stack">
-                                <label class="v-badge validation-toggle checkin {% if character.checkin_verified %}on{% endif %}" onclick="event.stopPropagation()">
-                                    <input type="checkbox" name="checkin_verified" value="{{ character.pk }}" {% if character.checkin_verified %}checked{% endif %}> Check-in
-                                </label>
-                                <label class="v-badge validation-toggle scan {% if character.party_scan_verified %}on{% endif %}" onclick="event.stopPropagation()">
-                                    <input type="checkbox" name="party_scan_verified" value="{{ character.pk }}" {% if character.party_scan_verified %}checked{% endif %}> Party Scan
-                                </label>
-                                <span class="v-badge final {% if character.is_attended %}on{% endif %}">Final</span>
-                            </div>
-                        </td>
-                        {% if event.uses_boss_attendance %}
-                        <td class="att-col-bosses" onclick="event.stopPropagation()">
-                            <div class="boss-group" style="flex-direction: column; gap: 4px;">
-                                {% for boss in character.invasion_bosses %}
-                                <label style="font-size: 0.75rem;"><input type="checkbox" class="boss-chk" name="boss_{{ boss.key }}_{{ character.pk }}" value="true" {% if boss.checked %}checked{% endif %}> {{ boss.label }}</label>
-                                {% endfor %}
-                            </div>
-                        </td>
-                        {% endif %}
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="{% if event.uses_boss_attendance %}3{% else %}2{% endif %}" style="text-align: center; color: #555;">No Valhalla members.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+
 </div>
 
 <div class="bc">
@@ -406,7 +339,7 @@ function hasBadge(row, cls) {
 }
 
 function recomputeFinal(row) {
-    const isFinal = hasBadge(row, 'checkin') && hasBadge(row, 'scan');
+    const isFinal = hasBadge(row, 'scan');
     setBadge(row, 'final', isFinal);
     row.classList.toggle('selected', isFinal);
 }
@@ -433,10 +366,7 @@ function updateCounters(){
         document.getElementById('vc').textContent = vTable.querySelectorAll('.att-row.selected').length;
     }
     
-    var hTable = document.getElementById('table-valhalla');
-    if(hTable) {
-        document.getElementById('vh').textContent = hTable.querySelectorAll('.att-row.selected').length;
-    }
+
 }
 updateCounters();
 
@@ -563,7 +493,6 @@ function setupSearch(inputId, tableId) {
     });
 }
 setupSearch('search-valkyrie', 'table-valkyrie');
-setupSearch('search-valhalla', 'table-valhalla');
 </script>
 
 <script>
@@ -580,12 +509,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (valkHeader && valkCard) {
         valkCard.style.margin = "10px 10px 15px 10px";
         valkHeader.parentNode.insertBefore(valkCard, valkHeader);
-    }
-    
-    var valhHeader = document.querySelector('.valhalla-header');
-    if (valhHeader && valhCard) {
-        valhCard.style.margin = "10px 10px 15px 10px";
-        valhHeader.parentNode.insertBefore(valhCard, valhHeader);
     }
     
     var panel = document.getElementById('party-scanner');

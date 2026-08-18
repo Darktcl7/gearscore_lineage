@@ -59,6 +59,10 @@ from .views import (
     upload_soul_proof,
     delete_soul_proof,
     batch_update_souls,
+    # Buyout Criteria
+    buyout_criteria_page,
+    buyout_criteria_manage,
+    reset_buyout_criteria,
 ) 
 
 import dkp.views as dkp_views
@@ -362,5 +366,12 @@ urlpatterns = [
     # AJAX: Batch update souls (new modal flow)
     path('soul/batch-update/', batch_update_souls, name='batch-update-souls'),
 
-]
+    # ===============================================
+    # 10. BUYOUT CRITERIA
+    # ===============================================
+    # Buyout Criteria
+    path('buyout-criteria/', buyout_criteria_page, name='buyout-criteria-leaderboard'),
+    path('manage/buyout-criteria/', buyout_criteria_manage, name='manage-buyout-criteria'),
+    path('api/buyout-criteria/reset/', reset_buyout_criteria, name='reset-buyout-criteria'),
 
+]

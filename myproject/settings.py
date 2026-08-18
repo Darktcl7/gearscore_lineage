@@ -28,7 +28,12 @@ SECRET_KEY = 'django-insecure-_yo+3e#r6_j9c$p)84#t#oj!*qdr$1_n116_tgf-ocq(t&)xr0
 DEBUG = True
 
 ALLOWED_HOSTS = ['valkyrie.id', 'www.valkyrie.id', '148.230.97.130', '127.0.0.1', 'localhost', '*']
-CSRF_TRUSTED_ORIGINS = ['https://valkyrie.id', 'https://www.valkyrie.id']
+CSRF_TRUSTED_ORIGINS = [
+    'https://valkyrie.id', 
+    'https://www.valkyrie.id',
+    'https://valkyrie.id,https://valkyrie.id',
+    'https://www.valkyrie.id,https://www.valkyrie.id',
+]
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Allow authenticating inactive users so we can show "pending approval" message

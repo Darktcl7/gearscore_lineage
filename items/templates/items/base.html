@@ -735,7 +735,8 @@
                     </div>
                 </div>
 
-                <!-- WAR POINT MENU (DROPDOWN) -->
+                <!-- WAR POINT MENU (DISABLED - Temporarily hidden) -->
+                <!--
                 <div class="dropdown">
                     <a href="#" class="dropbtn" style="cursor: default;">War Point ▾</a>
                     <div class="dropdown-content">
@@ -746,6 +747,7 @@
                         <a href="{% url 'war-point-leaderboard' %}">Leaderboard</a>
                     </div>
                 </div>
+                -->
 
                 <!-- PARTY SCANNER REMOVED (testing only) -->
 
@@ -782,6 +784,10 @@
 
                 <a href="{% url 'hall-of-fame-list' %}"
                     class="{% if request.resolver_match.url_name == 'hall-of-fame-list' %}active{% endif %}">Hall of Fame</a>
+
+                <!-- BUYOUT CRITERIA MENU -->
+                <a href="{% url 'buyout-criteria-leaderboard' %}"
+                    class="{% if request.resolver_match.url_name == 'buyout-criteria-leaderboard' %}active{% endif %}">Buyout Criteria</a>
 
                 {% if user.is_staff %}
                 <a href="{% url 'item-list' %}"

@@ -1,0 +1,112 @@
+{% extends 'items/base.html' %}
+{% load static %}
+
+{% block title %}Buyout Criteria Leaderboard{% endblock %}
+
+{% block extra_head %}
+<style>
+    .glass-card {
+        background: linear-gradient(160deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        margin: 20px;
+    }
+    .page-title {
+        color: #fff;
+        text-shadow: 0 0 10px rgba(150, 100, 255, 0.5);
+        font-family: 'Cinzel', serif;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .btn-admin {
+        padding: 8px 16px;
+        background: linear-gradient(135deg, rgba(150, 100, 255, 0.3), rgba(100, 60, 200, 0.4));
+        color: #fff;
+        text-decoration: none;
+        border-radius: 6px;
+        border: 1px solid rgba(150, 100, 255, 0.3);
+        transition: 0.3s;
+    }
+    .btn-admin:hover {
+        background: linear-gradient(135deg, rgba(150, 100, 255, 0.5), rgba(100, 60, 200, 0.6));
+        color: #fff;
+    }
+    
+    .table {
+        width: 100%;
+        color: #ccc;
+        border-collapse: separate;
+        border-spacing: 0 5px;
+    }
+    .table th {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+        color: #f2dfbb;
+    }
+    .table td {
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.02);
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .table tr:hover td {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .rank-cell { font-weight: bold; color: #ffd76b; }
+    .ign-cell { color: #fff; font-weight: bold; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="glass-card">
+    <div class="page-title">
+        <h2>Buyout Criteria</h2>
+        {% if user.is_staff or is_admin %}
+            <a href="{% url 'manage-buyout-criteria' %}" class="btn-admin"><i class="fas fa-cog"></i> Manage Points</a>
+        {% endif %}
+    </div>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>IGN</th>
+                    <th>50% Power Rank</th>
+                    <th>Sub Total 1 (BR+CC)</th>
+                    <th>Sub Total 2 (Invasion Boss)</th>
+                    <th>Sub Total 3 (Veora)</th>
+                    <th>Sub Total 4 (Kustor, Zhepar, Harnak)</th>
+                    <th>Total Point (All)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in criteria %}
+                <tr>
+                    <td class="rank-cell">{{ forloop.counter }}</td>
+                    <td class="ign-cell">{{ item.character.name }}</td>
+                    <td>{{ item.power_rank_point }}</td>
+                    <td>{{ item.boss_rush_cacomb_pts }}</td>
+                    <td>{{ item.invasion_boss_pts }}</td>
+                    <td>{{ item.veora_pts }}</td>
+                    <td>{{ item.kustor_pts }}</td>
+                    <td style="color: #4CAF50; font-weight: bold;">{{ item.total_point }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center">Belum ada data poin buyout criteria.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

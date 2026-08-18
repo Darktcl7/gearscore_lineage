@@ -1345,6 +1345,7 @@ class ActivityEvent(models.Model):
         ('DIMENSIONAL', 'Dimensional Siege'),
         ('ISLE_AWAKENING', 'Isle of Awakening'),
         ('WAR_DAY', 'War Day'),
+        ('VEORA', 'Veora'),
         ('CUSTOM', 'Custom'),
     )
 
@@ -1356,6 +1357,7 @@ class ActivityEvent(models.Model):
         'CATACOMBS': 50,
         'DIMENSIONAL': 100,
         'ISLE_AWAKENING': 100,
+        'VEORA': 100,
         'CUSTOM': 0,
     }
 
@@ -1393,6 +1395,7 @@ class ActivityEvent(models.Model):
     # Results (filled after event)
     is_completed = models.BooleanField("Selesai", default=False)
     is_finalized = models.BooleanField("Finalized", default=False, help_text="Jika True, poin tidak bisa diubah")
+    is_buyout_archived = models.BooleanField("Archived from Buyout", default=False, help_text="Jika True, poin event ini sudah di-reset dari Buyout Criteria")
     
     # Boss Rush & Invasion specific
     boss_killed_count = models.IntegerField("Boss Terbunuh", default=0)
@@ -2333,3 +2336,34 @@ class WarPointProofImage(models.Model):
     def __str__(self):
         return f"Proof for {self.submission.id}"
 
+# ============================================================
+# BUYOUT CRITERIA SYSTEM
+# ============================================================
+
+class BuyoutCriteria(models.Model):
+    character = models.OneToOneField('Character', on_delete=models.CASCADE, related_name='buyout_criteria')
+    boss_rush_cacomb_pts = models.IntegerField("Boss Rush & Cacomb Points", default=0)
+    invasion_boss_pts = models.IntegerField("Invasion Boss Points", default=0)
+    veora_pts = models.IntegerField("Veora Points", default=0)
+    kustor_pts = models.IntegerField("Kustor Points", default=0)
+
+    @property
+    def power_rank_point(self):
+        try:
+            # Mengambil 50% dari gear score (power rank)
+            return self.character.power_rank.gear_score // 2
+        except Exception:
+            return 0
+
+    @property
+    def total_point(self):
+        return (
+            self.boss_rush_cacomb_pts +
+            self.invasion_boss_pts +
+            self.veora_pts +
+            self.kustor_pts +
+            self.power_rank_point
+        )
+
+    def __str__(self):
+        return f"{self.character.name} - Buyout Points: {self.total_point}"

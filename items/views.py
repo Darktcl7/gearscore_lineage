@@ -1709,20 +1709,18 @@ def record_attendance(request, event_pk):
             event.boss_point_config = boss_point_config
             event.save()
         
-        checkin_ids = set(request.POST.getlist('checkin_verified'))
         party_scan_ids = set(request.POST.getlist('party_scan_verified'))
 
-        # Create/update validation records. Final attendance is always derived
-        # from both validations, including admin corrections.
+        # Create/update validation records. Final attendance is now derived
+        # only from the Party Scan verification.
         for char in all_characters:
             char_id = str(char.pk)
-            checkin_verified = char_id in checkin_ids
             party_scan_verified = char_id in party_scan_ids
 
             defaults = {
-                'status': 'ATTENDED' if checkin_verified and party_scan_verified else 'ABSENT',
+                'status': 'ATTENDED' if party_scan_verified else 'ABSENT',
                 'points_earned': 0,
-                'checkin_verified': checkin_verified,
+                'checkin_verified': party_scan_verified, # Deprecated, sync with party scan
                 'party_scan_verified': party_scan_verified,
             }
 
@@ -1792,13 +1790,11 @@ def record_attendance(request, event_pk):
     
     # Split characters by clan
     valkyrie_chars = [c for c in processed_characters if getattr(c, 'clan', 'Valkyrie') == 'Valkyrie']
-    valhalla_chars = [c for c in processed_characters if getattr(c, 'clan', 'Valkyrie') == 'Valhalla']
     
     context = {
         'event': event,
         'characters': processed_characters,
         'valkyrie_chars': valkyrie_chars,
-        'valhalla_chars': valhalla_chars,
         'boss_points': boss_points,
         'is_admin': True,
     }
@@ -1847,12 +1843,22 @@ def scan_party_for_event(request, event_pk):
             )
 
             # Cek apakah character ini ditemukan di scan saat ini
+            # Pertama: exact match terhadap detected names (sudah di-normalize via fuzzy)
             is_matched_now = character.name.lower() in detected_lookup
+            # Fallback: fuzzy match terhadap raw OCR results (jika normalize belum ter-catch)
+            if not is_matched_now:
+                from difflib import SequenceMatcher
+                for det_name in detected_lookup:
+                    ratio = SequenceMatcher(None, character.name.lower(), det_name).ratio()
+                    if ratio >= 0.75:
+                        is_matched_now = True
+                        break
             
             # ADDITIVE: Jika sudah ter-scan sebelumnya ATAU ditemukan di scan ini, set True
             if is_matched_now:
                 activity.party_scan_verified = True
-                activity.status = 'ATTENDED' if activity.checkin_verified and activity.party_scan_verified else 'ABSENT'
+                activity.checkin_verified = True # Deprecated, sync with party scan
+                activity.status = 'ATTENDED' if activity.party_scan_verified else 'ABSENT'
                 activity.save()
 
             # Return semua member yang ter-scan (baik dari scan sebelumnya maupun scan ini)
@@ -3189,8 +3195,28 @@ def _scan_party_members_from_image(image_file):
         for name in Character.objects.values_list('name', flat=True)
     }
 
+    def _fuzzy_match_name(name):
+        """Try exact match first, then fuzzy match against all registered character names."""
+        from difflib import SequenceMatcher
+        name_lower = name.lower().strip()
+        # Exact match
+        if name_lower in character_name_lookup:
+            return character_name_lookup[name_lower]
+        # Fuzzy match — find best match above threshold
+        best_match = None
+        best_ratio = 0.0
+        for db_name_lower, db_name_original in character_name_lookup.items():
+            ratio = SequenceMatcher(None, name_lower, db_name_lower).ratio()
+            if ratio > best_ratio:
+                best_ratio = ratio
+                best_match = db_name_original
+        # Threshold 0.75 (75% similarity) — high enough to avoid false positives
+        if best_match and best_ratio >= 0.75:
+            return best_match
+        return name
+
     def normalize_member_name(name):
-        return character_name_lookup.get(name.lower(), name)
+        return _fuzzy_match_name(name)
 
     reader = _get_easyocr_reader()
     results = reader.readtext(img_np, detail=1, paragraph=False)
@@ -4207,6 +4233,322 @@ def analyze_party_image(request):
         return JsonResponse(result)
 
     except ImportError:
-        return JsonResponse({'error': 'EasyOCR is not installed on this server. Please install it with: pip install easyocr'}, status=500)
+        return JsonResponse({'error': 'EasyOCR is not installed'}, status=500)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+@login_required
+
+def check_in_event(request):
+    """
+    Player page to upload screenshot for checking in.
+    """
+    import re
+    from django.utils import timezone
+    from PIL import Image
+    
+    if request.method == 'POST':
+        event_id = request.POST.get('event')
+        submitter_id = request.POST.get('submitter')
+        image = request.FILES.get('screenshot')
+        
+        if not event_id or not submitter_id or not image:
+            messages.error(request, 'Mohon lengkapi semua data dan upload gambar.')
+            return redirect('check-in-event')
+            
+        event = get_object_or_404(ActivityEvent, pk=event_id)
+        submitter = get_object_or_404(Character, pk=submitter_id)
+        
+        # Check if event is active
+        if event.is_completed:
+            messages.error(request, 'Event ini sudah selesai.')
+            return redirect('check-in-event')
+            
+        # Create proof record
+        proof = EventCheckInProof.objects.create(
+            event=event,
+            submitter=submitter,
+            image=image,
+            is_valid=False
+        )
+        
+        # Process OCR
+        try:
+            import pytesseract
+        except ImportError:
+            pytesseract = None
+        
+        try:
+            if pytesseract is None:
+                raise Exception("Tesseract is not installed - using simulation mode")
+            
+            # We will open the image and run OCR
+            img = Image.open(proof.image.path)
+            extracted_text = pytesseract.image_to_string(img)
+            proof.extracted_text = extracted_text
+            
+            # 1. Check token
+            token = event.checkin_token
+            if not token:
+                proof.error_reason = "Event ini tidak membutuhkan verifikasi token."
+                proof.save()
+            elif token not in extracted_text:
+                proof.error_reason = f"Token '{token}' tidak ditemukan di gambar."
+                proof.save()
+            else:
+                # 2. Check Party Members
+                # Look for patterns like "1P Name", "2P Name", "3P Name", "4P Name"
+                # This regex looks for 1P, 2P, 3P, 4P followed by a space and then a word (the name)
+                party_members = []
+                # A simple regex to catch party members on the left side
+                matches = re.finditer(r'([1-4]P)\s+([A-Za-z0-9_]+)', extracted_text)
+                for match in matches:
+                    party_members.append(match.group(2))
+                
+                # Also include submitter just in case 1P is not perfectly caught
+                if submitter.name not in party_members:
+                    party_members.append(submitter.name)
+                    
+                # Remove duplicates
+                party_members = list(set(party_members))
+                proof.detected_party_members = ", ".join(party_members)
+                
+                if len(party_members) < 2:
+                    proof.error_reason = "Party tidak valid. Ditemukan kurang dari 2 anggota party di layar."
+                    proof.save()
+                else:
+                    # Valid! Mark attended
+                    proof.is_valid = True
+                    proof.save()
+                    
+                    # Mark attendance for all matched members
+                    for member_name in party_members:
+                        character = Character.objects.filter(name__iexact=member_name).first()
+                        if character:
+                            # Create or update activity
+                            activity, created = PlayerActivity.objects.get_or_create(
+                                player=character,
+                                event=event,
+                                defaults={
+                                    'status': 'ABSENT',
+                                    'points_earned': 0
+                                }
+                            )
+                            activity.checkin_verified = True
+                            activity.checked_in_at = timezone.now()
+                            activity.status = 'ATTENDED' if activity.party_scan_verified else 'ABSENT'
+                            activity.save()
+                    
+                    messages.success(request, f'Sukses! Kehadiran {len(party_members)} member party telah dikonfirmasi.')
+                    return redirect('my-activity')
+                    
+        except Exception as e:
+            # Fallback if OCR fails or Tesseract is not installed
+            # For demonstration, we will mock it if Tesseract is not found
+            if 'tesseract is not installed' in str(e).lower():
+                proof.error_reason = "Simulasi: Sukses (Tesseract tidak terinstall, tapi sistem pura-pura sukses untuk demo)."
+                proof.is_valid = True
+                proof.save()
+                
+                # Auto-attend submitter for demo
+                PlayerActivity.objects.update_or_create(
+                    player=submitter,
+                    event=event,
+                    defaults={
+                        'status': 'ABSENT',
+                        'points_earned': 0,
+                        'checkin_verified': True,
+                        'checked_in_at': timezone.now(),
+                    }
+                )
+                messages.warning(request, 'Mode Simulasi: Tesseract tidak terinstall di server. Kehadiran Anda dicatat sebagai simulasi.')
+                return redirect('my-activity')
+            else:
+                proof.error_reason = f"OCR Error: {str(e)}"
+                proof.save()
+                messages.error(request, 'Gagal memproses gambar. Pastikan kualitas gambar jelas.')
+        
+        return redirect('check-in-event')
+
+    # GET Request
+    active_events = ActivityEvent.objects.filter(is_completed=False).order_by('-date')
+    user_characters = Character.objects.filter(owner=request.user)
+    
+    # Preselect event from URL
+    preselected_token = request.GET.get('event_id')
+    preselected_event = None
+    if preselected_token:
+        preselected_event = ActivityEvent.objects.filter(checkin_token=preselected_token, is_completed=False).first()
+    
+    context = {
+        'active_events': active_events,
+        'user_characters': user_characters,
+        'preselected_event': preselected_event,
+    }
+    return render(request, 'items/check_in_event.html', context)
+
+
+# ======================================================
+# PARTY SCANNER
+# ======================================================
+@login_required
+def party_scanner_page(request):
+    """
+    Party Scanner page - Upload party screenshot and extract data to JSON.
+    """
+    return render(request, 'items/party_scanner.html')
+
+
+@login_required
+def analyze_party_image(request):
+    """
+    API Endpoint to scan party screenshot via EasyOCR and return structured JSON.
+    Reads party groups and player names from the uploaded image.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    screenshot = request.FILES.get('screenshot')
+    if not screenshot:
+        return JsonResponse({'error': 'No image provided'}, status=400)
+
+    try:
+        result = _scan_party_members_from_image(screenshot)
+        if not result.get('success'):
+            return JsonResponse({'error': result.get('error', 'Unable to scan image')}, status=result.get('status', 500))
+        return JsonResponse(result)
+
+    except ImportError:
+        return JsonResponse({'error': 'EasyOCR is not installed'}, status=500)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+# ======================================================
+# BUYOUT CRITERIA
+# ======================================================
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
+from django.contrib import messages
+from items.models import Character, PlayerActivity, ActivityEvent
+
+def is_admin(user):
+    return user.is_authenticated and (user.is_superuser or user.groups.filter(name='Admin').exists())
+
+@login_required
+def buyout_criteria_page(request):
+    """
+    Public leaderboard for Buyout Criteria (Dynamic from PlayerActivity)
+    """
+    characters = Character.objects.select_related('power_rank').all()
+    
+    # Pre-fetch all activities that are ATTENDED and not archived
+    activities = PlayerActivity.objects.filter(
+        status='ATTENDED', 
+        event__is_buyout_archived=False
+    ).select_related('event')
+    
+    # Map them by character
+    activity_map = {}
+    for act in activities:
+        if act.player_id not in activity_map:
+            activity_map[act.player_id] = []
+        activity_map[act.player_id].append(act)
+        
+    criteria = []
+    
+    for char in characters:
+        char_acts = activity_map.get(char.id, [])
+        
+        br_cc_pts = 0
+        invasion_pts = 0
+        veora_pts = 0
+        kustor_pts = 0
+        
+        for act in char_acts:
+            e_type = act.event.event_type
+            # 1. BR + CC
+            if e_type in ['BOSS_RUSH', 'CATACOMBS']:
+                br_cc_pts += act.event.max_points if act.event.max_points else ActivityEvent.DEFAULT_POINTS.get(e_type, 0)
+            # 2. INVASION
+            elif e_type in ['INV_DRAGON_BEAST', 'INV_CARNIFEX', 'INV_ORFEN', 'INVASION']:
+                if act.event.uses_boss_attendance:
+                    for boss_key, killed in act.bosses_killed.items():
+                        if killed:
+                            invasion_pts += act.event.boss_point_config.get(boss_key, 100)
+                else:
+                    invasion_pts += act.event.max_points if act.event.max_points else 100
+            # 3. VEORA
+            elif e_type == 'VEORA':
+                veora_pts += act.event.max_points if act.event.max_points else 100
+            # 4. KUSTOR, ZHEPAR, HARNAK — dari Raid Boss Activity page (event_type CUSTOM, prefix [Arena Boss])
+            elif e_type == 'CUSTOM':
+                event_name = act.event.name or ''
+                # Format dari halaman Raid Boss Activity: "[Arena Boss] Kustor", "[Arena Boss] Zhepar", "[Arena Boss] Harnak"
+                is_arena_boss = '[Arena Boss]' in event_name
+                is_target_boss = 'Kustor' in event_name or 'Zhepar' in event_name or 'Harnak' in event_name
+                if is_arena_boss and is_target_boss:
+                    kustor_pts += act.points_earned if act.points_earned else (act.event.max_points if act.event.max_points else 1000)
+                
+        # Calculate 50% power rank
+        pr_50 = 0
+        if hasattr(char, 'power_rank') and char.power_rank:
+            try:
+                pr_50 = int(float(char.power_rank.gear_score) / 2)
+            except:
+                pass
+                
+        total_point = pr_50 + br_cc_pts + invasion_pts + veora_pts + kustor_pts
+        
+        class DummyCriteria:
+            pass
+        
+        c = DummyCriteria()
+        c.character = char
+        c.boss_rush_cacomb_pts = br_cc_pts
+        c.invasion_boss_pts = invasion_pts
+        c.veora_pts = veora_pts
+        c.kustor_pts = kustor_pts
+        c.total_point = total_point
+        c.power_rank_point = pr_50
+        
+        criteria.append(c)
+        
+    # Rank diurutkan berdasarkan 50% Power Rank (bukan total point)
+    criteria.sort(key=lambda x: x.power_rank_point, reverse=True)
+    
+    return render(request, 'items/buyout_criteria_leaderboard.html', {
+        'criteria': criteria,
+    })
+
+@login_required
+def buyout_criteria_manage(request):
+    """
+    Admin page to Reset Buyout Criteria
+    """
+    if not is_admin(request.user):
+        messages.error(request, "Akses ditolak.")
+        return redirect('buyout-criteria-leaderboard')
+        
+    active_events = ActivityEvent.objects.filter(is_buyout_archived=False).order_by('-date')
+    
+    return render(request, 'items/buyout_criteria_manage.html', {
+        'active_events': active_events
+    })
+
+@login_required
+@require_http_methods(["POST"])
+def reset_buyout_criteria(request):
+    """
+    API Endpoint to archive current events, effectively resetting the buyout criteria
+    """
+    if not is_admin(request.user):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+    try:
+        # Mark all currently unarchived events as archived
+        updated = ActivityEvent.objects.filter(is_buyout_archived=False).update(is_buyout_archived=True)
+        return JsonResponse({'success': True, 'archived_count': updated})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
