@@ -4463,8 +4463,9 @@ def buyout_criteria_page(request):
         activity_map[act.player_id].append(act)
         
     # Pre-fetch activities for Weekly Event Points (matching Activity Leaderboard's weekly logic)
+    # We do NOT filter by status='ATTENDED' here because Score Adjustments often don't have it.
+    # The sum of points_earned naturally handles absent players (they get 0).
     weekly_qs = PlayerActivity.objects.filter(
-        status='ATTENDED',
         event__is_completed=True
     ).select_related('event')
     
@@ -4499,9 +4500,8 @@ def buyout_criteria_page(request):
             is_invasion = e_type in ['INV_DRAGON_BEAST', 'INV_CARNIFEX', 'INV_ORFEN', 'INVASION']
             
             if (e_type != 'CUSTOM' and not is_invasion) or is_score_adj or (e_type == 'CUSTOM' and not is_raid_boss_name and not is_score_adj and not is_ap_adj):
+                # No fallback to max_points used here, to exactly match the Activity Leaderboard behavior
                 pts = (act.points_earned or 0) + (act.win_streak_bonus or 0)
-                if not pts and e_type in ['BOSS_RUSH', 'CATACOMBS', 'ISLE_AWAKENING', 'DIMENSIONAL', 'WAR_DAY']:
-                    pts = act.event.max_points if act.event.max_points else ActivityEvent.DEFAULT_POINTS.get(e_type, 0)
                 br_cc_pts += pts
 
         # Calculate Invasion, Veora, Kustor from Unarchived Activities
