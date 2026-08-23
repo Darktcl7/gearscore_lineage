@@ -4472,20 +4472,35 @@ def buyout_criteria_page(request):
         
         for act in char_acts:
             e_type = act.event.event_type
-            # 1. BR + CC
-            if e_type in ['BOSS_RUSH', 'CATACOMBS']:
-                br_cc_pts += act.event.max_points if act.event.max_points else ActivityEvent.DEFAULT_POINTS.get(e_type, 0)
+            event_name = act.event.name or ''
+            
+            # 1. Event Points (replaces old BR+CC logic)
+            # Match the tier_event_filter logic from activity_leaderboard, BUT exclude INVASION so we don't double count.
+            is_raid_boss_name = any(b in event_name for b in ['[Raid Boss]', '[Territory Boss]', '[World Boss]', '[Rift Boss]', '[Arena Boss]', 'War Day:'])
+            is_score_adj = event_name.startswith('Score Adjustment:')
+            is_ap_adj = event_name.startswith('AP Adjustment:')
+            
+            is_invasion = e_type in ['INV_DRAGON_BEAST', 'INV_CARNIFEX', 'INV_ORFEN', 'INVASION']
+            
+            if (e_type != 'CUSTOM' and not is_invasion) or is_score_adj or (e_type == 'CUSTOM' and not is_raid_boss_name and not is_score_adj and not is_ap_adj):
+                pts = (act.points_earned or 0) + (act.win_streak_bonus or 0)
+                # Fallback for old Boss Rush/Catacombs that relied on event max_points
+                if not pts and e_type in ['BOSS_RUSH', 'CATACOMBS', 'ISLE_AWAKENING', 'DIMENSIONAL', 'WAR_DAY']:
+                    pts = act.event.max_points if act.event.max_points else ActivityEvent.DEFAULT_POINTS.get(e_type, 0)
+                br_cc_pts += pts
+
             # 2. INVASION
-            elif e_type in ['INV_DRAGON_BEAST', 'INV_CARNIFEX', 'INV_ORFEN', 'INVASION']:
+            if is_invasion:
                 if act.event.uses_boss_attendance:
                     for boss_key, killed in act.bosses_killed.items():
                         if killed:
                             invasion_pts += act.event.boss_point_config.get(boss_key, 100)
                 else:
                     invasion_pts += act.event.max_points if act.event.max_points else 100
+                    
             # 3 & 4. CUSTOM EVENTS FROM RAID BOSS PAGE (Veora Ruins, Arena Boss)
-            elif e_type == 'CUSTOM':
-                event_name = act.event.name or ''
+            if e_type == 'CUSTOM':
+                # event_name is already assigned at the top of the loop
                 
                 # Veora Ruins logic (World Boss)
                 is_world_boss = '[World Boss]' in event_name
