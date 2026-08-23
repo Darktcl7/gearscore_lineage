@@ -4594,3 +4594,55 @@ def reset_buyout_criteria(request):
         return JsonResponse({'success': True, 'archived_count': updated})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+@require_http_methods(["POST"])
+def analyze_party_image(request):
+    """
+    API Endpoint to scan an image via EasyOCR and return detected Valkyrie members.
+    Used for Raid Boss creation where the event does not exist yet.
+    """
+    if not check_event_admin(request.user):
+        return JsonResponse({'error': 'Only Event administrators can scan.'}, status=403)
+
+    screenshot = request.FILES.get('screenshot')
+    if not screenshot:
+        return JsonResponse({'error': 'No image provided'}, status=400)
+
+    try:
+        scan_result = _scan_party_members_from_image(screenshot)
+        if not scan_result.get('success'):
+            return JsonResponse({'error': scan_result.get('error', 'Unable to scan image')}, status=scan_result.get('status', 500))
+
+        detected_names = scan_result.get('all_names', [])
+        detected_lookup = {name.lower(): name for name in detected_names}
+
+        clan_characters = Character.objects.filter(clan='Valkyrie').only('id', 'name')
+        matched_ids = []
+        matched_names = []
+
+        for character in clan_characters:
+            is_matched_now = character.name.lower() in detected_lookup
+            if not is_matched_now:
+                from difflib import SequenceMatcher
+                for det_name in detected_lookup:
+                    ratio = SequenceMatcher(None, character.name.lower(), det_name).ratio()
+                    if ratio >= 0.75:
+                        is_matched_now = True
+                        break
+            
+            if is_matched_now:
+                matched_ids.append(character.pk)
+                matched_names.append(character.name)
+
+        return JsonResponse({
+            'success': True,
+            'detected_count': len(detected_names),
+            'matched_count': len(matched_ids),
+            'matched_ids': matched_ids,
+            'matched_names': matched_names,
+        })
+    except ImportError:
+        return JsonResponse({'error': 'EasyOCR is not installed.'}, status=500)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

@@ -757,6 +757,21 @@
                 </div>
                 <input type="hidden" name="value" id="pts-hidden-world" value="10">
 
+                <!-- Scanner Panel for World Boss -->
+                <div class="scanner-panel" style="margin-bottom: 16px;">
+                    <div class="scanner-card" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                        <div>
+                            <div class="scanner-title" style="font-weight: 700; color: #fff;"><i class="fas fa-camera"></i> Scan Participants (World Boss)</div>
+                            <div class="scanner-meta" style="font-size: 0.78rem; color: #888; margin-top: 3px;">Upload party screenshot to auto-select members.</div>
+                        </div>
+                        <div class="scan-controls" style="display: flex; align-items: center; gap: 8px;">
+                            <input type="file" id="scan-file-world" class="scan-file" accept="image/png,image/jpeg,image/webp" style="display: none;">
+                            <button type="button" class="scan-btn" data-tab="world" style="padding: 9px 12px; border: none; border-radius: 8px; color: #fff; font-weight: 700; cursor: pointer; background: linear-gradient(145deg, #3498db, #2471a3);" onclick="document.getElementById('scan-file-world').click()"><i class="fas fa-camera"></i> Scan</button>
+                            <div class="scan-result" id="scan-result-world" style="font-size: 0.78rem; color: #aaa; min-width: 145px; text-align: right;"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="participant-section" id="part-section-world">
                     <div class="participant-section-header">
                         <span class="participant-section-title"><i class="fas fa-users" style="margin-right:8px;"></i>Who participated?</span>
@@ -887,6 +902,21 @@
                     <span class="selected-summary" id="arena-summary">Select a boss above to continue.</span>
                 </div>
                 <input type="hidden" name="value" id="pts-hidden-arena" value="10">
+
+                <!-- Scanner Panel for Arena Boss -->
+                <div class="scanner-panel" style="margin-bottom: 16px;">
+                    <div class="scanner-card" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                        <div>
+                            <div class="scanner-title" style="font-weight: 700; color: #fff;"><i class="fas fa-camera"></i> Scan Participants (Arena Boss)</div>
+                            <div class="scanner-meta" style="font-size: 0.78rem; color: #888; margin-top: 3px;">Upload party screenshot to auto-select members.</div>
+                        </div>
+                        <div class="scan-controls" style="display: flex; align-items: center; gap: 8px;">
+                            <input type="file" id="scan-file-arena" class="scan-file" accept="image/png,image/jpeg,image/webp" style="display: none;">
+                            <button type="button" class="scan-btn" data-tab="arena" style="padding: 9px 12px; border: none; border-radius: 8px; color: #fff; font-weight: 700; cursor: pointer; background: linear-gradient(145deg, #3498db, #2471a3);" onclick="document.getElementById('scan-file-arena').click()"><i class="fas fa-camera"></i> Scan</button>
+                            <div class="scan-result" id="scan-result-arena" style="font-size: 0.78rem; color: #aaa; min-width: 145px; text-align: right;"></div>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="participant-section" id="part-section-arena">
                     <div class="participant-section-header">
@@ -1481,6 +1511,200 @@ document.querySelectorAll('.btn-delete-row').forEach(function(btn) {
         
         document.getElementById('bulkDeleteIds').value = eventId;
         document.getElementById('deleteModal').classList.add('active');
+    if (counter) counter.textContent = count + ' selected';
+
+}
+
+
+
+// ===== TOGGLE PARTICIPANT LIST IN RECENT ACTIVITIES =====
+
+function toggleParticipantList(btn) {
+
+    var list = btn.parentElement.querySelector('.participant-name-list');
+
+    if (!list) return;
+
+    btn.classList.toggle('open');
+
+    list.classList.toggle('show');
+
+}
+
+
+
+// ===== BUILD FORM & VALIDATE =====
+function buildBossForm(form) {
+    var rb = form.querySelector('input[type="radio"]:checked');
+    if (!rb) { alert('Please select a boss first!'); return false; }
+
+    var checked = form.querySelectorAll('.participant-section input[type="checkbox"]:checked');
+    if (checked.length === 0) { alert('Please select at least one participant!'); return false; }
+
+    form.querySelector('input[name="name"]').value = rb.value;
+    return true;
+}
+
+// ===== EDIT RECENT ACTIVITY PARTICIPANTS =====
+document.querySelectorAll('.btn-edit-row').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var tab = this.dataset.tab || 'raid';
+        var eventId = this.dataset.id;
+        var bossName = this.dataset.bossName || '';
+        var points = this.dataset.pts || '0';
+        var note = this.dataset.note || '';
+        var isWarDay = this.dataset.warDay === '1';
+        var participantIds = [];
+        try { participantIds = JSON.parse(this.dataset.participants || '[]').map(String); } catch(e) {}
+
+        activateTab(tab);
+        var tabContent = document.getElementById('tab-' + tab);
+        if (!tabContent) return;
+        var form = tabContent.querySelector('form');
+        if (!form) return;
+
+        var actionInput = form.querySelector('input[name="action"]');
+        if (actionInput) actionInput.value = 'update';
+        var eventInput = form.querySelector('input[name="event_id"]');
+        if (!eventInput) {
+            eventInput = document.createElement('input');
+            eventInput.type = 'hidden';
+            eventInput.name = 'event_id';
+            form.appendChild(eventInput);
+        }
+        eventInput.value = eventId;
+
+        form.querySelectorAll('.boss-pill').forEach(function(pill) {
+            pill.classList.remove('checked');
+            var icon = pill.querySelector('.check-icon');
+            if (icon) icon.textContent = '';
+            var radio = pill.querySelector('input[type="radio"]');
+            if (radio) radio.checked = false;
+        });
+
+        var bossRadio = Array.from(form.querySelectorAll('input[type="radio"]')).find(function(r) {
+            return r.value === bossName;
+        });
+        if (bossRadio) {
+            bossRadio.checked = true;
+            var bossPill = bossRadio.closest('.boss-pill');
+            if (bossPill) {
+                bossPill.classList.add('checked');
+                var icon = bossPill.querySelector('.check-icon');
+                if (icon) icon.textContent = '\u2713';
+            }
+        }
+
+        var warDayInput = form.querySelector('input[name="war_day"]');
+        if (warDayInput) warDayInput.checked = isWarDay;
+        var hiddenPts = document.getElementById('pts-hidden-' + tab);
+        if (hiddenPts) hiddenPts.value = points;
+        var ptsBadge = document.getElementById('pts-badge-' + tab);
+        if (ptsBadge) ptsBadge.textContent = points + ' pts';
+        var noteInput = form.querySelector('textarea[name="activity_note"]');
+        if (noteInput) noteInput.value = note;
+
+        var partSection = document.getElementById('part-section-' + tab);
+        if (partSection) partSection.style.display = 'block';
+        form.querySelectorAll('.part-pill').forEach(function(pill) {
+            var cb = pill.querySelector('input[type="checkbox"]');
+            if (!cb) return;
+            var checked = participantIds.indexOf(cb.value) !== -1;
+            cb.checked = checked;
+            pill.classList.toggle('checked', checked);
+            var check = pill.querySelector('.part-check');
+            if (check) check.textContent = checked ? '\u2713' : '';
+        });
+        updatePartCounter(form);
+
+        var summaryEl = tabContent.querySelector('.selected-summary');
+        if (summaryEl) summaryEl.textContent = 'Editing ' + bossName + ' — adjust participants, then save.';
+        var submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save" style="margin-right:6px;"></i>SAVE CHANGES';
+        tabContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+});
+// ===== BULK DELETE FOR RECENT ACTIVITIES =====
+function toggleEventSelectAll() {
+    var sa = document.getElementById('eventSelectAll');
+    document.querySelectorAll('.event-cb').forEach(function(cb) {
+        cb.checked = sa.checked;
+    });
+    updateEventSelCount();
+}
+
+function updateEventSelCount() {
+    var checked = document.querySelectorAll('.event-cb:checked');
+    var total = document.querySelectorAll('.event-cb');
+    var el = document.getElementById('eventSelCount');
+    var btn = document.getElementById('bulkDeleteBtn');
+    var sa = document.getElementById('eventSelectAll');
+    if (el) el.textContent = checked.length + ' selected';
+    if (btn) btn.disabled = checked.length === 0;
+    // Sync select-all checkbox
+    if (sa) sa.checked = checked.length === total.length && total.length > 0;
+}
+
+function getSelectedEventIds() {
+    var ids = [];
+    document.querySelectorAll('.event-cb:checked').forEach(function(cb) {
+        ids.push(cb.value);
+    });
+    return ids;
+}
+
+function showBulkDeleteModal() {
+    var ids = getSelectedEventIds();
+    if (ids.length === 0) return;
+    var msg = document.getElementById('deleteModalMsg');
+    var previewBox = document.getElementById('deletePreviewBox');
+    previewBox.style.display = 'none';
+    msg.textContent = 'Are you sure you want to delete ' + ids.length + ' selected activities?';
+    document.getElementById('deleteModal').classList.add('active');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('active');
+}
+
+function confirmBulkDelete() {
+    var ids = getSelectedEventIds();
+    if (ids.length > 0) {
+        document.getElementById('bulkDeleteIds').value = ids.join(',');
+    }
+    
+    if (!document.getElementById('bulkDeleteIds').value) return;
+    
+    document.getElementById('bulkDeleteForm').submit();
+}
+
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) closeDeleteModal();
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeDeleteModal();
+});
+
+// ===== SINGLE DELETE =====
+document.querySelectorAll('.btn-delete-row').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var eventId = this.dataset.id;
+        var eventName = this.dataset.name;
+        var points = this.dataset.pts;
+        var date = this.dataset.date;
+        var participants = this.dataset.count;
+
+        var msg = document.getElementById('deleteModalMsg');
+        msg.innerHTML = 'Hapus activity ini? <strong>Poin semua ' + participants + ' member akan ikut terhapus.</strong>';
+        
+        var previewBox = document.getElementById('deletePreviewBox');
+        previewBox.style.display = 'block';
+        document.getElementById('previewName').textContent = eventName;
+        document.getElementById('previewPoints').textContent = points + ' pts';
+        document.getElementById('previewDate').textContent = date;
+        
+        document.getElementById('bulkDeleteIds').value = eventId;
+        document.getElementById('deleteModal').classList.add('active');
     });
 });
 
@@ -1488,4 +1712,76 @@ document.querySelectorAll('.btn-delete-row').forEach(function(btn) {
 loadBossPoints();
 buildSettingsPanel();
 </script>
+
+<script>
+    // Scanner JavaScript Logic
+    document.querySelectorAll('.scan-file').forEach(function(input) {
+        input.addEventListener('change', function() {
+            const tab = this.id.split('-').pop(); // e.g., 'world' or 'arena'
+            const btn = document.querySelector(`.scan-btn[data-tab="${tab}"]`);
+            if (this.files.length && btn) {
+                scanRaidBossImage(tab, this.files[0], btn);
+            }
+        });
+    });
+
+    function scanRaidBossImage(tab, file, btn) {
+        const resultEl = document.getElementById('scan-result-' + tab);
+        const originalHtml = btn.innerHTML;
+        const formData = new FormData();
+        formData.append('screenshot', file);
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning';
+        resultEl.textContent = 'Scanning image...';
+        resultEl.style.color = '#aaa';
+
+        fetch("{% url 'analyze-party-image' %}", {
+            method: 'POST',
+            headers: {'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value},
+            body: formData
+        })
+        .then(response => response.json().then(data => ({ok: response.ok, data: data})))
+        .then(({ok, data}) => {
+            if (!ok || !data.success) {
+                throw new Error(data.error || 'Scan failed');
+            }
+
+            const section = document.getElementById('part-section-' + tab);
+            const form = section.closest('form');
+
+            data.matched_ids.forEach(function(charId) {
+                const cb = section.querySelector(`input[value="${charId}"]`);
+                if (cb && !cb.checked) {
+                    cb.checked = true;
+                    const pill = cb.closest('label');
+                    pill.classList.add('checked');
+                    const check = pill.querySelector('.part-check');
+                    if (check) check.textContent = '\u2713';
+                }
+            });
+
+            // Update counter using the existing function
+            if (typeof updatePartCounter === 'function') {
+                updatePartCounter(form);
+            }
+            
+            resultEl.textContent = data.matched_count + ' matched / ' + data.detected_count + ' detected';
+            resultEl.style.color = data.matched_count > 0 ? '#88ffaa' : '#ffdd57';
+            
+            // Clear file input
+            const fileInput = document.getElementById('scan-file-' + tab);
+            if (fileInput) fileInput.value = '';
+        })
+        .catch(error => {
+            resultEl.textContent = error.message;
+            resultEl.style.color = '#ffdd57';
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        });
+    }
+</script>
+
 {% endblock %}
