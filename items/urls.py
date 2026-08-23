@@ -85,8 +85,6 @@ urlpatterns = [
     path('activity/reset-data/', reset_leaderboard_data, name='reset-leaderboard-data'),
     
     # URL: /items/items/ -> Menampilkan daftar semua item
-    path('items/', item_list, name='item-list'), 
-    
     # URL: /items/item/new/ -> Formulir untuk membuat item baru
     path('item/new/', create_item, name='create-item'), 
 

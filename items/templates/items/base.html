@@ -810,8 +810,6 @@
                     class="{% if request.resolver_match.url_name == 'buyout-criteria-leaderboard' %}active{% endif %}">Buyout Criteria</a>
 
                 {% if user.is_staff %}
-                <a href="{% url 'item-list' %}"
-                    class="{% if request.resolver_match.url_name == 'item-list' %}active{% endif %}">Armory</a>
                 {% endif %}
 
                 {% if user.is_staff or "Sub Admin" in user.groups.all|join:", " %}
