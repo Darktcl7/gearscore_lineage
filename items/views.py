@@ -4447,48 +4447,69 @@ def buyout_criteria_page(request):
     """
     characters = Character.objects.select_related('power_rank').all()
     
-    # Pre-fetch all activities that are ATTENDED and not archived
+    from items.models import LeaderboardConfig
+    lb_config = LeaderboardConfig.get_config()
+    
+    # Pre-fetch all activities that are ATTENDED and not archived (for Invasion, Veora, Kustor)
     activities = PlayerActivity.objects.filter(
         status='ATTENDED', 
         event__is_buyout_archived=False
     ).select_related('event')
     
-    # Map them by character
     activity_map = {}
     for act in activities:
         if act.player_id not in activity_map:
             activity_map[act.player_id] = []
         activity_map[act.player_id].append(act)
         
+    # Pre-fetch activities for Weekly Event Points (matching Activity Leaderboard's weekly logic)
+    weekly_qs = PlayerActivity.objects.filter(
+        status='ATTENDED',
+        event__is_completed=True
+    ).select_related('event')
+    
+    if lb_config.weekly_reset_at:
+        weekly_qs = weekly_qs.filter(event__date__gte=lb_config.weekly_reset_at)
+        
+    weekly_map = {}
+    for act in weekly_qs:
+        if act.player_id not in weekly_map:
+            weekly_map[act.player_id] = []
+        weekly_map[act.player_id].append(act)
+        
     criteria = []
     
     for char in characters:
         char_acts = activity_map.get(char.id, [])
+        weekly_acts = weekly_map.get(char.id, [])
         
         br_cc_pts = 0
         invasion_pts = 0
         veora_pts = 0
         kustor_pts = 0
         
-        for act in char_acts:
+        # Calculate Event Points from Weekly Activities
+        for act in weekly_acts:
             e_type = act.event.event_type
             event_name = act.event.name or ''
             
-            # 1. Event Points (replaces old BR+CC logic)
-            # Match the tier_event_filter logic from activity_leaderboard, BUT exclude INVASION so we don't double count.
             is_raid_boss_name = any(b in event_name for b in ['[Raid Boss]', '[Territory Boss]', '[World Boss]', '[Rift Boss]', '[Arena Boss]', 'War Day:'])
             is_score_adj = event_name.startswith('Score Adjustment:')
             is_ap_adj = event_name.startswith('AP Adjustment:')
-            
             is_invasion = e_type in ['INV_DRAGON_BEAST', 'INV_CARNIFEX', 'INV_ORFEN', 'INVASION']
             
             if (e_type != 'CUSTOM' and not is_invasion) or is_score_adj or (e_type == 'CUSTOM' and not is_raid_boss_name and not is_score_adj and not is_ap_adj):
                 pts = (act.points_earned or 0) + (act.win_streak_bonus or 0)
-                # Fallback for old Boss Rush/Catacombs that relied on event max_points
                 if not pts and e_type in ['BOSS_RUSH', 'CATACOMBS', 'ISLE_AWAKENING', 'DIMENSIONAL', 'WAR_DAY']:
                     pts = act.event.max_points if act.event.max_points else ActivityEvent.DEFAULT_POINTS.get(e_type, 0)
                 br_cc_pts += pts
 
+        # Calculate Invasion, Veora, Kustor from Unarchived Activities
+        for act in char_acts:
+            e_type = act.event.event_type
+            event_name = act.event.name or ''
+            is_invasion = e_type in ['INV_DRAGON_BEAST', 'INV_CARNIFEX', 'INV_ORFEN', 'INVASION']
+            
             # 2. INVASION
             if is_invasion:
                 if act.event.uses_boss_attendance:
@@ -4500,8 +4521,6 @@ def buyout_criteria_page(request):
                     
             # 3 & 4. CUSTOM EVENTS FROM RAID BOSS PAGE (Veora Ruins, Arena Boss)
             if e_type == 'CUSTOM':
-                # event_name is already assigned at the top of the loop
-                
                 # Veora Ruins logic (World Boss)
                 is_world_boss = '[World Boss]' in event_name
                 is_veora_boss = any(b in event_name for b in ['Shila', 'Moof', 'Normus', 'Ukanba', 'Selihoden'])
