@@ -4483,15 +4483,19 @@ def buyout_criteria_page(request):
                             invasion_pts += act.event.boss_point_config.get(boss_key, 100)
                 else:
                     invasion_pts += act.event.max_points if act.event.max_points else 100
-            # 3. VEORA
-            elif e_type == 'VEORA':
-                veora_pts += act.event.max_points if act.event.max_points else 100
-            # 4. KUSTOR, ZHEPAR, HARNAK — dari Raid Boss Activity page (event_type CUSTOM, prefix [Arena Boss])
+            # 3 & 4. CUSTOM EVENTS FROM RAID BOSS PAGE (Veora Ruins, Arena Boss)
             elif e_type == 'CUSTOM':
                 event_name = act.event.name or ''
-                # Format dari halaman Raid Boss Activity: "[Arena Boss] Kustor", "[Arena Boss] Zhepar", "[Arena Boss] Harnak"
+                
+                # Veora Ruins logic (World Boss)
+                is_world_boss = '[World Boss]' in event_name
+                is_veora_boss = any(b in event_name for b in ['Shila', 'Moof', 'Normus', 'Ukanba', 'Selihoden'])
+                if is_world_boss and is_veora_boss:
+                    veora_pts += act.points_earned if act.points_earned else (act.event.max_points if act.event.max_points else 100)
+                
+                # Arena Boss logic (Kustor, Zhepar, Harnak)
                 is_arena_boss = '[Arena Boss]' in event_name
-                is_target_boss = 'Kustor' in event_name or 'Zhepar' in event_name or 'Harnak' in event_name
+                is_target_boss = any(b in event_name for b in ['Kustor', 'Zhepar', 'Harnak'])
                 if is_arena_boss and is_target_boss:
                     kustor_pts += act.points_earned if act.points_earned else (act.event.max_points if act.event.max_points else 1000)
                 

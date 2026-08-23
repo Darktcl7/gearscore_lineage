@@ -1345,7 +1345,6 @@ class ActivityEvent(models.Model):
         ('DIMENSIONAL', 'Dimensional Siege'),
         ('ISLE_AWAKENING', 'Isle of Awakening'),
         ('WAR_DAY', 'War Day'),
-        ('VEORA', 'Veora'),
         ('CUSTOM', 'Custom'),
     )
 
@@ -1357,7 +1356,7 @@ class ActivityEvent(models.Model):
         'CATACOMBS': 50,
         'DIMENSIONAL': 100,
         'ISLE_AWAKENING': 100,
-        'VEORA': 100,
+        'WAR_DAY': 100,
         'CUSTOM': 0,
     }
 
@@ -1989,8 +1988,11 @@ class UniversalPowerRank(models.Model):
         
         if self.purple_skill_main_class > 0:
             score += (self.purple_skill_main_class * 10.0) + 30.0
+            
+        if self.purple_class_aga > 0:
+            score += self.purple_class_aga * 10.0
         
-        # Level and Purple Class are tracked but not added to the score in the original excel
+        # Level is tracked but not added to the score in the original excel
         return int(score)
 
     def save(self, *args, **kwargs):
