@@ -4555,10 +4555,14 @@ def buyout_criteria_page(request):
         c.total_point = total_point
         c.power_rank_point = pr_50
         
+        # Flag: apakah member ini aktif (punya poin activity > 0)
+        activity_total = br_cc_pts + invasion_pts + veora_pts + kustor_pts
+        c.is_active = activity_total > 0
+
         criteria.append(c)
         
-    # Rank diurutkan berdasarkan 50% Power Rank (bukan total point)
-    criteria.sort(key=lambda x: x.power_rank_point, reverse=True)
+    # Rank: member aktif di atas, lalu urutkan berdasarkan Total Point tertinggi
+    criteria.sort(key=lambda x: (x.is_active, x.total_point), reverse=True)
     
     return render(request, 'items/buyout_criteria_leaderboard.html', {
         'criteria': criteria,
